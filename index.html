@@ -8,7 +8,6 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-/* ===== TOKENS ===== */
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
   --pri:#5B47E0;--pri2:#7C3AED;--pri-light:#EDE9FF;--pri-dark:#2D1B8E;
@@ -30,7 +29,7 @@
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:10px}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;overflow:hidden;transition:background .3s,color .3s}
 
-/* ===== LOGIN ===== */
+/* LOGIN */
 .login-screen{position:fixed;inset:0;background:linear-gradient(135deg,var(--pri-dark) 0%,var(--pri) 50%,var(--pri2) 100%);display:flex;align-items:center;justify-content:center;z-index:9999;transition:opacity .4s}
 .login-screen.hidden{opacity:0;pointer-events:none}
 .login-box{background:#fff;border-radius:24px;padding:40px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
@@ -39,7 +38,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);min-
 .login-logo-icon span{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:#fff}
 .login-title{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:#1A0F3C}
 .login-sub{font-size:13px;color:#9D8FC5;margin-top:3px}
-.login-form .form-group{margin-bottom:14px}
+.login-form .fg{margin-bottom:14px}
 .login-form label{display:block;font-size:11.5px;font-weight:700;color:#5C4F8A;margin-bottom:5px;text-transform:uppercase;letter-spacing:.6px}
 .login-form input{width:100%;padding:11px 14px;border:1.5px solid #E4DEFF;border-radius:10px;font-size:14px;font-family:'DM Sans',sans-serif;color:#1A0F3C;outline:none;transition:border-color .2s}
 .login-form input:focus{border-color:#5B47E0;box-shadow:0 0 0 3px rgba(91,71,224,.12)}
@@ -48,7 +47,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);min-
 .login-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
 .login-err{background:#FEF2F2;color:#EF4444;border:1px solid #FECACA;border-radius:9px;padding:10px 14px;font-size:13px;font-weight:600;margin-bottom:14px;display:none}
 
-/* ===== APP LAYOUT ===== */
+/* LAYOUT */
 .app{display:flex;height:100vh;opacity:0;transition:opacity .4s}
 .app.visible{opacity:1}
 .sidebar{width:var(--sidebar-w);background:linear-gradient(170deg,var(--pri-dark),var(--pri) 60%,var(--pri2));display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;position:relative}
@@ -62,7 +61,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);min-
 .nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;cursor:pointer;color:rgba(255,255,255,.6);font-size:13.5px;font-weight:500;transition:var(--trans);margin-bottom:1px;user-select:none}
 .nav-item:hover{background:rgba(255,255,255,.1);color:#fff}
 .nav-item.active{background:rgba(255,255,255,.18);color:#fff;font-weight:600}
-.nav-item.hidden-nav{display:none}
 .nav-item i{font-size:19px;flex-shrink:0}
 .nav-section{font-size:9.5px;color:rgba(255,255,255,.3);letter-spacing:1.8px;text-transform:uppercase;padding:12px 12px 5px;font-weight:700}
 .sidebar-footer{padding:12px 10px;border-top:1px solid rgba(255,255,255,.1)}
@@ -73,9 +71,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);min-
 .logout-btn{background:none;border:none;color:rgba(255,255,255,.5);cursor:pointer;font-size:17px;padding:4px;border-radius:6px;transition:var(--trans);margin-left:auto;flex-shrink:0}
 .logout-btn:hover{color:#fff;background:rgba(255,255,255,.15)}
 
-/* ===== MAIN ===== */
+/* MAIN */
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
-.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;height:var(--topbar-h);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;height:var(--topbar-h);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:12px}
 .topbar-title{font-family:'Syne',sans-serif;font-weight:700;font-size:17px;color:var(--txt)}
 .topbar-right{display:flex;align-items:center;gap:8px}
 .topbar-btn{width:36px;height:36px;border-radius:9px;border:1.5px solid var(--border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--txt2);font-size:18px;transition:var(--trans)}
@@ -85,7 +83,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);min-
 .page.active{display:block}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
-/* ===== COMPONENTS ===== */
+/* COMPONENTS */
 .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:9px;font-size:13.5px;font-weight:600;cursor:pointer;border:none;transition:var(--trans);font-family:'DM Sans',sans-serif;white-space:nowrap}
 .btn-primary{background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;box-shadow:0 2px 10px rgba(91,71,224,.3)}
 .btn-primary:hover{opacity:.9;transform:translateY(-1px)}
@@ -96,7 +94,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);min-
 .btn-danger{background:#FEF2F2;color:var(--danger);border:1.5px solid #FECACA}
 .btn-danger:hover{background:#FEE2E2}
 .btn-success{background:#ECFDF5;color:var(--success);border:1.5px solid #A7F3D0}
-.btn-ghost{background:transparent;border:none;color:var(--txt3);padding:6px 8px}
+.btn-ghost{background:transparent;border:none;color:var(--txt3);padding:6px 8px;cursor:pointer;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:13px;display:inline-flex;align-items:center;gap:5px}
 .btn-ghost:hover{color:var(--txt);background:var(--surface)}
 .card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;transition:background .3s}
 .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
@@ -125,53 +123,78 @@ tr:hover td{background:var(--surface)}
 .tag-blue{background:#EFF6FF;color:#1D4ED8}
 .tag-gray{background:var(--surface);color:var(--txt3);border:1px solid var(--border)}
 .tag-cyan{background:#ECFEFF;color:#0E7490}
-.form-group{margin-bottom:13px}
+.tag-inf{background:linear-gradient(135deg,#EDE9FF,#E0F2FE);color:#5B47E0;border:1px solid #C7D2FE}
+.fg{margin-bottom:13px}
 label.lbl{display:block;font-size:11.5px;font-weight:700;color:var(--txt2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.6px}
 input,select,textarea{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:13.5px;font-family:'DM Sans',sans-serif;color:var(--txt);background:var(--bg2);outline:none;transition:var(--trans)}
 input:focus,select:focus,textarea:focus{border-color:var(--pri);box-shadow:0 0 0 3px rgba(91,71,224,.12)}
 input::placeholder,textarea::placeholder{color:var(--txt4)}
 .input-group{position:relative}
-.input-group i{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--txt3);font-size:17px;pointer-events:none}
+.input-group i.ig{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--txt3);font-size:17px;pointer-events:none}
 .input-group input{padding-left:36px}
+
+/* TOGGLE SWITCH */
+.toggle-wrap{display:flex;align-items:center;gap:10px}
+.toggle{position:relative;width:44px;height:24px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:var(--border2);border-radius:24px;cursor:pointer;transition:.3s}
+.toggle-slider::before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.3s}
+.toggle input:checked+.toggle-slider{background:var(--pri)}
+.toggle input:checked+.toggle-slider::before{transform:translateX(20px)}
+.toggle-label{font-size:13.5px;font-weight:500;color:var(--txt)}
+
+/* IMAGE UPLOAD */
+.img-upload-area{border:2px dashed var(--border2);border-radius:10px;padding:16px;text-align:center;cursor:pointer;transition:var(--trans);background:var(--surface)}
+.img-upload-area:hover{border-color:var(--pri);background:var(--pri-light)}
+.img-upload-area i{font-size:28px;color:var(--txt3);display:block;margin-bottom:6px}
+.img-upload-area span{font-size:12px;color:var(--txt3)}
+.img-thumbs{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.img-thumb{width:72px;height:72px;border-radius:8px;object-fit:cover;border:2px solid var(--border);cursor:pointer;transition:var(--trans);position:relative}
+.img-thumb-wrap{position:relative;display:inline-block}
+.img-thumb-wrap:hover .img-thumb-del{opacity:1}
+.img-thumb-del{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--danger);color:#fff;border:none;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;opacity:0;transition:var(--trans)}
+
+/* MODAL */
 .modal-overlay{position:fixed;inset:0;background:rgba(15,10,30,.6);display:flex;align-items:center;justify-content:center;z-index:1000;opacity:0;pointer-events:none;transition:opacity .22s;padding:16px}
 .modal-overlay.open{opacity:1;pointer-events:all}
-.modal{background:var(--bg2);border-radius:var(--radius-lg);padding:26px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;transform:translateY(18px) scale(.98);transition:transform .22s;box-shadow:var(--shadow-lg)}
+.modal{background:var(--bg2);border-radius:var(--radius-lg);padding:26px;width:100%;max-width:520px;max-height:92vh;overflow-y:auto;transform:translateY(18px) scale(.98);transition:transform .22s;box-shadow:var(--shadow-lg)}
 .modal-overlay.open .modal{transform:translateY(0) scale(1)}
-.modal.modal-lg{max-width:640px}
-.modal.modal-sm{max-width:360px}
+.modal.modal-lg{max-width:700px}
+.modal.modal-xl{max-width:860px}
+.modal.modal-sm{max-width:380px}
 .modal-title{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:var(--txt);margin-bottom:18px;display:flex;align-items:center;gap:10px}
 .modal-title i{color:var(--pri)}
 .modal-footer{display:flex;gap:10px;margin-top:18px;justify-content:flex-end}
-.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;color:var(--txt3);text-align:center;gap:8px}
-.empty-state i{font-size:44px;opacity:.25}
-.empty-state h3{font-size:14.5px;font-weight:600;color:var(--txt2)}
-.notif-stack{position:fixed;bottom:24px;right:24px;z-index:3000;display:flex;flex-direction:column;gap:8px;pointer-events:none}
-.notif{background:var(--txt);color:#fff;padding:11px 16px;border-radius:11px;font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:8px;transform:translateX(120px);opacity:0;transition:all .3s;pointer-events:all;min-width:220px;box-shadow:var(--shadow-lg)}
-.notif.show{transform:translateX(0);opacity:1}
-.notif.success{background:linear-gradient(135deg,#059669,#10B981)}
-.notif.error{background:linear-gradient(135deg,#DC2626,#EF4444)}
-.notif.warn{background:linear-gradient(135deg,#D97706,#F59E0B)}
-.notif.info{background:linear-gradient(135deg,#1D4ED8,#3B82F6)}
-.loading-overlay{position:fixed;inset:0;background:rgba(15,10,30,.7);display:flex;align-items:center;justify-content:center;z-index:5000;opacity:0;pointer-events:none;transition:opacity .2s}
-.loading-overlay.show{opacity:1;pointer-events:all}
-.spinner{width:48px;height:48px;border:4px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-.section-title{font-family:'Syne',sans-serif;font-weight:700;font-size:15px;color:var(--txt);margin-bottom:14px;display:flex;align-items:center;gap:10px}
-.section-title i{color:var(--pri);font-size:18px}
-.section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.modal-section{font-size:11px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;padding:12px 0 8px;border-bottom:1px solid var(--border);margin-bottom:12px}
+
+/* STOCK ALERT */
+.stock-alert{display:flex;align-items:center;gap:10px;background:#FFFBEB;border:1.5px solid #FDE68A;border-radius:10px;padding:10px 14px;margin-bottom:14px}
+.stock-alert i{font-size:18px;color:var(--warn);flex-shrink:0}
+.stock-alert-text{font-size:13px;font-weight:500;color:#92400E}
+
+/* BARCODE FIELD */
+.barcode-hint{font-size:11px;color:var(--txt3);margin-top:4px}
+.barcode-hint code{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:1px 5px;font-size:10.5px}
+
+/* MOVIMENTACAO BADGE */
+.mov-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-size:11.5px;font-weight:700}
+.mov-entrada{background:#ECFDF5;color:#059669}
+.mov-saida{background:#FEF2F2;color:var(--danger)}
+.mov-ajuste{background:#EFF6FF;color:#1D4ED8}
 
 /* PDV */
-.pdv-layout{display:grid;grid-template-columns:1fr 340px;gap:14px;height:calc(100vh - var(--topbar-h) - 40px)}
+.pdv-layout{display:grid;grid-template-columns:1fr 350px;gap:14px;height:calc(100vh - var(--topbar-h) - 40px)}
 .pdv-left{display:flex;flex-direction:column;gap:12px}
 .pdv-toolbar{display:flex;gap:10px}
-.barcode-wrap{position:relative;flex:1}.barcode-wrap i{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--txt3);font-size:17px}
+.barcode-wrap{position:relative;flex:1}.barcode-wrap i{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--txt3);font-size:17px;pointer-events:none}
 .barcode-wrap input{padding-left:36px}
-.search-wrap{position:relative;flex:2}.search-wrap i{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--txt3);font-size:17px}
+.search-wrap{position:relative;flex:2}.search-wrap i{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--txt3);font-size:17px;pointer-events:none}
 .search-wrap input{padding-left:36px}
 .products-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:10px;overflow-y:auto;flex:1;align-content:start}
-.prod-card{background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--radius);padding:12px;cursor:pointer;transition:var(--trans);user-select:none}
+.prod-card{background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--radius);padding:12px;cursor:pointer;transition:var(--trans);user-select:none;position:relative}
 .prod-card:hover{border-color:var(--pri);box-shadow:0 4px 18px rgba(91,71,224,.14);transform:translateY(-2px)}
 .prod-card.out{opacity:.4;cursor:not-allowed;pointer-events:none}
+.prod-card-inf-badge{position:absolute;top:8px;right:8px;background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:5px}
 .prod-img{width:100%;aspect-ratio:1;background:var(--pri-light);border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:9px;overflow:hidden}
 .prod-img i{font-size:28px;color:var(--pri)}
 .prod-img img{width:100%;height:100%;object-fit:cover}
@@ -204,13 +227,6 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
 .finalize-btn{width:100%;margin-top:10px;padding:12px;font-size:14px;font-weight:700;border-radius:10px;border:none;background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:var(--trans);font-family:'DM Sans',sans-serif;box-shadow:0 4px 14px rgba(91,71,224,.3)}
 .finalize-btn:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
 
-/* USERS */
-.role-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:7px;font-size:12px;font-weight:700}
-.role-admin{background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff}
-.role-gerente{background:#EFF6FF;color:#1D4ED8}
-.role-operador{background:#ECFDF5;color:#059669}
-.role-tecnico{background:#FFFBEB;color:#B45309}
-
 /* OS */
 .os-grid{display:grid;grid-template-columns:1fr 350px;gap:14px;height:calc(100vh - var(--topbar-h) - 40px)}
 .os-form-wrap{overflow-y:auto}
@@ -225,21 +241,65 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
 .os-device{font-size:12px;color:var(--txt3)}
 .progress-bar{width:100%;height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin:6px 0 2px}
 .progress-fill{height:100%;background:linear-gradient(90deg,var(--pri),var(--pri2));border-radius:2px;transition:width .5s}
-.access-denied{display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;color:var(--txt3);gap:12px}
-.access-denied i{font-size:56px;opacity:.2}
-.access-denied h2{font-size:18px;font-weight:700;color:var(--txt2)}
-.access-denied p{font-size:13px;text-align:center;max-width:260px}
+
+/* TIMELINE */
+.tl{display:flex;flex-direction:column;gap:0}
+.tl-step{display:flex;gap:12px;position:relative}
+.tl-step:not(:last-child)::before{content:'';position:absolute;left:15px;top:30px;bottom:0;width:2px;background:var(--border)}
+.tl-step.done::before{background:var(--success)}
+.tl-dot{width:30px;height:30px;border-radius:50%;border:2px solid var(--border);background:var(--bg2);display:flex;align-items:center;justify-content:center;flex-shrink:0;z-index:1;font-size:13px}
+.tl-step.done .tl-dot{background:var(--success);border-color:var(--success);color:#fff}
+.tl-step.cur .tl-dot{background:var(--pri);border-color:var(--pri);color:#fff;box-shadow:0 0 0 4px rgba(91,71,224,.2)}
+.tl-content{padding:4px 0 16px;flex:1}
+.tl-label{font-size:13px;font-weight:600;color:var(--txt)}
+.tl-step.done .tl-label{color:var(--success)}
+.tl-step.cur .tl-label{color:var(--pri)}
+.tl-time{font-size:11px;color:var(--txt3);margin-top:1px}
+
+/* ROLES */
+.role-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:7px;font-size:12px;font-weight:700}
+.role-admin{background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff}
+.role-gerente{background:#EFF6FF;color:#1D4ED8}
+.role-operador{background:#ECFDF5;color:#059669}
+.role-tecnico{background:#FFFBEB;color:#B45309}
+
+/* LOADING / NOTIFY */
+.loading-overlay{position:fixed;inset:0;background:rgba(15,10,30,.7);display:flex;align-items:center;justify-content:center;z-index:5000;opacity:0;pointer-events:none;transition:opacity .2s}
+.loading-overlay.show{opacity:1;pointer-events:all}
+.spinner{width:48px;height:48px;border:4px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.notif-stack{position:fixed;bottom:24px;right:24px;z-index:3000;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.notif{background:var(--txt);color:#fff;padding:11px 16px;border-radius:11px;font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:8px;transform:translateX(120px);opacity:0;transition:all .3s;pointer-events:all;min-width:220px;box-shadow:var(--shadow-lg)}
+.notif.show{transform:translateX(0);opacity:1}
+.notif.success{background:linear-gradient(135deg,#059669,#10B981)}
+.notif.error{background:linear-gradient(135deg,#DC2626,#EF4444)}
+.notif.warn{background:linear-gradient(135deg,#D97706,#F59E0B)}
+.notif.info{background:linear-gradient(135deg,#1D4ED8,#3B82F6)}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;color:var(--txt3);text-align:center;gap:8px}
+.empty-state i{font-size:44px;opacity:.25}
+.empty-state h3{font-size:14.5px;font-weight:600;color:var(--txt2)}
+.section-title{font-family:'Syne',sans-serif;font-weight:700;font-size:15px;color:var(--txt);margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.section-title i{color:var(--pri);font-size:18px}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.filter-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.filter-bar input,.filter-bar select{padding:7px 10px;font-size:13px;border-radius:9px;width:auto}
+
+/* FOTO PREVIEW NO DETALHE */
+.foto-slider{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
+.foto-slider img{width:80px;height:80px;border-radius:8px;object-fit:cover;border:2px solid var(--border);cursor:pointer;flex-shrink:0}
+.foto-full-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9000;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.foto-full-overlay img{max-width:90vw;max-height:90vh;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+
 @media(max-width:900px){
   .stats-grid{grid-template-columns:1fr 1fr}
-  .pdv-layout{grid-template-columns:1fr}
-  .os-grid{grid-template-columns:1fr}
+  .pdv-layout,.os-grid{grid-template-columns:1fr}
   .grid-2{grid-template-columns:1fr}
 }
 </style>
 </head>
 <body>
 
-<!-- ===== TELA DE LOGIN ===== -->
+<!-- LOGIN -->
 <div class="login-screen" id="login-screen">
   <div class="login-box">
     <div class="login-logo">
@@ -249,33 +309,21 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
     </div>
     <div id="login-err" class="login-err"></div>
     <div class="login-form">
-      <div class="form-group">
-        <label class="lbl">E-mail</label>
-        <input type="email" id="login-email" placeholder="seu@email.com" autocomplete="email">
-      </div>
-      <div class="form-group">
-        <label class="lbl">Senha</label>
-        <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
-      </div>
-      <button class="login-btn" id="login-btn" onclick="doLogin()">
-        <i class="ti ti-lock" style="font-size:18px"></i>Entrar no Sistema
-      </button>
+      <div class="fg"><label>E-mail</label><input type="email" id="login-email" placeholder="seu@email.com"></div>
+      <div class="fg"><label>Senha</label><input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <button class="login-btn" id="login-btn" onclick="doLogin()"><i class="ti ti-lock" style="font-size:18px"></i>Entrar no Sistema</button>
     </div>
-    <p style="text-align:center;font-size:12px;color:#9D8FC5;margin-top:20px">EMETech © 2025 — Todos os direitos reservados</p>
+    <p style="text-align:center;font-size:12px;color:#9D8FC5;margin-top:20px">EMETech © 2025</p>
   </div>
 </div>
 
-<!-- ===== APP ===== -->
+<!-- APP -->
 <div class="app" id="app">
-  <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="logo-area">
       <div class="logo-badge">
         <div class="logo-icon">ET</div>
-        <div>
-          <div class="logo-text">EMETech</div>
-          <div class="logo-sub">Sistema PDV</div>
-        </div>
+        <div><div class="logo-text">EMETech</div><div class="logo-sub">Sistema PDV</div></div>
       </div>
     </div>
     <nav class="nav" id="main-nav">
@@ -284,7 +332,9 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
       <div class="nav-item" onclick="navigate('pdv')" data-access="admin,gerente,operador"><i class="ti ti-shopping-cart"></i>Ponto de Venda</div>
       <div class="nav-section">Gestão</div>
       <div class="nav-item" onclick="navigate('os')" data-access="admin,gerente,tecnico"><i class="ti ti-tools"></i>Ordens de Serviço</div>
+      <div class="nav-item" onclick="navigate('os-historico')" data-access="admin,gerente,tecnico"><i class="ti ti-history"></i>Histórico de OS</div>
       <div class="nav-item" onclick="navigate('produtos')" data-access="admin,gerente"><i class="ti ti-device-mobile"></i>Produtos</div>
+      <div class="nav-item" onclick="navigate('estoque')" data-access="admin,gerente"><i class="ti ti-package"></i>Movimentações</div>
       <div class="nav-item" onclick="navigate('clientes')" data-access="admin,gerente,operador,tecnico"><i class="ti ti-users"></i>Clientes</div>
       <div class="nav-section">Análises</div>
       <div class="nav-item" onclick="navigate('vendas')" data-access="admin,gerente"><i class="ti ti-chart-bar"></i>Vendas & Lucro</div>
@@ -294,8 +344,8 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
     <div class="sidebar-footer">
       <div class="user-pill">
         <div class="user-av" id="user-av">?</div>
-        <div class="user-info" style="flex:1;min-width:0">
-          <div class="user-name" id="user-name">Carregando...</div>
+        <div style="flex:1;min-width:0">
+          <div class="user-name" id="user-name">...</div>
           <div class="user-role-badge" id="user-role-badge"></div>
         </div>
         <button class="logout-btn" onclick="doLogout()" title="Sair"><i class="ti ti-logout"></i></button>
@@ -303,7 +353,6 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
     </div>
   </aside>
 
-  <!-- MAIN -->
   <main class="main">
     <div class="topbar">
       <div class="topbar-title" id="topbar-title">Dashboard</div>
@@ -321,8 +370,9 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
           <div class="stat-card"><div class="stat-icon"><i class="ti ti-currency-dollar"></i></div><div class="stat-val" id="d-fat">R$ 0,00</div><div class="stat-label">Faturamento Hoje</div></div>
           <div class="stat-card"><div class="stat-icon" style="background:#ECFDF5"><i class="ti ti-trending-up" style="color:var(--success)"></i></div><div class="stat-val" id="d-lucro">R$ 0,00</div><div class="stat-label">Lucro Hoje</div></div>
           <div class="stat-card"><div class="stat-icon" style="background:#FFFBEB"><i class="ti ti-tools" style="color:var(--warn)"></i></div><div class="stat-val" id="d-os">0</div><div class="stat-label">OS em Aberto</div></div>
-          <div class="stat-card"><div class="stat-icon" style="background:#EFF6FF"><i class="ti ti-package" style="color:var(--info)"></i></div><div class="stat-val" id="d-prods">0</div><div class="stat-label">Produtos Cadastrados</div></div>
+          <div class="stat-card"><div class="stat-icon" style="background:#FEF2F2"><i class="ti ti-alert-triangle" style="color:var(--danger)"></i></div><div class="stat-val" id="d-est-baixo">0</div><div class="stat-label">Estoque Baixo</div></div>
         </div>
+        <div id="d-alerts"></div>
         <div class="grid-dash">
           <div class="card"><div class="card-header"><div class="card-title">Últimas Vendas</div><button class="btn btn-outline btn-sm" onclick="navigate('vendas')">Ver todas</button></div><div id="d-ult-vendas"><div class="empty-state" style="padding:20px"><i class="ti ti-shopping-cart-off"></i><p>Nenhuma venda</p></div></div></div>
           <div class="card"><div class="card-header"><div class="card-title">OS em Aberto</div><button class="btn btn-outline btn-sm" onclick="navigate('os')">Ver todas</button></div><div id="d-ult-os"><div class="empty-state" style="padding:20px"><i class="ti ti-tools"></i><p>Nenhuma OS</p></div></div></div>
@@ -334,16 +384,20 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
         <div class="pdv-layout">
           <div class="pdv-left">
             <div class="pdv-toolbar">
-              <div class="barcode-wrap"><i class="ti ti-barcode"></i><input type="text" id="barcode-field" placeholder="Código de barras… [Enter]" onkeydown="handleBarcode(event)"></div>
+              <div class="barcode-wrap">
+                <i class="ti ti-barcode"></i>
+                <input type="text" id="barcode-field" placeholder="Ex: 2*SKU-001 ou código de barras [Enter]" onkeydown="handleBarcode(event)">
+              </div>
               <div class="search-wrap"><i class="ti ti-search"></i><input type="text" id="pdv-search" placeholder="Buscar produto…" oninput="renderPDVGrid()"></div>
             </div>
-            <div class="products-grid" id="pdv-grid"><div class="empty-state" style="grid-column:1/-1"><i class="ti ti-loader" style="animation:spin 1s linear infinite"></i><p>Carregando...</p></div></div>
+            <div class="barcode-hint">💡 Formato inteligente: <code>quantidade*codigo</code> — Ex: <code>2*SKU-001</code> adiciona 2 unidades do produto SKU-001</div>
+            <div class="products-grid" id="pdv-grid"></div>
           </div>
           <div class="pdv-cart">
             <div class="cart-header">
               <div style="display:flex;align-items:center;justify-content:space-between">
                 <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:var(--txt);display:flex;align-items:center;gap:7px"><i class="ti ti-shopping-cart" style="color:var(--pri)"></i>Carrinho</div>
-                <button class="btn btn-ghost btn-sm" onclick="clearCart()"><i class="ti ti-trash" style="color:var(--danger)"></i></button>
+                <button class="btn-ghost" onclick="clearCart()"><i class="ti ti-trash" style="color:var(--danger)"></i></button>
               </div>
               <div style="margin-top:8px;display:flex;align-items:center;gap:8px">
                 <i class="ti ti-user" style="color:var(--txt3);font-size:15px"></i>
@@ -368,57 +422,93 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
         </div>
       </div>
 
-      <!-- OS -->
+      <!-- OS ATIVAS -->
       <div class="page" id="page-os">
         <div class="os-grid">
           <div class="os-form-wrap">
             <div class="os-form">
               <div class="section-title"><i class="ti ti-file-plus"></i>Nova OS</div>
               <div class="grid-2">
-                <div class="form-group"><label class="lbl">Cliente</label><select id="os-cliente"></select></div>
-                <div class="form-group"><label class="lbl">Técnico</label><select id="os-tecnico-sel"><option value="">Sem técnico</option></select></div>
+                <div class="fg"><label class="lbl">Cliente</label><select id="os-cliente"></select></div>
+                <div class="fg"><label class="lbl">Técnico</label><select id="os-tecnico-sel"><option value="">Sem técnico</option></select></div>
               </div>
               <div class="grid-2">
-                <div class="form-group"><label class="lbl">Aparelho *</label><input type="text" id="os-aparelho" placeholder="Ex: iPhone 13"></div>
-                <div class="form-group"><label class="lbl">IMEI / Série</label><input type="text" id="os-imei" placeholder="IMEI ou S/N"></div>
+                <div class="fg"><label class="lbl">Aparelho *</label><input type="text" id="os-aparelho" placeholder="Ex: iPhone 13"></div>
+                <div class="fg"><label class="lbl">IMEI / Série</label><input type="text" id="os-imei" placeholder="IMEI ou S/N"></div>
               </div>
-              <div class="form-group"><label class="lbl">Defeito *</label><textarea id="os-defeito" rows="2" placeholder="Defeito relatado..."></textarea></div>
-              <div class="form-group"><label class="lbl">Diagnóstico</label><textarea id="os-diag" rows="2" placeholder="Laudo técnico..."></textarea></div>
+              <div class="fg"><label class="lbl">Defeito *</label><textarea id="os-defeito" rows="2" placeholder="Defeito relatado..."></textarea></div>
+              <div class="fg"><label class="lbl">Diagnóstico</label><textarea id="os-diag" rows="2" placeholder="Laudo técnico..."></textarea></div>
               <div class="grid-3">
-                <div class="form-group"><label class="lbl">Serviço R$</label><input type="number" id="os-valor" placeholder="0,00" min="0" step="0.01"></div>
-                <div class="form-group"><label class="lbl">Garantia (dias)</label><input type="number" id="os-garantia" value="90"></div>
-                <div class="form-group"><label class="lbl">Prazo</label><input type="date" id="os-prazo"></div>
+                <div class="fg"><label class="lbl">Serviço R$</label><input type="number" id="os-valor" placeholder="0,00" min="0" step="0.01"></div>
+                <div class="fg"><label class="lbl">Garantia (dias)</label><input type="number" id="os-garantia" value="90"></div>
+                <div class="fg"><label class="lbl">Prazo</label><input type="date" id="os-prazo"></div>
               </div>
-              <div class="form-group"><label class="lbl">Observações</label><textarea id="os-obs" rows="2" placeholder="Senha, acessórios..."></textarea></div>
+              <div class="fg"><label class="lbl">Observações</label><textarea id="os-obs" rows="2" placeholder="Senha, acessórios..."></textarea></div>
               <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px" onclick="createOS()"><i class="ti ti-file-plus"></i>Criar OS</button>
             </div>
           </div>
           <div class="os-list-wrap">
             <div class="os-list-hdr">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div class="card-title">OS Abertas <span id="os-count" style="font-size:12px;font-weight:400;color:var(--txt3)"></span></div></div>
-              <div class="input-group"><i class="ti ti-search"></i><input type="text" placeholder="Buscar OS..." style="font-size:13px" oninput="filterOSList(this.value)"></div>
+              <div class="input-group"><i class="ti ti-search ig"></i><input type="text" placeholder="Buscar OS..." style="font-size:13px" oninput="renderOSList(this.value)"></div>
             </div>
-            <div class="os-items-scroll" id="os-list"><div class="empty-state"><i class="ti ti-tools"></i><h3>Nenhuma OS</h3></div></div>
+            <div class="os-items-scroll" id="os-list"></div>
           </div>
+        </div>
+      </div>
+
+      <!-- HISTÓRICO OS -->
+      <div class="page" id="page-os-historico">
+        <div class="filter-bar">
+          <input type="date" id="hf-de" style="width:auto" onchange="renderOSHistorico()">
+          <input type="date" id="hf-ate" style="width:auto" onchange="renderOSHistorico()">
+          <select id="hf-tecnico" onchange="renderOSHistorico()" style="width:auto;min-width:160px"><option value="">Todos técnicos</option></select>
+          <select id="hf-cliente" onchange="renderOSHistorico()" style="width:auto;min-width:160px"><option value="">Todos clientes</option></select>
+          <button class="btn btn-outline btn-sm" onclick="clearOSFilters()"><i class="ti ti-x"></i>Limpar</button>
+        </div>
+        <div class="card" style="padding:0">
+          <div class="table-wrap"><table>
+            <thead><tr><th>Nº OS</th><th>Cliente</th><th>Equipamento</th><th>Abertura</th><th>Conclusão</th><th>Técnico</th><th>Valor</th><th>Status</th></tr></thead>
+            <tbody id="os-hist-table"></tbody>
+          </table></div>
         </div>
       </div>
 
       <!-- PRODUTOS -->
       <div class="page" id="page-produtos">
         <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
-          <div class="input-group" style="flex:1;min-width:160px"><i class="ti ti-search"></i><input type="text" placeholder="Buscar produto..." oninput="renderProdTable(this.value)"></div>
-          <button class="btn btn-primary" onclick="openModal('modal-produto')"><i class="ti ti-plus"></i>Novo Produto</button>
+          <div class="input-group" style="flex:1;min-width:160px"><i class="ti ti-search ig"></i><input type="text" placeholder="Buscar produto..." oninput="renderProdTable(this.value)"></div>
+          <select id="prod-filter-est" onchange="renderProdTable()" style="padding:8px 10px;font-size:13px;border-radius:9px;width:auto">
+            <option value="">Todos</option><option value="low">Estoque baixo</option><option value="out">Sem estoque</option><option value="inf">Estoque infinito</option>
+          </select>
+          <button class="btn btn-primary" onclick="openProdModal()"><i class="ti ti-plus"></i>Novo Produto</button>
         </div>
         <div class="card" style="padding:0"><div class="table-wrap"><table>
-          <thead><tr><th>Produto</th><th>SKU</th><th>Categoria</th><th>Preço</th><th>Estoque</th><th>Status</th><th>Ações</th></tr></thead>
+          <thead><tr><th>Foto</th><th>Produto</th><th>SKU</th><th>Categoria</th><th>Preço</th><th>Estoque</th><th>Status</th><th>Ações</th></tr></thead>
           <tbody id="prod-table"></tbody>
+        </table></div></div>
+      </div>
+
+      <!-- MOVIMENTAÇÕES DE ESTOQUE -->
+      <div class="page" id="page-estoque">
+        <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+          <div class="card-title" style="flex:1">Histórico de Movimentações</div>
+          <select id="mov-filter-prod" onchange="renderMovimentacoes()" style="padding:8px 10px;font-size:13px;border-radius:9px;width:auto;min-width:180px"><option value="">Todos os produtos</option></select>
+          <select id="mov-filter-tipo" onchange="renderMovimentacoes()" style="padding:8px 10px;font-size:13px;border-radius:9px;width:auto">
+            <option value="">Todos os tipos</option><option value="entrada">Entrada</option><option value="saida">Saída</option><option value="ajuste">Ajuste</option>
+          </select>
+          <button class="btn btn-primary" onclick="openModal('modal-ajuste-estoque')"><i class="ti ti-adjustments"></i>Ajuste Manual</button>
+        </div>
+        <div class="card" style="padding:0"><div class="table-wrap"><table>
+          <thead><tr><th>Data/Hora</th><th>Produto</th><th>Tipo</th><th>Qtd</th><th>Estoque Após</th><th>Usuário</th><th>Motivo</th></tr></thead>
+          <tbody id="mov-table"></tbody>
         </table></div></div>
       </div>
 
       <!-- CLIENTES -->
       <div class="page" id="page-clientes">
         <div style="display:flex;gap:10px;margin-bottom:14px">
-          <div class="input-group" style="flex:1"><i class="ti ti-search"></i><input type="text" placeholder="Buscar cliente..." oninput="renderClientTable(this.value)"></div>
+          <div class="input-group" style="flex:1"><i class="ti ti-search ig"></i><input type="text" placeholder="Buscar cliente..." oninput="renderClientTable(this.value)"></div>
           <button class="btn btn-primary" onclick="openModal('modal-cliente')"><i class="ti ti-user-plus"></i>Novo Cliente</button>
         </div>
         <div class="card" style="padding:0"><div class="table-wrap"><table>
@@ -436,7 +526,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
           <div class="stat-card"><div class="stat-icon" style="background:#FFFBEB"><i class="ti ti-receipt" style="color:var(--warn)"></i></div><div class="stat-val" id="v-ticket">R$ 0,00</div><div class="stat-label">Ticket Médio</div></div>
         </div>
         <div class="card" style="padding:0"><div class="table-wrap"><table>
-          <thead><tr><th>#</th><th>Data</th><th>Cliente</th><th>Operador</th><th>Total</th><th>Lucro</th><th>Pagamento</th></tr></thead>
+          <thead><tr><th>Data</th><th>Cliente</th><th>Operador</th><th>Total</th><th>Lucro</th><th>Pagamento</th></tr></thead>
           <tbody id="sales-table"></tbody>
         </table></div></div>
       </div>
@@ -444,75 +534,96 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
       <!-- USUÁRIOS -->
       <div class="page" id="page-usuarios">
         <div style="display:flex;gap:10px;margin-bottom:14px">
-          <div class="input-group" style="flex:1"><i class="ti ti-search"></i><input type="text" placeholder="Buscar usuário..." oninput="renderUsersTable(this.value)"></div>
+          <div class="input-group" style="flex:1"><i class="ti ti-search ig"></i><input type="text" placeholder="Buscar usuário..." oninput="renderUsersTable(this.value)"></div>
           <button class="btn btn-primary" onclick="openModal('modal-usuario')"><i class="ti ti-user-plus"></i>Novo Usuário</button>
         </div>
         <div class="card" style="padding:0"><div class="table-wrap"><table>
-          <thead><tr><th>Nome</th><th>E-mail</th><th>Nível de Acesso</th><th>Status</th><th>Ações</th></tr></thead>
+          <thead><tr><th>Nome</th><th>E-mail</th><th>Nível</th><th>Status</th><th>Ações</th></tr></thead>
           <tbody id="users-table"></tbody>
         </table></div></div>
-        <div class="card" style="margin-top:16px">
-          <div class="card-title" style="margin-bottom:12px">Permissões por Nível</div>
-          <div style="overflow-x:auto"><table style="min-width:400px">
-            <thead><tr><th>Funcionalidade</th><th>Admin</th><th>Gerente</th><th>Operador</th><th>Técnico</th></tr></thead>
-            <tbody>
-              <tr><td>Dashboard completo</td><td>✅</td><td>✅</td><td>❌</td><td>❌</td></tr>
-              <tr><td>Ponto de Venda</td><td>✅</td><td>✅</td><td>✅</td><td>❌</td></tr>
-              <tr><td>Ordens de Serviço</td><td>✅</td><td>✅</td><td>❌</td><td>✅</td></tr>
-              <tr><td>Gerenciar Produtos</td><td>✅</td><td>✅</td><td>❌</td><td>❌</td></tr>
-              <tr><td>Ver Clientes</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr>
-              <tr><td>Relatórios & Lucro</td><td>✅</td><td>✅</td><td>❌</td><td>❌</td></tr>
-              <tr><td>Gerenciar Usuários</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td></tr>
-            </tbody>
-          </table></div>
-        </div>
       </div>
 
-    </div><!-- /content -->
+    </div>
   </main>
 </div>
 
-<!-- MODAIS -->
+<!-- ===== MODAIS ===== -->
+
+<!-- Modal Produto -->
 <div class="modal-overlay" id="modal-produto">
-  <div class="modal">
+  <div class="modal modal-lg">
     <div class="modal-title"><i class="ti ti-device-mobile"></i><span id="prod-modal-ttl">Novo Produto</span></div>
     <input type="hidden" id="p-id">
     <div class="grid-2">
-      <div class="form-group"><label class="lbl">Nome *</label><input type="text" id="p-nome" placeholder="Nome"></div>
-      <div class="form-group"><label class="lbl">SKU</label><input type="text" id="p-sku" placeholder="SKU-001"></div>
-    </div>
-    <div class="grid-2">
-      <div class="form-group"><label class="lbl">Categoria</label><select id="p-cat"><option>Celular</option><option>Acessório</option><option>Peça</option><option>Serviço</option><option>Outro</option></select></div>
-      <div class="form-group"><label class="lbl">Marca</label><input type="text" id="p-marca" placeholder="Apple..."></div>
-    </div>
-    <div class="grid-3">
-      <div class="form-group"><label class="lbl">Custo R$</label><input type="number" id="p-custo" placeholder="0,00" step="0.01"></div>
-      <div class="form-group"><label class="lbl">Preço R$ *</label><input type="number" id="p-preco" placeholder="0,00" step="0.01"></div>
-      <div class="form-group"><label class="lbl">Estoque</label><input type="number" id="p-estoque" value="1" min="0"></div>
-    </div>
-    <div class="grid-2">
-      <div class="form-group"><label class="lbl">Estoque Mín.</label><input type="number" id="p-estmin" value="3" min="0"></div>
-      <div class="form-group"><label class="lbl">Status</label><select id="p-status"><option value="ativo">Ativo</option><option value="inativo">Inativo</option></select></div>
+      <div>
+        <div class="modal-section">Identificação</div>
+        <div class="fg"><label class="lbl">Nome *</label><input type="text" id="p-nome" placeholder="Nome do produto"></div>
+        <div class="grid-2">
+          <div class="fg"><label class="lbl">SKU</label><input type="text" id="p-sku" placeholder="SKU-001"></div>
+          <div class="fg"><label class="lbl">Cód. Barras</label><input type="text" id="p-barcode" placeholder="789..."></div>
+        </div>
+        <div class="grid-2">
+          <div class="fg"><label class="lbl">Categoria</label><select id="p-cat"><option>Celular</option><option>Acessório</option><option>Peça</option><option>Serviço</option><option>Outro</option></select></div>
+          <div class="fg"><label class="lbl">Marca</label><input type="text" id="p-marca" placeholder="Apple..."></div>
+        </div>
+        <div class="modal-section">Preços</div>
+        <div class="grid-2">
+          <div class="fg"><label class="lbl">Custo R$</label><input type="number" id="p-custo" placeholder="0,00" step="0.01"></div>
+          <div class="fg"><label class="lbl">Preço R$ *</label><input type="number" id="p-preco" placeholder="0,00" step="0.01"></div>
+        </div>
+      </div>
+      <div>
+        <div class="modal-section">Estoque</div>
+        <!-- TOGGLE ESTOQUE INFINITO -->
+        <div class="fg" style="background:var(--pri-light);border-radius:10px;padding:12px;border:1.5px solid var(--border2)">
+          <div class="toggle-wrap">
+            <label class="toggle">
+              <input type="checkbox" id="p-infinito" onchange="toggleInfinito()">
+              <span class="toggle-slider"></span>
+            </label>
+            <div>
+              <div class="toggle-label">♾️ Estoque Infinito</div>
+              <div style="font-size:11.5px;color:var(--txt3);margin-top:2px">Ideal para serviços e mão de obra</div>
+            </div>
+          </div>
+        </div>
+        <div id="estoque-fields" style="margin-top:10px">
+          <div class="grid-2">
+            <div class="fg"><label class="lbl">Estoque</label><input type="number" id="p-estoque" value="1" min="0"></div>
+            <div class="fg"><label class="lbl">Estoque Mín.</label><input type="number" id="p-estmin" value="3" min="0"></div>
+          </div>
+        </div>
+        <div class="fg"><label class="lbl">Status</label><select id="p-status"><option value="ativo">Ativo</option><option value="inativo">Inativo</option></select></div>
+        <div class="modal-section">Fotos do Produto</div>
+        <div class="img-upload-area" onclick="document.getElementById('p-fotos-input').click()">
+          <i class="ti ti-camera-plus"></i>
+          <span>Clique para adicionar fotos</span>
+          <input type="file" id="p-fotos-input" accept="image/*" multiple style="display:none" onchange="handleFotos(event)">
+        </div>
+        <div class="img-thumbs" id="p-fotos-thumbs"></div>
+        <input type="hidden" id="p-fotos-data">
+      </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('modal-produto')">Cancelar</button>
+      <button class="btn btn-outline" onclick="closeModal('modal-produto');clearProdForm()">Cancelar</button>
       <button class="btn btn-primary" onclick="saveProduto()"><i class="ti ti-check"></i>Salvar</button>
     </div>
   </div>
 </div>
 
+<!-- Modal Cliente -->
 <div class="modal-overlay" id="modal-cliente">
   <div class="modal">
     <div class="modal-title"><i class="ti ti-user-plus"></i>Cadastrar Cliente</div>
     <input type="hidden" id="c-id">
-    <div class="form-group"><label class="lbl">Nome *</label><input type="text" id="c-nome" placeholder="Nome completo"></div>
+    <div class="fg"><label class="lbl">Nome *</label><input type="text" id="c-nome" placeholder="Nome completo"></div>
     <div class="grid-2">
-      <div class="form-group"><label class="lbl">Telefone *</label><input type="text" id="c-tel" placeholder="(71) 99999-0000"></div>
-      <div class="form-group"><label class="lbl">E-mail</label><input type="email" id="c-email" placeholder="email@..."></div>
+      <div class="fg"><label class="lbl">Telefone *</label><input type="text" id="c-tel" placeholder="(71) 99999-0000"></div>
+      <div class="fg"><label class="lbl">E-mail</label><input type="email" id="c-email" placeholder="email@..."></div>
     </div>
     <div class="grid-2">
-      <div class="form-group"><label class="lbl">CPF/CNPJ</label><input type="text" id="c-cpf" placeholder="000.000.000-00"></div>
-      <div class="form-group"><label class="lbl">Telefone</label><input type="text" id="c-end" placeholder="Endereço"></div>
+      <div class="fg"><label class="lbl">CPF/CNPJ</label><input type="text" id="c-cpf" placeholder="000.000.000-00"></div>
+      <div class="fg"><label class="lbl">Endereço</label><input type="text" id="c-end" placeholder="Endereço"></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modal-cliente')">Cancelar</button>
@@ -521,25 +632,25 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
   </div>
 </div>
 
+<!-- Modal Usuário -->
 <div class="modal-overlay" id="modal-usuario">
   <div class="modal">
     <div class="modal-title"><i class="ti ti-shield-lock"></i><span id="user-modal-ttl">Novo Usuário</span></div>
     <input type="hidden" id="u-id">
-    <div class="form-group"><label class="lbl">Nome Completo *</label><input type="text" id="u-nome" placeholder="Nome do funcionário"></div>
-    <div class="form-group"><label class="lbl">E-mail *</label><input type="email" id="u-email" placeholder="email@emetech.com"></div>
-    <div id="u-senha-group" class="form-group"><label class="lbl">Senha (mínimo 6 caracteres) *</label><input type="password" id="u-senha" placeholder="••••••••"></div>
-    <div class="form-group"><label class="lbl">Nível de Acesso *</label>
+    <div class="fg"><label class="lbl">Nome *</label><input type="text" id="u-nome" placeholder="Nome do funcionário"></div>
+    <div class="fg"><label class="lbl">E-mail *</label><input type="email" id="u-email" placeholder="email@..."></div>
+    <div id="u-senha-group" class="fg"><label class="lbl">Senha (mín. 6 caracteres) *</label><input type="password" id="u-senha" placeholder="••••••••"></div>
+    <div class="fg"><label class="lbl">Nível de Acesso *</label>
       <select id="u-role">
-        <option value="operador">Operador de Caixa (só PDV)</option>
-        <option value="tecnico">Técnico (só OS)</option>
-        <option value="gerente">Gerente (relatórios + vendas + OS)</option>
-        <option value="admin">Administrador (controle total)</option>
+        <option value="operador">Operador de Caixa</option>
+        <option value="tecnico">Técnico</option>
+        <option value="gerente">Gerente</option>
+        <option value="admin">Administrador</option>
       </select>
     </div>
-    <div class="form-group"><label class="lbl">Status</label><select id="u-ativo"><option value="true">Ativo</option><option value="false">Inativo</option></select></div>
+    <div class="fg"><label class="lbl">Status</label><select id="u-ativo"><option value="true">Ativo</option><option value="false">Inativo</option></select></div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;font-size:12.5px;color:var(--txt2);margin-bottom:14px">
-      <i class="ti ti-info-circle" style="color:var(--pri)"></i>
-      O sistema criará a conta de login automaticamente. O usuário receberá as credenciais que você definir.
+      <i class="ti ti-info-circle" style="color:var(--pri)"></i> Crie o login no Supabase → Authentication → Users e depois salve aqui o perfil.
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modal-usuario')">Cancelar</button>
@@ -548,6 +659,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
   </div>
 </div>
 
+<!-- Modal OS Detalhe -->
 <div class="modal-overlay" id="modal-os-detail">
   <div class="modal modal-lg">
     <div id="os-detail-content"></div>
@@ -555,6 +667,37 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
   </div>
 </div>
 
+<!-- Modal Ajuste de Estoque -->
+<div class="modal-overlay" id="modal-ajuste-estoque">
+  <div class="modal modal-sm">
+    <div class="modal-title"><i class="ti ti-adjustments"></i>Ajuste Manual de Estoque</div>
+    <div class="fg"><label class="lbl">Produto *</label><select id="aj-produto"></select></div>
+    <div class="fg"><label class="lbl">Tipo *</label>
+      <select id="aj-tipo">
+        <option value="entrada">Entrada (compra/recebimento)</option>
+        <option value="saida">Saída (perda/retirada)</option>
+        <option value="ajuste">Ajuste (inventário)</option>
+      </select>
+    </div>
+    <div class="fg"><label class="lbl">Quantidade *</label><input type="number" id="aj-qty" min="1" value="1"></div>
+    <div class="fg"><label class="lbl">Motivo</label><input type="text" id="aj-motivo" placeholder="Ex: Compra do fornecedor, inventário..."></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-ajuste-estoque')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarAjuste()"><i class="ti ti-check"></i>Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Movimentações do Produto -->
+<div class="modal-overlay" id="modal-mov-produto">
+  <div class="modal modal-lg">
+    <div class="modal-title"><i class="ti ti-history"></i><span id="mov-prod-title">Histórico do Produto</span></div>
+    <div id="mov-prod-content"></div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-mov-produto')">Fechar</button></div>
+  </div>
+</div>
+
+<!-- Modal Venda OK -->
 <div class="modal-overlay" id="modal-venda-ok">
   <div class="modal modal-sm" style="text-align:center;padding:36px">
     <div style="width:64px;height:64px;background:#ECFDF5;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
@@ -569,6 +712,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
   </div>
 </div>
 
+<!-- Modal Confirm -->
 <div class="modal-overlay" id="modal-confirm">
   <div class="modal modal-sm" style="padding:24px">
     <div style="font-size:17px;font-weight:700;color:var(--txt);margin-bottom:8px" id="confirm-title">Confirmar</div>
@@ -582,45 +726,37 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
 
 <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
 <div class="notif-stack" id="notif-stack"></div>
+<div class="foto-full-overlay" id="foto-full" style="display:none" onclick="this.style.display='none'"><img id="foto-full-img" src=""></div>
 
 <script>
-/* ==============================================================
-   CONFIGURAÇÃO DO SUPABASE
-   ⚠️ SUBSTITUA AS DUAS LINHAS ABAIXO COM SUAS CHAVES!
-   ============================================================== */
-const SUPABASE_URL = 'https://icgfpfwcnhkjglrmnuca.supabase.co';       // ← sua URL aqui
-const SUPABASE_KEY = 'sb_publishable_wMj9DjSyr_5oblApVRoOqA_47E3022p';           // ← sua chave anon aqui
+/* ============================================================
+   CONFIGURAÇÃO SUPABASE — substitua com suas chaves
+   ============================================================ */
+const SUPABASE_URL = 'https://icgfpfwcnhkjglrmnuca.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_wMj9DjSyr_5oblApVRoOqA_47E3022p';
 
 const { createClient } = supabase;
 const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-/* ==============================================================
+/* ============================================================
    ESTADO GLOBAL
-   ============================================================== */
+   ============================================================ */
 let G = {
-  user: null,        // usuário autenticado (Supabase Auth)
-  profile: null,     // perfil na tabela usuarios
-  role: null,        // admin | gerente | operador | tecnico
-  produtos: [],
-  clientes: [],
-  os: [],
-  vendas: [],
-  usuarios: [],
-  cart: [],
-  payMethod: 'dinheiro',
-  osCounter: 1
+  user: null, profile: null, role: null,
+  produtos: [], clientes: [], os: [], vendas: [], usuarios: [], movimentacoes: [],
+  cart: [], payMethod: 'dinheiro', osCounter: 1,
+  prodFotos: [] // fotos temporárias do form de produto
 };
 
-/* ==============================================================
+/* ============================================================
    UTILS
-   ============================================================== */
+   ============================================================ */
 const fmt = v => 'R$ ' + (v||0).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
 const fmtDate = d => new Date(d).toLocaleDateString('pt-BR') + ' ' + new Date(d).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
 const pad = (n,l=4) => String(n).padStart(l,'0');
+const setLoading = v => document.getElementById('loading').classList.toggle('show', v);
 
-function setLoading(v) { document.getElementById('loading').classList.toggle('show', v); }
-
-function notify(msg, type='success', dur=3000) {
+function notify(msg, type='success', dur=3200) {
   const s = document.getElementById('notif-stack');
   const el = document.createElement('div');
   const ico = {success:'check',error:'x',warn:'alert-triangle',info:'info-circle'}[type]||'check';
@@ -639,7 +775,6 @@ function closeModal(id) {
 document.querySelectorAll('.modal-overlay').forEach(m =>
   m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); })
 );
-
 function confirmAction(title, msg, cb) {
   document.getElementById('confirm-title').textContent = title;
   document.getElementById('confirm-msg').textContent = msg;
@@ -647,78 +782,83 @@ function confirmAction(title, msg, cb) {
   openModal('modal-confirm');
 }
 
-/* ==============================================================
-   CONTROLE DE ACESSO POR ROLE
-   ============================================================== */
+/* ============================================================
+   FOTOS — Upload base64 com múltiplas imagens
+   ============================================================ */
+function handleFotos(e) {
+  const files = Array.from(e.target.files);
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      G.prodFotos.push(ev.target.result);
+      renderFotoThumbs();
+    };
+    reader.readAsDataURL(file);
+  });
+  e.target.value = '';
+}
+
+function renderFotoThumbs() {
+  const cont = document.getElementById('p-fotos-thumbs');
+  cont.innerHTML = G.prodFotos.map((src, i) => `
+    <div class="img-thumb-wrap">
+      <img src="${src}" class="img-thumb" onclick="openFotoFull('${src}')">
+      <button class="img-thumb-del" onclick="removeFoto(${i})"><i class="ti ti-x" style="font-size:10px"></i></button>
+    </div>`).join('');
+  document.getElementById('p-fotos-data').value = JSON.stringify(G.prodFotos);
+}
+
+function removeFoto(i) { G.prodFotos.splice(i, 1); renderFotoThumbs(); }
+function openFotoFull(src) { document.getElementById('foto-full-img').src = src; document.getElementById('foto-full').style.display = 'flex'; }
+
+/* ============================================================
+   TOGGLE ESTOQUE INFINITO
+   ============================================================ */
+function toggleInfinito() {
+  const inf = document.getElementById('p-infinito').checked;
+  document.getElementById('estoque-fields').style.display = inf ? 'none' : '';
+}
+
+/* ============================================================
+   AUTH
+   ============================================================ */
 const ROLE_LABELS = { admin:'Administrador', gerente:'Gerente', operador:'Operador de Caixa', tecnico:'Técnico' };
-const ROLE_COLORS = { admin:'role-admin', gerente:'role-gerente', operador:'role-operador', tecnico:'role-tecnico' };
 const ROLE_HOME   = { admin:'dashboard', gerente:'dashboard', operador:'pdv', tecnico:'os' };
+const ROLE_COLORS = { admin:'role-admin', gerente:'role-gerente', operador:'role-operador', tecnico:'role-tecnico' };
 
 function can(role, page) {
-  const perms = {
-    dashboard:  ['admin','gerente'],
-    pdv:        ['admin','gerente','operador'],
-    os:         ['admin','gerente','tecnico'],
-    produtos:   ['admin','gerente'],
-    clientes:   ['admin','gerente','operador','tecnico'],
-    vendas:     ['admin','gerente'],
-    usuarios:   ['admin']
-  };
-  return (perms[page] || []).includes(role);
+  const p = { dashboard:['admin','gerente'], pdv:['admin','gerente','operador'], os:['admin','gerente','tecnico'], 'os-historico':['admin','gerente','tecnico'], produtos:['admin','gerente'], estoque:['admin','gerente'], clientes:['admin','gerente','operador','tecnico'], vendas:['admin','gerente'], usuarios:['admin'] };
+  return (p[page]||[]).includes(role);
 }
 
 function applyRoleUI() {
-  const role = G.role;
-  // Sidebar: esconder itens sem permissão
   document.querySelectorAll('.nav-item[data-access]').forEach(el => {
-    const allowed = el.dataset.access.split(',');
-    el.style.display = allowed.includes(role) ? '' : 'none';
+    el.style.display = el.dataset.access.split(',').includes(G.role) ? '' : 'none';
   });
-  // Seção admin
-  document.querySelectorAll('.nav-admin-section,.nav-admin').forEach(el => {
-    el.style.display = role === 'admin' ? '' : 'none';
-  });
-  // Usuário no footer
+  document.querySelectorAll('.nav-admin-section,.nav-admin').forEach(el => { el.style.display = G.role==='admin'?'':'none'; });
   document.getElementById('user-name').textContent = G.profile?.nome || G.user?.email || '—';
-  document.getElementById('user-role-badge').textContent = ROLE_LABELS[role] || role;
-  const av = (G.profile?.nome || '?').slice(0,2).toUpperCase();
-  document.getElementById('user-av').textContent = av;
+  document.getElementById('user-role-badge').textContent = ROLE_LABELS[G.role] || G.role;
+  document.getElementById('user-av').textContent = (G.profile?.nome||'?').slice(0,2).toUpperCase();
 }
 
-/* ==============================================================
-   AUTENTICAÇÃO
-   ============================================================== */
 async function doLogin() {
   const email = document.getElementById('login-email').value.trim();
   const pass  = document.getElementById('login-pass').value;
   const err   = document.getElementById('login-err');
   const btn   = document.getElementById('login-btn');
   err.style.display = 'none';
-  if (!email || !pass) { showErr('Preencha e-mail e senha.'); return; }
-  btn.disabled = true; btn.innerHTML = '<div class="spinner" style="width:20px;height:20px;border-width:2px"></div>Entrando...';
+  if (!email||!pass) { err.textContent='Preencha e-mail e senha.'; err.style.display='block'; return; }
+  btn.disabled=true; btn.innerHTML='<div class="spinner" style="width:20px;height:20px;border-width:2px"></div>Entrando...';
   const { data, error } = await db.auth.signInWithPassword({ email, password: pass });
-  if (error) { showErr('E-mail ou senha incorretos.'); btn.disabled=false; btn.innerHTML='<i class="ti ti-lock" style="font-size:18px"></i>Entrar no Sistema'; return; }
+  if (error) { err.textContent='E-mail ou senha incorretos.'; err.style.display='block'; btn.disabled=false; btn.innerHTML='<i class="ti ti-lock" style="font-size:18px"></i>Entrar no Sistema'; return; }
   await loadUserProfile(data.user);
-}
-
-function showErr(msg) {
-  const err = document.getElementById('login-err');
-  err.textContent = msg; err.style.display = 'block';
 }
 
 async function loadUserProfile(user) {
   G.user = user;
   const { data: profile } = await db.from('usuarios').select('*').eq('email', user.email).single();
-  if (!profile || !profile.ativo) {
-    await db.auth.signOut();
-    showErr('Usuário inativo ou sem perfil. Contate o administrador.');
-    document.getElementById('login-btn').disabled = false;
-    document.getElementById('login-btn').innerHTML = '<i class="ti ti-lock" style="font-size:18px"></i>Entrar no Sistema';
-    return;
-  }
-  G.profile = profile;
-  G.role = profile.role;
-  showApp();
+  if (!profile||!profile.ativo) { await db.auth.signOut(); document.getElementById('login-err').textContent='Usuário inativo. Contate o administrador.'; document.getElementById('login-err').style.display='block'; document.getElementById('login-btn').disabled=false; document.getElementById('login-btn').innerHTML='<i class="ti ti-lock" style="font-size:18px"></i>Entrar no Sistema'; return; }
+  G.profile=profile; G.role=profile.role; showApp();
 }
 
 function showApp() {
@@ -726,246 +866,346 @@ function showApp() {
   document.getElementById('app').classList.add('visible');
   document.getElementById('topbar-date').textContent = new Date().toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
   applyRoleUI();
-  loadAllData().then(() => navigate(ROLE_HOME[G.role] || 'pdv'));
+  loadAllData().then(() => navigate(ROLE_HOME[G.role]||'pdv'));
 }
 
 async function doLogout() {
   await db.auth.signOut();
-  G = { user:null, profile:null, role:null, produtos:[], clientes:[], os:[], vendas:[], usuarios:[], cart:[], payMethod:'dinheiro', osCounter:1 };
+  G = { user:null,profile:null,role:null,produtos:[],clientes:[],os:[],vendas:[],usuarios:[],movimentacoes:[],cart:[],payMethod:'dinheiro',osCounter:1,prodFotos:[] };
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('app').classList.remove('visible');
-  document.getElementById('login-email').value = '';
-  document.getElementById('login-pass').value = '';
-  document.getElementById('login-err').style.display = 'none';
-  document.getElementById('login-btn').disabled = false;
-  document.getElementById('login-btn').innerHTML = '<i class="ti ti-lock" style="font-size:18px"></i>Entrar no Sistema';
+  document.getElementById('login-email').value=''; document.getElementById('login-pass').value='';
+  document.getElementById('login-err').style.display='none';
+  document.getElementById('login-btn').disabled=false; document.getElementById('login-btn').innerHTML='<i class="ti ti-lock" style="font-size:18px"></i>Entrar no Sistema';
 }
 
-/* ==============================================================
-   CARREGAR DADOS DO SUPABASE
-   ============================================================== */
+/* ============================================================
+   LOAD DATA
+   ============================================================ */
 async function loadAllData() {
   setLoading(true);
   try {
-    const [p, c, o, v, u] = await Promise.all([
-      db.from('produtos').select('*').eq('status','ativo').order('nome'),
+    const [p,c,o,v,u,m] = await Promise.all([
+      db.from('produtos').select('*').order('nome'),
       db.from('clientes').select('*').order('nome'),
       db.from('ordens_servico').select('*').neq('status','Entregue').order('criado_em',{ascending:false}),
       db.from('vendas').select('*').order('criado_em',{ascending:false}).limit(100),
-      db.from('usuarios').select('*').order('nome')
+      db.from('usuarios').select('*').order('nome'),
+      db.from('movimentacoes_estoque').select('*').order('criado_em',{ascending:false}).limit(200)
     ]);
-    G.produtos  = p.data || [];
-    G.clientes  = c.data || [];
-    G.os        = o.data || [];
-    G.vendas    = v.data || [];
-    G.usuarios  = u.data || [];
-    // Próximo número OS
+    G.produtos=p.data||[]; G.clientes=c.data||[]; G.os=o.data||[];
+    G.vendas=v.data||[]; G.usuarios=u.data||[]; G.movimentacoes=m.data||[];
     const { count } = await db.from('ordens_servico').select('*',{count:'exact',head:true});
-    G.osCounter = (count || 0) + 1;
-  } catch(e) { notify('Erro ao carregar dados: ' + e.message, 'error'); }
-  finally { setLoading(false); }
+    G.osCounter=(count||0)+1;
+  } catch(e){ notify('Erro ao carregar dados.','error'); }
+  finally{ setLoading(false); }
 }
 
-/* ==============================================================
+/* ============================================================
    NAVEGAÇÃO
-   ============================================================== */
-const PAGE_TITLES = { dashboard:'Dashboard', pdv:'Ponto de Venda', os:'Ordens de Serviço', produtos:'Produtos', clientes:'Clientes', vendas:'Vendas & Lucro', usuarios:'Usuários & Acesso' };
+   ============================================================ */
+const PAGE_TITLES = { dashboard:'Dashboard', pdv:'Ponto de Venda', os:'Ordens de Serviço', 'os-historico':'Histórico de OS', produtos:'Produtos', estoque:'Movimentações de Estoque', clientes:'Clientes', vendas:'Vendas & Lucro', usuarios:'Usuários & Acesso' };
 
 function navigate(page) {
-  if (!can(G.role, page)) { notify('Acesso não permitido.', 'error'); return; }
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('page-' + page)?.classList.add('active');
-  document.getElementById('topbar-title').textContent = PAGE_TITLES[page] || page;
-  // Ativar nav item correspondente
-  document.querySelectorAll('.nav-item').forEach(el => {
-    if (el.getAttribute('onclick')?.includes(`'${page}'`)) el.classList.add('active');
-  });
-  const renders = {
-    dashboard: renderDashboard,
-    pdv: () => { renderPDVGrid(); populateSelects(); },
-    os: () => { renderOSList(); populateSelects(); populateTecnicoSel(); },
-    produtos: renderProdTable,
-    clientes: renderClientTable,
-    vendas: renderVendasPage,
-    usuarios: renderUsersTable
-  };
-  renders[page]?.();
+  if (!can(G.role, page)) { notify('Acesso não permitido.','error'); return; }
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+page)?.classList.add('active');
+  document.getElementById('topbar-title').textContent = PAGE_TITLES[page]||page;
+  document.querySelectorAll('.nav-item').forEach(el => { if(el.getAttribute('onclick')?.includes(`'${page}'`)) el.classList.add('active'); });
+  const r = { dashboard:renderDashboard, pdv:()=>{renderPDVGrid();populateSelects();}, os:()=>{renderOSList();populateSelects();populateTecnicoSel();}, 'os-historico':()=>{populateOSFiltros();renderOSHistorico();}, produtos:renderProdTable, estoque:()=>{populateMovFiltros();renderMovimentacoes();}, clientes:renderClientTable, vendas:renderVendasPage, usuarios:renderUsersTable };
+  r[page]?.();
 }
 
 function toggleDark() {
-  const d = document.documentElement.getAttribute('data-theme') === 'dark';
-  document.documentElement.setAttribute('data-theme', d ? 'light' : 'dark');
-  document.getElementById('dark-btn').innerHTML = d ? '<i class="ti ti-moon"></i>' : '<i class="ti ti-sun"></i>';
+  const d = document.documentElement.getAttribute('data-theme')==='dark';
+  document.documentElement.setAttribute('data-theme',d?'light':'dark');
+  document.getElementById('dark-btn').innerHTML=d?'<i class="ti ti-moon"></i>':'<i class="ti ti-sun"></i>';
 }
 
-/* ==============================================================
-   PRODUTOS
-   ============================================================== */
-async function saveProduto() {
-  const nome  = document.getElementById('p-nome').value.trim();
-  const preco = parseFloat(document.getElementById('p-preco').value);
-  if (!nome || !preco) { notify('Nome e preço são obrigatórios!', 'error'); return; }
-  const id = document.getElementById('p-id').value;
-  const payload = {
-    nome, sku: document.getElementById('p-sku').value || 'SKU-' + Date.now(),
-    categoria: document.getElementById('p-cat').value,
-    marca: document.getElementById('p-marca').value,
-    custo: parseFloat(document.getElementById('p-custo').value) || 0,
-    preco,
-    estoque: parseInt(document.getElementById('p-estoque').value) || 0,
-    estoque_minimo: parseInt(document.getElementById('p-estmin').value) || 0,
-    status: document.getElementById('p-status').value
+/* ============================================================
+   ESTOQUE — Registro de movimentação
+   ============================================================ */
+async function registrarMovimentacao(produtoId, produtoNome, tipo, quantidade, estoqueApos, motivo='') {
+  const mov = {
+    produto_id: produtoId,
+    produto_nome: produtoNome,
+    tipo,
+    quantidade,
+    estoque_apos: estoqueApos,
+    usuario_id: G.profile?.id || null,
+    usuario_nome: G.profile?.nome || 'Sistema',
+    motivo,
+    criado_em: new Date().toISOString()
   };
-  setLoading(true);
-  let err;
-  if (id) { ({ error: err } = await db.from('produtos').update(payload).eq('id', id)); }
-  else     { ({ error: err } = await db.from('produtos').insert(payload)); }
-  setLoading(false);
-  if (err) { notify('Erro: ' + err.message, 'error'); return; }
-  notify(id ? 'Produto atualizado!' : 'Produto cadastrado!');
-  closeModal('modal-produto'); clearProdForm();
-  const { data } = await db.from('produtos').select('*').eq('status','ativo').order('nome');
-  G.produtos = data || [];
-  renderProdTable(); renderPDVGrid();
+  const { data } = await db.from('movimentacoes_estoque').insert(mov).select().single();
+  if (data) G.movimentacoes.unshift(data);
 }
+
+async function salvarAjuste() {
+  const prodId = document.getElementById('aj-produto').value;
+  const tipo   = document.getElementById('aj-tipo').value;
+  const qty    = parseInt(document.getElementById('aj-qty').value)||0;
+  const motivo = document.getElementById('aj-motivo').value;
+  if (!prodId||qty<=0) { notify('Selecione produto e quantidade!','error'); return; }
+  const p = G.produtos.find(x=>x.id===prodId);
+  if (!p) return;
+  if (p.estoque_infinito) { notify('Produto com estoque infinito — ajuste não necessário.','warn'); return; }
+  let novoEstoque = p.estoque;
+  if (tipo==='entrada') novoEstoque += qty;
+  else if (tipo==='saida') novoEstoque = Math.max(0, novoEstoque - qty);
+  else novoEstoque = qty; // ajuste = define o valor
+  setLoading(true);
+  await db.from('produtos').update({estoque:novoEstoque}).eq('id',prodId);
+  p.estoque = novoEstoque;
+  await registrarMovimentacao(prodId, p.nome, tipo, qty, novoEstoque, motivo);
+  setLoading(false);
+  closeModal('modal-ajuste-estoque');
+  ['aj-produto','aj-tipo','aj-qty','aj-motivo'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=id==='aj-qty'?1:id==='aj-tipo'?'entrada':''});
+  notify(`Estoque ajustado: ${p.nome} → ${novoEstoque} un.`);
+  renderMovimentacoes(); renderProdTable(); renderPDVGrid();
+}
+
+function populateMovFiltros() {
+  const sel = document.getElementById('mov-filter-prod');
+  sel.innerHTML = '<option value="">Todos os produtos</option>' + G.produtos.map(p=>`<option value="${p.id}">${p.nome}</option>`).join('');
+}
+
+function renderMovimentacoes() {
+  const filtProd = document.getElementById('mov-filter-prod')?.value||'';
+  const filtTipo = document.getElementById('mov-filter-tipo')?.value||'';
+  const list = G.movimentacoes.filter(m=>(!filtProd||m.produto_id===filtProd)&&(!filtTipo||m.tipo===filtTipo));
+  const badgeClass = {entrada:'mov-entrada',saida:'mov-saida',ajuste:'mov-ajuste'};
+  const badgeIcon  = {entrada:'ti-arrow-down',saida:'ti-arrow-up',ajuste:'ti-adjustments'};
+  document.getElementById('mov-table').innerHTML = list.length===0
+    ? '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--txt3)">Nenhuma movimentação</td></tr>'
+    : list.map(m=>`<tr>
+      <td style="font-size:12px;color:var(--txt3)">${fmtDate(m.criado_em)}</td>
+      <td style="font-weight:600">${m.produto_nome}</td>
+      <td><span class="mov-badge ${badgeClass[m.tipo]||''}"><i class="ti ${badgeIcon[m.tipo]||'ti-dots'}" style="font-size:12px"></i>${m.tipo}</span></td>
+      <td style="font-weight:700">${m.quantidade}</td>
+      <td>${m.estoque_apos!==null&&m.estoque_apos!==undefined?m.estoque_apos:'∞'}</td>
+      <td style="color:var(--txt2)">${m.usuario_nome||'—'}</td>
+      <td style="font-size:12px;color:var(--txt3)">${m.motivo||'—'}</td>
+    </tr>`).join('');
+}
+
+function verMovProduto(id) {
+  const p = G.produtos.find(x=>x.id===id);
+  const list = G.movimentacoes.filter(m=>m.produto_id===id);
+  const badgeClass = {entrada:'mov-entrada',saida:'mov-saida',ajuste:'mov-ajuste'};
+  document.getElementById('mov-prod-title').textContent = 'Histórico — ' + (p?.nome||'');
+  document.getElementById('mov-prod-content').innerHTML = list.length===0
+    ? '<div class="empty-state"><i class="ti ti-history"></i><h3>Sem movimentações</h3></div>'
+    : `<div class="table-wrap"><table><thead><tr><th>Data</th><th>Tipo</th><th>Qtd</th><th>Após</th><th>Usuário</th><th>Motivo</th></tr></thead><tbody>
+      ${list.map(m=>`<tr>
+        <td style="font-size:12px;color:var(--txt3)">${fmtDate(m.criado_em)}</td>
+        <td><span class="mov-badge ${badgeClass[m.tipo]||''}">${m.tipo}</span></td>
+        <td style="font-weight:700">${m.quantidade}</td>
+        <td>${m.estoque_apos!==null&&m.estoque_apos!==undefined?m.estoque_apos:'∞'}</td>
+        <td style="color:var(--txt2)">${m.usuario_nome||'—'}</td>
+        <td style="font-size:12px">${m.motivo||'—'}</td>
+      </tr>`).join('')}
+      </tbody></table></div>`;
+  openModal('modal-mov-produto');
+}
+
+/* ============================================================
+   PRODUTOS — CRUD com fotos e estoque infinito
+   ============================================================ */
+function openProdModal() { clearProdForm(); openModal('modal-produto'); }
 
 function clearProdForm() {
-  ['p-id','p-nome','p-sku','p-marca','p-custo','p-preco'].forEach(i => { const el=document.getElementById(i); if(el)el.value=''; });
+  ['p-id','p-nome','p-sku','p-barcode','p-marca','p-custo','p-preco'].forEach(i=>{ const el=document.getElementById(i);if(el)el.value=''; });
   document.getElementById('p-estoque').value='1';
   document.getElementById('p-estmin').value='3';
   document.getElementById('p-cat').value='Celular';
   document.getElementById('p-status').value='ativo';
+  document.getElementById('p-infinito').checked=false;
+  document.getElementById('estoque-fields').style.display='';
+  G.prodFotos=[];
+  document.getElementById('p-fotos-thumbs').innerHTML='';
+  document.getElementById('p-fotos-data').value='';
   document.getElementById('prod-modal-ttl').textContent='Novo Produto';
+  document.getElementById('p-id').value='';
+}
+
+async function saveProduto() {
+  const nome  = document.getElementById('p-nome').value.trim();
+  const preco = parseFloat(document.getElementById('p-preco').value);
+  if (!nome||!preco) { notify('Nome e preço são obrigatórios!','error'); return; }
+  const inf = document.getElementById('p-infinito').checked;
+  const id  = document.getElementById('p-id').value;
+  const payload = {
+    nome, sku:document.getElementById('p-sku').value||'SKU-'+Date.now(),
+    barcode:document.getElementById('p-barcode').value,
+    categoria:document.getElementById('p-cat').value,
+    marca:document.getElementById('p-marca').value,
+    custo:parseFloat(document.getElementById('p-custo').value)||0,
+    preco,
+    estoque_infinito:inf,
+    estoque:inf?null:parseInt(document.getElementById('p-estoque').value)||0,
+    estoque_minimo:inf?0:parseInt(document.getElementById('p-estmin').value)||0,
+    status:document.getElementById('p-status').value,
+    fotos:G.prodFotos
+  };
+  setLoading(true);
+  let err, data;
+  if (id) { ({error:err,data} = await db.from('produtos').update(payload).eq('id',id).select().single()); }
+  else     { ({error:err,data} = await db.from('produtos').insert(payload).select().single()); }
+  setLoading(false);
+  if (err) { notify('Erro: '+err.message,'error'); return; }
+  if (id) { const idx=G.produtos.findIndex(x=>x.id===id); if(idx>=0)G.produtos[idx]={...G.produtos[idx],...payload}; }
+  else { if(data)G.produtos.push(data); }
+  notify(id?'Produto atualizado!':'Produto cadastrado!');
+  closeModal('modal-produto'); clearProdForm(); renderProdTable(); renderPDVGrid();
 }
 
 function editProd(id) {
-  const p = G.produtos.find(x=>x.id===id); if(!p)return;
+  const p=G.produtos.find(x=>x.id===id); if(!p)return;
+  clearProdForm();
   document.getElementById('p-id').value=p.id;
   document.getElementById('p-nome').value=p.nome;
   document.getElementById('p-sku').value=p.sku||'';
+  document.getElementById('p-barcode').value=p.barcode||'';
   document.getElementById('p-cat').value=p.categoria||'Celular';
   document.getElementById('p-marca').value=p.marca||'';
   document.getElementById('p-custo').value=p.custo||'';
   document.getElementById('p-preco').value=p.preco;
-  document.getElementById('p-estoque').value=p.estoque;
-  document.getElementById('p-estmin').value=p.estoque_minimo||3;
+  document.getElementById('p-infinito').checked=!!p.estoque_infinito;
+  toggleInfinito();
+  if(!p.estoque_infinito){ document.getElementById('p-estoque').value=p.estoque; document.getElementById('p-estmin').value=p.estoque_minimo||3; }
   document.getElementById('p-status').value=p.status||'ativo';
+  G.prodFotos = Array.isArray(p.fotos)?[...p.fotos]:[];
+  renderFotoThumbs();
   document.getElementById('prod-modal-ttl').textContent='Editar Produto';
   openModal('modal-produto');
 }
 
 async function deleteProd(id) {
-  const p = G.produtos.find(x=>x.id===id);
-  confirmAction('Remover produto', `Remover "${p?.nome}"?`, async () => {
+  const p=G.produtos.find(x=>x.id===id);
+  confirmAction('Remover produto',`Remover "${p?.nome}"?`, async()=>{
     setLoading(true);
-    await db.from('produtos').delete().eq('id', id);
-    G.produtos = G.produtos.filter(x=>x.id!==id);
+    await db.from('produtos').delete().eq('id',id);
+    G.produtos=G.produtos.filter(x=>x.id!==id);
     setLoading(false); renderProdTable(); notify('Produto removido');
   });
 }
 
 function renderProdTable(q='') {
-  const f = q.toLowerCase();
-  const catC = {Celular:'tag-purple',Acessório:'tag-blue',Peça:'tag-amber',Serviço:'tag-green',Outro:'tag-gray'};
-  const list = G.produtos.filter(p => !f || p.nome.toLowerCase().includes(f) || (p.sku||'').toLowerCase().includes(f));
-  const canEdit = G.role === 'admin' || G.role === 'gerente';
-  document.getElementById('prod-table').innerHTML = list.length===0
-    ? '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--txt3)">Nenhum produto</td></tr>'
-    : list.map(p => `<tr>
-      <td><div style="font-weight:600">${p.nome}</div><div style="font-size:11px;color:var(--txt3)">${p.marca||''}</div></td>
-      <td><code style="font-size:11.5px;background:var(--surface);padding:2px 7px;border-radius:5px;border:1px solid var(--border)">${p.sku||'—'}</code></td>
-      <td><span class="tag ${catC[p.categoria]||'tag-gray'}">${p.categoria||'—'}</span></td>
-      <td style="font-weight:700;color:var(--pri)">${fmt(p.preco)}</td>
-      <td style="font-weight:600;color:${p.estoque===0?'var(--danger)':p.estoque<=p.estoque_minimo?'var(--warn)':'var(--success)'}">${p.estoque}</td>
-      <td><span class="tag ${p.status==='ativo'?'tag-green':'tag-gray'}">${p.status==='ativo'?'Ativo':'Inativo'}</span></td>
-      <td>${canEdit?`<div style="display:flex;gap:5px"><button class="btn btn-outline btn-xs" onclick="editProd('${p.id}')"><i class="ti ti-edit"></i></button><button class="btn btn-danger btn-xs" onclick="deleteProd('${p.id}')"><i class="ti ti-trash"></i></button></div>`:'—'}</td>
-    </tr>`).join('');
+  const f=(typeof q==='string'?q:(document.querySelector('#page-produtos input[type=text]')?.value||'')).toLowerCase();
+  const filtEst=document.getElementById('prod-filter-est')?.value||'';
+  const catC={Celular:'tag-purple',Acessório:'tag-blue',Peça:'tag-amber',Serviço:'tag-green',Outro:'tag-gray'};
+  const icons={Celular:'device-mobile',Acessório:'headphones',Peça:'cpu',Serviço:'tools',Outro:'package'};
+  let list=G.produtos.filter(p=>
+    (!f||p.nome.toLowerCase().includes(f)||(p.sku||'').toLowerCase().includes(f))&&
+    (!filtEst||(filtEst==='low'&&!p.estoque_infinito&&p.estoque<=p.estoque_minimo&&p.estoque>0)||(filtEst==='out'&&!p.estoque_infinito&&p.estoque===0)||(filtEst==='inf'&&p.estoque_infinito))
+  );
+  // Alertas de estoque baixo
+  const baixo=G.produtos.filter(p=>!p.estoque_infinito&&p.estoque>0&&p.estoque<=p.estoque_minimo);
+  const zerado=G.produtos.filter(p=>!p.estoque_infinito&&p.estoque===0);
+  let alertHtml='';
+  if(zerado.length>0) alertHtml+=`<div class="stock-alert" style="margin-bottom:8px"><i class="ti ti-alert-circle" style="color:var(--danger)"></i><div class="stock-alert-text">${zerado.length} produto(s) sem estoque: ${zerado.map(p=>p.nome).join(', ')}</div></div>`;
+  if(baixo.length>0) alertHtml+=`<div class="stock-alert"><i class="ti ti-alert-triangle"></i><div class="stock-alert-text">${baixo.length} produto(s) com estoque baixo: ${baixo.map(p=>`${p.nome} (${p.estoque})`).join(', ')}</div></div>`;
+  const alertEl=document.querySelector('#page-produtos .stock-alert-wrap');
+  if(alertEl)alertEl.innerHTML=alertHtml;
+  else{
+    const wrap=document.createElement('div');wrap.className='stock-alert-wrap';wrap.innerHTML=alertHtml;
+    const page=document.getElementById('page-produtos');
+    const card=page.querySelector('.card');
+    if(card)page.insertBefore(wrap,card);
+  }
+  const canEdit=G.role==='admin'||G.role==='gerente';
+  document.getElementById('prod-table').innerHTML=list.length===0
+    ? '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--txt3)">Nenhum produto</td></tr>'
+    : list.map(p=>{
+      const foto=Array.isArray(p.fotos)&&p.fotos.length>0?p.fotos[0]:null;
+      const estBaixo=!p.estoque_infinito&&p.estoque>0&&p.estoque<=(p.estoque_minimo||3);
+      const estZero=!p.estoque_infinito&&p.estoque===0;
+      return `<tr>
+        <td><div style="width:40px;height:40px;border-radius:8px;overflow:hidden;background:var(--pri-light);display:flex;align-items:center;justify-content:center;cursor:${foto?'pointer':'default'}" ${foto?`onclick="openFotoFull('${foto}')"`:''}>${foto?`<img src="${foto}" style="width:100%;height:100%;object-fit:cover">`:`<i class="ti ti-${icons[p.categoria]||'package'}" style="font-size:18px;color:var(--pri)"></i>`}</div></td>
+        <td><div style="font-weight:600">${p.nome}</div><div style="font-size:11px;color:var(--txt3)">${p.marca||''}</div></td>
+        <td><code style="font-size:11.5px;background:var(--surface);padding:2px 7px;border-radius:5px;border:1px solid var(--border)">${p.sku||'—'}</code></td>
+        <td><span class="tag ${catC[p.categoria]||'tag-gray'}">${p.categoria||'—'}</span></td>
+        <td style="font-weight:700;color:var(--pri)">${fmt(p.preco)}</td>
+        <td>
+          ${p.estoque_infinito?'<span class="tag tag-inf">♾️ Infinito</span>':`<span style="font-weight:600;color:${estZero?'var(--danger)':estBaixo?'var(--warn)':'var(--success)'}">${p.estoque}</span>${estBaixo?'<span class="tag tag-amber" style="font-size:10px;margin-left:4px">Baixo</span>':''}${estZero?'<span class="tag tag-red" style="font-size:10px;margin-left:4px">Zerado</span>':''}`}
+        </td>
+        <td><span class="tag ${p.status==='ativo'?'tag-green':'tag-gray'}">${p.status==='ativo'?'Ativo':'Inativo'}</span></td>
+        <td><div style="display:flex;gap:4px;flex-wrap:wrap">
+          ${canEdit?`<button class="btn btn-outline btn-xs" onclick="editProd('${p.id}')"><i class="ti ti-edit"></i></button>`:''}
+          <button class="btn btn-ghost btn-xs" onclick="verMovProduto('${p.id}')" title="Histórico"><i class="ti ti-history"></i></button>
+          ${canEdit?`<button class="btn btn-danger btn-xs" onclick="deleteProd('${p.id}')"><i class="ti ti-trash"></i></button>`:''}
+        </div></td>
+      </tr>`;
+    }).join('');
 }
 
-/* ==============================================================
-   CLIENTES
-   ============================================================== */
-async function saveCliente() {
-  const nome = document.getElementById('c-nome').value.trim();
-  const tel  = document.getElementById('c-tel').value.trim();
-  if (!nome||!tel) { notify('Nome e telefone obrigatórios!','error'); return; }
-  const id = document.getElementById('c-id').value;
-  const payload = { nome, telefone:tel, email:document.getElementById('c-email').value, cpf:document.getElementById('c-cpf').value, endereco:document.getElementById('c-end').value };
-  setLoading(true);
-  let err;
-  if (id) { ({error:err} = await db.from('clientes').update(payload).eq('id',id)); }
-  else     { ({error:err} = await db.from('clientes').insert(payload)); }
-  setLoading(false);
-  if (err) { notify('Erro: '+err.message,'error'); return; }
-  notify(id?'Cliente atualizado!':'Cliente cadastrado!');
-  closeModal('modal-cliente');
-  ['c-id','c-nome','c-tel','c-email','c-cpf','c-end'].forEach(i=>{ const el=document.getElementById(i);if(el)el.value=''; });
-  const { data } = await db.from('clientes').select('*').order('nome');
-  G.clientes = data||[];
-  renderClientTable(); populateSelects();
+/* ============================================================
+   LEITURA INTELIGENTE DE CÓDIGO — formato: qtd*codigo
+   ============================================================ */
+function parseBarcode(input) {
+  input = input.trim();
+  let qty = 1, code = input;
+  if (input.includes('*')) {
+    const parts = input.split('*');
+    const maybeQty = parseInt(parts[0]);
+    if (!isNaN(maybeQty) && maybeQty > 0) { qty = maybeQty; code = parts.slice(1).join('*').trim(); }
+    else { notify(`Formato inválido! Use: quantidade*codigo — Ex: 2*SKU-001`, 'error'); return null; }
+  }
+  if (!code) { notify('Código não pode ser vazio!', 'error'); return null; }
+  return { qty, code };
 }
 
-async function deleteClient(id) {
-  const c = G.clientes.find(x=>x.id===id);
-  confirmAction('Remover cliente', `Remover "${c?.nome}"?`, async () => {
-    setLoading(true);
-    await db.from('clientes').delete().eq('id',id);
-    G.clientes = G.clientes.filter(x=>x.id!==id);
-    setLoading(false); renderClientTable(); populateSelects(); notify('Cliente removido');
-  });
+function handleBarcode(e) {
+  if (e.key !== 'Enter') return;
+  const raw = e.target.value.trim();
+  if (!raw) return;
+  const parsed = parseBarcode(raw);
+  if (!parsed) { e.target.value=''; return; }
+  const { qty, code } = parsed;
+  const p = G.produtos.find(x => x.barcode===code || x.sku===code || x.sku?.toLowerCase()===code.toLowerCase());
+  if (!p) { notify(`Produto não encontrado: "${code}"`, 'error'); e.target.value=''; return; }
+  if (!p.estoque_infinito && p.estoque === 0) { notify(`${p.nome} está sem estoque!`, 'warn'); e.target.value=''; return; }
+  for (let i = 0; i < qty; i++) addToCart(p.id);
+  notify(`${qty}x ${p.nome} adicionado(s)`, 'success', 1500);
+  e.target.value = '';
 }
 
-function renderClientTable(q='') {
-  const f=q.toLowerCase();
-  const list=G.clientes.filter(c=>!f||c.nome.toLowerCase().includes(f)||(c.telefone||'').includes(f));
-  document.getElementById('client-table').innerHTML = list.length===0
-    ? '<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--txt3)">Nenhum cliente</td></tr>'
-    : list.map(c=>`<tr>
-      <td style="font-weight:600">${c.nome}</td>
-      <td>${c.telefone||'—'}</td>
-      <td style="color:var(--txt2)">${c.email||'—'}</td>
-      <td>${c.cpf||'—'}</td>
-      <td><div style="display:flex;gap:5px">
-        <button class="btn btn-danger btn-xs" onclick="deleteClient('${c.id}')"><i class="ti ti-trash"></i></button>
-      </div></td>
-    </tr>`).join('');
-}
-
-/* ==============================================================
-   PDV
-   ============================================================== */
+/* ============================================================
+   PDV — Carrinho e Venda
+   ============================================================ */
 function renderPDVGrid() {
   const q=(document.getElementById('pdv-search')?.value||'').toLowerCase();
   const icons={Celular:'device-mobile',Acessório:'headphones',Peça:'cpu',Serviço:'tools',Outro:'package'};
   const list=G.produtos.filter(p=>p.status==='ativo'&&(!q||p.nome.toLowerCase().includes(q)||(p.sku||'').toLowerCase().includes(q)));
   document.getElementById('pdv-grid').innerHTML=list.length===0
     ? '<div class="empty-state" style="grid-column:1/-1"><i class="ti ti-search-off"></i><h3>Nenhum produto</h3></div>'
-    : list.map(p=>`<div class="prod-card${p.estoque===0?' out':''}" onclick="${p.estoque>0?`addToCart('${p.id}')`:''}">
-      <div class="prod-img">${p.imagem?`<img src="${p.imagem}">`:`<i class="ti ti-${icons[p.categoria]||'package'}"></i>`}</div>
-      <div class="prod-name">${p.nome}</div>
-      <div class="prod-sku">${p.sku||''}</div>
-      <div class="prod-price">${fmt(p.preco)}</div>
-      <div class="prod-stock" style="color:${p.estoque===0?'var(--danger)':p.estoque<=p.estoque_minimo?'var(--warn)':'var(--success)'}">
-        ${p.estoque===0?'Sem estoque':p.estoque+' em estoque'}
-      </div>
-    </div>`).join('');
-}
-
-function handleBarcode(e) {
-  if(e.key!=='Enter')return;
-  const code=e.target.value.trim();if(!code)return;
-  const p=G.produtos.find(x=>x.barcode===code||x.sku===code);
-  if(p){addToCart(p.id);notify('Produto adicionado!','success',1500);}
-  else notify('Código não encontrado: '+code,'error');
-  e.target.value='';
+    : list.map(p=>{
+      const foto=Array.isArray(p.fotos)&&p.fotos.length>0?p.fotos[0]:null;
+      const semEstoque=!p.estoque_infinito&&p.estoque===0;
+      return `<div class="prod-card${semEstoque?' out':''}" onclick="${!semEstoque?`addToCart('${p.id}')`:''}" style="position:relative">
+        ${p.estoque_infinito?'<div class="prod-card-inf-badge">♾️</div>':''}
+        <div class="prod-img">${foto?`<img src="${foto}">`:`<i class="ti ti-${icons[p.categoria]||'package'}"></i>`}</div>
+        <div class="prod-name">${p.nome}</div>
+        <div class="prod-sku">${p.sku||''}</div>
+        <div class="prod-price">${fmt(p.preco)}</div>
+        <div class="prod-stock" style="color:${semEstoque?'var(--danger)':!p.estoque_infinito&&p.estoque<=(p.estoque_minimo||3)?'var(--warn)':'var(--success)'}">
+          ${p.estoque_infinito?'♾️ Disponível':semEstoque?'Sem estoque':p.estoque+' em estoque'}
+        </div>
+      </div>`;
+    }).join('');
 }
 
 function addToCart(id) {
-  const p=G.produtos.find(x=>x.id===id);if(!p)return;
+  const p=G.produtos.find(x=>x.id===id); if(!p)return;
   const ci=G.cart.find(x=>x.id===id);
-  if(ci){if(p.categoria!=='Serviço'&&ci.qty>=p.estoque){notify('Estoque máximo!','warn');return;}ci.qty++;}
-  else{G.cart.push({id,nome:p.nome,preco:p.preco,custo:p.custo||0,qty:1});}
+  if(ci){
+    if(!p.estoque_infinito&&ci.qty>=p.estoque){notify('Estoque máximo atingido!','warn');return;}
+    ci.qty++;
+  } else {
+    G.cart.push({id,nome:p.nome,preco:p.preco,custo:p.custo||0,qty:1,infinito:!!p.estoque_infinito});
+  }
   renderCart();
 }
 
@@ -974,7 +1214,7 @@ function renderCart() {
   if(G.cart.length===0){
     cont.innerHTML='<div class="cart-empty"><i class="ti ti-shopping-cart"></i><p>Adicione produtos</p></div>';
     document.getElementById('finalize-btn').disabled=true;
-  }else{
+  } else {
     cont.innerHTML=G.cart.map(i=>`<div class="cart-item">
       <div class="cart-item-name">${i.nome}</div>
       <div class="cart-item-unit">${fmt(i.preco)} / un.</div>
@@ -997,7 +1237,7 @@ function renderCart() {
   document.getElementById('cart-total').textContent=fmt(total);
 }
 
-function chgQty(id,d){const p=G.produtos.find(x=>x.id===id);const ci=G.cart.find(x=>x.id===id);if(!ci)return;ci.qty+=d;if(p&&p.categoria!=='Serviço'&&ci.qty>p.estoque){ci.qty=p.estoque;notify('Limite!','warn');return;}if(ci.qty<1)G.cart=G.cart.filter(x=>x.id!==id);renderCart();}
+function chgQty(id,d){const p=G.produtos.find(x=>x.id===id);const ci=G.cart.find(x=>x.id===id);if(!ci)return;ci.qty+=d;if(!ci.infinito&&p&&ci.qty>p.estoque){ci.qty=p.estoque;notify('Limite de estoque!','warn');return;}if(ci.qty<1)G.cart=G.cart.filter(x=>x.id!==id);renderCart();}
 function rmCart(id){G.cart=G.cart.filter(x=>x.id!==id);renderCart();}
 function clearCart(){G.cart=[];document.getElementById('cart-desc').value=0;renderCart();}
 function selectPay(btn,m){document.querySelectorAll('.pay-btn').forEach(b=>b.classList.remove('sel'));btn.classList.add('sel');G.payMethod=m;}
@@ -1011,22 +1251,19 @@ async function finalizeSale() {
   const client=document.getElementById('cart-client');
   const clienteId=client?.value||null;
   const clienteNome=client?.options[client.selectedIndex]?.text||'Consumidor Final';
-  const venda={
-    cliente_id:clienteId||null, cliente_nome:clienteNome,
-    operador_id:G.profile?.id||null, operador_nome:G.profile?.nome||'',
-    itens:G.cart, subtotal:sub, desconto_pct:desc, total,
-    custo_total:custo, lucro:total-custo, pagamento:G.payMethod
-  };
   setLoading(true);
-  // Baixar estoque
+  // Baixar estoque apenas dos produtos não-infinitos
   for(const ci of G.cart){
     const p=G.produtos.find(x=>x.id===ci.id);
-    if(p&&p.categoria!=='Serviço'){
-      await db.from('produtos').update({estoque:Math.max(0,p.estoque-ci.qty)}).eq('id',p.id);
-      p.estoque=Math.max(0,p.estoque-ci.qty);
+    if(p&&!p.estoque_infinito&&p.categoria!=='Serviço'){
+      const novoEst=Math.max(0,p.estoque-ci.qty);
+      await db.from('produtos').update({estoque:novoEst}).eq('id',p.id);
+      await registrarMovimentacao(p.id,p.nome,'saida',ci.qty,novoEst,'Venda PDV');
+      p.estoque=novoEst;
     }
   }
-  const { error } = await db.from('vendas').insert(venda);
+  const venda={cliente_id:clienteId||null,cliente_nome:clienteNome,operador_id:G.profile?.id||null,operador_nome:G.profile?.nome||'',itens:G.cart,subtotal:sub,desconto_pct:desc,total,custo_total:custo,lucro:total-custo,pagamento:G.payMethod};
+  const {error}=await db.from('vendas').insert(venda);
   setLoading(false);
   if(error){notify('Erro ao salvar venda: '+error.message,'error');return;}
   G.vendas.unshift({...venda,criado_em:new Date().toISOString()});
@@ -1035,17 +1272,16 @@ async function finalizeSale() {
   openModal('modal-venda-ok'); renderDashboard();
 }
 
-/* ==============================================================
-   ORDENS DE SERVIÇO
-   ============================================================== */
-const OS_STATUS_NEXT = {'Aguardando':'Em Análise','Em Análise':'Em Reparo','Em Reparo':'Aguardando Peça','Aguardando Peça':'Pronto','Pronto':'Entregue'};
-const OS_PROGRESS = {'Aguardando':8,'Em Análise':25,'Em Reparo':55,'Aguardando Peça':45,'Pronto':90,'Entregue':100};
-const OS_COLORS = {'Aguardando':'tag-amber','Em Análise':'tag-blue','Em Reparo':'tag-purple','Aguardando Peça':'tag-red','Pronto':'tag-green','Entregue':'tag-gray'};
+/* ============================================================
+   OS — Criação e listagem
+   ============================================================ */
+const OS_NEXT={Aguardando:'Em Análise','Em Análise':'Em Reparo','Em Reparo':'Aguardando Peça','Aguardando Peça':'Pronto',Pronto:'Entregue'};
+const OS_PROG={Aguardando:8,'Em Análise':25,'Em Reparo':55,'Aguardando Peça':45,Pronto:90,Entregue:100};
+const OS_COL={Aguardando:'tag-amber','Em Análise':'tag-blue','Em Reparo':'tag-purple','Aguardando Peça':'tag-red',Pronto:'tag-green',Entregue:'tag-gray'};
 
 function populateTecnicoSel() {
-  const sel=document.getElementById('os-tecnico-sel');if(!sel)return;
-  const tecnicos=G.usuarios.filter(u=>u.ativo&&(u.role==='tecnico'||u.role==='admin'||u.role==='gerente'));
-  sel.innerHTML='<option value="">Sem técnico</option>'+tecnicos.map(u=>`<option value="${u.id}">${u.nome}</option>`).join('');
+  const sel=document.getElementById('os-tecnico-sel'); if(!sel)return;
+  sel.innerHTML='<option value="">Sem técnico</option>'+G.usuarios.filter(u=>u.ativo&&['tecnico','admin','gerente'].includes(u.role)).map(u=>`<option value="${u.id}">${u.nome}</option>`).join('');
 }
 
 async function createOS() {
@@ -1054,25 +1290,9 @@ async function createOS() {
   if(!aparelho||!defeito){notify('Aparelho e defeito obrigatórios!','error');return;}
   const clientSel=document.getElementById('os-cliente');
   const tecSel=document.getElementById('os-tecnico-sel');
-  const clienteId=clientSel?.value||null;
-  const clienteNome=clientSel?.options[clientSel.selectedIndex]?.text||'Consumidor Final';
-  const teciId=tecSel?.value||null;
-  const tecNome=tecSel?.options[tecSel.selectedIndex]?.text||null;
   const num='OS-'+pad(G.osCounter++);
   const timeline=[{status:'Aguardando',data:new Date().toISOString()}];
-  const payload={
-    numero:num,
-    cliente_id:clienteId||null, cliente_nome:clienteNome,
-    tecnico_id:teciId||null, tecnico_nome:tecNome,
-    aparelho, imei:document.getElementById('os-imei').value,
-    defeito, diagnostico:document.getElementById('os-diag').value,
-    valor_servico:parseFloat(document.getElementById('os-valor').value)||0,
-    total:parseFloat(document.getElementById('os-valor').value)||0,
-    garantia_dias:parseInt(document.getElementById('os-garantia').value)||90,
-    prazo:document.getElementById('os-prazo').value||null,
-    observacoes:document.getElementById('os-obs').value,
-    status:'Aguardando', progresso:8, timeline
-  };
+  const payload={numero:num,cliente_id:clientSel?.value||null,cliente_nome:clientSel?.options[clientSel.selectedIndex]?.text||'Consumidor Final',tecnico_id:tecSel?.value||null,tecnico_nome:tecSel?.options[tecSel.selectedIndex]?.text||null,aparelho,imei:document.getElementById('os-imei').value,defeito,diagnostico:document.getElementById('os-diag').value,valor_servico:parseFloat(document.getElementById('os-valor').value)||0,total:parseFloat(document.getElementById('os-valor').value)||0,garantia_dias:parseInt(document.getElementById('os-garantia').value)||90,prazo:document.getElementById('os-prazo').value||null,observacoes:document.getElementById('os-obs').value,status:'Aguardando',progresso:8,timeline};
   setLoading(true);
   const {data,error}=await db.from('ordens_servico').insert(payload).select().single();
   setLoading(false);
@@ -1080,7 +1300,7 @@ async function createOS() {
   G.os.unshift(data);
   ['os-aparelho','os-imei','os-defeito','os-diag','os-valor','os-prazo','os-obs'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
   document.getElementById('os-garantia').value=90;
-  renderOSList(); renderDashboard(); notify(num+' criada com sucesso!');
+  renderOSList(); renderDashboard(); notify(num+' criada!');
 }
 
 function renderOSList(q='') {
@@ -1088,11 +1308,11 @@ function renderOSList(q='') {
   const list=G.os.filter(o=>o.status!=='Entregue'&&(!f||o.numero.toLowerCase().includes(f)||o.cliente_nome.toLowerCase().includes(f)||o.aparelho.toLowerCase().includes(f)));
   document.getElementById('os-count').textContent='('+list.length+')';
   document.getElementById('os-list').innerHTML=list.length===0
-    ? '<div class="empty-state"><i class="ti ti-tools"></i><h3>Nenhuma OS</h3></div>'
+    ? '<div class="empty-state"><i class="ti ti-tools"></i><h3>Nenhuma OS aberta</h3></div>'
     : list.map(o=>`<div class="os-item" onclick="openOSDetail('${o.id}')">
       <div style="display:flex;align-items:center;justify-content:space-between">
         <div class="os-num">${o.numero}</div>
-        <span class="tag ${OS_COLORS[o.status]||'tag-gray'}" style="font-size:10.5px">${o.status}</span>
+        <span class="tag ${OS_COL[o.status]||'tag-gray'}" style="font-size:10.5px">${o.status}</span>
       </div>
       <div class="os-client">${o.cliente_nome}</div>
       <div class="os-device"><i class="ti ti-device-mobile"></i> ${o.aparelho}</div>
@@ -1104,92 +1324,180 @@ function renderOSList(q='') {
     </div>`).join('');
 }
 
-function filterOSList(q){renderOSList(q);}
-
 function openOSDetail(id) {
-  const o=G.os.find(x=>x.id===id);if(!o)return;
-  const next=OS_STATUS_NEXT[o.status];
+  const o=G.os.find(x=>x.id===id); if(!o)return;
+  const next=OS_NEXT[o.status];
+  const tlSteps=['Aguardando','Em Análise','Em Reparo','Pronto'];
+  const curIdx=tlSteps.indexOf(o.status);
+  const tlHtml=tlSteps.map((s,i)=>{
+    const isDone=i<curIdx;const isCur=s===o.status;
+    const entry=(o.timeline||[]).find(t=>t.status===s);
+    return `<div class="tl-step ${isDone?'done':''} ${isCur?'cur':''}">
+      <div class="tl-dot"><i class="ti ti-${isDone?'check':isCur?'loader':'circle'}" style="font-size:12px"></i></div>
+      <div class="tl-content"><div class="tl-label">${s}</div>${entry?`<div class="tl-time">${fmtDate(entry.data)}</div>`:''}</div>
+    </div>`;
+  }).join('');
   document.getElementById('os-detail-content').innerHTML=`
-    <div class="modal-title"><i class="ti ti-tools"></i>${o.numero} — ${o.aparelho}</div>
+    <div class="modal-title"><i class="ti ti-tools"></i><div><div>${o.numero}</div><div style="font-size:13px;font-weight:400;color:var(--txt3)">${o.aparelho}</div></div></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
-      <span class="tag ${OS_COLORS[o.status]}">${o.status}</span>
+      <span class="tag ${OS_COL[o.status]}">${o.status}</span>
       <span class="tag tag-gray"><i class="ti ti-user" style="font-size:11px"></i>${o.cliente_nome}</span>
       ${o.tecnico_nome?`<span class="tag tag-blue"><i class="ti ti-badge" style="font-size:11px"></i>${o.tecnico_nome}</span>`:''}
     </div>
-    <table style="min-width:0;margin-bottom:14px">
-      <tr><td style="color:var(--txt3);padding:5px 0;font-size:12.5px;width:110px;border-bottom:1px solid var(--border)">Aparelho</td><td style="padding:5px 8px;font-size:13px;font-weight:600;border-bottom:1px solid var(--border)">${o.aparelho}</td></tr>
-      ${o.imei?`<tr><td style="color:var(--txt3);padding:5px 0;font-size:12.5px;border-bottom:1px solid var(--border)">IMEI/S/N</td><td style="padding:5px 8px;font-size:13px;border-bottom:1px solid var(--border)">${o.imei}</td></tr>`:''}
-      <tr><td style="color:var(--txt3);padding:5px 0;font-size:12.5px;border-bottom:1px solid var(--border)">Defeito</td><td style="padding:5px 8px;font-size:13px;border-bottom:1px solid var(--border)">${o.defeito}</td></tr>
-      ${o.diagnostico?`<tr><td style="color:var(--txt3);padding:5px 0;font-size:12.5px;border-bottom:1px solid var(--border)">Diagnóstico</td><td style="padding:5px 8px;font-size:13px;border-bottom:1px solid var(--border)">${o.diagnostico}</td></tr>`:''}
-      ${o.observacoes?`<tr><td style="color:var(--txt3);padding:5px 0;font-size:12.5px">Obs.</td><td style="padding:5px 8px;font-size:13px">${o.observacoes}</td></tr>`:''}
-    </table>
-    <div style="background:var(--pri-light);border-radius:10px;padding:12px 14px">
-      <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:800;color:var(--pri)"><span>Total OS</span><span>${fmt(o.total)}</span></div>
-      ${o.garantia_dias?`<div style="font-size:12px;color:var(--txt2);margin-top:4px"><i class="ti ti-shield"></i> ${o.garantia_dias} dias de garantia</div>`:''}
+    <div class="grid-2" style="gap:16px">
+      <div>
+        <table style="min-width:0">
+          ${[['Aparelho',o.aparelho],['IMEI',o.imei],['Defeito',o.defeito],['Diagnóstico',o.diagnostico],['Obs.',o.observacoes]].filter(r=>r[1]).map(r=>`<tr><td style="color:var(--txt3);padding:5px 0;font-size:12px;width:90px;border-bottom:1px solid var(--border)">${r[0]}</td><td style="padding:5px 8px;font-size:13px;border-bottom:1px solid var(--border)">${r[1]}</td></tr>`).join('')}
+        </table>
+        <div style="background:var(--pri-light);border-radius:10px;padding:12px 14px;margin-top:12px">
+          <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:800;color:var(--pri)"><span>Total OS</span><span>${fmt(o.total)}</span></div>
+          ${o.garantia_dias?`<div style="font-size:12px;color:var(--txt2);margin-top:4px"><i class="ti ti-shield"></i> ${o.garantia_dias} dias de garantia</div>`:''}
+        </div>
+      </div>
+      <div><div style="font-size:11px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Timeline</div><div class="tl">${tlHtml}</div></div>
     </div>`;
   const footer=document.getElementById('os-detail-footer');
   footer.innerHTML='';
   const closeBtn=document.createElement('button');closeBtn.className='btn btn-outline';closeBtn.textContent='Fechar';closeBtn.onclick=()=>closeModal('modal-os-detail');footer.appendChild(closeBtn);
-  if(next&&(G.role==='admin'||G.role==='gerente'||G.role==='tecnico')){
+  if(next&&['admin','gerente','tecnico'].includes(G.role)){
     const advBtn=document.createElement('button');advBtn.className='btn btn-primary';advBtn.innerHTML=`<i class="ti ti-arrow-right"></i>Avançar: ${next}`;advBtn.onclick=()=>advanceOS(id,next);footer.appendChild(advBtn);
   }
   openModal('modal-os-detail');
 }
 
 async function advanceOS(id, next) {
-  const o=G.os.find(x=>x.id===id);if(!o)return;
+  const o=G.os.find(x=>x.id===id); if(!o)return;
   const timeline=[...(o.timeline||[]),{status:next,data:new Date().toISOString()}];
-  const payload={status:next,progresso:OS_PROGRESS[next]||o.progresso,timeline,atualizado_em:new Date().toISOString()};
+  const payload={status:next,progresso:OS_PROG[next]||o.progresso,timeline,atualizado_em:new Date().toISOString()};
+  if(next==='Entregue')payload.data_conclusao=new Date().toISOString();
   setLoading(true);
-  const {error}=await db.from('ordens_servico').update(payload).eq('id',id);
+  await db.from('ordens_servico').update(payload).eq('id',id);
   setLoading(false);
-  if(error){notify('Erro: '+error.message,'error');return;}
   Object.assign(o,payload);
   if(next==='Entregue')G.os=G.os.filter(x=>x.id!==id);
   closeModal('modal-os-detail'); renderOSList(); renderDashboard();
-  notify(o.numero+' → '+next, next==='Entregue'?'success':'info');
+  notify(o.numero+' → '+next,next==='Entregue'?'success':'info');
 }
 
-/* ==============================================================
-   USUÁRIOS (só admin)
-   ============================================================== */
+/* ============================================================
+   HISTÓRICO DE OS
+   ============================================================ */
+function populateOSFiltros() {
+  const selTec=document.getElementById('hf-tecnico');
+  const selCli=document.getElementById('hf-cliente');
+  const tecnicos=[...new Set(G.usuarios.filter(u=>['tecnico','admin','gerente'].includes(u.role)).map(u=>u.nome))];
+  selTec.innerHTML='<option value="">Todos técnicos</option>'+tecnicos.map(n=>`<option>${n}</option>`).join('');
+  selCli.innerHTML='<option value="">Todos clientes</option>'+G.clientes.map(c=>`<option>${c.nome}</option>`).join('');
+}
+
+async function renderOSHistorico() {
+  const de=document.getElementById('hf-de')?.value;
+  const ate=document.getElementById('hf-ate')?.value;
+  const tec=document.getElementById('hf-tecnico')?.value;
+  const cli=document.getElementById('hf-cliente')?.value;
+  setLoading(true);
+  let query=db.from('ordens_servico').select('*').eq('status','Entregue').order('criado_em',{ascending:false});
+  if(de) query=query.gte('criado_em',de+'T00:00:00');
+  if(ate) query=query.lte('criado_em',ate+'T23:59:59');
+  if(tec) query=query.eq('tecnico_nome',tec);
+  if(cli) query=query.eq('cliente_nome',cli);
+  const {data}=await query.limit(200);
+  setLoading(false);
+  const list=data||[];
+  document.getElementById('os-hist-table').innerHTML=list.length===0
+    ? '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--txt3)">Nenhuma OS concluída no período</td></tr>'
+    : list.map(o=>`<tr>
+      <td style="font-weight:700;color:var(--pri)">${o.numero}</td>
+      <td>${o.cliente_nome}</td>
+      <td>${o.aparelho}</td>
+      <td style="font-size:12px;color:var(--txt3)">${new Date(o.criado_em).toLocaleDateString('pt-BR')}</td>
+      <td style="font-size:12px;color:var(--txt3)">${o.data_conclusao?new Date(o.data_conclusao).toLocaleDateString('pt-BR'):'—'}</td>
+      <td>${o.tecnico_nome||'—'}</td>
+      <td style="font-weight:700;color:var(--pri)">${fmt(o.total)}</td>
+      <td><span class="tag tag-green">Entregue</span></td>
+    </tr>`).join('');
+}
+
+function clearOSFilters() {
+  ['hf-de','hf-ate'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('hf-tecnico').value='';
+  document.getElementById('hf-cliente').value='';
+  renderOSHistorico();
+}
+
+/* ============================================================
+   CLIENTES
+   ============================================================ */
+async function saveCliente() {
+  const nome=document.getElementById('c-nome').value.trim();
+  const tel=document.getElementById('c-tel').value.trim();
+  if(!nome||!tel){notify('Nome e telefone obrigatórios!','error');return;}
+  const id=document.getElementById('c-id').value;
+  const payload={nome,telefone:tel,email:document.getElementById('c-email').value,cpf:document.getElementById('c-cpf').value,endereco:document.getElementById('c-end').value};
+  setLoading(true);
+  let err;
+  if(id){({error:err}=await db.from('clientes').update(payload).eq('id',id));}
+  else{({error:err}=await db.from('clientes').insert(payload));}
+  setLoading(false);
+  if(err){notify('Erro: '+err.message,'error');return;}
+  notify(id?'Cliente atualizado!':'Cliente cadastrado!');
+  closeModal('modal-cliente');
+  ['c-id','c-nome','c-tel','c-email','c-cpf','c-end'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
+  const {data}=await db.from('clientes').select('*').order('nome');
+  G.clientes=data||[]; renderClientTable(); populateSelects();
+}
+
+async function deleteClient(id) {
+  const c=G.clientes.find(x=>x.id===id);
+  confirmAction('Remover cliente',`Remover "${c?.nome}"?`,async()=>{
+    setLoading(true); await db.from('clientes').delete().eq('id',id);
+    G.clientes=G.clientes.filter(x=>x.id!==id); setLoading(false);
+    renderClientTable(); populateSelects(); notify('Cliente removido');
+  });
+}
+
+function renderClientTable(q='') {
+  const f=q.toLowerCase();
+  const list=G.clientes.filter(c=>!f||c.nome.toLowerCase().includes(f)||(c.telefone||'').includes(f));
+  document.getElementById('client-table').innerHTML=list.length===0
+    ? '<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--txt3)">Nenhum cliente</td></tr>'
+    : list.map(c=>`<tr>
+      <td style="font-weight:600">${c.nome}</td>
+      <td>${c.telefone||'—'}</td>
+      <td style="color:var(--txt2)">${c.email||'—'}</td>
+      <td>${c.cpf||'—'}</td>
+      <td><button class="btn btn-danger btn-xs" onclick="deleteClient('${c.id}')"><i class="ti ti-trash"></i></button></td>
+    </tr>`).join('');
+}
+
+/* ============================================================
+   USUÁRIOS
+   ============================================================ */
 async function saveUsuario() {
-  if(G.role!=='admin'){notify('Apenas administradores podem criar usuários.','error');return;}
   const nome=document.getElementById('u-nome').value.trim();
   const email=document.getElementById('u-email').value.trim();
-  const senha=document.getElementById('u-senha').value;
   const role=document.getElementById('u-role').value;
   const ativo=document.getElementById('u-ativo').value==='true';
   const editId=document.getElementById('u-id').value;
   if(!nome||!email){notify('Nome e e-mail obrigatórios!','error');return;}
-  if(!editId&&senha.length<6){notify('Senha deve ter ao menos 6 caracteres!','error');return;}
   setLoading(true);
-  try {
-    if(!editId) {
-      // Criar no Auth
-      const {data:authData,error:authErr}=await db.auth.admin.createUser({email,password:senha,email_confirm:true});
-      if(authErr){notify('Erro ao criar login: '+authErr.message,'error');setLoading(false);return;}
-      // Inserir na tabela
-      const {error:dbErr}=await db.from('usuarios').insert({nome,email,role,ativo});
-      if(dbErr){notify('Erro ao criar perfil: '+dbErr.message,'error');setLoading(false);return;}
-      notify('Usuário criado com sucesso!');
-    } else {
-      const {error:dbErr}=await db.from('usuarios').update({nome,role,ativo}).eq('id',editId);
-      if(dbErr){notify('Erro: '+dbErr.message,'error');setLoading(false);return;}
-      notify('Usuário atualizado!');
-    }
-    const {data}=await db.from('usuarios').select('*').order('nome');
-    G.usuarios=data||[];
-    closeModal('modal-usuario');
-    ['u-id','u-nome','u-email','u-senha'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
-    document.getElementById('user-modal-ttl').textContent='Novo Usuário';
-    document.getElementById('u-senha-group').style.display='';
-    renderUsersTable();
-  } finally { setLoading(false); }
+  let err;
+  if(editId){({error:err}=await db.from('usuarios').update({nome,role,ativo}).eq('id',editId));}
+  else{({error:err}=await db.from('usuarios').insert({nome,email,role,ativo}));}
+  setLoading(false);
+  if(err){notify('Erro: '+err.message,'error');return;}
+  notify(editId?'Usuário atualizado!':'Perfil criado! Crie o login no Supabase Auth.');
+  const {data}=await db.from('usuarios').select('*').order('nome');
+  G.usuarios=data||[];
+  closeModal('modal-usuario');
+  ['u-id','u-nome','u-email','u-senha'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
+  document.getElementById('u-senha-group').style.display='';
+  document.getElementById('user-modal-ttl').textContent='Novo Usuário';
+  renderUsersTable();
 }
 
 function editUser(id) {
-  const u=G.usuarios.find(x=>x.id===id);if(!u)return;
+  const u=G.usuarios.find(x=>x.id===id); if(!u)return;
   document.getElementById('u-id').value=u.id;
   document.getElementById('u-nome').value=u.nome;
   document.getElementById('u-email').value=u.email;
@@ -1201,65 +1509,57 @@ function editUser(id) {
 }
 
 async function toggleUserStatus(id) {
-  const u=G.usuarios.find(x=>x.id===id);if(!u)return;
-  const newStatus=!u.ativo;
+  const u=G.usuarios.find(x=>x.id===id); if(!u)return;
   setLoading(true);
-  await db.from('usuarios').update({ativo:newStatus}).eq('id',id);
-  u.ativo=newStatus; setLoading(false); renderUsersTable();
-  notify(newStatus?'Usuário ativado':'Usuário desativado', newStatus?'success':'warn');
+  await db.from('usuarios').update({ativo:!u.ativo}).eq('id',id);
+  u.ativo=!u.ativo; setLoading(false); renderUsersTable();
+  notify(u.ativo?'Usuário ativado':'Usuário desativado',u.ativo?'success':'warn');
 }
 
 function renderUsersTable(q='') {
   const f=q.toLowerCase();
   const list=G.usuarios.filter(u=>!f||u.nome.toLowerCase().includes(f)||(u.email||'').toLowerCase().includes(f));
-  const isMe=id=>G.profile?.id===id;
   document.getElementById('users-table').innerHTML=list.length===0
     ? '<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--txt3)">Nenhum usuário</td></tr>'
     : list.map(u=>`<tr>
       <td><div style="font-weight:600;display:flex;align-items:center;gap:8px">
-        <div style="width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--pri),var(--pri2));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0">${(u.nome||'?').slice(0,2).toUpperCase()}</div>
-        ${u.nome}${isMe(u.id)?'<span class="tag tag-purple" style="font-size:10px">Você</span>':''}
+        <div style="width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--pri),var(--pri2));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff">${(u.nome||'?').slice(0,2).toUpperCase()}</div>
+        ${u.nome}${G.profile?.id===u.id?'<span class="tag tag-purple" style="font-size:10px">Você</span>':''}
       </div></td>
       <td style="color:var(--txt2)">${u.email}</td>
       <td><span class="role-badge ${ROLE_COLORS[u.role]||''}">${ROLE_LABELS[u.role]||u.role}</span></td>
       <td><span class="tag ${u.ativo?'tag-green':'tag-gray'}">${u.ativo?'Ativo':'Inativo'}</span></td>
-      <td><div style="display:flex;gap:5px">
-        ${!isMe(u.id)?`<button class="btn btn-outline btn-xs" onclick="editUser('${u.id}')"><i class="ti ti-edit"></i></button>
-        <button class="btn ${u.ativo?'btn-danger':'btn-success'} btn-xs" onclick="toggleUserStatus('${u.id}')">${u.ativo?'<i class="ti ti-user-off"></i>':'<i class="ti ti-user-check"></i>'}</button>`:'<span style="font-size:12px;color:var(--txt3)">—</span>'}
-      </div></td>
+      <td>${G.profile?.id!==u.id?`<div style="display:flex;gap:5px"><button class="btn btn-outline btn-xs" onclick="editUser('${u.id}')"><i class="ti ti-edit"></i></button><button class="btn ${u.ativo?'btn-danger':'btn-success'} btn-xs" onclick="toggleUserStatus('${u.id}')">${u.ativo?'Desativar':'Ativar'}</button></div>`:'—'}</td>
     </tr>`).join('');
 }
 
-/* ==============================================================
+/* ============================================================
    DASHBOARD
-   ============================================================== */
+   ============================================================ */
 function renderDashboard() {
   const hoje=G.vendas.filter(v=>new Date(v.criado_em).toDateString()===new Date().toDateString());
   const fat=hoje.reduce((s,v)=>s+v.total,0);
   const lucro=hoje.reduce((s,v)=>s+(v.lucro||0),0);
   const osAb=G.os.filter(o=>o.status!=='Entregue').length;
+  const baixo=G.produtos.filter(p=>!p.estoque_infinito&&p.estoque>=0&&p.estoque<=(p.estoque_minimo||3)).length;
   document.getElementById('d-fat').textContent=fmt(fat);
   document.getElementById('d-lucro').textContent=fmt(lucro);
   document.getElementById('d-os').textContent=osAb;
-  document.getElementById('d-prods').textContent=G.produtos.length;
+  document.getElementById('d-est-baixo').textContent=baixo;
+  // Alertas
+  const alertas=G.produtos.filter(p=>!p.estoque_infinito&&p.estoque===0);
+  const alertEl=document.getElementById('d-alerts');
+  alertEl.innerHTML=alertas.length>0?`<div class="stock-alert" style="margin-bottom:16px"><i class="ti ti-alert-circle" style="color:var(--danger)"></i><div class="stock-alert-text"><strong>${alertas.length} produto(s) sem estoque:</strong> ${alertas.map(p=>p.nome).join(', ')}</div></div>`:'';
   const uv=document.getElementById('d-ult-vendas');
-  uv.innerHTML=G.vendas.length===0
-    ? '<div class="empty-state" style="padding:20px"><i class="ti ti-shopping-cart-off"></i><p>Nenhuma venda</p></div>'
-    : `<div class="table-wrap"><table><thead><tr><th>Cliente</th><th>Total</th><th>Lucro</th></tr></thead><tbody>
-      ${G.vendas.slice(0,5).map(v=>`<tr><td>${v.cliente_nome}</td><td style="font-weight:700">${fmt(v.total)}</td><td style="color:var(--success);font-weight:700">${fmt(v.lucro||0)}</td></tr>`).join('')}
-      </tbody></table></div>`;
+  uv.innerHTML=G.vendas.length===0?'<div class="empty-state" style="padding:20px"><i class="ti ti-shopping-cart-off"></i><p>Nenhuma venda</p></div>':`<div class="table-wrap"><table><thead><tr><th>Cliente</th><th>Total</th><th>Lucro</th></tr></thead><tbody>${G.vendas.slice(0,5).map(v=>`<tr><td>${v.cliente_nome}</td><td style="font-weight:700">${fmt(v.total)}</td><td style="color:var(--success);font-weight:700">${fmt(v.lucro||0)}</td></tr>`).join('')}</tbody></table></div>`;
   const uos=document.getElementById('d-ult-os');
   const openOS=G.os.filter(o=>o.status!=='Entregue').slice(0,5);
-  uos.innerHTML=openOS.length===0
-    ? '<div class="empty-state" style="padding:20px"><i class="ti ti-tools"></i><p>Nenhuma OS aberta</p></div>'
-    : `<div class="table-wrap"><table><thead><tr><th>OS</th><th>Aparelho</th><th>Status</th></tr></thead><tbody>
-      ${openOS.map(o=>`<tr><td style="font-weight:700;color:var(--pri)">${o.numero}</td><td>${o.aparelho}</td><td><span class="tag ${OS_COLORS[o.status]||'tag-gray'}" style="font-size:10.5px">${o.status}</span></td></tr>`).join('')}
-      </tbody></table></div>`;
+  uos.innerHTML=openOS.length===0?'<div class="empty-state" style="padding:20px"><i class="ti ti-tools"></i><p>Nenhuma OS aberta</p></div>':`<div class="table-wrap"><table><thead><tr><th>OS</th><th>Aparelho</th><th>Status</th></tr></thead><tbody>${openOS.map(o=>`<tr><td style="font-weight:700;color:var(--pri)">${o.numero}</td><td>${o.aparelho}</td><td><span class="tag ${OS_COL[o.status]||'tag-gray'}" style="font-size:10.5px">${o.status}</span></td></tr>`).join('')}</tbody></table></div>`;
 }
 
-/* ==============================================================
-   VENDAS PAGE
-   ============================================================== */
+/* ============================================================
+   VENDAS
+   ============================================================ */
 function renderVendasPage() {
   const fat=G.vendas.reduce((s,v)=>s+v.total,0);
   const lucro=G.vendas.reduce((s,v)=>s+(v.lucro||0),0);
@@ -1269,39 +1569,25 @@ function renderVendasPage() {
   document.getElementById('v-qtd').textContent=G.vendas.length;
   document.getElementById('v-ticket').textContent=fmt(ticket);
   const payL={dinheiro:'Dinheiro',cartao:'Cartão',pix:'Pix',fiado:'Fiado'};
-  document.getElementById('sales-table').innerHTML=G.vendas.length===0
-    ? '<tr><td colspan="7" style="text-align:center;padding:36px;color:var(--txt3)">Nenhuma venda</td></tr>'
-    : G.vendas.map(v=>`<tr>
-      <td style="font-weight:700;color:var(--pri)">${new Date(v.criado_em).toLocaleDateString('pt-BR')}</td>
-      <td style="font-size:12px;color:var(--txt2)">${fmtDate(v.criado_em)}</td>
-      <td>${v.cliente_nome}</td>
-      <td style="color:var(--txt2)">${v.operador_nome||'—'}</td>
-      <td style="font-weight:700">${fmt(v.total)}</td>
-      <td style="font-weight:700;color:var(--success)">${fmt(v.lucro||0)}</td>
-      <td><span class="tag tag-purple">${payL[v.pagamento]||v.pagamento}</span></td>
-    </tr>`).join('');
+  document.getElementById('sales-table').innerHTML=G.vendas.length===0?'<tr><td colspan="6" style="text-align:center;padding:36px;color:var(--txt3)">Nenhuma venda</td></tr>':G.vendas.map(v=>`<tr><td style="font-size:12px;color:var(--txt3)">${fmtDate(v.criado_em)}</td><td>${v.cliente_nome}</td><td style="color:var(--txt2)">${v.operador_nome||'—'}</td><td style="font-weight:700">${fmt(v.total)}</td><td style="font-weight:700;color:var(--success)">${fmt(v.lucro||0)}</td><td><span class="tag tag-purple">${payL[v.pagamento]||v.pagamento}</span></td></tr>`).join('');
 }
 
-/* ==============================================================
-   SELECTS — Popular dropdowns de clientes
-   ============================================================== */
+/* ============================================================
+   SELECTS HELPERS
+   ============================================================ */
 function populateSelects() {
   const opts='<option value="">Consumidor Final</option>'+G.clientes.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
   ['cart-client','os-cliente'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=opts;});
+  const ajSel=document.getElementById('aj-produto');
+  if(ajSel)ajSel.innerHTML='<option value="">Selecionar produto...</option>'+G.produtos.filter(p=>!p.estoque_infinito).map(p=>`<option value="${p.id}">${p.nome} (${p.estoque} un.)</option>`).join('');
 }
 
-/* ==============================================================
-   VERIFICAR SESSÃO EXISTENTE AO CARREGAR
-   ============================================================== */
-(async () => {
-  const { data: { session } } = await db.auth.getSession();
-  if (session?.user) {
-    await loadUserProfile(session.user);
-  }
-  // Listener de mudanças de auth
-  db.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_OUT') { /* já tratado no doLogout */ }
-  });
+/* ============================================================
+   INIT
+   ============================================================ */
+(async()=>{
+  const {data:{session}}=await db.auth.getSession();
+  if(session?.user)await loadUserProfile(session.user);
 })();
 </script>
 </body>
