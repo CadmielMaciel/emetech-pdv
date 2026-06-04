@@ -18,7 +18,7 @@
   --success:#10B981;--danger:#EF4444;--warn:#F59E0B;--info:#3B82F6;
   --radius:12px;--radius-lg:18px;
   --shadow:0 2px 16px rgba(79,53,194,.10);--shadow-lg:0 8px 32px rgba(79,53,194,.16);
-  --sw:230px;--th:62px;--trans:all .2s cubic-bezier(.4,0,.2,1);
+  --sw:230px;--sw-mini:56px;--th:62px;--trans:all .2s cubic-bezier(.4,0,.2,1);
 }
 [data-theme="dark"]{--bg:#0F0A1E;--bg2:#1A1030;--surface:#201540;--surface2:#2A1D50;--txt:#F0EEFF;--txt2:#B8AADC;--txt3:#7A6FAA;--txt4:#4A4070;--border:#2E2050;--border2:#3A2A6A;--pri-light:#2D1B8E;}
 ::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:10px}
@@ -42,26 +42,74 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);min-
 /* APP */
 .app{display:flex;height:100vh;opacity:0;transition:opacity .4s}
 .app.visible{opacity:1}
-.sidebar{width:var(--sw);background:linear-gradient(170deg,var(--pri-dark),var(--pri) 60%,var(--pri2));display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;position:relative}
+/* empurra o main conforme sidebar expande */
+.main{transition:margin-left .28s cubic-bezier(.4,0,.2,1)}
+/* ── SIDEBAR RECOLHÍVEL ── */
+.sidebar{
+  width:var(--sw-mini);
+  background:linear-gradient(170deg,var(--pri-dark),var(--pri) 60%,var(--pri2));
+  display:flex;flex-direction:column;flex-shrink:0;
+  overflow:hidden;position:relative;
+  transition:width .28s cubic-bezier(.4,0,.2,1);
+  z-index:100;
+}
+.sidebar:hover{ width:var(--sw); }
 .sidebar::before{content:'';position:absolute;top:-80px;right:-80px;width:200px;height:200px;background:rgba(255,255,255,.05);border-radius:50%;pointer-events:none}
-.logo-area{padding:18px 16px 14px;border-bottom:1px solid rgba(255,255,255,.12);flex-shrink:0}
-.logo-badge{display:flex;align-items:center;gap:10px}
-.logo-icon{width:36px;height:36px;background:rgba(255,255,255,.22);border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:12px;color:#fff;flex-shrink:0}
-.logo-text{font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:#fff}
-.logo-sub{font-size:9px;color:rgba(255,255,255,.5);letter-spacing:1.8px;text-transform:uppercase}
-.nav{flex:1;padding:12px 8px;overflow-y:auto}
-.nav-sec{font-size:9px;color:rgba(255,255,255,.3);letter-spacing:1.8px;text-transform:uppercase;padding:10px 10px 4px;font-weight:700}
-.ni{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:9px;cursor:pointer;color:rgba(255,255,255,.6);font-size:13px;font-weight:500;transition:var(--trans);margin-bottom:1px;user-select:none;white-space:nowrap}
+
+/* Logo area */
+.logo-area{padding:14px 10px 12px;border-bottom:1px solid rgba(255,255,255,.12);flex-shrink:0;overflow:hidden}
+.logo-badge{display:flex;align-items:center;gap:10px;white-space:nowrap}
+.logo-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;background:rgba(255,255,255,.15);padding:5px}
+.logo-icon img,.logo-icon svg{width:100%;height:100%;object-fit:contain;filter:brightness(0) invert(1)}
+.logo-text{font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:#fff;opacity:0;transition:opacity .2s .05s;white-space:nowrap}
+.logo-sub{font-size:9px;color:rgba(255,255,255,.5);letter-spacing:1.8px;text-transform:uppercase;opacity:0;transition:opacity .2s .05s}
+.sidebar:hover .logo-text,.sidebar:hover .logo-sub{opacity:1}
+
+/* Nav */
+.nav{flex:1;padding:10px 8px;overflow-y:auto;overflow-x:hidden}
+.nav::-webkit-scrollbar{width:0}
+.nav-sec{
+  font-size:9px;color:rgba(255,255,255,.3);letter-spacing:1.8px;text-transform:uppercase;
+  padding:10px 10px 4px;font-weight:700;
+  white-space:nowrap;overflow:hidden;
+  opacity:0;transition:opacity .15s;
+  height:0;padding:0;margin:0;
+}
+.sidebar:hover .nav-sec{opacity:1;height:auto;padding:10px 10px 4px}
+.ni{
+  display:flex;align-items:center;gap:9px;
+  padding:9px 10px;border-radius:9px;cursor:pointer;
+  color:rgba(255,255,255,.6);font-size:13px;font-weight:500;
+  transition:var(--trans);margin-bottom:1px;
+  user-select:none;white-space:nowrap;overflow:hidden;
+  position:relative;
+}
 .ni:hover{background:rgba(255,255,255,.1);color:#fff}
 .ni.active{background:rgba(255,255,255,.18);color:#fff;font-weight:600}
-.ni i{font-size:17px;flex-shrink:0}
-.sidebar-footer{padding:10px 8px;border-top:1px solid rgba(255,255,255,.1);flex-shrink:0}
-.user-pill{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:9px;background:rgba(255,255,255,.1)}
+.ni i{font-size:18px;flex-shrink:0;min-width:18px}
+.ni-label{opacity:0;transition:opacity .15s .05s;white-space:nowrap}
+.sidebar:hover .ni-label{opacity:1}
+
+/* Tooltip ao minimizar */
+.ni-tip{
+  position:absolute;left:calc(var(--sw-mini) + 8px);top:50%;transform:translateY(-50%);
+  background:rgba(30,16,64,.95);color:#fff;font-size:12px;font-weight:600;
+  padding:5px 10px;border-radius:7px;white-space:nowrap;pointer-events:none;
+  opacity:0;transition:opacity .15s;z-index:999;
+}
+.ni:hover .ni-tip{opacity:1}
+.sidebar:hover .ni-tip{display:none}
+
+/* Footer */
+.sidebar-footer{padding:10px 8px;border-top:1px solid rgba(255,255,255,.1);flex-shrink:0;overflow:hidden}
+.user-pill{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:9px;background:rgba(255,255,255,.1);overflow:hidden;white-space:nowrap}
 .user-av{width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
-.user-name{font-size:11.5px;color:#fff;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+.user-name{font-size:11.5px;color:#fff;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;opacity:0;transition:opacity .15s .05s}
 .user-role{font-size:9px;color:rgba(255,255,255,.5);text-transform:uppercase}
-.logout-btn{background:none;border:none;color:rgba(255,255,255,.5);cursor:pointer;font-size:16px;padding:3px;border-radius:5px;transition:var(--trans)}
+.sidebar:hover .user-name{opacity:1}
+.logout-btn{background:none;border:none;color:rgba(255,255,255,.5);cursor:pointer;font-size:16px;padding:3px;border-radius:5px;transition:var(--trans);opacity:0;transition:opacity .15s .05s}
 .logout-btn:hover{color:#fff;background:rgba(255,255,255,.15)}
+.sidebar:hover .logout-btn{opacity:1}
 
 /* MAIN */
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
@@ -297,32 +345,47 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
   <aside class="sidebar">
     <div class="logo-area">
       <div class="logo-badge">
-        <div class="logo-icon">ET</div>
-        <div><div class="logo-text">EMETech</div><div class="logo-sub">ERP PDV v4</div></div>
+        <div class="logo-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 580" fill="white">
+            <rect x="20" y="20" width="480" height="52" rx="6"/>
+            <rect x="20" y="72" width="72" height="340" rx="4"/>
+            <rect x="428" y="72" width="72" height="340" rx="4"/>
+            <polygon points="92,72 180,72 260,200 260,280 188,280 92,120"/>
+            <polygon points="428,72 340,72 260,200 260,280 332,280 428,120"/>
+            <rect x="224" y="250" width="72" height="162" rx="4"/>
+            <rect x="20" y="508" width="480" height="52" rx="6"/>
+            <polygon points="20,560 92,560 20,508"/>
+            <polygon points="500,560 428,560 500,508"/>
+          </svg>
+        </div>
+        <div>
+          <div class="logo-text">EMETech</div>
+          <div class="logo-sub">ERP PDV v4</div>
+        </div>
       </div>
     </div>
     <nav class="nav" id="nav">
       <div class="nav-sec">Principal</div>
-      <div class="ni active" onclick="go('dashboard')" data-p="admin,gerente"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
-      <div class="ni" onclick="go('pdv')" data-p="admin,gerente,operador"><i class="ti ti-shopping-cart"></i>PDV / Caixa</div>
+      <div class="ni active" onclick="go('dashboard')" data-p="admin,gerente"><i class="ti ti-layout-dashboard"></i><span class="ni-label">Dashboard</span><span class="ni-tip">Dashboard</span></div>
+      <div class="ni" onclick="go('pdv')" data-p="admin,gerente,operador"><i class="ti ti-shopping-cart"></i><span class="ni-label">PDV / Caixa</span><span class="ni-tip">PDV / Caixa</span></div>
       <div class="nav-sec">Vendas</div>
-      <div class="ni" onclick="go('orcamentos')" data-p="admin,gerente,operador"><i class="ti ti-file-invoice"></i>Orçamentos</div>
-      <div class="ni" onclick="go('devolucoes')" data-p="admin,gerente"><i class="ti ti-arrow-back-up"></i>Devoluções</div>
+      <div class="ni" onclick="go('orcamentos')" data-p="admin,gerente,operador"><i class="ti ti-file-invoice"></i><span class="ni-label">Orçamentos</span><span class="ni-tip">Orçamentos</span></div>
+      <div class="ni" onclick="go('devolucoes')" data-p="admin,gerente"><i class="ti ti-arrow-back-up"></i><span class="ni-label">Devoluções</span><span class="ni-tip">Devoluções</span></div>
       <div class="nav-sec">Serviços</div>
-      <div class="ni" onclick="go('os')" data-p="admin,gerente,tecnico"><i class="ti ti-tools"></i>Ordens de Serviço</div>
-      <div class="ni" onclick="go('os-hist')" data-p="admin,gerente,tecnico"><i class="ti ti-history"></i>Histórico OS</div>
+      <div class="ni" onclick="go('os')" data-p="admin,gerente,tecnico"><i class="ti ti-tools"></i><span class="ni-label">Ordens de Serviço</span><span class="ni-tip">OS</span></div>
+      <div class="ni" onclick="go('os-hist')" data-p="admin,gerente,tecnico"><i class="ti ti-history"></i><span class="ni-label">Histórico OS</span><span class="ni-tip">Histórico OS</span></div>
       <div class="nav-sec">Estoque & Produtos</div>
-      <div class="ni" onclick="go('produtos')" data-p="admin,gerente"><i class="ti ti-device-mobile"></i>Produtos</div>
-      <div class="ni" onclick="go('estoque')" data-p="admin,gerente"><i class="ti ti-package"></i>Movimentações</div>
-      <div class="ni" onclick="go('fornecedores')" data-p="admin,gerente"><i class="ti ti-truck"></i>Fornecedores</div>
+      <div class="ni" onclick="go('produtos')" data-p="admin,gerente"><i class="ti ti-device-mobile"></i><span class="ni-label">Produtos</span><span class="ni-tip">Produtos</span></div>
+      <div class="ni" onclick="go('estoque')" data-p="admin,gerente"><i class="ti ti-package"></i><span class="ni-label">Movimentações</span><span class="ni-tip">Movimentações</span></div>
+      <div class="ni" onclick="go('fornecedores')" data-p="admin,gerente"><i class="ti ti-truck"></i><span class="ni-label">Fornecedores</span><span class="ni-tip">Fornecedores</span></div>
       <div class="nav-sec">Financeiro</div>
-      <div class="ni" onclick="go('financeiro')" data-p="admin,gerente"><i class="ti ti-wallet"></i>Contas & Fluxo</div>
+      <div class="ni" onclick="go('financeiro')" data-p="admin,gerente"><i class="ti ti-wallet"></i><span class="ni-label">Contas & Fluxo</span><span class="ni-tip">Financeiro</span></div>
       <div class="nav-sec">Cadastros</div>
-      <div class="ni" onclick="go('clientes')" data-p="admin,gerente,operador,tecnico"><i class="ti ti-users"></i>Clientes</div>
+      <div class="ni" onclick="go('clientes')" data-p="admin,gerente,operador,tecnico"><i class="ti ti-users"></i><span class="ni-label">Clientes</span><span class="ni-tip">Clientes</span></div>
       <div class="nav-sec">Relatórios</div>
-      <div class="ni" onclick="go('relatorios')" data-p="admin,gerente"><i class="ti ti-chart-bar"></i>Relatórios</div>
+      <div class="ni" onclick="go('relatorios')" data-p="admin,gerente"><i class="ti ti-chart-bar"></i><span class="ni-label">Relatórios</span><span class="ni-tip">Relatórios</span></div>
       <div class="nav-sec nav-adm-sec">Administração</div>
-      <div class="ni nav-adm" onclick="go('usuarios')" data-p="admin"><i class="ti ti-shield-lock"></i>Usuários</div>
+      <div class="ni nav-adm" onclick="go('usuarios')" data-p="admin"><i class="ti ti-shield-lock"></i><span class="ni-label">Usuários</span><span class="ni-tip">Usuários</span></div>
     </nav>
     <div class="sidebar-footer">
       <div class="user-pill">
