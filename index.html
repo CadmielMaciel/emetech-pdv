@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EMETech — ERP PDV v6.3</title>
+<title>EMETech — ERP PDV v4.0</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -344,14 +344,14 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
       </svg>
     </div>
     <div class="l-title">EMETech ERP</div>
-    <div class="l-sub">Assistência Técnica & PDV v6.3</div>
+    <div class="l-sub">Assistência Técnica & PDV v4.0</div>
     <div id="l-err" class="l-err"></div>
     <label class="l-lbl">E-mail</label>
     <input class="l-inp" type="email" id="l-email" placeholder="seu@email.com">
     <label class="l-lbl">Senha</label>
     <input class="l-inp" type="password" id="l-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
     <button class="l-btn" id="l-btn" onclick="doLogin()"><i class="ti ti-lock" style="font-size:17px"></i>Entrar</button>
-    <p style="text-align:center;font-size:11.5px;color:#9D8FC5;margin-top:16px">EMETech © 2026 — Todos os direitos reservados</p>
+    <p style="text-align:center;font-size:11.5px;color:#9D8FC5;margin-top:16px">EMETech © 2025 — Todos os direitos reservados</p>
   </div>
 </div>
 
@@ -2093,6 +2093,20 @@ function toggleDark(){
 const RL = {admin:'Administrador',gerente:'Gerente',operador:'Operador de Caixa',tecnico:'Técnico'};
 const RC = {admin:'r-admin',gerente:'r-gerente',operador:'r-operador',tecnico:'r-tecnico'};
 const RH = {admin:'dashboard',gerente:'dashboard',operador:'pdv',tecnico:'os'};
+
+function canAccess(role,page){
+  const P={dashboard:['admin','gerente'],pdv:['admin','gerente','operador'],caixas:['admin','gerente'],crediario:['admin','gerente','operador'],orcamentos:['admin','gerente','operador'],'os-hist':['admin','gerente','tecnico'],devolucoes:['admin','gerente'],os:['admin','gerente','tecnico'],produtos:['admin','gerente'],estoque:['admin','gerente'],fornecedores:['admin','gerente'],financeiro:['admin','gerente'],clientes:['admin','gerente','operador','tecnico'],relatorios:['admin','gerente'],inteligencia:['admin','gerente'],usuarios:['admin'],aparencia:['admin']};
+  return (P[page]||[]).includes(role);
+}
+
+function applyRoleUI(){
+  document.querySelectorAll('.ni[data-p]').forEach(el=>{el.style.display=el.dataset.p.split(',').includes(G.role)?'':'none';});
+  document.querySelectorAll('.nav-adm-sec,.nav-adm').forEach(el=>{el.style.display=G.role==='admin'?'':'none';});
+  document.getElementById('uname').textContent=G.profile?.nome||G.user?.email||'—';
+  document.getElementById('urole').textContent=RL[G.role]||G.role;
+  document.getElementById('uav').textContent=(G.profile?.nome||'?').slice(0,2).toUpperCase();
+  document.getElementById('tb-date').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
+}
 
 function canAccess(role,page){
   const P={dashboard:['admin','gerente'],pdv:['admin','gerente','operador'],orcamentos:['admin','gerente','operador'],'os-hist':['admin','gerente','tecnico'],devolucoes:['admin','gerente'],os:['admin','gerente','tecnico'],produtos:['admin','gerente'],estoque:['admin','gerente'],fornecedores:['admin','gerente'],financeiro:['admin','gerente'],clientes:['admin','gerente','operador','tecnico'],relatorios:['admin','gerente'],usuarios:['admin']};
