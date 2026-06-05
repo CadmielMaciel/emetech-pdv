@@ -5240,43 +5240,6 @@ let G_AUDIT_LOG = []; // log em memória (salvo no localStorage)
 let _adminAuthCallback = null;
 let _operadorAtual = null; // operador identificado no PDV
 
-// ── IDENTIFICAÇÃO DO OPERADOR ──────────────────────────
-function mostrarTelaOperador() {
-  // Popula select de operadores
-  const sel = document.getElementById('op-sel');
-  if (!sel) return;
-  sel.innerHTML = G.usuarios.filter(u => u.ativo).map(u =>
-    `<option value="${u.id}" data-role="${u.role}">${u.nome} (${RL[u.role]||u.role})</option>`
-  ).join('');
-  document.getElementById('op-err').style.display = 'none';
-  document.getElementById('op-senha').value = '';
-  document.getElementById('op-id-screen').classList.add('show');
-  setTimeout(() => document.getElementById('op-senha').focus(), 200);
-}
-
-async function opIdentificar() {
-  const sel = document.getElementById('op-sel');
-  const senha = document.getElementById('op-senha').value;
-  const caixa = document.getElementById('op-caixa-sel').value;
-  const err = document.getElementById('op-err');
-  if (!senha) { err.textContent = 'Informe a senha!'; err.style.display = ''; return; }
-  const userId = sel.value;
-  const user = G.usuarios.find(u => u.id === userId);
-  if (!user) { err.textContent = 'Usuário não encontrado!'; err.style.display = ''; return; }
-  // Valida senha via Supabase Auth
-  setLoad(true);
-  const { error } = await db.auth.signInWithPassword({ email: user.email, password: senha });
-  setLoad(false);
-  if (error) { err.textContent = 'Senha incorreta!'; err.style.display = ''; return; }
-  _operadorAtual = { ...user, caixa };
-  document.getElementById('op-id-screen').classList.remove('show');
-  // Registra log de login PDV
-  registrarAudit('login_pdv', `Login no PDV — Caixa: ${caixa}`, user.nome, '', 'success');
-  notify(`✅ Bem-vindo, ${user.nome}!`, 'success');
-  // Atualiza pill do caixa
-  updateCaixaPill();
-}
-
 // ── SISTEMA DE SENHA ADMIN (AÇÕES PROTEGIDAS) ──────────
 function exigirAdmin(descricao, callback, tipoLog = 'acao_protegida') {
   // Se o usuário atual já é admin ou gerente, pede só o motivo
@@ -5403,17 +5366,22 @@ function limparAuditFiltros() {
 const _confirmarSangriaOriginal = confirmarSangria;
 confirmarSangria = async function() {
   const role = _operadorAtual?.role || G.role;
+  const perm = G_PERMS[_operadorAtual?.id];
+  if (role === 'operador' && perm?.bloqSangria) {
+    notify('Sangria bloqueada para este operador!', 'error'); return;
+  }
   if (role === 'operador') {
     const val = parseFloat(document.getElementById('sang-val').value) || 0;
     closeModal('modal-sangria');
     exigirAdmin(`Sangria de ${fmt(val)}`, async (motivo) => {
       document.getElementById('sang-desc').value = motivo;
+      openModal('modal-sangria');
       await _confirmarSangriaOriginal();
-      registrarAudit('sangria', `Sangria de ${fmt(val)} — Motivo: ${motivo}`, _operadorAtual?.nome||G.profile?.nome, '', 'success');
+      registrarAudit('sangria', `Sangria de ${fmt(val)} — ${motivo}`, _operadorAtual?.nome||G.profile?.nome, '', 'success');
     }, 'sangria');
   } else {
     await _confirmarSangriaOriginal();
-    registrarAudit('sangria', `Sangria registrada`, _operadorAtual?.nome||G.profile?.nome, '', 'success');
+    registrarAudit('sangria', 'Sangria registrada', _operadorAtual?.nome||G.profile?.nome, '', 'success');
   }
 };
 
