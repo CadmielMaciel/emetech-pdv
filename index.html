@@ -355,6 +355,9 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
   </div>
 </div>
 
+<!-- PDF PRINT AREA -->
+<div id="pdf-print-area"></div>
+
 <!-- APP -->
 <div class="app" id="app">
   <aside class="sidebar">
@@ -847,7 +850,10 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
             </div>
           </div>
           <div class="card" style="padding:0">
-            <div style="padding:12px 16px;border-bottom:1px solid var(--border)"><div class="card-title">Valor de Estoque por Categoria</div></div>
+            <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+          <div class="card-title">Valor de Estoque por Categoria</div>
+          <button class="btn btn-pri btn-sm" onclick="gerarPdfRelEstoque()"><i class="ti ti-file-text"></i>Exportar PDF</button>
+        </div>
             <div class="tw"><table>
               <thead><tr><th>Categoria</th><th>Qtd. Produtos</th><th>Total em Estoque (un.)</th><th>Valor (custo)</th><th>Valor (venda)</th></tr></thead>
               <tbody id="rel-est-cat-table"></tbody>
@@ -1291,6 +1297,23 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
     <button class="btn btn-pri" onclick="saveUsr()"><i class="ti ti-check"></i>Salvar</button>
   </div>
 </div></div>
+
+<!-- Modal PDF Viewer -->
+<div class="modal-overlay" id="modal-pdf-viewer">
+  <div class="modal xl" style="padding:0;overflow:hidden;display:flex;flex-direction:column;height:90vh">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0">
+      <div class="card-title"><i class="ti ti-file-text" style="color:var(--pri)"></i> Visualização do Documento</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-out btn-sm" onclick="pdfBaixar(_pdfHtmlAtual,_pdfNomeAtual)"><i class="ti ti-download"></i>Baixar HTML</button>
+        <button class="btn btn-pri btn-sm" onclick="pdfImprimir(_pdfHtmlAtual)"><i class="ti ti-printer"></i>Imprimir / Salvar PDF</button>
+        <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-pdf-viewer')"><i class="ti ti-x"></i></button>
+      </div>
+    </div>
+    <div style="flex:1;overflow:hidden;background:#666;padding:12px;display:flex;align-items:flex-start;justify-content:center">
+      <iframe id="pdf-preview-frame" style="width:210mm;height:100%;border:none;border-radius:4px;box-shadow:0 4px 24px rgba(0,0,0,.4)" sandbox="allow-same-origin"></iframe>
+    </div>
+  </div>
+</div>
 
 <!-- Confirm -->
 <div class="modal-overlay" id="modal-confirm"><div class="modal sm" style="padding:22px">
@@ -1913,6 +1936,7 @@ function renderOrcamentos(q=''){
     <td><div style="display:flex;gap:3px">
       ${o.status==='aberto'?`<button class="btn btn-out btn-xs" onclick="reabrirOrc('${o.id}')"><i class="ti ti-edit"></i></button>
       <button class="btn btn-success btn-xs" onclick="conv2venda('${o.id}')"><i class="ti ti-shopping-cart"></i>Converter</button>`:''}
+      <button class="btn btn-out btn-xs" onclick="gerarPdfOrcamento('${o.id}')"><i class="ti ti-file-text"></i>PDF</button>
     </div></td>
   </tr>`).join('');
 }
@@ -2367,6 +2391,7 @@ function detOS(id){
   if(next&&['admin','gerente','tecnico'].includes(G.role)){
     const ab=document.createElement('button');ab.className='btn btn-pri btn-sm';ab.innerHTML=`<i class="ti ti-arrow-right"></i>Avançar: ${next}`;ab.onclick=()=>advOS(id,next);footer.appendChild(ab);
   }
+  const pbtn=document.createElement('button');pbtn.className='btn btn-out btn-sm';pbtn.innerHTML='<i class="ti ti-file-text"></i>Gerar PDF';pbtn.onclick=()=>gerarPdfOS(id);footer.appendChild(pbtn);
   openModal('modal-os-det');
 }
 
@@ -2774,7 +2799,477 @@ function popLancCli(){
   sel.innerHTML='<option value="">Sem vínculo</option>'+G.clientes.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
 }
 
-/* ── INIT ────────────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════
+   SISTEMA DE PDF — Geração, Impressão e Download
+   ══════════════════════════════════════════════════════ */
+
+// ── UTILITÁRIOS DE PDF ──────────────────────────────────
+function getMarca() {
+  try { return JSON.parse(localStorage.getItem('emetech_marca') || '{}'); } catch { return {}; }
+}
+
+function getEmpDados() {
+  const m = getMarca();
+  return {
+    nome:    m.empresa?.nome    || 'EMETech Assistência Técnica',
+    cnpj:    m.empresa?.cnpj    || '',
+    tel:     m.empresa?.tel     || '',
+    email:   m.empresa?.email   || '',
+    end:     m.empresa?.end     || '',
+    cid:     m.empresa?.cid     || 'Irará — BA',
+    site:    m.empresa?.site    || '',
+    rodape:  m.empresa?.rodape  || 'Obrigado pela preferência! Garantia conforme especificado.',
+    wmSrc:   m.wmOS             || null,
+    wmRel:   m.wmRel            || null,
+    wmOp:    m.wmOsOpacity      || 8,
+    wmRelOp: m.wmRelOpacity     || 8,
+    logo:    m.logoLogin        || null
+  };
+}
+
+// SVG padrão da logo (inline, sem depender de arquivo externo)
+const PDF_LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 110" fill="white" style="width:100%;height:100%">
+  <rect x="5" y="4" width="90" height="10" rx="2"/>
+  <polygon points="5,14 18,14 18,26 5,14"/>
+  <polygon points="95,14 82,14 82,26 95,14"/>
+  <rect x="5" y="14" width="13" height="62" rx="1"/>
+  <rect x="82" y="14" width="13" height="62" rx="1"/>
+  <polygon points="18,14 34,14 52,44 52,56 38,56 18,22"/>
+  <polygon points="82,14 66,14 48,44 48,56 62,56 82,22"/>
+  <rect x="44" y="50" width="12" height="26" rx="1"/>
+  <rect x="5" y="76" width="90" height="10" rx="2"/>
+  <polygon points="5,86 18,86 5,98"/>
+  <polygon points="95,86 82,86 95,98"/>
+  <rect x="5" y="96" width="90" height="10" rx="2"/>
+</svg>`;
+
+// ── GERADOR DE ESTRUTURA BASE DO PDF ───────────────────
+function pdfBase({ titulo, numero, tipo, conteudo, assinatura, wmSrc, wmOp }) {
+  const e = getEmpDados();
+  const logoHtml = e.logo
+    ? `<img src="${e.logo}" style="width:48px;height:48px;object-fit:contain;border-radius:10px">`
+    : `<div style="width:48px;height:48px;background:linear-gradient(135deg,#5B47E0,#7C3AED);border-radius:10px;display:flex;align-items:center;justify-content:center">${PDF_LOGO_SVG}</div>`;
+
+  // Grade de marca d'água 5×8
+  const wmEl = wmSrc
+    ? `<img src="${wmSrc}" style="width:80px;height:80px;object-fit:contain">`
+    : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 110" fill="#5B47E0" style="width:80px;height:80px">${PDF_LOGO_SVG}</svg>`;
+
+  let gradeHtml = '';
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 5; c++) {
+      gradeHtml += `<div style="display:flex;align-items:center;justify-content:center;width:20%;transform:rotate(-20deg)">${wmEl}</div>`;
+    }
+  }
+
+  const qrPlaceholder = `<div style="width:56px;height:56px;border:2px solid #E4DEFF;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:2px">
+    <svg viewBox="0 0 21 21" width="40" height="40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="1" y="1" width="7" height="7" rx="1" stroke="#5B47E0" stroke-width="1.5" fill="none"/>
+      <rect x="3" y="3" width="3" height="3" fill="#5B47E0"/>
+      <rect x="13" y="1" width="7" height="7" rx="1" stroke="#5B47E0" stroke-width="1.5" fill="none"/>
+      <rect x="15" y="3" width="3" height="3" fill="#5B47E0"/>
+      <rect x="1" y="13" width="7" height="7" rx="1" stroke="#5B47E0" stroke-width="1.5" fill="none"/>
+      <rect x="3" y="15" width="3" height="3" fill="#5B47E0"/>
+      <rect x="13" y="11" width="2" height="2" fill="#5B47E0"/>
+      <rect x="16" y="11" width="2" height="2" fill="#5B47E0"/>
+      <rect x="13" y="14" width="2" height="2" fill="#5B47E0"/>
+      <rect x="16" y="16" width="2" height="2" fill="#5B47E0"/>
+      <rect x="11" y="11" width="1" height="8" fill="#5B47E0"/>
+    </svg>
+    <div style="font-size:7px;color:#9D8FC5">QR</div>
+  </div>`;
+
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'DM Sans',sans-serif;color:#1A0F3C;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .page{width:210mm;min-height:297mm;padding:0;position:relative;overflow:hidden;background:#fff}
+  /* MARCA D'ÁGUA EM GRADE */
+  .wm-grade{position:absolute;inset:0;display:flex;flex-wrap:wrap;align-content:flex-start;z-index:0;pointer-events:none;opacity:${(wmOp||8)/100}}
+  /* CONTEÚDO ACIMA DA MARCA */
+  .doc-inner{position:relative;z-index:1;padding:0 20mm 20mm}
+  /* CABEÇALHO */
+  .doc-header{background:linear-gradient(135deg,#2D1B8E,#5B47E0 55%,#7C3AED);padding:14mm 20mm;display:flex;align-items:center;justify-content:space-between;margin-bottom:0}
+  .hdr-left{display:flex;align-items:center;gap:14px}
+  .hdr-logo{width:52px;height:52px;border-radius:12px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;overflow:hidden;padding:5px;flex-shrink:0}
+  .hdr-empresa{color:#fff}
+  .hdr-nome{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;letter-spacing:-.3px}
+  .hdr-dados{font-size:10px;opacity:.75;margin-top:3px;line-height:1.6}
+  .hdr-right{text-align:right;color:#fff}
+  .hdr-tipo{font-size:10px;font-weight:600;opacity:.7;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px}
+  .hdr-num{font-family:'Syne',sans-serif;font-weight:800;font-size:22px}
+  .hdr-data{font-size:10px;opacity:.7;margin-top:3px}
+  /* FAIXA COLORIDA */
+  .doc-stripe{height:4px;background:linear-gradient(90deg,#5B47E0,#7C3AED,#06B6D4)}
+  /* SEÇÕES */
+  .sec{margin-top:14px}
+  .sec-title{font-family:'Syne',sans-serif;font-weight:700;font-size:11px;color:#5B47E0;text-transform:uppercase;letter-spacing:1.2px;border-bottom:2px solid #EDE9FF;padding-bottom:5px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+  .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 20px}
+  .info-row{display:flex;gap:6px;align-items:baseline}
+  .info-lbl{font-size:10px;font-weight:700;color:#9D8FC5;min-width:80px;text-transform:uppercase;letter-spacing:.5px}
+  .info-val{font-size:12px;font-weight:500;color:#1A0F3C;flex:1}
+  .info-val.bold{font-weight:700}
+  /* TABELA */
+  table.pdf-table{width:100%;border-collapse:collapse;margin-top:8px;font-size:11.5px}
+  table.pdf-table th{background:linear-gradient(135deg,#5B47E0,#7C3AED);color:#fff;padding:7px 10px;text-align:left;font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase}
+  table.pdf-table th:first-child{border-radius:6px 0 0 6px}
+  table.pdf-table th:last-child{border-radius:0 6px 6px 0}
+  table.pdf-table td{padding:7px 10px;border-bottom:1px solid #F0EDF8;color:#1A0F3C}
+  table.pdf-table tr:last-child td{border-bottom:none}
+  table.pdf-table tr:nth-child(even) td{background:#FAFAFE}
+  /* TOTAL BOX */
+  .total-box{background:linear-gradient(135deg,#EDE9FF,#F0F9FF);border:2px solid #D4CAFF;border-radius:12px;padding:14px 18px;margin-top:14px;display:flex;justify-content:space-between;align-items:center}
+  .total-label{font-size:13px;font-weight:600;color:#5C4F8A}
+  .total-val{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:#5B47E0}
+  /* STATUS */
+  .status-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700}
+  .status-ok{background:#ECFDF5;color:#059669;border:1.5px solid #A7F3D0}
+  .status-pend{background:#FFFBEB;color:#B45309;border:1.5px solid #FDE68A}
+  .status-info{background:#EFF6FF;color:#1D4ED8;border:1.5px solid #BFDBFE}
+  /* ASSINATURAS */
+  .assinaturas{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:20px}
+  .assinatura-box{text-align:center}
+  .assinatura-linha{border-top:1.5px solid #C4B8E8;padding-top:8px;margin-top:40px}
+  .assinatura-nome{font-size:11.5px;font-weight:700;color:#1A0F3C}
+  .assinatura-cargo{font-size:10px;color:#9D8FC5;margin-top:2px}
+  /* RODAPÉ */
+  .doc-footer{margin-top:20px;padding:12px 0 0;border-top:2px solid #EDE9FF;display:flex;justify-content:space-between;align-items:flex-end}
+  .footer-msg{font-size:10px;color:#9D8FC5;max-width:120mm;line-height:1.5}
+  .footer-num{font-size:10px;color:#C4B8E8;text-align:right}
+  /* ALERTA / AVISO */
+  .aviso-box{background:#FFFBEB;border:1.5px solid #FDE68A;border-radius:8px;padding:10px 14px;font-size:11px;color:#92400E;margin-top:10px;display:flex;gap:8px}
+  @media print{body{margin:0}@page{margin:0;size:A4}}
+</style>
+</head>
+<body>
+<div class="page">
+  <!-- MARCA D'ÁGUA EM GRADE -->
+  <div class="wm-grade">${gradeHtml}</div>
+  <!-- CABEÇALHO -->
+  <div class="doc-header">
+    <div class="hdr-left">
+      <div class="hdr-logo">${logoHtml}</div>
+      <div class="hdr-empresa">
+        <div class="hdr-nome">${e.nome}</div>
+        <div class="hdr-dados">
+          ${e.cnpj ? 'CNPJ: ' + e.cnpj + ' &nbsp;|&nbsp; ' : ''}${e.tel ? '☎ ' + e.tel : ''}
+          ${(e.end || e.cid) ? '<br>' + [e.end, e.cid].filter(Boolean).join(' — ') : ''}
+          ${e.email ? '<br>✉ ' + e.email : ''}
+        </div>
+      </div>
+    </div>
+    <div class="hdr-right">
+      <div class="hdr-tipo">${tipo}</div>
+      <div class="hdr-num">${numero}</div>
+      <div class="hdr-data">Emitido em ${fmtDT(new Date().toISOString())}</div>
+      <div style="margin-top:10px">${qrPlaceholder}</div>
+    </div>
+  </div>
+  <div class="doc-stripe"></div>
+  <!-- CONTEÚDO -->
+  <div class="doc-inner">
+    ${conteudo}
+    ${assinatura || ''}
+    <!-- RODAPÉ -->
+    <div class="doc-footer">
+      <div class="footer-msg">${e.rodape}</div>
+      <div class="footer-num">
+        ${e.site ? e.site + '<br>' : ''}
+        ${titulo} · ${numero} · EMETech PDV v4
+      </div>
+    </div>
+  </div>
+</div>
+</body></html>`;
+}
+
+// ── BLOCO DE ASSINATURAS ───────────────────────────────
+function pdfAssinatura(nome1, cargo1, nome2 = 'Cliente', cargo2 = 'Solicitante') {
+  return `<div class="assinaturas">
+    <div class="assinatura-box">
+      <div class="assinatura-linha">
+        <div class="assinatura-nome">${nome1}</div>
+        <div class="assinatura-cargo">${cargo1}</div>
+      </div>
+    </div>
+    <div class="assinatura-box">
+      <div class="assinatura-linha">
+        <div class="assinatura-nome">${nome2}</div>
+        <div class="assinatura-cargo">${cargo2}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── AÇÕES: IMPRIMIR / BAIXAR ──────────────────────────
+function pdfImprimir(html) {
+  const area = document.getElementById('pdf-print-area');
+  area.innerHTML = html;
+  area.style.display = 'block';
+  setTimeout(() => { window.print(); setTimeout(() => { area.style.display = 'none'; area.innerHTML = ''; }, 800); }, 300);
+}
+
+function pdfBaixar(html, nomeArq) {
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = nomeArq + '.html'; a.click();
+  URL.revokeObjectURL(url);
+  notify('Arquivo baixado! Abra no navegador e use Ctrl+P para salvar como PDF.', 'info', 5000);
+}
+
+// ── MODAL DE AÇÃO PDF ──────────────────────────────────
+let _pdfHtmlAtual = '';
+let _pdfNomeAtual = '';
+
+function abrirPDFModal(html, nome) {
+  _pdfHtmlAtual = html;
+  _pdfNomeAtual = nome;
+  // Preview em iframe
+  const prev = document.getElementById('pdf-preview-frame');
+  if (prev) {
+    prev.srcdoc = html;
+  }
+  openModal('modal-pdf-viewer');
+}
+
+// ═══════════════════════════════════════════════════════
+// GERADORES ESPECÍFICOS
+// ═══════════════════════════════════════════════════════
+
+// ── PDF DA OS ─────────────────────────────────────────
+function gerarPdfOS(id) {
+  const o = [...G.os, ...(G._osConcluidas || [])].find(x => x.id === id);
+  if (!o) { notify('OS não encontrada!', 'error'); return; }
+  const e = getEmpDados();
+  const statusClass = o.status === 'Entregue' ? 'status-ok' : o.status === 'Pronto' ? 'status-info' : 'status-pend';
+
+  const pecasHtml = (o.pecas || []).length > 0 ? `
+    <div class="sec">
+      <div class="sec-title">🔩 Peças Utilizadas</div>
+      <table class="pdf-table">
+        <thead><tr><th>Peça / Material</th><th style="text-align:center">Qtd.</th><th style="text-align:right">Valor</th></tr></thead>
+        <tbody>${(o.pecas || []).map(p => `<tr>
+          <td>${p.nome}</td>
+          <td style="text-align:center">${p.qty}</td>
+          <td style="text-align:right;font-weight:700">${fmt(p.preco * p.qty)}</td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>` : '';
+
+  const conteudo = `
+    <div class="sec">
+      <div class="sec-title">👤 Dados do Cliente</div>
+      <div class="info-grid">
+        <div class="info-row"><span class="info-lbl">Nome</span><span class="info-val bold">${o.cliente_nome}</span></div>
+        ${(() => { const c = G.clientes.find(x => x.id === o.cliente_id); return c ? `
+          <div class="info-row"><span class="info-lbl">Telefone</span><span class="info-val">${c.telefone || '—'}</span></div>
+          <div class="info-row"><span class="info-lbl">CPF/CNPJ</span><span class="info-val">${c.cpf_cnpj || '—'}</span></div>
+          <div class="info-row"><span class="info-lbl">Endereço</span><span class="info-val">${[c.endereco, c.cidade].filter(Boolean).join(' — ') || '—'}</span></div>` : ''; })()}
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">📱 Dados do Equipamento</div>
+      <div class="info-grid">
+        <div class="info-row"><span class="info-lbl">Aparelho</span><span class="info-val bold">${o.aparelho}</span></div>
+        <div class="info-row"><span class="info-lbl">IMEI / S/N</span><span class="info-val">${o.imei || '—'}</span></div>
+        <div class="info-row"><span class="info-lbl">Técnico</span><span class="info-val">${o.tecnico_nome || '—'}</span></div>
+        <div class="info-row"><span class="info-lbl">Status</span><span class="info-val"><span class="status-pill ${statusClass}">${o.status}</span></span></div>
+        ${o.prazo ? `<div class="info-row"><span class="info-lbl">Prazo</span><span class="info-val">${fmtD(o.prazo + 'T12:00')}</span></div>` : ''}
+        ${o.garantia_dias ? `<div class="info-row"><span class="info-lbl">Garantia</span><span class="info-val">${o.garantia_dias} dias</span></div>` : ''}
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">🔍 Defeito Relatado</div>
+      <div style="background:#FAFAFE;border:1.5px solid #E4DEFF;border-radius:8px;padding:12px;font-size:12px;line-height:1.6;color:#1A0F3C">${o.defeito}</div>
+    </div>
+    ${o.diagnostico ? `<div class="sec">
+      <div class="sec-title">🔬 Diagnóstico Técnico</div>
+      <div style="background:#FAFAFE;border:1.5px solid #E4DEFF;border-radius:8px;padding:12px;font-size:12px;line-height:1.6">${o.diagnostico}</div>
+    </div>` : ''}
+    ${o.observacoes ? `<div class="aviso-box">⚠️ <div><strong>Observações:</strong> ${o.observacoes}</div></div>` : ''}
+    ${pecasHtml}
+    <div class="total-box">
+      <div>
+        ${o.valor_servico > 0 ? `<div style="font-size:11.5px;color:#5C4F8A;margin-bottom:3px">Serviço: <strong>${fmt(o.valor_servico)}</strong></div>` : ''}
+        ${(o.pecas || []).length > 0 ? `<div style="font-size:11.5px;color:#5C4F8A;margin-bottom:3px">Peças: <strong>${fmt((o.pecas || []).reduce((s, p) => s + p.preco * p.qty, 0))}</strong></div>` : ''}
+        <div class="total-label">Total da OS</div>
+      </div>
+      <div class="total-val">${fmt(o.total)}</div>
+    </div>`;
+
+  const assin = pdfAssinatura(o.tecnico_nome || 'Técnico Responsável', 'Técnico', o.cliente_nome, 'Cliente');
+  const html = pdfBase({ titulo: 'Ordem de Serviço', numero: o.numero, tipo: 'ORDEM DE SERVIÇO', conteudo, assinatura: assin, wmSrc: e.wmSrc, wmOp: e.wmOp });
+  abrirPDFModal(html, 'OS-' + o.numero);
+}
+
+// ── PDF DO ORÇAMENTO ──────────────────────────────────
+function gerarPdfOrcamento(id) {
+  const o = G.orcamentos.find(x => x.id === id);
+  if (!o) { notify('Orçamento não encontrado!', 'error'); return; }
+  const e = getEmpDados();
+  const itens = o.itens || [];
+  const statusClass = o.status === 'convertido' ? 'status-ok' : o.status === 'aprovado' ? 'status-info' : 'status-pend';
+
+  const conteudo = `
+    <div class="sec">
+      <div class="sec-title">👤 Dados do Cliente</div>
+      <div class="info-grid">
+        <div class="info-row"><span class="info-lbl">Nome</span><span class="info-val bold">${o.cliente_nome}</span></div>
+        <div class="info-row"><span class="info-lbl">Validade</span><span class="info-val">${o.validade ? fmtD(o.validade + 'T12:00') : '—'}</span></div>
+        <div class="info-row"><span class="info-lbl">Status</span><span class="info-val"><span class="status-pill ${statusClass}">${o.status}</span></span></div>
+        <div class="info-row"><span class="info-lbl">Elaborado por</span><span class="info-val">${o.operador_nome || '—'}</span></div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">📋 Itens do Orçamento</div>
+      <table class="pdf-table">
+        <thead><tr><th>Produto / Serviço</th><th style="text-align:center">Qtd.</th><th style="text-align:right">Unit.</th><th style="text-align:right">Total</th></tr></thead>
+        <tbody>${itens.map(i => `<tr>
+          <td>${i.nome}</td>
+          <td style="text-align:center">${i.qty}</td>
+          <td style="text-align:right">${fmt(i.preco)}</td>
+          <td style="text-align:right;font-weight:700">${fmt(i.preco * i.qty)}</td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>
+    ${o.desconto_pct > 0 ? `<div style="display:flex;justify-content:flex-end;margin-top:6px;font-size:12px;color:#9D8FC5">Desconto aplicado: <strong style="margin-left:6px;color:#EF4444">${o.desconto_pct}%</strong></div>` : ''}
+    <div class="total-box">
+      <div class="total-label">Valor Total do Orçamento</div>
+      <div class="total-val">${fmt(o.total)}</div>
+    </div>
+    ${o.observacoes ? `<div class="aviso-box" style="margin-top:12px">📝 <div><strong>Observações:</strong> ${o.observacoes}</div></div>` : ''}
+    <div style="background:#EFF6FF;border:1.5px solid #BFDBFE;border-radius:8px;padding:10px 14px;margin-top:10px;font-size:11px;color:#1E40AF">
+      📌 Este orçamento é válido até <strong>${o.validade ? fmtD(o.validade + 'T12:00') : 'data não informada'}</strong>. Após essa data os valores podem ser reajustados.
+    </div>`;
+
+  const assin = pdfAssinatura(o.operador_nome || 'Responsável Comercial', 'Operador / Vendedor', o.cliente_nome, 'Cliente');
+  const html = pdfBase({ titulo: 'Orçamento', numero: '#' + pad(o.numero || 0), tipo: 'ORÇAMENTO', conteudo, assinatura: assin, wmSrc: e.wmSrc, wmOp: e.wmOp });
+  abrirPDFModal(html, 'Orcamento-' + pad(o.numero || 0));
+}
+
+// ── PDF RELATÓRIO DE VENDAS ───────────────────────────
+function gerarPdfRelVendas() {
+  const vendas = getRelVendas();
+  const e = getEmpDados();
+  const de = document.getElementById('r-de')?.value;
+  const ate = document.getElementById('r-ate')?.value;
+  const fat = vendas.reduce((s, v) => s + v.total, 0);
+  const lucro = vendas.reduce((s, v) => s + (v.lucro || 0), 0);
+  const ticket = vendas.length ? fat / vendas.length : 0;
+  const margem = fat > 0 ? (lucro / fat * 100).toFixed(1) : 0;
+  const pL = { dinheiro: 'Dinheiro', pix: 'Pix', cartao: 'Cartão', misto: 'Misto', fiado: 'Fiado' };
+
+  const conteudo = `
+    <div class="sec">
+      <div class="sec-title">📅 Período do Relatório</div>
+      <div class="info-grid">
+        <div class="info-row"><span class="info-lbl">De</span><span class="info-val bold">${de ? fmtD(de + 'T12:00') : 'Início'}</span></div>
+        <div class="info-row"><span class="info-lbl">Até</span><span class="info-val bold">${ate ? fmtD(ate + 'T12:00') : 'Hoje'}</span></div>
+        <div class="info-row"><span class="info-lbl">Gerado por</span><span class="info-val">${G.profile?.nome || '—'}</span></div>
+        <div class="info-row"><span class="info-lbl">Total vendas</span><span class="info-val bold">${vendas.length}</span></div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin:14px 0">
+      ${[['Faturamento', fmt(fat), '#5B47E0'], ['Lucro', fmt(lucro), '#10B981'], ['Ticket Médio', fmt(ticket), '#3B82F6'], ['Margem', margem + '%', '#F59E0B']].map(([l, v, c]) => `
+      <div style="background:#FAFAFE;border:1.5px solid #E4DEFF;border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:10px;color:#9D8FC5;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">${l}</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px;color:${c}">${v}</div>
+      </div>`).join('')}
+    </div>
+    <div class="sec">
+      <div class="sec-title">📊 Detalhamento das Vendas</div>
+      <table class="pdf-table">
+        <thead><tr><th>Data</th><th>Cliente</th><th>Operador</th><th style="text-align:right">Total</th><th style="text-align:right">Lucro</th><th>Pagto.</th></tr></thead>
+        <tbody>${vendas.slice(0, 50).map(v => `<tr>
+          <td style="font-size:10.5px;color:#5C4F8A">${fmtDT(v.criado_em)}</td>
+          <td>${v.cliente_nome}</td>
+          <td style="font-size:10.5px">${v.operador_nome || '—'}</td>
+          <td style="text-align:right;font-weight:700">${fmt(v.total)}</td>
+          <td style="text-align:right;color:#059669;font-weight:700">${fmt(v.lucro || 0)}</td>
+          <td><span style="font-size:10px;background:#EDE9FF;color:#5B47E0;padding:2px 6px;border-radius:4px;font-weight:700">${pL[v.pagamento] || v.pagamento}</span></td>
+        </tr>`).join('')}</tbody>
+      </table>
+      ${vendas.length > 50 ? `<div style="text-align:center;padding:8px;font-size:11px;color:#9D8FC5">... e mais ${vendas.length - 50} vendas (exibindo os 50 mais recentes)</div>` : ''}
+    </div>
+    <div class="total-box">
+      <div><div class="total-label">Faturamento Total no Período</div><div style="font-size:11px;color:#5C4F8A;margin-top:3px">Lucro: ${fmt(lucro)} · Margem: ${margem}%</div></div>
+      <div class="total-val">${fmt(fat)}</div>
+    </div>`;
+
+  const html = pdfBase({ titulo: 'Relatório de Vendas', numero: 'REL-' + new Date().toISOString().slice(0, 10), tipo: 'RELATÓRIO DE VENDAS', conteudo, assinatura: pdfAssinatura(G.profile?.nome || 'Gerente', 'Gerente / Responsável', '', ''), wmSrc: e.wmRel, wmOp: e.wmRelOp });
+  abrirPDFModal(html, 'Relatorio-Vendas-' + new Date().toISOString().slice(0, 10));
+}
+
+// ── PDF RELATÓRIO DE ESTOQUE ──────────────────────────
+function gerarPdfRelEstoque() {
+  const e = getEmpDados();
+  const ativos = G.produtos.filter(p => p.status === 'ativo');
+  const zero = ativos.filter(p => !p.estoque_infinito && p.estoque === 0);
+  const baixo = ativos.filter(p => !p.estoque_infinito && p.estoque > 0 && p.estoque <= (p.estoque_minimo || 3));
+  const valorCusto = ativos.filter(p => !p.estoque_infinito).reduce((s, p) => s + (p.custo || 0) * p.estoque, 0);
+  const valorVenda = ativos.filter(p => !p.estoque_infinito).reduce((s, p) => s + p.preco * p.estoque, 0);
+
+  const conteudo = `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin:14px 0">
+      ${[['Total Produtos', ativos.length, '#5B47E0'], ['Sem Estoque', zero.length, '#EF4444'], ['Estoque Baixo', baixo.length, '#F59E0B'], ['Valor (custo)', fmt(valorCusto), '#10B981']].map(([l, v, c]) => `
+      <div style="background:#FAFAFE;border:1.5px solid #E4DEFF;border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:10px;color:#9D8FC5;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">${l}</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px;color:${c}">${v}</div>
+      </div>`).join('')}
+    </div>
+    ${zero.length > 0 ? `
+    <div class="sec">
+      <div class="sec-title" style="color:#EF4444">🚨 Produtos Sem Estoque — Lista para Compra</div>
+      <table class="pdf-table">
+        <thead><tr><th>Produto</th><th>SKU</th><th>Est. Mínimo</th><th>Fornecedor</th><th style="text-align:right">Custo Unit.</th></tr></thead>
+        <tbody>${zero.map(p => `<tr>
+          <td style="font-weight:600">${p.nome}</td>
+          <td style="font-size:10.5px;color:#5C4F8A">${p.sku || '—'}</td>
+          <td style="text-align:center">${p.estoque_minimo || 3}</td>
+          <td>${p.fornecedor || '—'}</td>
+          <td style="text-align:right;font-weight:700">${fmt(p.custo || 0)}</td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>` : ''}
+    ${baixo.length > 0 ? `
+    <div class="sec">
+      <div class="sec-title" style="color:#F59E0B">⚠️ Estoque Baixo — Repor em Breve</div>
+      <table class="pdf-table">
+        <thead><tr><th>Produto</th><th style="text-align:center">Atual</th><th style="text-align:center">Mínimo</th><th style="text-align:center">Repor</th></tr></thead>
+        <tbody>${baixo.map(p => `<tr>
+          <td style="font-weight:600">${p.nome}</td>
+          <td style="text-align:center;font-weight:700;color:#F59E0B">${p.estoque}</td>
+          <td style="text-align:center">${p.estoque_minimo || 3}</td>
+          <td style="text-align:center;font-weight:700;color:#EF4444">${(p.estoque_minimo || 3) - p.estoque}</td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>` : ''}
+    <div class="sec">
+      <div class="sec-title">📦 Estoque Completo</div>
+      <table class="pdf-table">
+        <thead><tr><th>Produto</th><th>Cat.</th><th style="text-align:center">Estoque</th><th style="text-align:right">Custo</th><th style="text-align:right">Valor Total</th></tr></thead>
+        <tbody>${ativos.map(p => `<tr>
+          <td style="font-weight:600">${p.nome}</td>
+          <td style="font-size:10.5px">${p.categoria || '—'}</td>
+          <td style="text-align:center;font-weight:700;color:${p.estoque_infinito ? '#5B47E0' : p.estoque === 0 ? '#EF4444' : p.estoque <= (p.estoque_minimo || 3) ? '#F59E0B' : '#059669'}">${p.estoque_infinito ? '♾️' : p.estoque}</td>
+          <td style="text-align:right">${fmt(p.custo || 0)}</td>
+          <td style="text-align:right;font-weight:700">${p.estoque_infinito ? '—' : fmt((p.custo || 0) * p.estoque)}</td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>
+    <div class="total-box">
+      <div><div class="total-label">Valor Total em Estoque (custo)</div><div style="font-size:11px;color:#5C4F8A;margin-top:3px">Valor de venda: ${fmt(valorVenda)}</div></div>
+      <div class="total-val">${fmt(valorCusto)}</div>
+    </div>`;
+
+  const html = pdfBase({ titulo: 'Relatório de Estoque', numero: 'EST-' + new Date().toISOString().slice(0, 10), tipo: 'RELATÓRIO DE ESTOQUE', conteudo, assinatura: pdfAssinatura(G.profile?.nome || 'Responsável', 'Gestor de Estoque', '', ''), wmSrc: e.wmRel, wmOp: e.wmRelOp });
+  abrirPDFModal(html, 'Relatorio-Estoque-' + new Date().toISOString().slice(0, 10));
+}
 (async()=>{
   aplicarMarcasSalvas(); // aplica logos/marcas salvas antes do login
   const {data:{session}}=await db.auth.getSession();
