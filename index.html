@@ -327,7 +327,22 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
 <!-- LOGIN -->
 <div class="ls" id="ls">
   <div class="lb">
-    <div class="l-icon"><span>ET</span></div>
+    <div class="l-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 110" fill="white" style="width:36px;height:36px">
+        <rect x="5"  y="4"  width="90" height="10" rx="2"/>
+        <polygon points="5,14 18,14 18,26 5,14"/>
+        <polygon points="95,14 82,14 82,26 95,14"/>
+        <rect x="5"  y="14" width="13" height="62" rx="1"/>
+        <rect x="82" y="14" width="13" height="62" rx="1"/>
+        <polygon points="18,14 34,14 52,44 52,56 38,56 18,22"/>
+        <polygon points="82,14 66,14 48,44 48,56 62,56 82,22"/>
+        <rect x="44" y="50" width="12" height="26" rx="1"/>
+        <rect x="5"  y="76" width="90" height="10" rx="2"/>
+        <polygon points="5,86 18,86 5,98"/>
+        <polygon points="95,86 82,86 95,98"/>
+        <rect x="5"  y="96" width="90" height="10" rx="2"/>
+      </svg>
+    </div>
     <div class="l-title">EMETech ERP</div>
     <div class="l-sub">Assistência Técnica & PDV v4.0</div>
     <div id="l-err" class="l-err"></div>
@@ -346,16 +361,31 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
     <div class="logo-area">
       <div class="logo-badge">
         <div class="logo-icon">
-          <svg xmlns="https://ibb.co/5WYxhCSR" viewBox="0 0 520 580" fill="white">
-            <rect x="20" y="20" width="480" height="52" rx="6"/>
-            <rect x="20" y="72" width="72" height="340" rx="4"/>
-            <rect x="428" y="72" width="72" height="340" rx="4"/>
-            <polygon points="92,72 180,72 260,200 260,280 188,280 92,120"/>
-            <polygon points="428,72 340,72 260,200 260,280 332,280 428,120"/>
-            <rect x="224" y="250" width="72" height="162" rx="4"/>
-            <rect x="20" y="508" width="480" height="52" rx="6"/>
-            <polygon points="20,560 92,560 20,508"/>
-            <polygon points="500,560 428,560 500,508"/>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 110" fill="white">
+            <!-- Barra superior -->
+            <rect x="5"  y="4"  width="90" height="10" rx="2"/>
+            <!-- Trapézio sup esquerdo -->
+            <polygon points="5,14 18,14 18,26 5,14"/>
+            <!-- Trapézio sup direito -->
+            <polygon points="95,14 82,14 82,26 95,14"/>
+            <!-- Coluna esquerda -->
+            <rect x="5"  y="14" width="13" height="62" rx="1"/>
+            <!-- Coluna direita -->
+            <rect x="82" y="14" width="13" height="62" rx="1"/>
+            <!-- Braço esquerdo do Y -->
+            <polygon points="18,14 34,14 52,44 52,56 38,56 18,22"/>
+            <!-- Braço direito do Y -->
+            <polygon points="82,14 66,14 48,44 48,56 62,56 82,22"/>
+            <!-- Haste vertical do Y -->
+            <rect x="44" y="50" width="12" height="26" rx="1"/>
+            <!-- Barra inferior -->
+            <rect x="5"  y="76" width="90" height="10" rx="2"/>
+            <!-- Trapézio inf esquerdo -->
+            <polygon points="5,86 18,86 5,98"/>
+            <!-- Trapézio inf direito -->
+            <polygon points="95,86 82,86 95,98"/>
+            <!-- Base -->
+            <rect x="5"  y="96" width="90" height="10" rx="2"/>
           </svg>
         </div>
         <div>
@@ -386,6 +416,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
       <div class="ni" onclick="go('relatorios')" data-p="admin,gerente"><i class="ti ti-chart-bar"></i><span class="ni-label">Relatórios</span><span class="ni-tip">Relatórios</span></div>
       <div class="nav-sec nav-adm-sec">Administração</div>
       <div class="ni nav-adm" onclick="go('usuarios')" data-p="admin"><i class="ti ti-shield-lock"></i><span class="ni-label">Usuários</span><span class="ni-tip">Usuários</span></div>
+      <div class="ni nav-adm" onclick="go('aparencia')" data-p="admin"><i class="ti ti-palette"></i><span class="ni-label">Aparência & Marca</span><span class="ni-tip">Aparência</span></div>
     </nav>
     <div class="sidebar-footer">
       <div class="user-pill">
@@ -671,28 +702,348 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
 
       <!-- RELATÓRIOS -->
       <div class="page" id="page-relatorios">
-        <div class="g4" style="margin-bottom:16px">
-          <div class="sc"><div class="sc-icon"><i class="ti ti-currency-dollar"></i></div><div class="sc-val" id="r-fat-total">R$ 0,00</div><div class="sc-lbl">Faturamento Total</div></div>
-          <div class="sc"><div class="sc-icon" style="background:#ECFDF5"><i class="ti ti-trending-up" style="color:var(--success)"></i></div><div class="sc-val" id="r-lucro-total">R$ 0,00</div><div class="sc-lbl">Lucro Total</div></div>
-          <div class="sc"><div class="sc-icon" style="background:#EFF6FF"><i class="ti ti-shopping-bag" style="color:var(--info)"></i></div><div class="sc-val" id="r-qtd-vendas">0</div><div class="sc-lbl">Total de Vendas</div></div>
-          <div class="sc"><div class="sc-icon" style="background:#FFFBEB"><i class="ti ti-receipt" style="color:var(--warn)"></i></div><div class="sc-val" id="r-ticket">R$ 0,00</div><div class="sc-lbl">Ticket Médio</div></div>
+        <!-- Filtros globais -->
+        <div class="card" style="padding:12px 16px;margin-bottom:14px">
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <div style="font-size:13px;font-weight:700;color:var(--txt2)"><i class="ti ti-filter" style="color:var(--pri)"></i> Período:</div>
+            <input type="date" id="r-de" style="padding:6px 10px;font-size:12.5px;border-radius:7px;width:auto" onchange="renderRelatorios()">
+            <span style="color:var(--txt3);font-size:13px">até</span>
+            <input type="date" id="r-ate" style="padding:6px 10px;font-size:12.5px;border-radius:7px;width:auto" onchange="renderRelatorios()">
+            <button class="btn btn-out btn-sm" onclick="setRelPeriodo('hoje')">Hoje</button>
+            <button class="btn btn-out btn-sm" onclick="setRelPeriodo('semana')">7 dias</button>
+            <button class="btn btn-out btn-sm" onclick="setRelPeriodo('mes')">Este mês</button>
+            <button class="btn btn-out btn-sm" onclick="setRelPeriodo('ano')">Este ano</button>
+            <button class="btn btn-out btn-sm" onclick="setRelPeriodo('tudo')">Tudo</button>
+          </div>
         </div>
-        <div class="gdash" style="margin-bottom:12px">
-          <div class="card"><div class="card-hdr"><div class="card-title">Produtos Mais Vendidos</div></div><div id="r-top-prod"></div></div>
-          <div class="card"><div class="card-hdr"><div class="card-title">Vendas por Pagamento</div></div><div style="height:160px"><canvas id="chart-pagamentos"></canvas></div></div>
+
+        <!-- KPIs -->
+        <div class="g4" style="margin-bottom:14px">
+          <div class="sc"><div class="sc-icon"><i class="ti ti-currency-dollar"></i></div><div class="sc-val" id="r-fat">R$ 0,00</div><div class="sc-lbl">Faturamento</div></div>
+          <div class="sc"><div class="sc-icon" style="background:#ECFDF5"><i class="ti ti-trending-up" style="color:var(--success)"></i></div><div class="sc-val" id="r-lucro">R$ 0,00</div><div class="sc-lbl">Lucro</div></div>
+          <div class="sc"><div class="sc-icon" style="background:#EFF6FF"><i class="ti ti-receipt" style="color:var(--info)"></i></div><div class="sc-val" id="r-ticket">R$ 0,00</div><div class="sc-lbl">Ticket Médio</div></div>
+          <div class="sc"><div class="sc-icon" style="background:#FFFBEB"><i class="ti ti-percentage" style="color:var(--warn)"></i></div><div class="sc-val" id="r-margem">0%</div><div class="sc-lbl">Margem</div></div>
         </div>
-        <div class="card" style="padding:0">
-          <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-            <div class="card-title">Histórico de Vendas</div>
-            <div style="display:flex;gap:8px">
-              <input type="date" id="r-de" style="padding:6px 10px;font-size:12px;border-radius:7px;width:auto" onchange="renderRelVendas()">
-              <input type="date" id="r-ate" style="padding:6px 10px;font-size:12px;border-radius:7px;width:auto" onchange="renderRelVendas()">
+
+        <!-- Abas de relatório -->
+        <div class="fin-tabs" style="margin-bottom:14px">
+          <button class="fin-tab active" onclick="relTab('vendas',this)"><i class="ti ti-shopping-cart" style="font-size:13px"></i> Vendas</button>
+          <button class="fin-tab" onclick="relTab('operadores',this)"><i class="ti ti-users" style="font-size:13px"></i> Operadores</button>
+          <button class="fin-tab" onclick="relTab('produtos',this)"><i class="ti ti-package" style="font-size:13px"></i> Produtos</button>
+          <button class="fin-tab" onclick="relTab('os',this)"><i class="ti ti-tools" style="font-size:13px"></i> OS / Técnicos</button>
+          <button class="fin-tab" onclick="relTab('clientes',this)"><i class="ti ti-users" style="font-size:13px"></i> Clientes</button>
+          <button class="fin-tab" onclick="relTab('estoque',this)"><i class="ti ti-package" style="font-size:13px"></i> Estoque</button>
+          <button class="fin-tab" onclick="relTab('pagamentos',this)"><i class="ti ti-credit-card" style="font-size:13px"></i> Pagamentos</button>
+        </div>
+
+        <!-- ── VENDAS ── -->
+        <div id="rel-vendas">
+          <div class="gdash" style="margin-bottom:12px">
+            <div class="card"><div class="card-hdr"><div class="card-title">Vendas por Dia</div></div><div style="height:160px"><canvas id="chart-v-dia"></canvas></div></div>
+            <div class="card"><div class="card-hdr"><div class="card-title">Vendas por Hora</div></div><div style="height:160px"><canvas id="chart-v-hora"></canvas></div></div>
+          </div>
+          <div class="card" style="padding:0">
+            <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+              <div class="card-title">Histórico de Vendas</div>
+              <span id="r-vendas-count" style="font-size:12px;color:var(--txt3)"></span>
+            </div>
+            <div class="tw"><table>
+              <thead><tr><th>Data/Hora</th><th>Cliente</th><th>Operador</th><th>Total</th><th>Custo</th><th>Lucro</th><th>Margem</th><th>Pagamento</th></tr></thead>
+              <tbody id="rel-v-table"></tbody>
+            </table></div>
+          </div>
+        </div>
+
+        <!-- ── OPERADORES ── -->
+        <div id="rel-operadores" style="display:none">
+          <div class="gdash" style="margin-bottom:12px">
+            <div class="card"><div class="card-hdr"><div class="card-title">Faturamento por Operador</div></div><div style="height:180px"><canvas id="chart-op-fat"></canvas></div></div>
+            <div class="card"><div class="card-hdr"><div class="card-title">Qtd. Vendas por Operador</div></div><div style="height:180px"><canvas id="chart-op-qtd"></canvas></div></div>
+          </div>
+          <div class="card" style="padding:0">
+            <div style="padding:12px 16px;border-bottom:1px solid var(--border)"><div class="card-title">Ranking de Operadores</div></div>
+            <div class="tw"><table>
+              <thead><tr><th>#</th><th>Operador</th><th>Vendas</th><th>Faturamento</th><th>Lucro</th><th>Ticket Médio</th><th>Melhor Dia</th></tr></thead>
+              <tbody id="rel-op-table"></tbody>
+            </table></div>
+          </div>
+        </div>
+
+        <!-- ── PRODUTOS ── -->
+        <div id="rel-produtos" style="display:none">
+          <div class="gdash" style="margin-bottom:12px">
+            <div class="card"><div class="card-hdr"><div class="card-title">Top 8 Mais Vendidos (Qtd.)</div></div><div style="height:180px"><canvas id="chart-prod-qtd"></canvas></div></div>
+            <div class="card"><div class="card-hdr"><div class="card-title">Top 8 por Faturamento</div></div><div style="height:180px"><canvas id="chart-prod-fat"></canvas></div></div>
+          </div>
+          <div class="card" style="padding:0">
+            <div style="padding:12px 16px;border-bottom:1px solid var(--border)"><div class="card-title">Margem de Lucro por Produto</div></div>
+            <div class="tw"><table>
+              <thead><tr><th>Produto</th><th>Qtd. Vendida</th><th>Faturamento</th><th>Custo Total</th><th>Lucro</th><th>Margem %</th></tr></thead>
+              <tbody id="rel-prod-table"></tbody>
+            </table></div>
+          </div>
+        </div>
+
+        <!-- ── OS / TÉCNICOS ── -->
+        <div id="rel-os" style="display:none">
+          <div class="g4" style="margin-bottom:12px">
+            <div class="sc"><div class="sc-icon" style="background:#FFFBEB"><i class="ti ti-clock" style="color:var(--warn)"></i></div><div class="sc-val" id="r-os-total">0</div><div class="sc-lbl">OS no Período</div></div>
+            <div class="sc"><div class="sc-icon" style="background:#ECFDF5"><i class="ti ti-check" style="color:var(--success)"></i></div><div class="sc-val" id="r-os-conc">0</div><div class="sc-lbl">Concluídas</div></div>
+            <div class="sc"><div class="sc-icon" style="background:#FEF2F2"><i class="ti ti-x" style="color:var(--danger)"></i></div><div class="sc-val" id="r-os-pend">0</div><div class="sc-lbl">Em Aberto</div></div>
+            <div class="sc"><div class="sc-icon" style="background:#EFF6FF"><i class="ti ti-currency-dollar" style="color:var(--info)"></i></div><div class="sc-val" id="r-os-fat">R$ 0,00</div><div class="sc-lbl">Faturamento OS</div></div>
+          </div>
+          <div class="gdash" style="margin-bottom:12px">
+            <div class="card"><div class="card-hdr"><div class="card-title">OS por Status</div></div><div style="height:160px"><canvas id="chart-os-status"></canvas></div></div>
+            <div class="card"><div class="card-hdr"><div class="card-title">OS por Aparelho/Marca</div></div><div id="rel-os-aparelhos"></div></div>
+          </div>
+          <div class="card" style="padding:0">
+            <div style="padding:12px 16px;border-bottom:1px solid var(--border)"><div class="card-title">Ranking de Técnicos</div></div>
+            <div class="tw"><table>
+              <thead><tr><th>#</th><th>Técnico</th><th>OS Concluídas</th><th>Em Aberto</th><th>Faturamento</th><th>Ticket Médio</th></tr></thead>
+              <tbody id="rel-tec-table"></tbody>
+            </table></div>
+          </div>
+        </div>
+
+        <!-- ── CLIENTES ── -->
+        <div id="rel-clientes" style="display:none">
+          <div class="g4" style="margin-bottom:12px">
+            <div class="sc"><div class="sc-icon"><i class="ti ti-users"></i></div><div class="sc-val" id="r-cli-total">0</div><div class="sc-lbl">Clientes Ativos</div></div>
+            <div class="sc"><div class="sc-icon" style="background:#ECFDF5"><i class="ti ti-user-plus" style="color:var(--success)"></i></div><div class="sc-val" id="r-cli-novos">0</div><div class="sc-lbl">Novos no Período</div></div>
+            <div class="sc"><div class="sc-icon" style="background:#EFF6FF"><i class="ti ti-repeat" style="color:var(--info)"></i></div><div class="sc-val" id="r-cli-recorrentes">0</div><div class="sc-lbl">Recorrentes</div></div>
+            <div class="sc"><div class="sc-icon" style="background:#FFFBEB"><i class="ti ti-star" style="color:var(--warn)"></i></div><div class="sc-val" id="r-cli-ticket">R$ 0,00</div><div class="sc-lbl">Maior Ticket</div></div>
+          </div>
+          <div class="card" style="padding:0">
+            <div style="padding:12px 16px;border-bottom:1px solid var(--border)"><div class="card-title">Clientes Mais Ativos</div></div>
+            <div class="tw"><table>
+              <thead><tr><th>#</th><th>Cliente</th><th>Compras</th><th>OS</th><th>Total Gasto</th><th>Ticket Médio</th><th>Última Visita</th></tr></thead>
+              <tbody id="rel-cli-table"></tbody>
+            </table></div>
+          </div>
+        </div>
+
+        <!-- ── ESTOQUE ── -->
+        <div id="rel-estoque" style="display:none">
+          <div class="g4" style="margin-bottom:12px">
+            <div class="sc"><div class="sc-icon"><i class="ti ti-package"></i></div><div class="sc-val" id="r-est-total">0</div><div class="sc-lbl">Produtos Ativos</div></div>
+            <div class="sc"><div class="sc-icon" style="background:#FEF2F2"><i class="ti ti-alert-circle" style="color:var(--danger)"></i></div><div class="sc-val" id="r-est-zero">0</div><div class="sc-lbl">Sem Estoque</div></div>
+            <div class="sc"><div class="sc-icon" style="background:#FFFBEB"><i class="ti ti-alert-triangle" style="color:var(--warn)"></i></div><div class="sc-val" id="r-est-baixo">0</div><div class="sc-lbl">Estoque Baixo</div></div>
+            <div class="sc"><div class="sc-icon" style="background:#ECFDF5"><i class="ti ti-currency-dollar" style="color:var(--success)"></i></div><div class="sc-val" id="r-est-valor">R$ 0,00</div><div class="sc-lbl">Valor em Estoque</div></div>
+          </div>
+          <div class="gdash" style="margin-bottom:12px">
+            <div class="card" style="padding:0">
+              <div style="padding:12px 16px;border-bottom:1px solid var(--border)"><div class="card-title" style="color:var(--danger)"><i class="ti ti-alert-circle"></i> Produtos Sem Estoque — Lista p/ Compra</div></div>
+              <div class="tw"><table>
+                <thead><tr><th>Produto</th><th>SKU</th><th>Estoque Mín.</th><th>Fornecedor</th><th>Preço Custo</th></tr></thead>
+                <tbody id="rel-est-zero-table"></tbody>
+              </table></div>
+            </div>
+            <div class="card" style="padding:0">
+              <div style="padding:12px 16px;border-bottom:1px solid var(--border)"><div class="card-title" style="color:var(--warn)"><i class="ti ti-alert-triangle"></i> Estoque Baixo — Repor em Breve</div></div>
+              <div class="tw"><table>
+                <thead><tr><th>Produto</th><th>Atual</th><th>Mínimo</th><th>Diferença</th></tr></thead>
+                <tbody id="rel-est-baixo-table"></tbody>
+              </table></div>
             </div>
           </div>
-          <div class="tw"><table>
-            <thead><tr><th>Data</th><th>Cliente</th><th>Operador</th><th>Total</th><th>Custo</th><th>Lucro</th><th>Pagamento</th></tr></thead>
-            <tbody id="rel-v-table"></tbody>
-          </table></div>
+          <div class="card" style="padding:0">
+            <div style="padding:12px 16px;border-bottom:1px solid var(--border)"><div class="card-title">Valor de Estoque por Categoria</div></div>
+            <div class="tw"><table>
+              <thead><tr><th>Categoria</th><th>Qtd. Produtos</th><th>Total em Estoque (un.)</th><th>Valor (custo)</th><th>Valor (venda)</th></tr></thead>
+              <tbody id="rel-est-cat-table"></tbody>
+            </table></div>
+          </div>
+        </div>
+
+        <!-- ── PAGAMENTOS ── -->
+        <div id="rel-pagamentos" style="display:none">
+          <div class="gdash" style="margin-bottom:12px">
+            <div class="card"><div class="card-hdr"><div class="card-title">Distribuição por Forma de Pagamento</div></div><div style="height:200px"><canvas id="chart-pag-dist"></canvas></div></div>
+            <div class="card"><div class="card-hdr"><div class="card-title">Faturamento por Forma</div></div><div style="height:200px"><canvas id="chart-pag-fat"></canvas></div></div>
+          </div>
+          <div class="card" style="padding:0">
+            <div style="padding:12px 16px;border-bottom:1px solid var(--border)"><div class="card-title">Resumo por Forma de Pagamento</div></div>
+            <div class="tw"><table>
+              <thead><tr><th>Forma</th><th>Qtd. Vendas</th><th>% das Vendas</th><th>Total</th><th>% do Faturamento</th><th>Ticket Médio</th></tr></thead>
+              <tbody id="rel-pag-table"></tbody>
+            </table></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- APARÊNCIA & MARCA -->
+      <div class="page" id="page-aparencia">
+        <div class="sg" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px">
+          <div class="sc"><div class="sc-icon"><i class="ti ti-photo"></i></div><div class="sc-val" id="ap-count-logos">2</div><div class="sc-lbl">Logos Configuradas</div></div>
+          <div class="sc"><div class="sc-icon" style="background:#ECFDF5"><i class="ti ti-droplet" style="color:var(--success)"></i></div><div class="sc-val" id="ap-count-wm">2</div><div class="sc-lbl">Marcas D'água</div></div>
+          <div class="sc"><div class="sc-icon" style="background:#FFFBEB"><i class="ti ti-refresh" style="color:var(--warn)"></i></div><div class="sc-val" id="ap-last-update">—</div><div class="sc-lbl">Última Atualização</div></div>
+        </div>
+
+        <!-- LOGOS -->
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-hdr">
+            <div class="card-title"><i class="ti ti-photo" style="color:var(--pri);margin-right:6px"></i>Logos do Sistema</div>
+            <button class="btn btn-pri btn-sm" onclick="salvarAparencia()"><i class="ti ti-device-floppy"></i>Salvar Tudo</button>
+          </div>
+          <div class="g2" style="gap:20px">
+
+            <!-- Logo Login -->
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px">
+              <div style="font-size:13px;font-weight:700;color:var(--txt);margin-bottom:4px"><i class="ti ti-login" style="color:var(--pri)"></i> Logo da Tela de Login</div>
+              <div style="font-size:12px;color:var(--txt3);margin-bottom:14px">Exibida centralizada na tela de entrada do sistema</div>
+              <!-- Preview -->
+              <div style="background:linear-gradient(135deg,var(--pri-dark),var(--pri) 50%,var(--pri2));border-radius:10px;padding:24px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;min-height:100px">
+                <div id="prev-logo-login" style="width:64px;height:64px;border-radius:16px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;overflow:hidden">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 110" fill="white" style="width:40px;height:40px">
+                    <rect x="5" y="4" width="90" height="10" rx="2"/><polygon points="5,14 18,14 18,26 5,14"/><polygon points="95,14 82,14 82,26 95,14"/>
+                    <rect x="5" y="14" width="13" height="62" rx="1"/><rect x="82" y="14" width="13" height="62" rx="1"/>
+                    <polygon points="18,14 34,14 52,44 52,56 38,56 18,22"/><polygon points="82,14 66,14 48,44 48,56 62,56 82,22"/>
+                    <rect x="44" y="50" width="12" height="26" rx="1"/><rect x="5" y="76" width="90" height="10" rx="2"/>
+                    <polygon points="5,86 18,86 5,98"/><polygon points="95,86 82,86 95,98"/><rect x="5" y="96" width="90" height="10" rx="2"/>
+                  </svg>
+                </div>
+              </div>
+              <label class="ap-upload-btn" onclick="triggerUpload('logo-login')">
+                <i class="ti ti-upload"></i> Trocar Logo do Login
+                <input type="file" id="upload-logo-login" accept="image/*" style="display:none" onchange="handleLogoUpload(event,'login')">
+              </label>
+              <button class="btn btn-danger btn-sm" style="width:100%;justify-content:center;margin-top:6px" onclick="resetLogo('login')"><i class="ti ti-refresh"></i>Restaurar Padrão</button>
+            </div>
+
+            <!-- Logo Sidebar -->
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px">
+              <div style="font-size:13px;font-weight:700;color:var(--txt);margin-bottom:4px"><i class="ti ti-layout-sidebar" style="color:var(--pri)"></i> Logo da Barra Lateral</div>
+              <div style="font-size:12px;color:var(--txt3);margin-bottom:14px">Ícone exibido no topo da sidebar ao recolher/expandir</div>
+              <!-- Preview -->
+              <div style="background:linear-gradient(170deg,var(--pri-dark),var(--pri) 60%,var(--pri2));border-radius:10px;padding:16px;display:flex;align-items:center;gap:12px;margin-bottom:12px">
+                <div id="prev-logo-sidebar" style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;overflow:hidden;padding:4px;flex-shrink:0">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 110" fill="white" style="width:100%;height:100%">
+                    <rect x="5" y="4" width="90" height="10" rx="2"/><polygon points="5,14 18,14 18,26 5,14"/><polygon points="95,14 82,14 82,26 95,14"/>
+                    <rect x="5" y="14" width="13" height="62" rx="1"/><rect x="82" y="14" width="13" height="62" rx="1"/>
+                    <polygon points="18,14 34,14 52,44 52,56 38,56 18,22"/><polygon points="82,14 66,14 48,44 48,56 62,56 82,22"/>
+                    <rect x="44" y="50" width="12" height="26" rx="1"/><rect x="5" y="76" width="90" height="10" rx="2"/>
+                    <polygon points="5,86 18,86 5,98"/><polygon points="95,86 82,86 95,98"/><rect x="5" y="96" width="90" height="10" rx="2"/>
+                  </svg>
+                </div>
+                <div>
+                  <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:14px;color:#fff">EMETech</div>
+                  <div style="font-size:9px;color:rgba(255,255,255,.5);letter-spacing:1.5px;text-transform:uppercase">ERP PDV v4</div>
+                </div>
+              </div>
+              <label class="ap-upload-btn" onclick="triggerUpload('logo-sidebar')">
+                <i class="ti ti-upload"></i> Trocar Logo da Sidebar
+                <input type="file" id="upload-logo-sidebar" accept="image/*" style="display:none" onchange="handleLogoUpload(event,'sidebar')">
+              </label>
+              <button class="btn btn-danger btn-sm" style="width:100%;justify-content:center;margin-top:6px" onclick="resetLogo('sidebar')"><i class="ti ti-refresh"></i>Restaurar Padrão</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- MARCAS D'ÁGUA -->
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-hdr">
+            <div class="card-title"><i class="ti ti-droplet" style="color:var(--pri);margin-right:6px"></i>Marcas D'água — PDFs e Impressões</div>
+          </div>
+          <div class="alert-box alert-info" style="margin-bottom:16px">
+            <i class="ti ti-info-circle" style="font-size:16px"></i>
+            <div>A marca d'água aparece centralizada e transparente nos PDFs de <strong>OS, Relatórios e Orçamentos</strong>. Recomendado: imagem com fundo transparente (PNG).</div>
+          </div>
+          <div class="g2" style="gap:20px">
+
+            <!-- Marca OS -->
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px">
+              <div style="font-size:13px;font-weight:700;color:var(--txt);margin-bottom:4px"><i class="ti ti-tools" style="color:var(--pri)"></i> Marca D'água — Ordens de Serviço</div>
+              <div style="font-size:12px;color:var(--txt3);margin-bottom:14px">Impressa ao fundo nas OS impressas/exportadas</div>
+              <!-- Preview PDF simulado -->
+              <div id="prev-wm-os" style="background:#f8f8f8;border:1px solid #ddd;border-radius:8px;height:140px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;position:relative;overflow:hidden">
+                <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0.12;transform:rotate(-20deg)">
+                  <div id="wm-os-content" style="display:flex;align-items:center;justify-content:center">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 110" fill="#5B47E0" style="width:80px;height:80px">
+                      <rect x="5" y="4" width="90" height="10" rx="2"/><polygon points="5,14 18,14 18,26 5,14"/><polygon points="95,14 82,14 82,26 95,14"/>
+                      <rect x="5" y="14" width="13" height="62" rx="1"/><rect x="82" y="14" width="13" height="62" rx="1"/>
+                      <polygon points="18,14 34,14 52,44 52,56 38,56 18,22"/><polygon points="82,14 66,14 48,44 48,56 62,56 82,22"/>
+                      <rect x="44" y="50" width="12" height="26" rx="1"/><rect x="5" y="76" width="90" height="10" rx="2"/>
+                      <polygon points="5,86 18,86 5,98"/><polygon points="95,86 82,86 95,98"/><rect x="5" y="96" width="90" height="10" rx="2"/>
+                    </svg>
+                  </div>
+                </div>
+                <div style="z-index:1;text-align:center">
+                  <div style="font-size:11px;color:#888;font-weight:600">Preview PDF — OS</div>
+                  <div style="font-size:10px;color:#aaa">Conteúdo da OS aqui</div>
+                </div>
+              </div>
+              <label class="ap-upload-btn" onclick="triggerUpload('wm-os')">
+                <i class="ti ti-upload"></i> Trocar Marca D'água OS
+                <input type="file" id="upload-wm-os" accept="image/*" style="display:none" onchange="handleWMUpload(event,'os')">
+              </label>
+              <div style="margin-top:10px">
+                <label class="lbl">Opacidade</label>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <input type="range" id="wm-os-opacity" min="5" max="40" value="12" style="flex:1;height:4px;padding:0;border:none;background:var(--border);border-radius:2px;cursor:pointer" oninput="updateWMOpacity('os',this.value)">
+                  <span id="wm-os-opacity-val" style="font-size:12px;font-weight:700;color:var(--pri);min-width:32px">12%</span>
+                </div>
+              </div>
+              <button class="btn btn-danger btn-sm" style="width:100%;justify-content:center;margin-top:8px" onclick="resetWM('os')"><i class="ti ti-refresh"></i>Restaurar Padrão</button>
+            </div>
+
+            <!-- Marca Relatórios -->
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px">
+              <div style="font-size:13px;font-weight:700;color:var(--txt);margin-bottom:4px"><i class="ti ti-chart-bar" style="color:var(--pri)"></i> Marca D'água — Relatórios & Dashboard</div>
+              <div style="font-size:12px;color:var(--txt3);margin-bottom:14px">Impressa ao fundo nos relatórios exportados</div>
+              <!-- Preview PDF simulado -->
+              <div id="prev-wm-rel" style="background:#f8f8f8;border:1px solid #ddd;border-radius:8px;height:140px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;position:relative;overflow:hidden">
+                <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0.12;transform:rotate(-20deg)">
+                  <div id="wm-rel-content" style="display:flex;align-items:center;justify-content:center">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 110" fill="#5B47E0" style="width:80px;height:80px">
+                      <rect x="5" y="4" width="90" height="10" rx="2"/><polygon points="5,14 18,14 18,26 5,14"/><polygon points="95,14 82,14 82,26 95,14"/>
+                      <rect x="5" y="14" width="13" height="62" rx="1"/><rect x="82" y="14" width="13" height="62" rx="1"/>
+                      <polygon points="18,14 34,14 52,44 52,56 38,56 18,22"/><polygon points="82,14 66,14 48,44 48,56 62,56 82,22"/>
+                      <rect x="44" y="50" width="12" height="26" rx="1"/><rect x="5" y="76" width="90" height="10" rx="2"/>
+                      <polygon points="5,86 18,86 5,98"/><polygon points="95,86 82,86 95,98"/><rect x="5" y="96" width="90" height="10" rx="2"/>
+                    </svg>
+                  </div>
+                </div>
+                <div style="z-index:1;text-align:center">
+                  <div style="font-size:11px;color:#888;font-weight:600">Preview PDF — Relatório</div>
+                  <div style="font-size:10px;color:#aaa">Dados do dashboard aqui</div>
+                </div>
+              </div>
+              <label class="ap-upload-btn" onclick="triggerUpload('wm-rel')">
+                <i class="ti ti-upload"></i> Trocar Marca D'água Relatório
+                <input type="file" id="upload-wm-rel" accept="image/*" style="display:none" onchange="handleWMUpload(event,'rel')">
+              </label>
+              <div style="margin-top:10px">
+                <label class="lbl">Opacidade</label>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <input type="range" id="wm-rel-opacity" min="5" max="40" value="12" style="flex:1;height:4px;padding:0;border:none;background:var(--border);border-radius:2px;cursor:pointer" oninput="updateWMOpacity('rel',this.value)">
+                  <span id="wm-rel-opacity-val" style="font-size:12px;font-weight:700;color:var(--pri);min-width:32px">12%</span>
+                </div>
+              </div>
+              <button class="btn btn-danger btn-sm" style="width:100%;justify-content:center;margin-top:8px" onclick="resetWM('rel')"><i class="ti ti-refresh"></i>Restaurar Padrão</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- INFO EMPRESA nos PDFs -->
+        <div class="card">
+          <div class="card-hdr">
+            <div class="card-title"><i class="ti ti-building" style="color:var(--pri);margin-right:6px"></i>Dados da Empresa nos PDFs</div>
+          </div>
+          <div class="g2">
+            <div>
+              <div class="fg"><label class="lbl">Nome / Razão Social</label><input type="text" id="emp-nome" placeholder="EMETech Assistência Técnica"></div>
+              <div class="fg"><label class="lbl">CNPJ / CPF</label><input type="text" id="emp-cnpj" placeholder="00.000.000/0000-00"></div>
+              <div class="fg"><label class="lbl">Telefone</label><input type="text" id="emp-tel" placeholder="(71) 99999-0000"></div>
+              <div class="fg"><label class="lbl">E-mail</label><input type="email" id="emp-email" placeholder="contato@emetech.com"></div>
+            </div>
+            <div>
+              <div class="fg"><label class="lbl">Endereço</label><input type="text" id="emp-end" placeholder="Rua, número, bairro"></div>
+              <div class="fg"><label class="lbl">Cidade / Estado</label><input type="text" id="emp-cid" placeholder="Irará — BA"></div>
+              <div class="fg"><label class="lbl">Site</label><input type="text" id="emp-site" placeholder="www.emetech.com.br"></div>
+              <div class="fg"><label class="lbl">Mensagem no rodapé dos PDFs</label><textarea id="emp-rodape" rows="2" placeholder="Obrigado pela preferência! Garantia de 90 dias."></textarea></div>
+            </div>
+          </div>
+          <button class="btn btn-pri" style="margin-top:4px" onclick="salvarEmpresa()"><i class="ti ti-check"></i>Salvar Dados da Empresa</button>
         </div>
       </div>
 
@@ -986,8 +1337,8 @@ const LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 580" 
 </svg>`;
 
 /* ── SUPABASE CONFIG ─────────────────────────────────── */
-const SURL = 'https://icgfpfwcnhkjglrmnuca.supabase.co';
-const SKEY = 'sb_publishable_wMj9DjSyr_5oblApVRoOqA_47E3022p';
+const SURL = 'https://SEU-PROJETO.supabase.co';
+const SKEY = 'SUA-CHAVE-ANON-AQUI';
 const { createClient } = supabase;
 const db = createClient(SURL, SKEY);
 
@@ -1144,7 +1495,7 @@ function go(page){
     financeiro:()=>{renderFinanceiro();popLancCli();},
     clientes:renderClientes,
     relatorios:renderRelatorios,
-    usuarios:renderUsuarios
+    aparencia:renderAparencia,
   };
   R[page]?.();
 }
@@ -2149,6 +2500,212 @@ function renderDashboard(){
   if(ctxfc){G.charts.fc=new Chart(ctxfc,{type:'bar',data:{labels:['A Receber','A Pagar','Saldo'],datasets:[{data:[entH,saiH,entH-saiH],backgroundColor:['rgba(16,185,129,.75)','rgba(239,68,68,.75)',entH-saiH>=0?'rgba(91,71,224,.75)':'rgba(239,68,68,.75)'],borderRadius:5,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:11}}},y:{ticks:{callback:v=>'R$'+v,font:{size:10}}}}}});}
 }
 
+/* ── APARÊNCIA & MARCA ───────────────────────────────── */
+
+// Estado das imagens de marca
+const MARCA_DEFAULT_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 110" fill="white" style="width:100%;height:100%"><rect x="5" y="4" width="90" height="10" rx="2"/><polygon points="5,14 18,14 18,26 5,14"/><polygon points="95,14 82,14 82,26 95,14"/><rect x="5" y="14" width="13" height="62" rx="1"/><rect x="82" y="14" width="13" height="62" rx="1"/><polygon points="18,14 34,14 52,44 52,56 38,56 18,22"/><polygon points="82,14 66,14 48,44 48,56 62,56 82,22"/><rect x="44" y="50" width="12" height="26" rx="1"/><rect x="5" y="76" width="90" height="10" rx="2"/><polygon points="5,86 18,86 5,98"/><polygon points="95,86 82,86 95,98"/><rect x="5" y="96" width="90" height="10" rx="2"/></svg>`;
+
+const MARCA_DEFAULT_SVG_DARK = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 110" fill="#5B47E0" style="width:80px;height:80px"><rect x="5" y="4" width="90" height="10" rx="2"/><polygon points="5,14 18,14 18,26 5,14"/><polygon points="95,14 82,14 82,26 95,14"/><rect x="5" y="14" width="13" height="62" rx="1"/><rect x="82" y="14" width="13" height="62" rx="1"/><polygon points="18,14 34,14 52,44 52,56 38,56 18,22"/><polygon points="82,14 66,14 48,44 48,56 62,56 82,22"/><rect x="44" y="50" width="12" height="26" rx="1"/><rect x="5" y="76" width="90" height="10" rx="2"/><polygon points="5,86 18,86 5,98"/><polygon points="95,86 82,86 95,98"/><rect x="5" y="96" width="90" height="10" rx="2"/></svg>`;
+
+let MARCA = {
+  logoLogin: null,    // base64 ou null (usa SVG padrão)
+  logoSidebar: null,
+  wmOS: null,
+  wmRel: null,
+  wmOsOpacity: 12,
+  wmRelOpacity: 12,
+  empresa: {}
+};
+
+function renderAparencia() {
+  // Carrega dados salvos no localStorage
+  const saved = localStorage.getItem('emetech_marca');
+  if (saved) {
+    try { MARCA = { ...MARCA, ...JSON.parse(saved) }; } catch(e){}
+  }
+  // Atualiza previews com dados salvos
+  if (MARCA.logoLogin) atualizarPrevLogin(MARCA.logoLogin);
+  if (MARCA.logoSidebar) atualizarPrevSidebar(MARCA.logoSidebar);
+  if (MARCA.wmOS) atualizarPrevWM('os', MARCA.wmOS);
+  if (MARCA.wmRel) atualizarPrevWM('rel', MARCA.wmRel);
+  // Opacidade
+  const opOS = document.getElementById('wm-os-opacity');
+  const opRel = document.getElementById('wm-rel-opacity');
+  if (opOS) { opOS.value = MARCA.wmOsOpacity; document.getElementById('wm-os-opacity-val').textContent = MARCA.wmOsOpacity + '%'; }
+  if (opRel) { opRel.value = MARCA.wmRelOpacity; document.getElementById('wm-rel-opacity-val').textContent = MARCA.wmRelOpacity + '%'; }
+  // Dados empresa
+  const emp = MARCA.empresa || {};
+  ['nome','cnpj','tel','email','end','cid','site','rodape'].forEach(k => {
+    const el = document.getElementById('emp-' + k);
+    if (el && emp[k]) el.value = emp[k];
+  });
+  // Stats
+  const logos = (MARCA.logoLogin ? 1 : 0) + (MARCA.logoSidebar ? 1 : 0);
+  document.getElementById('ap-count-logos').textContent = logos + '/2';
+  const wms = (MARCA.wmOS ? 1 : 0) + (MARCA.wmRel ? 1 : 0);
+  document.getElementById('ap-count-wm').textContent = wms + '/2';
+}
+
+function triggerUpload(id) {
+  document.getElementById('upload-' + id)?.click();
+}
+
+function handleLogoUpload(e, tipo) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const b64 = ev.target.result;
+    if (tipo === 'login') { MARCA.logoLogin = b64; atualizarPrevLogin(b64); atualizarLogoLoginReal(b64); }
+    else { MARCA.logoSidebar = b64; atualizarPrevSidebar(b64); atualizarLogoSidebarReal(b64); }
+    notify('Logo atualizada! Clique em "Salvar Tudo" para persistir.', 'info');
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+}
+
+function handleWMUpload(e, tipo) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const b64 = ev.target.result;
+    if (tipo === 'os') { MARCA.wmOS = b64; atualizarPrevWM('os', b64); }
+    else { MARCA.wmRel = b64; atualizarPrevWM('rel', b64); }
+    notify('Marca d\'água atualizada! Clique em "Salvar Tudo" para persistir.', 'info');
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+}
+
+function atualizarPrevLogin(b64) {
+  const el = document.getElementById('prev-logo-login');
+  if (!el) return;
+  el.innerHTML = `<img src="${b64}" style="width:100%;height:100%;object-fit:contain">`;
+}
+
+function atualizarPrevSidebar(b64) {
+  const el = document.getElementById('prev-logo-sidebar');
+  if (!el) return;
+  el.innerHTML = `<img src="${b64}" style="width:100%;height:100%;object-fit:contain">`;
+}
+
+function atualizarPrevWM(tipo, b64) {
+  const id = tipo === 'os' ? 'wm-os-content' : 'wm-rel-content';
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = `<img src="${b64}" style="width:80px;height:80px;object-fit:contain">`;
+}
+
+function atualizarLogoLoginReal(b64) {
+  // Atualiza o ícone real da tela de login
+  const el = document.querySelector('.l-icon');
+  if (el) el.innerHTML = `<img src="${b64}" style="width:36px;height:36px;object-fit:contain">`;
+}
+
+function atualizarLogoSidebarReal(b64) {
+  // Atualiza o ícone real da sidebar
+  const el = document.querySelector('.logo-icon');
+  if (el) el.innerHTML = `<img src="${b64}" style="width:100%;height:100%;object-fit:contain;filter:brightness(0) invert(1)">`;
+}
+
+function updateWMOpacity(tipo, val) {
+  const pct = parseInt(val);
+  document.getElementById(`wm-${tipo}-opacity-val`).textContent = pct + '%';
+  const wrapper = document.querySelector(`#prev-wm-${tipo} > div:first-child`);
+  if (wrapper) wrapper.style.opacity = pct / 100;
+  if (tipo === 'os') MARCA.wmOsOpacity = pct;
+  else MARCA.wmRelOpacity = pct;
+}
+
+function resetLogo(tipo) {
+  if (tipo === 'login') {
+    MARCA.logoLogin = null;
+    const el = document.getElementById('prev-logo-login');
+    if (el) el.innerHTML = MARCA_DEFAULT_SVG;
+    // Restaura login real
+    const loginEl = document.querySelector('.l-icon');
+    if (loginEl) loginEl.innerHTML = MARCA_DEFAULT_SVG;
+  } else {
+    MARCA.logoSidebar = null;
+    const el = document.getElementById('prev-logo-sidebar');
+    if (el) el.innerHTML = MARCA_DEFAULT_SVG;
+    // Restaura sidebar real
+    const sideEl = document.querySelector('.logo-icon');
+    if (sideEl) sideEl.innerHTML = MARCA_DEFAULT_SVG;
+  }
+  notify('Logo restaurada ao padrão.', 'info');
+}
+
+function resetWM(tipo) {
+  if (tipo === 'os') {
+    MARCA.wmOS = null;
+    const el = document.getElementById('wm-os-content');
+    if (el) el.innerHTML = MARCA_DEFAULT_SVG_DARK;
+  } else {
+    MARCA.wmRel = null;
+    const el = document.getElementById('wm-rel-content');
+    if (el) el.innerHTML = MARCA_DEFAULT_SVG_DARK;
+  }
+  notify('Marca d\'água restaurada ao padrão.', 'info');
+}
+
+function salvarEmpresa() {
+  MARCA.empresa = {
+    nome: document.getElementById('emp-nome')?.value || '',
+    cnpj: document.getElementById('emp-cnpj')?.value || '',
+    tel: document.getElementById('emp-tel')?.value || '',
+    email: document.getElementById('emp-email')?.value || '',
+    end: document.getElementById('emp-end')?.value || '',
+    cid: document.getElementById('emp-cid')?.value || '',
+    site: document.getElementById('emp-site')?.value || '',
+    rodape: document.getElementById('emp-rodape')?.value || ''
+  };
+  salvarAparencia();
+}
+
+function salvarAparencia() {
+  // Coleta dados empresa
+  MARCA.empresa = {
+    nome: document.getElementById('emp-nome')?.value || '',
+    cnpj: document.getElementById('emp-cnpj')?.value || '',
+    tel: document.getElementById('emp-tel')?.value || '',
+    email: document.getElementById('emp-email')?.value || '',
+    end: document.getElementById('emp-end')?.value || '',
+    cid: document.getElementById('emp-cid')?.value || '',
+    site: document.getElementById('emp-site')?.value || '',
+    rodape: document.getElementById('emp-rodape')?.value || ''
+  };
+  try {
+    localStorage.setItem('emetech_marca', JSON.stringify(MARCA));
+    // Aplica logos no sistema ao vivo
+    if (MARCA.logoLogin) atualizarLogoLoginReal(MARCA.logoLogin);
+    if (MARCA.logoSidebar) atualizarLogoSidebarReal(MARCA.logoSidebar);
+    document.getElementById('ap-last-update').textContent = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    notify('✅ Aparência salva com sucesso!', 'success');
+  } catch(e) {
+    notify('Erro ao salvar (localStorage cheio?). Tente remover logos grandes.', 'error');
+  }
+}
+
+// Aplica marcas salvas ao carregar o sistema
+function aplicarMarcasSalvas() {
+  const saved = localStorage.getItem('emetech_marca');
+  if (!saved) return;
+  try {
+    const m = JSON.parse(saved);
+    MARCA = { ...MARCA, ...m };
+    if (m.logoLogin) atualizarLogoLoginReal(m.logoLogin);
+    if (m.logoSidebar) atualizarLogoSidebarReal(m.logoSidebar);
+  } catch(e) {}
+}
+
+// Retorna a marca d'água atual para uso nos PDFs
+function getMarcaDagua(tipo) {
+  const src = tipo === 'os' ? (MARCA.wmOS || null) : (MARCA.wmRel || null);
+  const opacity = tipo === 'os' ? MARCA.wmOsOpacity : MARCA.wmRelOpacity;
+  const emp = MARCA.empresa || {};
+  return { src, opacity, emp };
+}
+
 /* ── USUÁRIOS ────────────────────────────────────────── */
 async function saveUsr(){
   const nome=document.getElementById('u-nome').value.trim();
@@ -2219,6 +2776,7 @@ function popLancCli(){
 
 /* ── INIT ────────────────────────────────────────────── */
 (async()=>{
+  aplicarMarcasSalvas(); // aplica logos/marcas salvas antes do login
   const {data:{session}}=await db.auth.getSession();
   if(session?.user)await loadProfile(session.user);
 })();
