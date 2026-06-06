@@ -6039,8 +6039,20 @@ function pdfBase({ titulo, numero, tipo, conteudo, assinatura, wmSrc, wmOp }) {
   border-radius:10px;border:1.5px solid var(--border);
   background:var(--surface);cursor:pointer;transition:all .2s;
 }
-.slot-user-item:hover { background:var(--pri-light);border-color:var(--pri); }
-.slot-user-item.selected { background:var(--pri-light);border-color:var(--pri);box-shadow:0 0 0 2px var(--pri); }
+.slot-user-item:hover { background:var(--pri-light,rgba(91,71,224,.08));border-color:var(--pri);transform:translateX(2px); }
+.slot-user-item.selected {
+  background:var(--pri-light,rgba(91,71,224,.12));
+  border-color:var(--pri);
+  border-width:2px;
+  box-shadow:0 0 0 3px rgba(91,71,224,.15), inset 3px 0 0 var(--pri);
+  transform:translateX(3px);
+}
+.slot-user-item.selected .slot-user-nome::after {
+  content: ' ✓';
+  color:var(--pri);
+  font-weight:800;
+  font-size:14px;
+}
 .slot-user-item.disabled { opacity:.4;cursor:not-allowed;pointer-events:none; }
 .slot-user-avatar {
   width:38px;height:38px;border-radius:9px;display:flex;align-items:center;
@@ -6164,6 +6176,12 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
 .ripple-dot-dark {
   background: rgba(0,0,0,0.12);
 }
+
+/* ── SLOT USER ITEM TRANSIÇÕES ── */
+.slot-user-item { transition: all .15s ease !important; }
+.slot-user-item:not(.disabled):active { transform: scale(0.98) translateX(2px) !important; }
+.slot-user-nome { transition: color .15s; }
+.slot-user-item.selected .slot-user-nome { color: var(--pri) !important; font-weight: 700; }
 </style>
 </head>
 <body>
@@ -6691,14 +6709,26 @@ function abrirSlotModal(slotNum) {
 
         return `<div class="slot-user-item ${selecionado ? 'selected' : ''} ${jaNaSlot ? 'disabled' : ''}"
                   onclick="${jaNaSlot ? '' : `selecionarUsuarioSlot('${u.id}')`}"
-                  id="slot-item-${u.id}">
-          <div class="slot-user-avatar" style="background:${c.bg};border-radius:9px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#fff;flex-shrink:0">${iniciais}</div>
-          <div class="slot-user-info">
-            <div class="slot-user-nome">${u.nome} ${selecionado ? '<span style="font-size:10px;color:var(--pri);font-weight:700">✓ Selecionado</span>' : ''}</div>
-            <div class="slot-user-role">${NFRoleLbl[u.role] || u.role}${jaNaSlot ? ' · já está em outro slot' : ''}</div>
+                  id="slot-item-${u.id}"
+                  style="transition:all .15s;position:relative">
+          <!-- Avatar -->
+          <div style="position:relative;flex-shrink:0">
+            <div class="slot-user-avatar" style="background:${c.bg};border-radius:9px;width:42px;height:42px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#fff">${iniciais}</div>
+            ${selecionado ? `<div style="position:absolute;bottom:-3px;right:-3px;width:16px;height:16px;border-radius:50%;background:var(--pri);border:2px solid var(--bg);display:flex;align-items:center;justify-content:center">
+              <i class="ti ti-check" style="font-size:9px;color:#fff"></i>
+            </div>` : ''}
           </div>
-          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-            <span class="role-badge ${NFRoleTag[u.role] || ''}" style="font-size:10px">${NFRoleLbl[u.role] || u.role}</span>
+          <!-- Info -->
+          <div class="slot-user-info" style="flex:1">
+            <div class="slot-user-nome">${u.nome}</div>
+            <div class="slot-user-role" style="margin-top:2px">${NFRoleLbl[u.role] || u.role}${jaNaSlot ? ' · já em outro slot' : ''}</div>
+          </div>
+          <!-- Direita -->
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0">
+            ${selecionado
+              ? `<span style="font-size:10px;font-weight:700;color:var(--pri);background:var(--pri-light,rgba(91,71,224,.1));padding:2px 8px;border-radius:6px;border:1px solid var(--pri)">Selecionado</span>`
+              : `<span class="role-badge ${NFRoleTag[u.role] || ''}" style="font-size:10px">${NFRoleLbl[u.role] || u.role}</span>`
+            }
             <span style="font-size:9.5px;color:var(--txt3)">${pinOk ? '🔒 PIN' : '⚪ Sem PIN'}</span>
           </div>
         </div>`;
@@ -6712,8 +6742,23 @@ function abrirSlotModal(slotNum) {
 
 function selecionarUsuarioSlot(userId) {
   _slotUserSelecionado = userId;
-  document.querySelectorAll('.slot-user-item').forEach(el => el.classList.remove('selected'));
-  document.getElementById('slot-item-' + userId)?.classList.add('selected');
+
+  // Remove seleção anterior
+  document.querySelectorAll('.slot-user-item').forEach(el => {
+    el.classList.remove('selected');
+    el.style.transform = '';
+  });
+
+  // Aplica no clicado com micro-animação
+  const el = document.getElementById('slot-item-' + userId);
+  if (el) {
+    el.classList.add('selected');
+    // Pulso rápido
+    el.style.transform = 'scale(1.02) translateX(3px)';
+    setTimeout(() => { el.style.transform = 'translateX(3px)'; }, 120);
+    // Scroll para o elemento se estiver fora da visão
+    el.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  }
 }
 
 function confirmarSlot() {
