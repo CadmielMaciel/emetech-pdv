@@ -1487,15 +1487,22 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
 
         <!-- Perfis Tela Inicial -->
         <div id="usr-tab-slots" style="display:none">
-          <div class="alert-box alert-info" style="margin-bottom:16px">
-            <i class="ti ti-info-circle" style="font-size:16px"></i>
-            <div>Configure quais usuários aparecem nos <strong>3 slots da tela inicial</strong> (estilo Netflix). O Administrador sempre aparece separado. Gerentes não podem colocar outros admins nos slots.</div>
+
+          <!-- INFO -->
+          <div class="alert-box alert-info" style="margin-bottom:20px">
+            <i class="ti ti-info-circle" style="font-size:15px;flex-shrink:0"></i>
+            <div style="font-size:13px">Configure os <strong>3 slots da tela inicial</strong>. O Admin sempre aparece separado. Gerentes não podem colocar admins nos slots.</div>
           </div>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px" id="slots-preview-grid"></div>
-          <div style="text-align:center">
-            <button class="btn btn-pri" onclick="mostrarTelaNetflixPreview()"><i class="ti ti-eye"></i> Visualizar tela inicial</button>
-            <button class="btn btn-out" style="margin-left:8px" onclick="resetarTodosSlots()"><i class="ti ti-refresh"></i> Resetar slots</button>
+
+          <!-- GRID 3 SLOTS -->
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px" id="slots-preview-grid"></div>
+
+          <!-- LISTA DE TODOS OS USUÁRIOS -->
+          <div style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--txt3)">Todos os usuários cadastrados</div>
+            <button class="btn btn-out btn-sm" onclick="resetarTodosSlots()"><i class="ti ti-refresh"></i> Limpar slots</button>
           </div>
+          <div id="slots-users-full-list" style="display:flex;flex-direction:column;gap:8px"></div>
         </div>
 
         <!-- Auditoria -->
@@ -2084,25 +2091,23 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
 
 
 <!-- Modal Configurar Slots Netflix -->
-<div id="modal-slot-config" class="slot-modal-overlay" style="display:none">
-  <div class="slot-modal">
-    <div class="slot-modal-title">
-      <i class="ti ti-user-edit" style="color:#7C3AED;font-size:20px"></i>
-      Configurar Perfil
-    </div>
-    <div class="slot-modal-sub" id="slot-config-sub">Escolha quem ocupa este slot na tela inicial</div>
-    <div class="slot-user-list" id="slot-user-list"></div>
-    <div class="slot-modal-footer">
-      <button class="slot-btn slot-btn-out" onclick="fecharSlotModal()">Cancelar</button>
-      <button class="slot-btn slot-btn-out" onclick="limparSlot()" id="slot-btn-limpar" style="color:#EF4444;border-color:rgba(239,68,68,.4)">
-        <i class="ti ti-user-minus" style="font-size:13px"></i> Remover
-      </button>
-      <button class="slot-btn slot-btn-pri" onclick="confirmarSlot()">
-        <i class="ti ti-check" style="font-size:13px"></i> Confirmar
-      </button>
-    </div>
+<div class="modal-overlay" id="modal-slot-config"><div class="modal" style="max-width:480px">
+  <div class="modal-title">
+    <i class="ti ti-user-edit"></i>
+    <span id="slot-config-title">Configurar Perfil</span>
   </div>
-</div>
+  <div style="font-size:13px;color:var(--txt2);margin-bottom:16px" id="slot-config-sub">Escolha quem ocupa este slot na tela inicial</div>
+  <div id="slot-user-list" style="display:flex;flex-direction:column;gap:8px;max-height:50vh;overflow-y:auto;margin-bottom:4px"></div>
+  <div class="modal-footer">
+    <button class="btn btn-out" onclick="closeModal('modal-slot-config')">Cancelar</button>
+    <button class="btn btn-danger" onclick="limparSlot()" id="slot-btn-limpar" style="display:none">
+      <i class="ti ti-user-minus"></i> Remover do slot
+    </button>
+    <button class="btn btn-pri" onclick="confirmarSlot()">
+      <i class="ti ti-check"></i> Confirmar
+    </button>
+  </div>
+</div></div>
 
 <!-- Confirm -->
 <div class="modal-overlay" id="modal-confirm"><div class="modal sm" style="padding:22px">
@@ -5497,39 +5502,207 @@ function usrTab(tab, btn) {
 /* ── PREVIEW DOS SLOTS NA ABA USUÁRIOS ─────────────── */
 function renderSlotsPreview() {
   const grid = document.getElementById('slots-preview-grid');
+  const fullList = document.getElementById('slots-users-full-list');
   if (!grid) return;
+
   const slots = getSlotsConfig();
+  const podEditar = podeEditarSlots();
   const adminMasterId = G.usuarios.find(u => u.role === 'admin' && u.ativo)?.id;
 
+  // ── MINI CARDS DOS 3 SLOTS ─────────────────────────
   let html = '';
   for (let i = 1; i <= 3; i++) {
     const userId = slots['slot'+i];
     const u = userId ? G.usuarios.find(x => x.id === userId && x.ativo) : null;
     const c = u ? getNFColor(u.role) : null;
     const iniciais = u ? (u.nome || '?').slice(0,2).toUpperCase() : null;
-    const podEditar = podeEditarSlots();
 
-    html += `<div class="card" style="text-align:center;padding:20px;position:relative">
-      <div style="font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Slot ${i}</div>
+    html += `<div class="card" style="text-align:center;padding:18px 14px;position:relative;border:2px solid ${u ? 'var(--pri)' : 'var(--border)'};transition:border .2s">
+      <div style="font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:14px">Slot ${i}</div>
       ${u ? `
-        <div style="width:60px;height:60px;border-radius:12px;background:${c.bg};display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:#fff;margin:0 auto 10px">${iniciais}</div>
-        <div style="font-weight:600;font-size:14px;color:var(--txt)">${u.nome}</div>
-        <div style="font-size:11.5px;color:var(--txt3);margin-top:2px">${NFRoleLbl[u.role] || u.role}</div>
-        <span class="tag ${NFRoleTag[u.role] || 'tag-gry'}" style="font-size:10px;margin-top:6px">${hasPin(u.id) ? '🔒 PIN ativo' : 'Sem PIN'}</span>
-        ${podEditar ? `<div style="margin-top:12px;display:flex;gap:6px;justify-content:center">
-          <button class="btn btn-out btn-xs" onclick="abrirSlotModal(${i})"><i class="ti ti-swap"></i> Trocar</button>
-          <button class="btn btn-danger btn-xs" onclick="limparSlotDireto(${i})"><i class="ti ti-x"></i></button>
+        <div style="width:52px;height:52px;border-radius:10px;background:${c.bg};display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;color:#fff;margin:0 auto 10px">${iniciais}</div>
+        <div style="font-weight:700;font-size:13px;color:var(--txt);margin-bottom:2px">${u.nome}</div>
+        <div style="font-size:11px;color:var(--txt3);margin-bottom:8px">${NFRoleLbl[u.role] || u.role}</div>
+        <div style="font-size:11px;color:${hasPin(u.id) ? 'var(--verde,#16a34a)' : 'var(--txt4)'};margin-bottom:12px">${hasPin(u.id) ? '🔒 PIN ativo' : '⚪ Sem PIN'}</div>
+        ${podEditar ? `<div style="display:flex;gap:6px;justify-content:center">
+          <button class="btn btn-out btn-xs" onclick="abrirSlotModal(${i})" title="Trocar"><i class="ti ti-arrows-exchange" style="font-size:12px"></i> Trocar</button>
+          <button class="btn btn-xs" style="background:var(--danger-light,#fee2e2);color:var(--danger,#dc2626);border:1px solid var(--danger-border,#fca5a5)" onclick="limparSlotDireto(${i})" title="Remover"><i class="ti ti-x" style="font-size:12px"></i></button>
         </div>` : ''}
       ` : `
-        <div style="width:60px;height:60px;border-radius:12px;border:2px dashed var(--border2);display:flex;align-items:center;justify-content:center;margin:0 auto 10px;cursor:${podEditar?'pointer':'default'}" ${podEditar?`onclick="abrirSlotModal(${i})"`:''}>
-          <i class="ti ti-user-plus" style="font-size:24px;color:var(--txt4)"></i>
+        <div style="width:52px;height:52px;border-radius:10px;border:2px dashed var(--border2,#d1d5db);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;cursor:${podEditar?'pointer':'default'}" ${podEditar?`onclick="abrirSlotModal(${i})"`:''}>
+          <i class="ti ti-user-plus" style="font-size:22px;color:var(--txt4)"></i>
         </div>
-        <div style="font-size:13px;color:var(--txt3)">${podEditar ? 'Clique para configurar' : 'Vazio'}</div>
-        ${podEditar ? `<button class="btn btn-out btn-sm" style="margin-top:12px" onclick="abrirSlotModal(${i})"><i class="ti ti-plus"></i> Adicionar</button>` : ''}
+        <div style="font-size:12px;color:var(--txt3);margin-bottom:12px">Vazio</div>
+        ${podEditar ? `<button class="btn btn-pri btn-sm" onclick="abrirSlotModal(${i})"><i class="ti ti-plus"></i> Adicionar</button>` : ''}
       `}
     </div>`;
   }
   grid.innerHTML = html;
+
+  // ── LISTA COMPLETA DE USUÁRIOS ─────────────────────
+  if (!fullList) return;
+
+  const usersAtivos = G.usuarios.filter(u => u.ativo);
+  const usersInativos = G.usuarios.filter(u => !u.ativo);
+  const todosOrdenados = [...usersAtivos, ...usersInativos];
+
+  // Quais slots cada usuário ocupa
+  const slotDeUsuario = {};
+  for (let i = 1; i <= 3; i++) {
+    if (slots['slot'+i]) slotDeUsuario[slots['slot'+i]] = i;
+  }
+
+  fullList.innerHTML = todosOrdenados.map(u => {
+    const c = getNFColor(u.role);
+    const iniciais = (u.nome || '?').slice(0,2).toUpperCase();
+    const pinAtivo = hasPin(u.id);
+    const slotNum = slotDeUsuario[u.id];
+    const ehAdmin = u.role === 'admin';
+    const podePIN = podEditar; // admin e gerente podem mexer no PIN
+    const podeBloquear = G.role === 'admin' || (G.role === 'gerente' && !ehAdmin);
+    const podeRole = G.role === 'admin'; // só admin muda função
+
+    return `<div class="card" style="padding:14px 18px;display:flex;align-items:center;gap:14px;${!u.ativo ? 'opacity:.55' : ''}">
+      <!-- Avatar -->
+      <div style="width:44px;height:44px;border-radius:10px;background:${c.bg};display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;color:#fff;flex-shrink:0;position:relative">
+        ${iniciais}
+        ${!u.ativo ? '<div style="position:absolute;inset:0;border-radius:10px;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;font-size:16px">🔒</div>' : ''}
+      </div>
+      <!-- Info -->
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span style="font-weight:700;font-size:14px;color:var(--txt)">${u.nome}</span>
+          <span class="role-badge ${NFRoleTag[u.role] || ''}" style="font-size:10px">${NFRoleLbl[u.role] || u.role}</span>
+          ${slotNum ? `<span class="tag tag-pri" style="font-size:10px">📌 Slot ${slotNum}</span>` : ''}
+          ${ehAdmin ? '<span class="tag" style="font-size:10px;background:var(--gold-light,#fef3c7);color:var(--gold,#92400e)">★ Admin Master</span>' : ''}
+          ${!u.ativo ? '<span class="tag tag-danger" style="font-size:10px">Bloqueado</span>' : ''}
+        </div>
+        <div style="font-size:11.5px;color:var(--txt3);margin-top:3px">
+          ${u.email || '—'}
+          <span style="margin-left:10px;color:${pinAtivo ? 'var(--verde,#16a34a)' : 'var(--txt4)'}">
+            ${pinAtivo ? '🔒 PIN configurado' : '⚪ Sem PIN'}
+          </span>
+        </div>
+      </div>
+      <!-- Ações -->
+      <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;flex-shrink:0">
+        ${!ehAdmin && podEditar && !slotNum ? `<button class="btn btn-out btn-xs" onclick="atribuirSlotRapido('${u.id}')" title="Adicionar a um slot"><i class="ti ti-layout-grid-add"></i> Slot</button>` : ''}
+        ${!ehAdmin && podEditar && slotNum ? `<button class="btn btn-xs" style="background:var(--pri-light);color:var(--pri);border:1px solid var(--pri)" onclick="limparSlotDireto(${slotNum})" title="Remover do slot ${slotNum}"><i class="ti ti-layout-grid-remove"></i> Slot ${slotNum}</button>` : ''}
+        ${podePIN ? `<button class="btn btn-out btn-xs" onclick="abrirEditarPIN('${u.id}')" title="${pinAtivo ? 'Alterar PIN' : 'Definir PIN'}"><i class="ti ti-password"></i> ${pinAtivo ? 'PIN' : '+ PIN'}</button>` : ''}
+        ${podeRole && !ehAdmin ? `<button class="btn btn-out btn-xs" onclick="abrirAlterarFuncao('${u.id}')" title="Alterar função"><i class="ti ti-shield-half"></i> Função</button>` : ''}
+        ${podeBloquear && !ehAdmin ? `<button class="btn btn-xs" style="${u.ativo ? 'background:var(--danger-light,#fee2e2);color:var(--danger,#dc2626);border:1px solid var(--danger-border,#fca5a5)' : 'background:var(--green-light,#dcfce7);color:var(--green-dark,#15803d);border:1px solid var(--green-border,#86efac)'}" onclick="toggleBloqueioUsuario('${u.id}')" title="${u.ativo ? 'Bloquear usuário' : 'Desbloquear usuário'}">
+          <i class="ti ti-${u.ativo ? 'lock' : 'lock-open'}"></i> ${u.ativo ? 'Bloquear' : 'Desbloquear'}
+        </button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ── ATRIBUIR SLOT RÁPIDO (quando clica "Slot" na lista) ── */
+/* ── EDITAR PIN A PARTIR DA ABA SLOTS ── */
+function abrirEditarPIN(userId) {
+  const u = G.usuarios.find(x => x.id === userId);
+  if (!u) return;
+  if (G.role !== 'admin' && G.role !== 'gerente') {
+    notify('Apenas admin e gerente podem alterar PINs.', 'warn'); return;
+  }
+  // Usa o modal de edição de PIN existente
+  _pinEditando = userId;
+  const modal = document.getElementById('modal-pin-edit') || document.getElementById('modal-pin');
+  if (modal) {
+    document.querySelectorAll('[data-pin-user-nome]').forEach(el => el.textContent = u.nome);
+    openModal(modal.id);
+  } else {
+    // Fallback: prompt simples
+    const novoPin = prompt(`Definir PIN de 4 dígitos para "${u.nome}":\n(Deixe vazio para remover)`);
+    if (novoPin === null) return;
+    if (novoPin === '') {
+      removePin(userId);
+      renderSlotsPreview();
+      notify(`PIN de ${u.nome} removido.`, 'info');
+    } else if (/^\d{4}$/.test(novoPin)) {
+      setPin(userId, novoPin);
+      renderSlotsPreview();
+      notify(`✅ PIN de ${u.nome} definido com sucesso.`, 'success');
+    } else {
+      notify('PIN deve ter exatamente 4 dígitos numéricos.', 'error');
+    }
+  }
+}
+
+function atribuirSlotRapido(userId) {
+  // Encontra primeiro slot livre
+  const slots = getSlotsConfig();
+  let slotLivre = null;
+  for (let i = 1; i <= 3; i++) {
+    if (!slots['slot'+i]) { slotLivre = i; break; }
+  }
+  if (slotLivre) {
+    // Atribui direto se há slot livre
+    slots['slot'+slotLivre] = userId;
+    saveSlotsConfig(slots);
+    renderSlotsPreview();
+    mostrarTelaNetflix();
+    const u = G.usuarios.find(x => x.id === userId);
+    notify(`✅ ${u?.nome} adicionado ao Slot ${slotLivre}!`, 'success');
+  } else {
+    // Todos slots cheios — abre modal para escolher qual trocar
+    _slotUserSelecionado = userId;
+    abrirSlotModal(1); // abre modal do slot 1 para trocar
+    notify('Todos os slots estão cheios. Escolha qual trocar.', 'warn');
+  }
+}
+
+/* ── TOGGLE BLOQUEAR/DESBLOQUEAR USUÁRIO ── */
+async function toggleBloqueioUsuario(userId) {
+  const u = G.usuarios.find(x => x.id === userId);
+  if (!u) return;
+  const acao = u.ativo ? 'bloquear' : 'desbloquear';
+  confirmAct(
+    `${u.ativo ? 'Bloquear' : 'Desbloquear'} usuário`,
+    `Deseja ${acao} o acesso de "${u.nome}"?`,
+    async () => {
+      setLoad(true);
+      try {
+        await db.from('usuarios').update({ ativo: !u.ativo }).eq('id', userId);
+        u.ativo = !u.ativo;
+        // Se foi bloqueado e estava em um slot, remove do slot
+        if (!u.ativo) {
+          const slots = getSlotsConfig();
+          let changed = false;
+          for (let i = 1; i <= 3; i++) {
+            if (slots['slot'+i] === userId) { slots['slot'+i] = null; changed = true; }
+          }
+          if (changed) saveSlotsConfig(slots);
+        }
+        setLoad(false);
+        renderSlotsPreview();
+        mostrarTelaNetflix();
+        notify(u.ativo ? `✅ ${u.nome} desbloqueado.` : `🔒 ${u.nome} bloqueado.`, u.ativo ? 'success' : 'warn');
+        auditLog(u.ativo ? 'usuario_desbloqueado' : 'usuario_bloqueado', { nome: u.nome });
+      } catch(e) { setLoad(false); notify('Erro ao alterar usuário.', 'error'); }
+    }
+  );
+}
+
+/* ── ALTERAR FUNÇÃO DO USUÁRIO ── */
+function abrirAlterarFuncao(userId) {
+  const u = G.usuarios.find(x => x.id === userId);
+  if (!u || G.role !== 'admin') return;
+
+  // Abre o modal de edição de usuário existente, posicionado na aba de função
+  openModal('modal-usr');
+  // Preenche os campos do modal
+  setTimeout(() => {
+    const nm = document.getElementById('usr-nome');
+    const em = document.getElementById('usr-email');
+    const rl = document.getElementById('usr-role');
+    if (nm) nm.value = u.nome || '';
+    if (em) { em.value = u.email || ''; em.readOnly = true; }
+    if (rl) rl.value = u.role || 'operador';
+    document.getElementById('usr-modal-title').textContent = 'Alterar Função — ' + u.nome;
+    document.getElementById('modal-usr').setAttribute('data-editing-id', userId);
+  }, 50);
 }
 
 function limparSlotDireto(slotNum) {
@@ -5782,35 +5955,22 @@ function pdfBase({ titulo, numero, tipo, conteudo, assinatura, wmSrc, wmOp }) {
 }
 .nf-slot-vazio .nf-nome { color:rgba(255,255,255,.35); font-size:12px; }
 /* Modal de seleção de slot */
-.slot-modal-overlay {
-  position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:10000;
-  display:flex;align-items:center;justify-content:center;padding:20px;
-}
-.slot-modal {
-  background:#1a1030;border:1px solid rgba(255,255,255,.1);border-radius:18px;
-  padding:28px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;
-}
-.slot-modal-title {
-  font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:#fff;
-  margin-bottom:6px;display:flex;align-items:center;gap:10px;
-}
-.slot-modal-sub { font-size:13px;color:rgba(255,255,255,.45);margin-bottom:20px; }
-.slot-user-list { display:flex;flex-direction:column;gap:8px; }
+/* slot-modal migrado para sistema padrão */
 .slot-user-item {
   display:flex;align-items:center;gap:12px;padding:10px 14px;
-  border-radius:10px;border:1.5px solid rgba(255,255,255,.08);
-  background:rgba(255,255,255,.04);cursor:pointer;transition:all .2s;
+  border-radius:10px;border:1.5px solid var(--border);
+  background:var(--surface);cursor:pointer;transition:all .2s;
 }
-.slot-user-item:hover { background:rgba(91,71,224,.25);border-color:rgba(91,71,224,.5); }
-.slot-user-item.selected { background:rgba(91,71,224,.35);border-color:#7C3AED; }
-.slot-user-item.disabled { opacity:.35;cursor:not-allowed;pointer-events:none; }
+.slot-user-item:hover { background:var(--pri-light);border-color:var(--pri); }
+.slot-user-item.selected { background:var(--pri-light);border-color:var(--pri);box-shadow:0 0 0 2px var(--pri); }
+.slot-user-item.disabled { opacity:.4;cursor:not-allowed;pointer-events:none; }
 .slot-user-avatar {
   width:38px;height:38px;border-radius:9px;display:flex;align-items:center;
   justify-content:center;font-weight:800;font-size:14px;color:#fff;flex-shrink:0;
 }
 .slot-user-info { flex:1;min-width:0; }
-.slot-user-nome { font-size:13px;font-weight:600;color:#fff; }
-.slot-user-role { font-size:11px;color:rgba(255,255,255,.45);margin-top:1px; }
+.slot-user-nome { font-size:13px;font-weight:600;color:var(--txt); }
+.slot-user-role { font-size:11px;color:var(--txt3);margin-top:1px; }
 .slot-user-badge { font-size:10px;padding:2px 7px;border-radius:5px;font-weight:700; }
 .slot-modal-footer { display:flex;gap:8px;margin-top:20px;justify-content:flex-end; }
 .slot-btn { padding:8px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;transition:all .2s; }
@@ -5833,6 +5993,10 @@ function pdfBase({ titulo, numero, tipo, conteudo, assinatura, wmSrc, wmOp }) {
   color:rgba(255,255,255,.6);font-size:10px;font-weight:700;
   display:flex;align-items:center;justify-content:center;
 }
+
+/* ── BOTÕES XS E CORES SLOT LISTA ── */
+.btn-xs { padding:4px 10px !important;font-size:11px !important;gap:4px !important;border-radius:6px !important; }
+.tag-pri { background:var(--pri-light,#ede9fe);color:var(--pri,#7C3AED);border:1px solid var(--pri-border,#c4b5fd); }
 </style>
 </head>
 <body>
@@ -6342,16 +6506,17 @@ function abrirSlotModal(slotNum) {
   _slotAtual = slotNum;
   _slotUserSelecionado = null;
 
-  const modal = document.getElementById('modal-slot-config');
   const lista = document.getElementById('slot-user-list');
   const sub = document.getElementById('slot-config-sub');
+  const title = document.getElementById('slot-config-title');
   const btnLimpar = document.getElementById('slot-btn-limpar');
-  if (!modal || !lista) return;
+  if (!lista) return;
 
   const slots = getSlotsConfig();
 
-  sub.textContent = slotNum
-    ? `Slot ${slotNum} — escolha quem aparece nesta posição`
+  if (title) title.textContent = slotNum ? `Slot ${slotNum} — Configurar Perfil` : 'Configurar Perfil';
+  if (sub) sub.textContent = slotNum
+    ? `Escolha quem ocupa o slot ${slotNum} na tela inicial`
     : 'Clique em um slot para configurar';
 
   // IDs já usados nos outros slots
@@ -6385,14 +6550,14 @@ function abrirSlotModal(slotNum) {
         return `<div class="slot-user-item ${selecionado ? 'selected' : ''} ${jaNaSlot ? 'disabled' : ''}"
                   onclick="${jaNaSlot ? '' : `selecionarUsuarioSlot('${u.id}')`}"
                   id="slot-item-${u.id}">
-          <div class="slot-user-avatar" style="background:${c.bg}">${iniciais}</div>
+          <div class="slot-user-avatar" style="background:${c.bg};border-radius:9px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#fff;flex-shrink:0">${iniciais}</div>
           <div class="slot-user-info">
-            <div class="slot-user-nome">${u.nome}</div>
-            <div class="slot-user-role">${NFRoleLbl[u.role] || u.role} ${jaNaSlot ? '· já em outro slot' : ''}</div>
+            <div class="slot-user-nome">${u.nome} ${selecionado ? '<span style="font-size:10px;color:var(--pri);font-weight:700">✓ Selecionado</span>' : ''}</div>
+            <div class="slot-user-role">${NFRoleLbl[u.role] || u.role}${jaNaSlot ? ' · já está em outro slot' : ''}</div>
           </div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-            <span class="slot-user-badge" style="background:${c.bg};color:#fff">${NFRoleLbl[u.role]?.[0] || '?'}</span>
-            ${pinOk ? '<span style="font-size:9px;color:rgba(255,255,255,.4)">🔒 PIN</span>' : ''}
+            <span class="role-badge ${NFRoleTag[u.role] || ''}" style="font-size:10px">${NFRoleLbl[u.role] || u.role}</span>
+            <span style="font-size:9.5px;color:var(--txt3)">${pinOk ? '🔒 PIN' : '⚪ Sem PIN'}</span>
           </div>
         </div>`;
       }).join('');
@@ -6400,7 +6565,7 @@ function abrirSlotModal(slotNum) {
   // Mostrar/ocultar botão limpar
   if (btnLimpar) btnLimpar.style.display = slotAtualUserId ? '' : 'none';
 
-  modal.style.display = 'flex';
+  openModal('modal-slot-config');
 }
 
 function selecionarUsuarioSlot(userId) {
@@ -6422,10 +6587,12 @@ function confirmarSlot() {
   });
   slots['slot'+_slotAtual] = _slotUserSelecionado;
   saveSlotsConfig(slots);
-  fecharSlotModal();
-  mostrarTelaNetflix();
+  closeModal('modal-slot-config');
+  _slotAtual = null;
   const u = G.usuarios.find(x => x.id === _slotUserSelecionado);
-  notify(`✅ ${u?.nome || 'Usuário'} adicionado ao slot ${_slotAtual}!`, 'success');
+  _slotUserSelecionado = null;
+  mostrarTelaNetflix();
+  notify(`✅ ${u?.nome || 'Usuário'} adicionado ao slot!`, 'success');
 }
 
 function limparSlot() {
@@ -6433,14 +6600,15 @@ function limparSlot() {
   const slots = getSlotsConfig();
   slots['slot'+_slotAtual] = null;
   saveSlotsConfig(slots);
-  fecharSlotModal();
+  const num = _slotAtual;
+  _slotAtual = null;
+  closeModal('modal-slot-config');
   mostrarTelaNetflix();
-  notify(`Slot ${_slotAtual} removido.`, 'info');
+  notify(`Slot ${num} removido.`, 'info');
 }
 
 function fecharSlotModal() {
-  const modal = document.getElementById('modal-slot-config');
-  if (modal) modal.style.display = 'none';
+  closeModal('modal-slot-config');
   _slotAtual = null;
   _slotUserSelecionado = null;
 }
