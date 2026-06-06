@@ -2196,18 +2196,6 @@ function applyRoleUI(){
   document.getElementById('tb-date').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
 }
 
-function canAccess(role,page){
-  const P={dashboard:['admin','gerente'],pdv:['admin','gerente','operador'],orcamentos:['admin','gerente','operador'],'os-hist':['admin','gerente','tecnico'],devolucoes:['admin','gerente'],os:['admin','gerente','tecnico'],produtos:['admin','gerente'],estoque:['admin','gerente'],fornecedores:['admin','gerente'],financeiro:['admin','gerente'],clientes:['admin','gerente','operador','tecnico'],relatorios:['admin','gerente'],usuarios:['admin']};
-  return (P[page]||[]).includes(role);
-}
-
-function applyRoleUI(){
-  document.querySelectorAll('.ni[data-p]').forEach(el=>{el.style.display=el.dataset.p.split(',').includes(G.role)?'':'none';});
-  document.querySelectorAll('.nav-adm-sec,.nav-adm').forEach(el=>{el.style.display=G.role==='admin'?'':'none';});
-  document.getElementById('uname').textContent=G.profile?.nome||G.user?.email||'—';
-  document.getElementById('urole').textContent=RL[G.role]||G.role;
-  document.getElementById('uav').textContent=(G.profile?.nome||'?').slice(0,2).toUpperCase();
-}
 
 async function doLogin(){
   const em=document.getElementById('l-email').value.trim();
@@ -2269,7 +2257,7 @@ async function loadAll(){
 }
 
 /* ── NAVEGAÇÃO ───────────────────────────────────────── */
-const PT={dashboard:'Dashboard',pdv:'PDV / Caixa',orcamentos:'Orçamentos',devolucoes:'Devoluções',os:'Ordens de Serviço','os-hist':'Histórico OS',produtos:'Produtos',estoque:'Movimentações de Estoque',fornecedores:'Fornecedores',financeiro:'Financeiro',clientes:'Clientes',relatorios:'Relatórios',usuarios:'Usuários & Acesso'};
+const PT={dashboard:'Dashboard',pdv:'PDV / Caixa',orcamentos:'Orçamentos',devolucoes:'Devoluções',os:'Ordens de Serviço','os-hist':'Histórico OS',produtos:'Produtos',estoque:'Movimentações de Estoque',fornecedores:'Fornecedores',financeiro:'Financeiro',clientes:'Clientes',relatorios:'Relatórios',usuarios:'Usuários & Acesso',aparencia:'Aparência & Marca',inteligencia:'Inteligência Operacional',caixas:'Gestão de Caixas',crediario:'Crediário'};
 
 function go(page){
   if(!canAccess(G.role,page)){notify('Acesso não permitido.','error');return;}
@@ -2292,6 +2280,10 @@ function go(page){
     clientes:renderClientes,
     relatorios:renderRelatorios,
     aparencia:renderAparencia,
+    usuarios:()=>{renderUsuarios();carregarAuditLog();renderAuditLog();},
+    inteligencia:()=>{initIntel();renderAlertasIntel();popPrecoEspSelects();},
+    caixas:()=>{initCaixas();go_caixas();},
+    crediario:()=>{initCredario();renderContratos();popSelects();},
   };
   R[page]?.();
 }
