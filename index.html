@@ -6013,7 +6013,7 @@ function pdfBase({ titulo, numero, tipo, conteudo, assinatura, wmSrc, wmOp }) {
 #nav-caixas:hover i, #nav-caixas.active i { color: #fff; transform: scale(1.15); }
 
 /* ── NETFLIX SLOTS EDITÁVEIS ───────────────────────── */
-.nf-slot { display:flex;flex-direction:column;align-items:center;gap:10px;position:relative; }
+.nf-slot { display:flex;flex-direction:column;align-items:center;gap:10px;position:relative;cursor:pointer;border-radius:16px;padding:8px;transition:outline .15s,background .15s;outline:3px solid transparent; }
 .nf-slot-edit-btn {
   position:absolute;top:-8px;right:-8px;width:26px;height:26px;
   border-radius:50%;background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);
@@ -6075,6 +6075,23 @@ function pdfBase({ titulo, numero, tipo, conteudo, assinatura, wmSrc, wmOp }) {
 /* ── BOTÕES XS E CORES SLOT LISTA ── */
 .btn-xs { padding:4px 10px !important;font-size:11px !important;gap:4px !important;border-radius:6px !important; }
 .tag-pri { background:var(--pri-light,#ede9fe);color:var(--pri,#7C3AED);border:1px solid var(--pri-border,#c4b5fd); }
+
+/* ── NF-SLOT SELEÇÃO VISUAL ── */
+.nf-slot {
+  cursor: pointer;
+  border-radius: 16px;
+  padding: 8px;
+  transition: outline .15s, background .15s, padding .15s;
+  outline: 3px solid transparent;
+}
+.nf-slot:hover .nf-avatar { transform: scale(1.06); box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+#nf-admin-slot { cursor: pointer; border-radius: 14px; padding: 8px; transition: outline .15s, background .15s; outline: 3px solid transparent; }
+#nf-admin-slot:hover .nf-avatar { transform: scale(1.06) !important; }
+
+/* ── NF HOVER + SELEÇÃO ── */
+.nf-slot .nf-avatar, #nf-admin-avatar { transition: box-shadow .2s, transform .2s !important; }
+.nf-slot:hover .nf-avatar { transform: scale(1.06) !important; box-shadow: 0 6px 20px rgba(0,0,0,.35) !important; }
+#nf-admin-slot:hover .nf-avatar { transform: scale(1.06) !important; }
 </style>
 </head>
 <body>
@@ -6480,46 +6497,33 @@ function mostrarTelaNetflix() {
   let html = '';
 
   // ── 3 SLOTS CONFIGURÁVEIS ─────────────────────────
+  // Só renderiza slots PREENCHIDOS — slots vazios não aparecem na tela Netflix
   for (let i = 1; i <= 3; i++) {
     const userId = slots['slot'+i];
     const u = userId ? G.usuarios.find(x => x.id === userId && x.ativo) : null;
-    const slotVazio = !u;
+    if (!u) continue; // Slot vazio: não mostra nada
 
-    if (slotVazio) {
-      // Slot vazio
-      html += `<div class="nf-slot nf-slot-vazio" style="position:relative">
-        <span class="nf-slot-num">${i}</span>
-        ${editavel ? `<button class="nf-slot-edit-btn" style="opacity:0.6" onclick="abrirSlotModal(${i})" title="Configurar slot ${i}"><i class="ti ti-plus"></i></button>` : ''}
-        <div class="nf-avatar" style="background:rgba(255,255,255,.06);border:2px dashed rgba(255,255,255,.2)" onclick="${editavel ? 'abrirSlotModal('+i+')' : ''}">
-          <i class="ti ti-user-plus" style="font-size:28px;color:rgba(255,255,255,.25)"></i>
-        </div>
-        <div class="nf-nome" style="color:rgba(255,255,255,.3)">${editavel ? 'Clique para configurar' : 'Vazio'}</div>
-        <div style="font-size:9px;color:rgba(255,255,255,.15)">Slot ${i}</div>
-      </div>`;
-    } else {
-      // Slot preenchido
-      const c = getNFColor(u.role);
-      const iniciais = (u.nome || '?').slice(0,2).toUpperCase();
-      const pinOk = hasPin(u.id);
-      const avatarContent = logoSidebar
-        ? `<img src="${logoSidebar}" style="width:100%;height:100%;object-fit:contain;padding:8px">`
-        : `<span style="font-family:'Syne',sans-serif;font-weight:800;font-size:28px;color:#fff">${iniciais}</span>`;
+    const c = getNFColor(u.role);
+    const iniciais = (u.nome || '?').slice(0,2).toUpperCase();
+    const pinOk = hasPin(u.id);
+    const avatarContent = logoSidebar
+      ? `<img src="${logoSidebar}" style="width:100%;height:100%;object-fit:contain;padding:8px">`
+      : `<span style="font-family:'Syne',sans-serif;font-weight:800;font-size:28px;color:#fff">${iniciais}</span>`;
 
-      html += `<div class="nf-slot" style="position:relative">
-        <span class="nf-slot-num">${i}</span>
-        ${editavel ? `<button class="nf-slot-edit-btn" onclick="abrirSlotModal(${i})" title="Trocar perfil do slot ${i}"><i class="ti ti-edit"></i></button>` : ''}
-        <div class="nf-avatar" style="background:${c.bg};cursor:pointer" onclick="selecionarPerfil('${u.id}')">
-          ${avatarContent}
-        </div>
-        <div class="nf-nome" onclick="selecionarPerfil('${u.id}')" style="cursor:pointer">${u.nome}</div>
-        <span class="role-badge ${NFRoleTag[u.role] || ''}" style="font-size:9.5px;padding:1.5px 7px">${NFRoleLbl[u.role] || u.role}</span>
-        <div style="font-size:9.5px;color:${pinOk ? 'rgba(255,255,255,.35)' : 'rgba(255,255,255,.2)'};margin-top:-4px">
-          ${pinOk ? '🔒 PIN ativo' : '⚪ Sem PIN'}
-        </div>
-      </div>`;
-    }
+    html += `<div class="nf-slot" id="nf-slot-card-${u.id}" onclick="nfSelecionarCard('${u.id}')">
+      ${editavel ? `<button class="nf-slot-edit-btn" onclick="event.stopPropagation();abrirSlotModal(${i})" title="Trocar"><i class="ti ti-edit"></i></button>` : ''}
+      <div class="nf-avatar" style="background:${c.bg}">
+        ${avatarContent}
+      </div>
+      <div class="nf-nome">${u.nome}</div>
+      <span class="role-badge ${NFRoleTag[u.role] || ''}" style="font-size:9.5px;padding:1.5px 7px">${NFRoleLbl[u.role] || u.role}</span>
+      <div style="font-size:9.5px;margin-top:10px;color:${pinOk ? 'rgba(255,255,255,.42)' : 'rgba(255,255,255,.22)'}">
+        ${pinOk ? '🔒 PIN configurado' : '⚪ Sem PIN'}
+      </div>
+    </div>`;
   }
 
+  if (!html) html = `<div style="color:rgba(255,255,255,.28);font-size:13px;padding:16px 0">Nenhum perfil configurado ainda.</div>`;
   grid.innerHTML = html;
 
   // ── SEPARADOR + ADMIN MASTER ──────────────────────
@@ -6535,7 +6539,7 @@ function mostrarTelaNetflix() {
 
     adminHtml = `<div style="margin-top:24px;display:flex;flex-direction:column;align-items:center;gap:6px">
       <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.2);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px">Administrador</div>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer" onclick="selecionarPerfil('${adminMaster.id}')">
+      <div id="nf-admin-slot" style="display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;border-radius:16px;padding:8px;transition:outline .15s,background .15s;outline:3px solid transparent" onclick="nfSelecionarCard('${adminMaster.id}')">
         <div class="nf-avatar" style="width:60px;height:60px;border-radius:10px;background:${c.bg};display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.4)">
           ${avatarContent}
         </div>
@@ -6556,21 +6560,9 @@ function mostrarTelaNetflix() {
   }
   if (adminContainer) adminContainer.innerHTML = adminHtml;
 
-  // ── BOTÃO GERENCIAR (se admin ou gerente) ─────────
-  let manageBtn = document.getElementById('nf-manage-btn');
-  if (editavel) {
-    if (!manageBtn) {
-      manageBtn = document.createElement('button');
-      manageBtn.id = 'nf-manage-btn';
-      manageBtn.className = 'nf-manage-btn';
-      manageBtn.innerHTML = '<i class="ti ti-settings" style="font-size:14px"></i> Gerenciar perfis';
-      manageBtn.onclick = () => abrirSlotModal(null);
-      tela.appendChild(manageBtn);
-    }
-    manageBtn.style.display = '';
-  } else if (manageBtn) {
-    manageBtn.style.display = 'none';
-  }
+  // Botão Gerenciar removido da tela Netflix
+  const _mgBtn = document.getElementById('nf-manage-btn');
+  if (_mgBtn) _mgBtn.remove();
 
   tela.style.display = 'flex';
   requestAnimationFrame(() => { tela.style.opacity = '1'; });
@@ -6697,13 +6689,40 @@ function ocultarTelaNetflix() {
 }
 
 // ── SELECIONAR PERFIL ──────────────────────────────────
+/* ── SELECIONAR PERFIL COM HIGHLIGHT VISUAL ───────── */
+function nfSelecionarCard(userId) {
+  const u = G.usuarios.find(x => x.id === userId);
+  if (!u) return;
+  const m = getMarca ? getMarca() : {};
+  const cor = m.corPrimaria || '#5B47E0';
+  // Remove highlight anterior
+  document.querySelectorAll('.nf-slot, #nf-admin-slot').forEach(el => {
+    el.style.outline = '3px solid transparent';
+    el.style.background = 'transparent';
+    const av = el.querySelector('.nf-avatar');
+    if (av) { av.style.boxShadow = ''; av.style.transform = ''; }
+  });
+  // Aplica highlight no card
+  const card = document.getElementById('nf-slot-card-' + userId)
+             || document.getElementById('nf-admin-slot');
+  if (card) {
+    card.style.outline = '3px solid ' + cor;
+    card.style.background = cor + '1e';
+    const av = card.querySelector('.nf-avatar');
+    if (av) { av.style.boxShadow = '0 0 0 3px ' + cor + ', 0 8px 28px ' + cor + '66'; av.style.transform = 'scale(1.07)'; }
+  }
+  _nfPerfilSelecionado = u;
+  setTimeout(() => {
+    if (!hasPin(userId)) { entrarComPerfil(u); return; }
+    mostrarPinScreen(u, 'verificar');
+  }, 200);
+}
+
 function selecionarPerfil(userId) {
   const u = G.usuarios.find(x => x.id === userId);
   if (!u) return;
   _nfPerfilSelecionado = u;
-  
   if (!hasPin(userId)) {
-    // Sem PIN: entra direto (apenas admin/gerente recebem acesso sem PIN se nunca configurou)
     entrarComPerfil(u);
     return;
   }
@@ -6715,6 +6734,11 @@ function entrarComPerfil(u) {
   _operadorAtual = u;
   G.profile = u; G.role = u.role;
   ocultarTelaNetflix();
+  // Remove listener de teclado do PIN
+  if (window._pinKeyHandler) {
+    document.removeEventListener('keydown', window._pinKeyHandler);
+    window._pinKeyHandler = null;
+  }
   document.getElementById('pin-screen').style.display = 'none';
   document.getElementById('app').classList.add('visible');
   document.getElementById('tb-date').textContent = new Date().toLocaleDateString('pt-BR', {weekday:'short',day:'2-digit',month:'short',year:'numeric'});
@@ -6757,6 +6781,21 @@ function mostrarPinScreen(u, modo) {
   screen.style.opacity = '0';
   requestAnimationFrame(() => { screen.style.opacity = '1'; screen.style.transition = 'opacity .3s'; });
   ocultarTelaNetflix();
+
+  // ── TECLADO FÍSICO PARA PIN ──────────────────────
+  // Remove listener anterior se houver e adiciona novo
+  if (window._pinKeyHandler) document.removeEventListener('keydown', window._pinKeyHandler);
+  window._pinKeyHandler = (e) => {
+    const scr = document.getElementById('pin-screen');
+    if (!scr || scr.style.display === 'none') return;
+    // Aceita teclado numérico normal E numpad
+    const isDigit = (e.key >= '0' && e.key <= '9');
+    const isNumpad = e.code && e.code.startsWith('Numpad') && e.key >= '0' && e.key <= '9';
+    if (isDigit || isNumpad) { pinKey(e.key); e.preventDefault(); }
+    else if (e.key === 'Backspace' || e.key === 'Delete') { pinDel(); e.preventDefault(); }
+    else if (e.key === 'Escape') { voltarParaPerfis(); e.preventDefault(); }
+  };
+  document.addEventListener('keydown', window._pinKeyHandler);
 }
 
 function pinKey(d) {
