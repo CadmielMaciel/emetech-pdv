@@ -1878,27 +1878,17 @@ function apCarregarConfigs() {
   } catch(e) { console.warn('apCarregarConfigs erro:', e); }
 }
 
-/* ── Intercepta navegação para aparencia ───────── */
-const _goOriginal = go;
-window.go = function(page) {
-  _goOriginal(page);
-  if (page === 'aparencia') {
-    setTimeout(apCarregarConfigs, 80);
+/* ── Carrega configs ao navegar para aparencia ─── */
+document.querySelectorAll('.ni').forEach(el => {
+  if ((el.getAttribute('onclick')||'').includes("'aparencia'")) {
+    const orig = el.getAttribute('onclick');
+    el.setAttribute('onclick', orig + ';setTimeout(apCarregarConfigs,80)');
   }
-};
+});
 
-/* ── Acesso: gerente TAMBÉM pode acessar aparencia ─ */
-// Patch no canAccess para incluir gerente
-const _canOriginal = canAccess;
-window.canAccess = function(role, page) {
-  if (page === 'aparencia' && (role === 'admin' || role === 'gerente')) return true;
-  return _canOriginal(role, page);
-};
-
-// Atualiza o nav para gerente ver aparencia
+/* ── Acesso: gerente vê aparencia no menu ────── */
 document.querySelectorAll('.ni.nav-adm').forEach(el => {
-  const onclick = el.getAttribute('onclick') || '';
-  if (onclick.includes('aparencia')) {
+  if ((el.getAttribute('onclick')||'').includes('aparencia')) {
     el.setAttribute('data-p', 'admin,gerente');
   }
 });
