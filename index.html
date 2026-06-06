@@ -320,6 +320,46 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
 .r-tecnico{background:#FFFBEB;color:#B45309}
 
 @media(max-width:900px){.sg{grid-template-columns:1fr 1fr}.pdv-wrap,.os-grid{grid-template-columns:1fr}.g2{grid-template-columns:1fr}}
+
+/* ── TELA NETFLIX DE PERFIS ────────────────────────── */
+.nf-screen{position:fixed;inset:0;background:#0a0014;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9998;transition:opacity .4s}
+.nf-screen.hidden{opacity:0;pointer-events:none}
+.nf-title{font-family:'Syne',sans-serif;font-weight:800;font-size:28px;color:#fff;margin-bottom:36px;letter-spacing:-.5px;text-align:center}
+.nf-grid{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;max-width:640px}
+.nf-card{display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;transition:transform .2s}
+.nf-card:hover{transform:scale(1.08)}
+.nf-card:hover .nf-avatar{border-color:rgba(255,255,255,.9)}
+.nf-avatar{width:90px;height:90px;border-radius:14px;background:linear-gradient(135deg,var(--pri-dark),var(--pri));display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:28px;color:#fff;border:3px solid transparent;transition:border-color .2s;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.nf-avatar img{width:100%;height:100%;object-fit:cover}
+.nf-nome{font-size:13px;font-weight:600;color:rgba(255,255,255,.75)}
+.nf-role-badge{font-size:10px;padding:2px 8px;border-radius:12px;font-weight:700}
+/* ── PIN ─────────────────────────────────────────────── */
+.pin-screen{position:fixed;inset:0;background:#0a0014;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .4s}
+.pin-screen.hidden{opacity:0;pointer-events:none}
+.pin-title{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:#fff;margin-bottom:6px;text-align:center}
+.pin-sub{font-size:13px;color:rgba(255,255,255,.5);margin-bottom:28px;text-align:center}
+.pin-dots{display:flex;gap:12px;margin-bottom:24px}
+.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,.4);transition:all .2s}
+.pin-dot.filled{background:var(--pri);border-color:var(--pri);transform:scale(1.15)}
+.pin-dot.error{background:#EF4444;border-color:#EF4444}
+.pin-numpad{display:grid;grid-template-columns:repeat(3,72px);gap:10px}
+.pin-key{width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.12);color:#fff;font-family:'Syne',sans-serif;font-size:22px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .18s;user-select:none}
+.pin-key:hover{background:rgba(255,255,255,.18);transform:scale(1.06)}
+.pin-key:active{transform:scale(.94)}
+.pin-key.del{font-size:18px}
+.pin-key.vazio{opacity:0;pointer-events:none}
+.pin-erro{color:#EF4444;font-size:13px;font-weight:600;margin-top:12px;min-height:18px;text-align:center}
+.pin-voltar{margin-top:20px;color:rgba(255,255,255,.45);font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px;transition:color .2s}
+.pin-voltar:hover{color:rgba(255,255,255,.8)}
+
+/* ── APARÊNCIA — EXTRAS ────────────────────────────── */
+.palette-preset{width:36px;height:36px;border-radius:8px;cursor:pointer;border:3px solid transparent;transition:all .2s;flex-shrink:0}
+.palette-preset:hover,.palette-preset.active{border-color:#fff;transform:scale(1.12);box-shadow:0 4px 12px rgba(0,0,0,.3)}
+.ap-upload-btn{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;padding:10px;border:2px dashed var(--border2);border-radius:9px;cursor:pointer;font-size:13px;font-weight:600;color:var(--txt2);transition:var(--trans);background:var(--surface)}
+.ap-upload-btn:hover{border-color:var(--pri);color:var(--pri);background:var(--pri-light)}
+.gradient-row{display:flex;gap:6px;flex-wrap:wrap}
+.grad-dir-btn{padding:5px 10px;border-radius:6px;border:1.5px solid var(--border);background:var(--bg2);cursor:pointer;font-size:12px;font-weight:600;color:var(--txt2);transition:var(--trans);font-family:'DM Sans',sans-serif}
+.grad-dir-btn:hover,.grad-dir-btn.active{border-color:var(--pri);color:var(--pri);background:var(--pri-light)}
 </style>
 </head>
 <body>
@@ -384,6 +424,47 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
 </div>
 
 
+
+
+<!-- TELA NETFLIX DE SELEÇÃO DE PERFIL -->
+<div class="nf-screen" id="nf-screen" style="display:none">
+  <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.3);letter-spacing:2px;text-transform:uppercase;margin-bottom:14px">EMETech ERP PDV v4</div>
+  <div class="nf-title">Quem está usando?</div>
+  <div class="nf-grid" id="nf-grid"></div>
+  <div style="margin-top:32px;font-size:12px;color:rgba(255,255,255,.25);text-align:center">
+    Selecione seu perfil para continuar
+  </div>
+</div>
+
+<!-- TELA DE PIN -->
+<div class="pin-screen" id="pin-screen" style="display:none">
+  <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.3);letter-spacing:2px;text-transform:uppercase;margin-bottom:14px">EMETech ERP PDV v4</div>
+  <div id="pin-avatar" style="width:72px;height:72px;border-radius:12px;background:linear-gradient(135deg,var(--pri-dark),var(--pri));display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:#fff;margin-bottom:14px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.5)"></div>
+  <div class="pin-title" id="pin-nome-label">Nome</div>
+  <div class="pin-sub">Digite seu PIN de 4 dígitos</div>
+  <div class="pin-dots" id="pin-dots">
+    <div class="pin-dot" id="pd0"></div>
+    <div class="pin-dot" id="pd1"></div>
+    <div class="pin-dot" id="pd2"></div>
+    <div class="pin-dot" id="pd3"></div>
+  </div>
+  <div class="pin-numpad">
+    <div class="pin-key" onclick="pinKey('1')">1</div>
+    <div class="pin-key" onclick="pinKey('2')">2</div>
+    <div class="pin-key" onclick="pinKey('3')">3</div>
+    <div class="pin-key" onclick="pinKey('4')">4</div>
+    <div class="pin-key" onclick="pinKey('5')">5</div>
+    <div class="pin-key" onclick="pinKey('6')">6</div>
+    <div class="pin-key" onclick="pinKey('7')">7</div>
+    <div class="pin-key" onclick="pinKey('8')">8</div>
+    <div class="pin-key" onclick="pinKey('9')">9</div>
+    <div class="pin-key vazio"></div>
+    <div class="pin-key" onclick="pinKey('0')">0</div>
+    <div class="pin-key del" onclick="pinDel()">⌫</div>
+  </div>
+  <div class="pin-erro" id="pin-erro"></div>
+  <div class="pin-voltar" onclick="voltarNF()"><i class="ti ti-arrow-left" style="font-size:14px"></i>Trocar perfil</div>
+</div>
 
 <!-- PDF PRINT AREA -->
 <div id="pdf-print-area"></div>
@@ -1407,7 +1488,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
         <!-- Lista -->
         <div id="usr-tab-lista">
           <div class="card" style="padding:0"><div class="tw"><table>
-            <thead><tr><th>Nome</th><th>E-mail</th><th>Nível</th><th>Status</th><th>Ações</th></tr></thead>
+            <thead><tr><th>Nome</th><th>E-mail</th><th>Nível</th><th>Status</th><th style='text-align:center'>PIN</th><th>Ações</th></tr></thead>
             <tbody id="usr-table"></tbody>
           </table></div></div>
         </div>
@@ -1965,6 +2046,36 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
 
 <!-- Painel de sugestões no PDV (injetado dinamicamente) -->
 
+
+<!-- Modal Alterar PIN -->
+<div class="modal-overlay" id="modal-alterar-pin"><div class="modal sm">
+  <div class="modal-title"><i class="ti ti-lock-code"></i>Alterar PIN</div>
+  <input type="hidden" id="ap-user-id">
+  <div style="font-size:13px;color:var(--txt2);margin-bottom:16px">
+    O PIN é usado para acessar o sistema na tela de seleção de perfil. Use 4 dígitos numéricos.
+  </div>
+  <div id="pin-atual-grp" class="fg">
+    <label class="lbl">PIN Atual <span id="pin-atual-lbl"></span></label>
+    <div style="display:flex;gap:8px">
+      <input type="password" id="ap-pin-atual" maxlength="4" inputmode="numeric" pattern="[0-9]*" placeholder="••••" style="text-align:center;font-size:22px;letter-spacing:6px;font-weight:700">
+    </div>
+  </div>
+  <div class="fg">
+    <label class="lbl">Novo PIN (4 dígitos)</label>
+    <input type="password" id="ap-pin-novo" maxlength="4" inputmode="numeric" pattern="[0-9]*" placeholder="••••" style="text-align:center;font-size:22px;letter-spacing:6px;font-weight:700">
+  </div>
+  <div class="fg">
+    <label class="lbl">Confirmar novo PIN</label>
+    <input type="password" id="ap-pin-conf" maxlength="4" inputmode="numeric" pattern="[0-9]*" placeholder="••••" style="text-align:center;font-size:22px;letter-spacing:6px;font-weight:700">
+  </div>
+  <div id="ap-pin-err" style="background:#FEF2F2;color:#EF4444;border:1px solid #FECACA;border-radius:8px;padding:8px 12px;font-size:12.5px;font-weight:600;margin-bottom:8px;display:none"></div>
+  <div id="ap-pin-ok" style="background:#ECFDF5;color:#059669;border:1px solid #A7F3D0;border-radius:8px;padding:8px 12px;font-size:12.5px;font-weight:600;margin-bottom:8px;display:none"></div>
+  <div class="modal-footer">
+    <button class="btn btn-out" onclick="closeModal('modal-alterar-pin')">Cancelar</button>
+    <button class="btn btn-pri" onclick="salvarNovoPIN()"><i class="ti ti-check"></i>Salvar PIN</button>
+  </div>
+</div></div>
+
 <!-- Confirm -->
 <div class="modal-overlay" id="modal-confirm"><div class="modal sm" style="padding:22px">
   <div style="font-size:16px;font-weight:700;color:var(--txt);margin-bottom:7px" id="conf-title">Confirmar</div>
@@ -2011,7 +2122,7 @@ const LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 580" 
 
 /* ── SUPABASE CONFIG ─────────────────────────────────── */
 const SURL = 'https://icgfpfwcnhkjglrmnuca.supabase.co';
-const SKEY = 'sb_publishable_wMj9DjSyr_5oblApVRoOqA_47E3022p';
+const SKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljZ2ZwZndjbmhramdscm1udWNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwODA2OTEsImV4cCI6MjA5NTY1NjY5MX0.xDGiGCIlqXaqdWhWo0NoNi_XUdlw5raCogO_Jnc0ezw';
 const { createClient } = supabase;
 const db = createClient(SURL, SKEY);
 
@@ -2117,11 +2228,9 @@ async function loadProfile(user){
   if(!p||!p.ativo){await db.auth.signOut();document.getElementById('l-err').textContent='Usuário inativo.';document.getElementById('l-err').style.display='block';document.getElementById('l-btn').disabled=false;document.getElementById('l-btn').innerHTML='<i class="ti ti-lock" style="font-size:17px"></i>Entrar';return;}
   G.profile=p;G.role=p.role;
   document.getElementById('ls').classList.add('hidden');
-  document.getElementById('app').classList.add('visible');
-  document.getElementById('tb-date').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
-  applyRoleUI();
   await loadAll();
-  go(RH[G.role]||'pdv');
+  // Mostra tela Netflix de seleção de perfil
+  mostrarTelaNetflix();
 }
 
 async function doLogout(){
@@ -3436,6 +3545,7 @@ function renderUsuarios(q=''){
     <td style="color:var(--txt2);font-size:12.5px">${u.email}</td>
     <td><span class="role-badge ${RC[u.role]||''}">${RL[u.role]||u.role}</span></td>
     <td><span class="tag ${u.ativo?'tag-grn':'tag-gry'}">${u.ativo?'Ativo':'Inativo'}</span></td>
+    <td style="text-align:center">${hasPin(u.id)?'<span class="tag tag-grn" style="font-size:9.5px">🔒 Ativo</span>':'<span class="tag tag-gry" style="font-size:9.5px">Sem PIN</span>'}</td>
     <td>${G.profile?.id!==u.id?`<div style="display:flex;gap:4px"><button class="btn btn-out btn-xs" onclick="editUsr('${u.id}')"><i class="ti ti-edit"></i></button><button class="btn ${u.ativo?'btn-danger':'btn-success'} btn-xs" onclick="toggleUsr('${u.id}')">${u.ativo?'Desativar':'Ativar'}</button></div>`:'—'}</td>
   </tr>`).join('');
 }
@@ -5818,6 +5928,294 @@ function gerarPdfRelEstoque() {
   const html = pdfBase({ titulo: 'Relatório de Estoque', numero: 'EST-' + new Date().toISOString().slice(0, 10), tipo: 'RELATÓRIO DE ESTOQUE', conteudo, assinatura: pdfAssinatura(G.profile?.nome || 'Responsável', 'Gestor de Estoque', '', ''), wmSrc: e.wmRel, wmOp: e.wmRelOp });
   abrirPDFModal(html, 'Relatorio-Estoque-' + new Date().toISOString().slice(0, 10));
 }
+
+/* ══════════════════════════════════════════════════════
+   TELA NETFLIX DE PERFIS + PIN
+   ══════════════════════════════════════════════════════ */
+
+// Cores dos avatares por role
+const NFColors = {
+  admin:    { bg:'linear-gradient(135deg,#5B47E0,#7C3AED)', cor:'#fff' },
+  gerente:  { bg:'linear-gradient(135deg,#1D4ED8,#3B82F6)', cor:'#fff' },
+  operador: { bg:'linear-gradient(135deg,#059669,#10B981)', cor:'#fff' },
+  tecnico:  { bg:'linear-gradient(135deg,#D97706,#F59E0B)', cor:'#fff' }
+};
+const NFRoleLbl = { admin:'Administrador', gerente:'Gerente', operador:'Operador', tecnico:'Técnico' };
+const NFRoleTag = { admin:'r-admin', gerente:'r-gerente', operador:'r-operador', tecnico:'r-tecnico' };
+
+let _nfPerfilSelecionado = null;
+let _pinDigitos = '';
+let _nfModoAlterar = false; // flag para modo alteração de PIN
+
+// Chave para salvar PINs (no localStorage, indexado por userId)
+function getPINs() {
+  try { return JSON.parse(localStorage.getItem('emetech_pins') || '{}'); } catch { return {}; }
+}
+function savePINs(obj) { localStorage.setItem('emetech_pins', JSON.stringify(obj)); }
+function getPin(userId) { return getPINs()[userId] || null; }
+function setPin(userId, pin) { const p = getPINs(); p[userId] = pin; savePINs(p); }
+function hasPin(userId) { return !!getPin(userId); }
+
+// ── EXIBIR TELA NETFLIX ─────────────────────────────────
+function mostrarTelaNetflix() {
+  const tela = document.getElementById('nf-screen');
+  const grid = document.getElementById('nf-grid');
+  if (!tela || !grid) return;
+  
+  const m = getMarca ? getMarca() : {};
+  const logoSidebar = m.logoSidebar || null;
+  
+  grid.innerHTML = G.usuarios.filter(u => u.ativo).map(u => {
+    const c = NFColors[u.role] || NFColors.admin;
+    const iniciais = (u.nome || '?').slice(0,2).toUpperCase();
+    const avatarInner = logoSidebar
+      ? `<img src="${logoSidebar}" style="width:100%;height:100%;object-fit:contain;padding:8px">`
+      : `<span>${iniciais}</span>`;
+    const pinOk = hasPin(u.id);
+    return `<div class="nf-card" onclick="selecionarPerfil('${u.id}')">
+      <div class="nf-avatar" style="background:${c.bg}">
+        ${logoSidebar ? '' : avatarInner}
+        ${!logoSidebar ? '' : avatarInner}
+      </div>
+      <div class="nf-nome">${u.nome}</div>
+      <span class="role-badge ${NFRoleTag[u.role] || ''}" style="font-size:9.5px;padding:1.5px 7px">${NFRoleLbl[u.role] || u.role}</span>
+      ${pinOk ? '<div style="font-size:9.5px;color:rgba(255,255,255,.35);margin-top:-4px">🔒 PIN configurado</div>' : '<div style="font-size:9.5px;color:rgba(255,255,255,.25);margin-top:-4px">Sem PIN</div>'}
+    </div>`;
+  }).join('');
+  
+  // Corrige avatares com logo
+  if (logoSidebar) {
+    grid.querySelectorAll('.nf-avatar').forEach((el, i) => {
+      const u = G.usuarios.filter(u => u.ativo)[i];
+      if (!u) return;
+      const iniciais = (u.nome || '?').slice(0,2).toUpperCase();
+      el.innerHTML = `<img src="${logoSidebar}" style="width:100%;height:100%;object-fit:contain;padding:8px">`;
+    });
+  } else {
+    grid.querySelectorAll('.nf-avatar').forEach((el, i) => {
+      const u = G.usuarios.filter(u => u.ativo)[i];
+      if (!u) return;
+      const iniciais = (u.nome || '?').slice(0,2).toUpperCase();
+      el.innerHTML = iniciais;
+    });
+  }
+  
+  tela.style.display = 'flex';
+  requestAnimationFrame(() => { tela.style.opacity = '1'; });
+}
+
+function ocultarTelaNetflix() {
+  const tela = document.getElementById('nf-screen');
+  if (tela) { tela.style.opacity = '0'; setTimeout(() => { tela.style.display = 'none'; }, 400); }
+}
+
+// ── SELECIONAR PERFIL ──────────────────────────────────
+function selecionarPerfil(userId) {
+  const u = G.usuarios.find(x => x.id === userId);
+  if (!u) return;
+  _nfPerfilSelecionado = u;
+  
+  if (!hasPin(userId)) {
+    // Sem PIN: entra direto (apenas admin/gerente recebem acesso sem PIN se nunca configurou)
+    entrarComPerfil(u);
+    return;
+  }
+  
+  mostrarPinScreen(u, 'verificar');
+}
+
+function entrarComPerfil(u) {
+  _operadorAtual = u;
+  G.profile = u; G.role = u.role;
+  ocultarTelaNetflix();
+  document.getElementById('pin-screen').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+  document.getElementById('tb-date').textContent = new Date().toLocaleDateString('pt-BR', {weekday:'short',day:'2-digit',month:'short',year:'numeric'});
+  applyRoleUI();
+  go(RH[u.role] || 'dashboard');
+}
+
+// ── TELA DE PIN ────────────────────────────────────────
+let _pinModo = 'verificar'; // 'verificar' | 'cadastrar' | 'confirmar'
+let _pinNovoTemp = '';
+
+function mostrarPinScreen(u, modo) {
+  _pinModo = modo;
+  _pinDigitos = '';
+  _pinNovoTemp = '';
+  
+  const screen = document.getElementById('pin-screen');
+  const av = document.getElementById('pin-avatar');
+  const nomeLbl = document.getElementById('pin-nome-label');
+  const sub = screen.querySelector('.pin-sub');
+  
+  // Avatar
+  const m = getMarca ? getMarca() : {};
+  const c = NFColors[u.role] || NFColors.admin;
+  const iniciais = (u.nome || '?').slice(0,2).toUpperCase();
+  av.style.background = c.bg;
+  av.innerHTML = m.logoSidebar
+    ? `<img src="${m.logoSidebar}" style="width:100%;height:100%;object-fit:contain;padding:6px">`
+    : iniciais;
+  
+  nomeLbl.textContent = u.nome;
+  if (modo === 'verificar') sub.textContent = 'Digite seu PIN de 4 dígitos';
+  else if (modo === 'cadastrar') sub.textContent = 'Crie um PIN de 4 dígitos';
+  else sub.textContent = 'Confirme o novo PIN';
+  
+  document.getElementById('pin-erro').textContent = '';
+  atualizarDots();
+  
+  screen.style.display = 'flex';
+  screen.style.opacity = '0';
+  requestAnimationFrame(() => { screen.style.opacity = '1'; screen.style.transition = 'opacity .3s'; });
+  ocultarTelaNetflix();
+}
+
+function pinKey(d) {
+  if (_pinDigitos.length >= 4) return;
+  _pinDigitos += d;
+  atualizarDots();
+  if (_pinDigitos.length === 4) setTimeout(verificarPin, 150);
+}
+
+function pinDel() {
+  _pinDigitos = _pinDigitos.slice(0, -1);
+  atualizarDots();
+  document.getElementById('pin-erro').textContent = '';
+  document.querySelectorAll('.pin-dot').forEach(d => d.classList.remove('error'));
+}
+
+function atualizarDots() {
+  for (let i = 0; i < 4; i++) {
+    const d = document.getElementById('pd' + i);
+    if (!d) continue;
+    d.classList.toggle('filled', i < _pinDigitos.length);
+    d.classList.remove('error');
+  }
+}
+
+function pinErro(msg) {
+  document.querySelectorAll('.pin-dot').forEach(d => { d.classList.remove('filled'); d.classList.add('error'); });
+  document.getElementById('pin-erro').textContent = msg;
+  setTimeout(() => {
+    document.querySelectorAll('.pin-dot').forEach(d => d.classList.remove('error'));
+    _pinDigitos = '';
+    atualizarDots();
+  }, 900);
+}
+
+function verificarPin() {
+  const u = _nfPerfilSelecionado;
+  if (!u) return;
+  
+  if (_pinModo === 'verificar') {
+    const salvo = getPin(u.id);
+    if (_pinDigitos === salvo) {
+      document.getElementById('pin-screen').style.opacity = '0';
+      setTimeout(() => {
+        document.getElementById('pin-screen').style.display = 'none';
+        entrarComPerfil(u);
+      }, 300);
+    } else {
+      pinErro('PIN incorreto. Tente novamente.');
+    }
+  } else if (_pinModo === 'cadastrar') {
+    _pinNovoTemp = _pinDigitos;
+    _pinDigitos = '';
+    atualizarDots();
+    mostrarPinScreen(u, 'confirmar');
+  } else if (_pinModo === 'confirmar') {
+    if (_pinDigitos === _pinNovoTemp) {
+      setPin(u.id, _pinDigitos);
+      document.getElementById('pin-screen').style.display = 'none';
+      entrarComPerfil(u);
+      notify('✅ PIN configurado com sucesso!', 'success');
+    } else {
+      pinErro('PINs não coincidem. Tente novamente.');
+      setTimeout(() => mostrarPinScreen(u, 'cadastrar'), 1000);
+    }
+  }
+}
+
+function voltarNF() {
+  document.getElementById('pin-screen').style.display = 'none';
+  mostrarTelaNetflix();
+}
+
+/* ── ALTERAR PIN NO MÓDULO USUÁRIOS ───────────────────────
+   Botão "Alterar PIN" na lista de usuários
+   ────────────────────────────────────────────────────── */
+function abrirAlterarPIN(userId) {
+  const u = G.usuarios.find(x => x.id === userId); if (!u) return;
+  document.getElementById('ap-user-id').value = userId;
+  document.getElementById('ap-pin-atual').value = '';
+  document.getElementById('ap-pin-novo').value = '';
+  document.getElementById('ap-pin-conf').value = '';
+  document.getElementById('ap-pin-err').style.display = 'none';
+  document.getElementById('ap-pin-ok').style.display = 'none';
+  
+  const grpAtual = document.getElementById('pin-atual-grp');
+  const lbl = document.getElementById('pin-atual-lbl');
+  
+  if (hasPin(userId)) {
+    grpAtual.style.display = '';
+    lbl.textContent = '';
+  } else {
+    grpAtual.style.display = 'none'; // sem PIN atual, só cria
+    lbl.textContent = '(nenhum PIN configurado)';
+  }
+  
+  openModal('modal-alterar-pin');
+}
+
+function salvarNovoPIN() {
+  const userId = document.getElementById('ap-user-id').value;
+  const pinAtual = document.getElementById('ap-pin-atual').value;
+  const pinNovo = document.getElementById('ap-pin-novo').value;
+  const pinConf = document.getElementById('ap-pin-conf').value;
+  const errEl = document.getElementById('ap-pin-err');
+  const okEl = document.getElementById('ap-pin-ok');
+  
+  errEl.style.display = 'none'; okEl.style.display = 'none';
+  
+  const showErr = (msg) => { errEl.textContent = msg; errEl.style.display = ''; };
+  
+  // Validações
+  if (!/^[0-9]{4}$/.test(pinNovo)) return showErr('O PIN deve ter exatamente 4 dígitos numéricos.');
+  if (pinNovo !== pinConf) return showErr('Os PINs não coincidem.');
+  
+  // Se tem PIN antigo, verificar
+  if (hasPin(userId)) {
+    const salvo = getPin(userId);
+    if (pinAtual !== salvo) return showErr('PIN atual incorreto.');
+  }
+  
+  setPin(userId, pinNovo);
+  okEl.textContent = '✅ PIN alterado com sucesso!';
+  okEl.style.display = '';
+  document.getElementById('ap-pin-atual').value = '';
+  document.getElementById('ap-pin-novo').value = '';
+  document.getElementById('ap-pin-conf').value = '';
+  
+  // Renderiza lista para atualizar status
+  renderUsuarios();
+  setTimeout(() => closeModal('modal-alterar-pin'), 1500);
+}
+
+function removerPIN(userId) {
+  const u = G.usuarios.find(x => x.id === userId);
+  confirmAct('Remover PIN', `Remover o PIN de "${u?.nome}"? O perfil ficará sem proteção.`, () => {
+    const pins = getPINs(); delete pins[userId]; savePINs(pins);
+    renderUsuarios(); notify('PIN removido.', 'info');
+  });
+}
+
+/* ── PATCH: loadProfile SUBSTITUI TELA NETFLIX ──────────*/
+// loadProfile original vai para o app direto.
+// A tela Netflix é chamada APÓS o login Supabase — o usuário escolhe quem é.
+// Assim: login email/senha → autentica no Supabase → carrega todos os usuários → mostra Netflix.
+
 (async()=>{
   aplicarMarcasSalvas(); // aplica logos/marcas salvas antes do login
   const {data:{session}}=await db.auth.getSession();
