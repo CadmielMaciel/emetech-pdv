@@ -490,7 +490,11 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
       <div class="ni active" onclick="go('dashboard')" data-p="admin,gerente"><i class="ti ti-layout-dashboard"></i><span class="ni-label">Dashboard</span><span class="ni-tip">Dashboard</span></div>
       <div class="ni" onclick="go('pdv')" data-p="admin,gerente,operador"><i class="ti ti-shopping-cart"></i><span class="ni-label">PDV / Caixa</span><span class="ni-tip">PDV / Caixa</span></div>
       <div class="nav-sec">Gestão</div>
-      <div class="ni" onclick="go('caixas')" data-p="admin,gerente"><i class="ti ti-cash-register"></i><span class="ni-label">Caixas</span><span class="ni-tip">Caixas</span></div>
+      <div class="ni" onclick="go('caixas')" data-p="admin,gerente" id="nav-caixas">
+  <i class="ti ti-cash-register" style="font-size:18px"></i>
+  <span class="ni-label">Caixas</span>
+  <span class="ni-tip">Gestão de Caixas</span>
+</div>
       <div class="ni" onclick="go('orcamentos')" data-p="admin,gerente,operador"><i class="ti ti-file-invoice"></i><span class="ni-label">Orçamentos</span><span class="ni-tip">Orçamentos</span></div>
       <div class="ni" onclick="go('crediario')" data-p="admin,gerente,operador"><i class="ti ti-credit-card"></i><span class="ni-label">Crediário</span><span class="ni-tip">Crediário</span></div>
       <div class="ni" onclick="go('devolucoes')" data-p="admin,gerente"><i class="ti ti-arrow-back-up"></i><span class="ni-label">Devoluções</span><span class="ni-tip">Devoluções</span></div>
@@ -5655,6 +5659,10 @@ function pdfBase({ titulo, numero, tipo, conteudo, assinatura, wmSrc, wmOp }) {
   /* ALERTA / AVISO */
   .aviso-box{background:#FFFBEB;border:1.5px solid #FDE68A;border-radius:8px;padding:10px 14px;font-size:11px;color:#92400E;margin-top:10px;display:flex;gap:8px}
   @media print{body{margin:0}@page{margin:0;size:A4}}
+
+/* ── NAV CAIXAS DESTAQUE ── */
+#nav-caixas i { color: rgba(255,255,255,.85); transition: transform .2s; }
+#nav-caixas:hover i, #nav-caixas.active i { color: #fff; transform: scale(1.15); }
 </style>
 </head>
 <body>
