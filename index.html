@@ -491,7 +491,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
       <div class="ni active" onclick="go('dashboard')" data-p="admin,gerente"><i class="ti ti-layout-dashboard"></i><span class="ni-label">Dashboard</span><span class="ni-tip">Dashboard</span></div>
       <div class="ni" onclick="go('pdv')" data-p="admin,gerente,operador"><i class="ti ti-shopping-cart"></i><span class="ni-label">PDV / Caixa</span><span class="ni-tip">PDV / Caixa</span></div>
       <div class="nav-sec">Gestão</div>
-      <div class="ni" onclick="go('caixas')" data-p="admin,gerente" id="nav-caixas"><i class="ti ti-cash-register"></i><span class="ni-label">Caixas</span><span class="ni-tip">Gestão de Caixas</span></div>
+      <div class="ni" onclick="go('caixas')" data-p="admin,gerente" id="nav-caixas"><i class="ti ti-device-desktop-analytics"></i><span class="ni-label">Caixas</span><span class="ni-tip">Gestão de Caixas</span></div>
       <div class="ni" onclick="go('orcamentos')" data-p="admin,gerente,operador"><i class="ti ti-file-invoice"></i><span class="ni-label">Orçamentos</span><span class="ni-tip">Orçamentos</span></div>
       <div class="ni" onclick="go('crediario')" data-p="admin,gerente,operador"><i class="ti ti-credit-card"></i><span class="ni-label">Crediário</span><span class="ni-tip">Crediário</span></div>
       <div class="ni" onclick="go('devolucoes')" data-p="admin,gerente"><i class="ti ti-arrow-back-up"></i><span class="ni-label">Devoluções</span><span class="ni-tip">Devoluções</span></div>
@@ -6092,6 +6092,78 @@ function pdfBase({ titulo, numero, tipo, conteudo, assinatura, wmSrc, wmOp }) {
 .nf-slot .nf-avatar, #nf-admin-avatar { transition: box-shadow .2s, transform .2s !important; }
 .nf-slot:hover .nf-avatar { transform: scale(1.06) !important; box-shadow: 0 6px 20px rgba(0,0,0,.35) !important; }
 #nf-admin-slot:hover .nf-avatar { transform: scale(1.06) !important; }
+
+/* ═══════════════════════════════════════════════════
+   FEEDBACK VISUAL DE CLIQUE — RIPPLE EFFECT GLOBAL
+   Funciona em todos os elementos interativos do sistema
+   ═══════════════════════════════════════════════════ */
+
+/* ── BASE: active state scale + flash ── */
+.btn { position:relative; overflow:hidden; }
+.btn:active { transform: scale(0.96) !important; filter: brightness(0.92); }
+
+/* ── NAV ITEMS ── */
+.ni { position:relative; overflow:hidden; }
+.ni:active { transform: scale(0.97); background:rgba(255,255,255,.18) !important; }
+
+/* ── TABS (fin-tab, role-tab, etc.) ── */
+.fin-tab { position:relative; overflow:hidden; }
+.fin-tab:active { transform: scale(0.97); opacity:.85; }
+
+/* ── NF CARDS (seleção de perfil) ── */
+.nf-card:active, .nf-slot:active { transform: scale(0.95) !important; }
+
+/* ── ROWS DE TABELA CLICÁVEIS ── */
+tr[onclick]:active, .clickable:active { background:var(--pri-light,rgba(91,71,224,.08)) !important; }
+
+/* ── RIPPLE GLOBAL via ::after ── */
+.btn::after, .ni::after, .fin-tab::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0);
+  border-radius: inherit;
+  pointer-events: none;
+  transition: background 0.15s ease;
+}
+.btn:active::after { background: rgba(255,255,255,.12); }
+.ni:active::after { background: rgba(255,255,255,.1); }
+.fin-tab:active::after { background: rgba(0,0,0,.06); }
+
+/* ── CURSOR POINTER UNIVERSAL ── */
+.btn, .ni, .fin-tab, .nf-card, .nf-slot, #nf-admin-slot,
+[onclick], button, a, .clickable,
+.slot-user-item, .card[onclick] {
+  cursor: pointer;
+}
+
+/* ── HOVER STATE para elementos que não têm (melhor UX) ── */
+.slot-user-item:not(.disabled):hover { background: var(--pri-light,rgba(91,71,224,.07)); }
+tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cursor: pointer; }
+
+/* ── TRANSIÇÃO SUAVE em todos os btns ── */
+.btn { transition: transform .1s, filter .1s, box-shadow .15s, background .15s !important; }
+.ni { transition: background .15s, transform .1s !important; }
+.fin-tab { transition: background .15s, transform .1s, color .15s !important; }
+
+/* ── RIPPLE JS-CLASS (adicionado via JS no click) ── */
+@keyframes ripple-burst {
+  0%   { transform: scale(0); opacity: 0.4; }
+  100% { transform: scale(4); opacity: 0; }
+}
+.ripple-dot {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.35);
+  width: 60px; height: 60px;
+  margin-left: -30px; margin-top: -30px;
+  pointer-events: none;
+  animation: ripple-burst 0.45s ease-out forwards;
+}
+/* Ripple escuro para fundos claros */
+.ripple-dot-dark {
+  background: rgba(0,0,0,0.12);
+}
 </style>
 </head>
 <body>
@@ -6947,6 +7019,46 @@ function removerPIN(userId) {
   const {data:{session}}=await db.auth.getSession();
   if(session?.user)await loadProfile(session.user);
 })();
+
+/* ── RIPPLE EFFECT GLOBAL ──────────────────────────────
+   Detecta clique em .btn, .ni, .fin-tab e cria uma bolha
+   de onda que se expande e desaparece.
+   ─────────────────────────────────────────────────────── */
+(function initRipple() {
+  const SELECTORS = '.btn, .ni, .fin-tab, .slot-user-item, .nf-slot, #nf-admin-slot, .nf-card';
+
+  function createRipple(e, el) {
+    // Detecta se fundo é escuro (nav, nf-screen) ou claro
+    const isDark = el.closest('.nav, .nf-screen, #pin-screen') !== null;
+    const rect = el.getBoundingClientRect();
+    const dot = document.createElement('span');
+    dot.className = 'ripple-dot' + (isDark ? '' : ' ripple-dot-dark');
+    dot.style.left = (e.clientX - rect.left) + 'px';
+    dot.style.top  = (e.clientY - rect.top)  + 'px';
+    el.style.position = el.style.position || 'relative';
+    el.style.overflow = 'hidden';
+    el.appendChild(dot);
+    dot.addEventListener('animationend', () => dot.remove());
+  }
+
+  // Usa delegação de eventos no document
+  document.addEventListener('mousedown', function(e) {
+    const el = e.target.closest(SELECTORS);
+    if (el && !el.disabled && !el.classList.contains('disabled')) {
+      createRipple(e, el);
+    }
+  }, true);
+
+  // Touch support
+  document.addEventListener('touchstart', function(e) {
+    const el = e.target.closest(SELECTORS);
+    if (el && !el.disabled && !el.classList.contains('disabled')) {
+      const touch = e.touches[0];
+      createRipple({ clientX: touch.clientX, clientY: touch.clientY }, el);
+    }
+  }, { passive: true, capture: true });
+})();
+
 </script>
 </body>
 </html>
