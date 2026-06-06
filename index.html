@@ -325,7 +325,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
 .nf-screen{position:fixed;inset:0;background:#0a0014;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9998;transition:opacity .4s}
 .nf-screen.hidden{opacity:0;pointer-events:none}
 .nf-title{font-family:'Syne',sans-serif;font-weight:800;font-size:28px;color:#fff;margin-bottom:36px;letter-spacing:-.5px;text-align:center}
-.nf-grid{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;max-width:640px}
+.nf-grid{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;max-width:480px}
 .nf-card{display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;transition:transform .2s}
 .nf-card:hover{transform:scale(1.08)}
 .nf-card:hover .nf-avatar{border-color:rgba(255,255,255,.9)}
@@ -407,8 +407,9 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
 <div class="nf-screen" id="nf-screen" style="display:none">
   <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.3);letter-spacing:2px;text-transform:uppercase;margin-bottom:14px">EMETech ERP PDV v4</div>
   <div class="nf-title">Quem está usando?</div>
-  <div class="nf-grid" id="nf-grid"></div>
-  <div style="margin-top:32px;font-size:12px;color:rgba(255,255,255,.25);text-align:center">
+  <div class="nf-grid" id="nf-grid" style="max-width:480px"></div>
+  <div id="nf-admin-container"></div>
+  <div style="margin-top:24px;font-size:11px;color:rgba(255,255,255,.18);text-align:center">
     Selecione seu perfil para continuar
   </div>
 </div>
@@ -490,11 +491,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
       <div class="ni active" onclick="go('dashboard')" data-p="admin,gerente"><i class="ti ti-layout-dashboard"></i><span class="ni-label">Dashboard</span><span class="ni-tip">Dashboard</span></div>
       <div class="ni" onclick="go('pdv')" data-p="admin,gerente,operador"><i class="ti ti-shopping-cart"></i><span class="ni-label">PDV / Caixa</span><span class="ni-tip">PDV / Caixa</span></div>
       <div class="nav-sec">Gestão</div>
-      <div class="ni" onclick="go('caixas')" data-p="admin,gerente" id="nav-caixas">
-  <i class="ti ti-cash-register" style="font-size:18px"></i>
-  <span class="ni-label">Caixas</span>
-  <span class="ni-tip">Gestão de Caixas</span>
-</div>
+      <div class="ni" onclick="go('caixas')" data-p="admin,gerente" id="nav-caixas"><i class="ti ti-cash-register"></i><span class="ni-label">Caixas</span><span class="ni-tip">Gestão de Caixas</span></div>
       <div class="ni" onclick="go('orcamentos')" data-p="admin,gerente,operador"><i class="ti ti-file-invoice"></i><span class="ni-label">Orçamentos</span><span class="ni-tip">Orçamentos</span></div>
       <div class="ni" onclick="go('crediario')" data-p="admin,gerente,operador"><i class="ti ti-credit-card"></i><span class="ni-label">Crediário</span><span class="ni-tip">Crediário</span></div>
       <div class="ni" onclick="go('devolucoes')" data-p="admin,gerente"><i class="ti ti-arrow-back-up"></i><span class="ni-label">Devoluções</span><span class="ni-tip">Devoluções</span></div>
@@ -1476,6 +1473,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
         </div>
         <div class="fin-tabs" style="margin-bottom:14px">
           <button class="fin-tab active" onclick="usrTab('lista',this)"><i class="ti ti-users" style="font-size:13px"></i> Usuários</button>
+          <button class="fin-tab" onclick="usrTab('slots',this)"><i class="ti ti-layout-grid" style="font-size:13px"></i> Perfis na Tela Inicial</button>
           <button class="fin-tab" onclick="usrTab('audit',this)"><i class="ti ti-shield-check" style="font-size:13px"></i> Log de Auditoria</button>
           <button class="fin-tab" onclick="usrTab('perms',this)"><i class="ti ti-lock" style="font-size:13px"></i> Permissões</button>
         </div>
@@ -1486,6 +1484,20 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
             <tbody id="usr-table"></tbody>
           </table></div></div>
         </div>
+
+        <!-- Perfis Tela Inicial -->
+        <div id="usr-tab-slots" style="display:none">
+          <div class="alert-box alert-info" style="margin-bottom:16px">
+            <i class="ti ti-info-circle" style="font-size:16px"></i>
+            <div>Configure quais usuários aparecem nos <strong>3 slots da tela inicial</strong> (estilo Netflix). O Administrador sempre aparece separado. Gerentes não podem colocar outros admins nos slots.</div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px" id="slots-preview-grid"></div>
+          <div style="text-align:center">
+            <button class="btn btn-pri" onclick="mostrarTelaNetflixPreview()"><i class="ti ti-eye"></i> Visualizar tela inicial</button>
+            <button class="btn btn-out" style="margin-left:8px" onclick="resetarTodosSlots()"><i class="ti ti-refresh"></i> Resetar slots</button>
+          </div>
+        </div>
+
         <!-- Auditoria -->
         <div id="usr-tab-audit" style="display:none">
           <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
@@ -2069,6 +2081,28 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
     <button class="btn btn-pri" onclick="salvarNovoPIN()"><i class="ti ti-check"></i>Salvar PIN</button>
   </div>
 </div></div>
+
+
+<!-- Modal Configurar Slots Netflix -->
+<div id="modal-slot-config" class="slot-modal-overlay" style="display:none">
+  <div class="slot-modal">
+    <div class="slot-modal-title">
+      <i class="ti ti-user-edit" style="color:#7C3AED;font-size:20px"></i>
+      Configurar Perfil
+    </div>
+    <div class="slot-modal-sub" id="slot-config-sub">Escolha quem ocupa este slot na tela inicial</div>
+    <div class="slot-user-list" id="slot-user-list"></div>
+    <div class="slot-modal-footer">
+      <button class="slot-btn slot-btn-out" onclick="fecharSlotModal()">Cancelar</button>
+      <button class="slot-btn slot-btn-out" onclick="limparSlot()" id="slot-btn-limpar" style="color:#EF4444;border-color:rgba(239,68,68,.4)">
+        <i class="ti ti-user-minus" style="font-size:13px"></i> Remover
+      </button>
+      <button class="slot-btn slot-btn-pri" onclick="confirmarSlot()">
+        <i class="ti ti-check" style="font-size:13px"></i> Confirmar
+      </button>
+    </div>
+  </div>
+</div>
 
 <!-- Confirm -->
 <div class="modal-overlay" id="modal-confirm"><div class="modal sm" style="padding:22px">
@@ -5448,16 +5482,79 @@ function renderAuditLog() {
 function usrTab(tab, btn) {
   document.querySelectorAll('#page-usuarios .fin-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  ['lista','audit','perms'].forEach(t => {
+  ['lista','slots','audit','perms'].forEach(t => {
     const el = document.getElementById('usr-tab-' + t); if (el) el.style.display = t === tab ? '' : 'none';
   });
   if (tab === 'audit') {
-    // Popula filtro de usuários
     const sel = document.getElementById('audit-filter-user');
     const nomes = [...new Set(G_AUDIT_LOG.map(l => l.operador))];
     sel.innerHTML = '<option value="">Todos usuários</option>' + nomes.map(n => `<option>${n}</option>`).join('');
     renderAuditLog();
   }
+  if (tab === 'slots') renderSlotsPreview();
+}
+
+/* ── PREVIEW DOS SLOTS NA ABA USUÁRIOS ─────────────── */
+function renderSlotsPreview() {
+  const grid = document.getElementById('slots-preview-grid');
+  if (!grid) return;
+  const slots = getSlotsConfig();
+  const adminMasterId = G.usuarios.find(u => u.role === 'admin' && u.ativo)?.id;
+
+  let html = '';
+  for (let i = 1; i <= 3; i++) {
+    const userId = slots['slot'+i];
+    const u = userId ? G.usuarios.find(x => x.id === userId && x.ativo) : null;
+    const c = u ? getNFColor(u.role) : null;
+    const iniciais = u ? (u.nome || '?').slice(0,2).toUpperCase() : null;
+    const podEditar = podeEditarSlots();
+
+    html += `<div class="card" style="text-align:center;padding:20px;position:relative">
+      <div style="font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Slot ${i}</div>
+      ${u ? `
+        <div style="width:60px;height:60px;border-radius:12px;background:${c.bg};display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:#fff;margin:0 auto 10px">${iniciais}</div>
+        <div style="font-weight:600;font-size:14px;color:var(--txt)">${u.nome}</div>
+        <div style="font-size:11.5px;color:var(--txt3);margin-top:2px">${NFRoleLbl[u.role] || u.role}</div>
+        <span class="tag ${NFRoleTag[u.role] || 'tag-gry'}" style="font-size:10px;margin-top:6px">${hasPin(u.id) ? '🔒 PIN ativo' : 'Sem PIN'}</span>
+        ${podEditar ? `<div style="margin-top:12px;display:flex;gap:6px;justify-content:center">
+          <button class="btn btn-out btn-xs" onclick="abrirSlotModal(${i})"><i class="ti ti-swap"></i> Trocar</button>
+          <button class="btn btn-danger btn-xs" onclick="limparSlotDireto(${i})"><i class="ti ti-x"></i></button>
+        </div>` : ''}
+      ` : `
+        <div style="width:60px;height:60px;border-radius:12px;border:2px dashed var(--border2);display:flex;align-items:center;justify-content:center;margin:0 auto 10px;cursor:${podEditar?'pointer':'default'}" ${podEditar?`onclick="abrirSlotModal(${i})"`:''}>
+          <i class="ti ti-user-plus" style="font-size:24px;color:var(--txt4)"></i>
+        </div>
+        <div style="font-size:13px;color:var(--txt3)">${podEditar ? 'Clique para configurar' : 'Vazio'}</div>
+        ${podEditar ? `<button class="btn btn-out btn-sm" style="margin-top:12px" onclick="abrirSlotModal(${i})"><i class="ti ti-plus"></i> Adicionar</button>` : ''}
+      `}
+    </div>`;
+  }
+  grid.innerHTML = html;
+}
+
+function limparSlotDireto(slotNum) {
+  const slots = getSlotsConfig();
+  const u = G.usuarios.find(x => x.id === slots['slot'+slotNum]);
+  confirmAct(`Remover do slot ${slotNum}`, `Remover "${u?.nome}" do slot ${slotNum}?`, () => {
+    slots['slot'+slotNum] = null;
+    saveSlotsConfig(slots);
+    renderSlotsPreview();
+    notify(`Slot ${slotNum} removido.`, 'info');
+  });
+}
+
+function resetarTodosSlots() {
+  confirmAct('Resetar todos os slots', 'Isso vai limpar os 3 slots da tela inicial. Continuar?', () => {
+    saveSlotsConfig({ slot1:null, slot2:null, slot3:null });
+    renderSlotsPreview();
+    notify('Slots resetados.', 'info');
+  });
+}
+
+function mostrarTelaNetflixPreview() {
+  // Salva estado atual e mostra tela Netflix por 5s
+  go('dashboard');
+  setTimeout(() => mostrarTelaNetflix(), 100);
 }
 
 function limparAuditFiltros() {
@@ -5663,6 +5760,79 @@ function pdfBase({ titulo, numero, tipo, conteudo, assinatura, wmSrc, wmOp }) {
 /* ── NAV CAIXAS DESTAQUE ── */
 #nav-caixas i { color: rgba(255,255,255,.85); transition: transform .2s; }
 #nav-caixas:hover i, #nav-caixas.active i { color: #fff; transform: scale(1.15); }
+
+/* ── NETFLIX SLOTS EDITÁVEIS ───────────────────────── */
+.nf-slot { display:flex;flex-direction:column;align-items:center;gap:10px;position:relative; }
+.nf-slot-edit-btn {
+  position:absolute;top:-8px;right:-8px;width:26px;height:26px;
+  border-radius:50%;background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);
+  color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  font-size:13px;transition:all .2s;z-index:10;opacity:0;
+}
+.nf-slot:hover .nf-slot-edit-btn { opacity:1; }
+.nf-slot-edit-btn:hover { background:rgba(255,255,255,.3);transform:scale(1.1); }
+.nf-slot-vazio .nf-avatar {
+  background:rgba(255,255,255,.06) !important;
+  border:2px dashed rgba(255,255,255,.2) !important;
+  cursor:pointer;
+}
+.nf-slot-vazio .nf-avatar:hover {
+  background:rgba(255,255,255,.12) !important;
+  border-color:rgba(255,255,255,.4) !important;
+}
+.nf-slot-vazio .nf-nome { color:rgba(255,255,255,.35); font-size:12px; }
+/* Modal de seleção de slot */
+.slot-modal-overlay {
+  position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:10000;
+  display:flex;align-items:center;justify-content:center;padding:20px;
+}
+.slot-modal {
+  background:#1a1030;border:1px solid rgba(255,255,255,.1);border-radius:18px;
+  padding:28px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;
+}
+.slot-modal-title {
+  font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:#fff;
+  margin-bottom:6px;display:flex;align-items:center;gap:10px;
+}
+.slot-modal-sub { font-size:13px;color:rgba(255,255,255,.45);margin-bottom:20px; }
+.slot-user-list { display:flex;flex-direction:column;gap:8px; }
+.slot-user-item {
+  display:flex;align-items:center;gap:12px;padding:10px 14px;
+  border-radius:10px;border:1.5px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.04);cursor:pointer;transition:all .2s;
+}
+.slot-user-item:hover { background:rgba(91,71,224,.25);border-color:rgba(91,71,224,.5); }
+.slot-user-item.selected { background:rgba(91,71,224,.35);border-color:#7C3AED; }
+.slot-user-item.disabled { opacity:.35;cursor:not-allowed;pointer-events:none; }
+.slot-user-avatar {
+  width:38px;height:38px;border-radius:9px;display:flex;align-items:center;
+  justify-content:center;font-weight:800;font-size:14px;color:#fff;flex-shrink:0;
+}
+.slot-user-info { flex:1;min-width:0; }
+.slot-user-nome { font-size:13px;font-weight:600;color:#fff; }
+.slot-user-role { font-size:11px;color:rgba(255,255,255,.45);margin-top:1px; }
+.slot-user-badge { font-size:10px;padding:2px 7px;border-radius:5px;font-weight:700; }
+.slot-modal-footer { display:flex;gap:8px;margin-top:20px;justify-content:flex-end; }
+.slot-btn { padding:8px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;transition:all .2s; }
+.slot-btn-pri { background:linear-gradient(135deg,#5B47E0,#7C3AED);color:#fff; }
+.slot-btn-out { background:transparent;border:1.5px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7); }
+.slot-btn-out:hover { border-color:rgba(255,255,255,.5);color:#fff; }
+/* Botão de gerenciar slots no canto da tela Netflix */
+.nf-manage-btn {
+  position:fixed;bottom:24px;right:24px;background:rgba(255,255,255,.1);
+  border:1.5px solid rgba(255,255,255,.2);border-radius:10px;
+  color:rgba(255,255,255,.6);padding:8px 16px;font-size:12px;font-weight:600;
+  cursor:pointer;display:flex;align-items:center;gap:7px;transition:all .2s;
+  font-family:'DM Sans',sans-serif;backdrop-filter:blur(8px);
+}
+.nf-manage-btn:hover { background:rgba(255,255,255,.18);color:#fff; }
+/* Indicador de slot número */
+.nf-slot-num {
+  position:absolute;top:-6px;left:-6px;width:20px;height:20px;
+  border-radius:50%;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);
+  color:rgba(255,255,255,.6);font-size:10px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+}
 </style>
 </head>
 <body>
@@ -6019,51 +6189,260 @@ function setPin(userId, pin) { const p = getPINs(); p[userId] = pin; savePINs(p)
 function hasPin(userId) { return !!getPin(userId); }
 
 // ── EXIBIR TELA NETFLIX ─────────────────────────────────
+/* ── SISTEMA DE SLOTS NETFLIX ──────────────────────────
+   3 slots fixos configuráveis pelo gerente/admin.
+   Admin Master (seu perfil) sempre aparece separado.
+   ─────────────────────────────────────────────────── */
+
+// Carrega/salva configuração dos slots
+function getSlotsConfig() {
+  try { return JSON.parse(localStorage.getItem('emetech_nf_slots') || 'null') || { slot1:null, slot2:null, slot3:null }; }
+  catch { return { slot1:null, slot2:null, slot3:null }; }
+}
+function saveSlotsConfig(cfg) {
+  localStorage.setItem('emetech_nf_slots', JSON.stringify(cfg));
+}
+
+// Verifica se o usuário atual pode editar slots
+function podeEditarSlots() {
+  return G.role === 'admin' || G.role === 'gerente';
+}
+
+// Verifica se um usuário pode ser colocado num slot pelo gerente
+function podeColocarNoSlot(u) {
+  // Admin não pode colocar outro admin no slot (só o admin master pode acessar admin)
+  if (G.role === 'gerente' && u.role === 'admin') return false;
+  // Só usuários ativos
+  return u.ativo;
+}
+
+// Cor por role
+function getNFColor(role) {
+  return NFColors[role] || NFColors.admin;
+}
+
 function mostrarTelaNetflix() {
   const tela = document.getElementById('nf-screen');
   const grid = document.getElementById('nf-grid');
   if (!tela || !grid) return;
-  
+
   const m = getMarca ? getMarca() : {};
   const logoSidebar = m.logoSidebar || null;
-  
-  grid.innerHTML = G.usuarios.filter(u => u.ativo).map(u => {
-    const c = NFColors[u.role] || NFColors.admin;
-    const iniciais = (u.nome || '?').slice(0,2).toUpperCase();
-    const avatarInner = logoSidebar
-      ? `<img src="${logoSidebar}" style="width:100%;height:100%;object-fit:contain;padding:8px">`
-      : `<span>${iniciais}</span>`;
-    const pinOk = hasPin(u.id);
-    return `<div class="nf-card" onclick="selecionarPerfil('${u.id}')">
-      <div class="nf-avatar" style="background:${c.bg}">
-        ${logoSidebar ? '' : avatarInner}
-        ${!logoSidebar ? '' : avatarInner}
-      </div>
-      <div class="nf-nome">${u.nome}</div>
-      <span class="role-badge ${NFRoleTag[u.role] || ''}" style="font-size:9.5px;padding:1.5px 7px">${NFRoleLbl[u.role] || u.role}</span>
-      ${pinOk ? '<div style="font-size:9.5px;color:rgba(255,255,255,.35);margin-top:-4px">🔒 PIN configurado</div>' : '<div style="font-size:9.5px;color:rgba(255,255,255,.25);margin-top:-4px">Sem PIN</div>'}
-    </div>`;
-  }).join('');
-  
-  // Corrige avatares com logo
-  if (logoSidebar) {
-    grid.querySelectorAll('.nf-avatar').forEach((el, i) => {
-      const u = G.usuarios.filter(u => u.ativo)[i];
-      if (!u) return;
+  const slots = getSlotsConfig();
+  const editavel = podeEditarSlots();
+
+  // Encontra o admin master (seu usuário)
+  const adminMaster = G.usuarios.find(u => u.role === 'admin' && u.ativo);
+
+  // Renderiza os 3 slots + admin master separado
+  let html = '';
+
+  // ── 3 SLOTS CONFIGURÁVEIS ─────────────────────────
+  for (let i = 1; i <= 3; i++) {
+    const userId = slots['slot'+i];
+    const u = userId ? G.usuarios.find(x => x.id === userId && x.ativo) : null;
+    const slotVazio = !u;
+
+    if (slotVazio) {
+      // Slot vazio
+      html += `<div class="nf-slot nf-slot-vazio" style="position:relative">
+        <span class="nf-slot-num">${i}</span>
+        ${editavel ? `<button class="nf-slot-edit-btn" style="opacity:0.6" onclick="abrirSlotModal(${i})" title="Configurar slot ${i}"><i class="ti ti-plus"></i></button>` : ''}
+        <div class="nf-avatar" style="background:rgba(255,255,255,.06);border:2px dashed rgba(255,255,255,.2)" onclick="${editavel ? 'abrirSlotModal('+i+')' : ''}">
+          <i class="ti ti-user-plus" style="font-size:28px;color:rgba(255,255,255,.25)"></i>
+        </div>
+        <div class="nf-nome" style="color:rgba(255,255,255,.3)">${editavel ? 'Clique para configurar' : 'Vazio'}</div>
+        <div style="font-size:9px;color:rgba(255,255,255,.15)">Slot ${i}</div>
+      </div>`;
+    } else {
+      // Slot preenchido
+      const c = getNFColor(u.role);
       const iniciais = (u.nome || '?').slice(0,2).toUpperCase();
-      el.innerHTML = `<img src="${logoSidebar}" style="width:100%;height:100%;object-fit:contain;padding:8px">`;
-    });
-  } else {
-    grid.querySelectorAll('.nf-avatar').forEach((el, i) => {
-      const u = G.usuarios.filter(u => u.ativo)[i];
-      if (!u) return;
-      const iniciais = (u.nome || '?').slice(0,2).toUpperCase();
-      el.innerHTML = iniciais;
-    });
+      const pinOk = hasPin(u.id);
+      const avatarContent = logoSidebar
+        ? `<img src="${logoSidebar}" style="width:100%;height:100%;object-fit:contain;padding:8px">`
+        : `<span style="font-family:'Syne',sans-serif;font-weight:800;font-size:28px;color:#fff">${iniciais}</span>`;
+
+      html += `<div class="nf-slot" style="position:relative">
+        <span class="nf-slot-num">${i}</span>
+        ${editavel ? `<button class="nf-slot-edit-btn" onclick="abrirSlotModal(${i})" title="Trocar perfil do slot ${i}"><i class="ti ti-edit"></i></button>` : ''}
+        <div class="nf-avatar" style="background:${c.bg};cursor:pointer" onclick="selecionarPerfil('${u.id}')">
+          ${avatarContent}
+        </div>
+        <div class="nf-nome" onclick="selecionarPerfil('${u.id}')" style="cursor:pointer">${u.nome}</div>
+        <span class="role-badge ${NFRoleTag[u.role] || ''}" style="font-size:9.5px;padding:1.5px 7px">${NFRoleLbl[u.role] || u.role}</span>
+        <div style="font-size:9.5px;color:${pinOk ? 'rgba(255,255,255,.35)' : 'rgba(255,255,255,.2)'};margin-top:-4px">
+          ${pinOk ? '🔒 PIN ativo' : '⚪ Sem PIN'}
+        </div>
+      </div>`;
+    }
   }
-  
+
+  grid.innerHTML = html;
+
+  // ── SEPARADOR + ADMIN MASTER ──────────────────────
+  // Admin master sempre aparece separado, abaixo dos slots
+  let adminHtml = '';
+  if (adminMaster) {
+    const c = getNFColor('admin');
+    const iniciais = (adminMaster.nome || '?').slice(0,2).toUpperCase();
+    const pinOk = hasPin(adminMaster.id);
+    const avatarContent = logoSidebar
+      ? `<img src="${logoSidebar}" style="width:100%;height:100%;object-fit:contain;padding:6px">`
+      : `<span style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:#fff">${iniciais}</span>`;
+
+    adminHtml = `<div style="margin-top:24px;display:flex;flex-direction:column;align-items:center;gap:6px">
+      <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.2);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px">Administrador</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer" onclick="selecionarPerfil('${adminMaster.id}')">
+        <div class="nf-avatar" style="width:60px;height:60px;border-radius:10px;background:${c.bg};display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.4)">
+          ${avatarContent}
+        </div>
+        <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,.6)">${adminMaster.nome}</div>
+        <div style="font-size:9.5px;color:${pinOk ? 'rgba(255,255,255,.3)' : 'rgba(255,255,255,.18)'}">
+          ${pinOk ? '🔒 PIN ativo' : '⚪ Sem PIN'}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // Injeta admin master após o grid
+  let adminContainer = document.getElementById('nf-admin-container');
+  if (!adminContainer) {
+    adminContainer = document.createElement('div');
+    adminContainer.id = 'nf-admin-container';
+    tela.querySelector('.nf-grid')?.after(adminContainer);
+  }
+  if (adminContainer) adminContainer.innerHTML = adminHtml;
+
+  // ── BOTÃO GERENCIAR (se admin ou gerente) ─────────
+  let manageBtn = document.getElementById('nf-manage-btn');
+  if (editavel) {
+    if (!manageBtn) {
+      manageBtn = document.createElement('button');
+      manageBtn.id = 'nf-manage-btn';
+      manageBtn.className = 'nf-manage-btn';
+      manageBtn.innerHTML = '<i class="ti ti-settings" style="font-size:14px"></i> Gerenciar perfis';
+      manageBtn.onclick = () => abrirSlotModal(null);
+      tela.appendChild(manageBtn);
+    }
+    manageBtn.style.display = '';
+  } else if (manageBtn) {
+    manageBtn.style.display = 'none';
+  }
+
   tela.style.display = 'flex';
   requestAnimationFrame(() => { tela.style.opacity = '1'; });
+}
+
+/* ── MODAL DE CONFIGURAÇÃO DE SLOT ──────────────────── */
+let _slotAtual = null;
+let _slotUserSelecionado = null;
+
+function abrirSlotModal(slotNum) {
+  _slotAtual = slotNum;
+  _slotUserSelecionado = null;
+
+  const modal = document.getElementById('modal-slot-config');
+  const lista = document.getElementById('slot-user-list');
+  const sub = document.getElementById('slot-config-sub');
+  const btnLimpar = document.getElementById('slot-btn-limpar');
+  if (!modal || !lista) return;
+
+  const slots = getSlotsConfig();
+
+  sub.textContent = slotNum
+    ? `Slot ${slotNum} — escolha quem aparece nesta posição`
+    : 'Clique em um slot para configurar';
+
+  // IDs já usados nos outros slots
+  const usadosNosSlots = [1,2,3]
+    .filter(n => n !== slotNum)
+    .map(n => slots['slot'+n])
+    .filter(Boolean);
+
+  // Admin master — não pode ser colocado em slot (aparece separado)
+  const adminMasterId = G.usuarios.find(u => u.role === 'admin' && u.ativo)?.id;
+
+  // Lista de usuários elegíveis
+  const elegíveis = G.usuarios.filter(u => {
+    if (!u.ativo) return false;
+    if (u.id === adminMasterId) return false; // admin master separado
+    if (!podeColocarNoSlot(u)) return false;
+    return true;
+  });
+
+  const slotAtualUserId = slots['slot'+slotNum] || null;
+
+  lista.innerHTML = elegíveis.length === 0
+    ? '<div style="text-align:center;padding:20px;color:rgba(255,255,255,.35);font-size:13px">Nenhum usuário disponível</div>'
+    : elegíveis.map(u => {
+        const c = getNFColor(u.role);
+        const iniciais = (u.nome || '?').slice(0,2).toUpperCase();
+        const jaNaSlot = usadosNosSlots.includes(u.id);
+        const selecionado = u.id === slotAtualUserId;
+        const pinOk = hasPin(u.id);
+
+        return `<div class="slot-user-item ${selecionado ? 'selected' : ''} ${jaNaSlot ? 'disabled' : ''}"
+                  onclick="${jaNaSlot ? '' : `selecionarUsuarioSlot('${u.id}')`}"
+                  id="slot-item-${u.id}">
+          <div class="slot-user-avatar" style="background:${c.bg}">${iniciais}</div>
+          <div class="slot-user-info">
+            <div class="slot-user-nome">${u.nome}</div>
+            <div class="slot-user-role">${NFRoleLbl[u.role] || u.role} ${jaNaSlot ? '· já em outro slot' : ''}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+            <span class="slot-user-badge" style="background:${c.bg};color:#fff">${NFRoleLbl[u.role]?.[0] || '?'}</span>
+            ${pinOk ? '<span style="font-size:9px;color:rgba(255,255,255,.4)">🔒 PIN</span>' : ''}
+          </div>
+        </div>`;
+      }).join('');
+
+  // Mostrar/ocultar botão limpar
+  if (btnLimpar) btnLimpar.style.display = slotAtualUserId ? '' : 'none';
+
+  modal.style.display = 'flex';
+}
+
+function selecionarUsuarioSlot(userId) {
+  _slotUserSelecionado = userId;
+  document.querySelectorAll('.slot-user-item').forEach(el => el.classList.remove('selected'));
+  document.getElementById('slot-item-' + userId)?.classList.add('selected');
+}
+
+function confirmarSlot() {
+  if (!_slotAtual || !_slotUserSelecionado) {
+    fecharSlotModal(); return;
+  }
+  const slots = getSlotsConfig();
+  // Remove o usuário de qualquer outro slot onde ele esteja
+  [1,2,3].forEach(n => {
+    if (n !== _slotAtual && slots['slot'+n] === _slotUserSelecionado) {
+      slots['slot'+n] = null;
+    }
+  });
+  slots['slot'+_slotAtual] = _slotUserSelecionado;
+  saveSlotsConfig(slots);
+  fecharSlotModal();
+  mostrarTelaNetflix();
+  const u = G.usuarios.find(x => x.id === _slotUserSelecionado);
+  notify(`✅ ${u?.nome || 'Usuário'} adicionado ao slot ${_slotAtual}!`, 'success');
+}
+
+function limparSlot() {
+  if (!_slotAtual) return;
+  const slots = getSlotsConfig();
+  slots['slot'+_slotAtual] = null;
+  saveSlotsConfig(slots);
+  fecharSlotModal();
+  mostrarTelaNetflix();
+  notify(`Slot ${_slotAtual} removido.`, 'info');
+}
+
+function fecharSlotModal() {
+  const modal = document.getElementById('modal-slot-config');
+  if (modal) modal.style.display = 'none';
+  _slotAtual = null;
+  _slotUserSelecionado = null;
 }
 
 function ocultarTelaNetflix() {
