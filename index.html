@@ -2,7 +2,7 @@
 <html lang="pt-BR" data-theme="light">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>EMETech — ERP PDV v4.0</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
@@ -6182,6 +6182,178 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
 .slot-user-item:not(.disabled):active { transform: scale(0.98) translateX(2px) !important; }
 .slot-user-nome { transition: color .15s; }
 .slot-user-item.selected .slot-user-nome { color: var(--pri) !important; font-weight: 700; }
+
+/* ══════════════════════════════════════════════════
+   RESPONSIVIDADE MOBILE — EMETech PDV v4.0
+   Breakpoints: 768px (tablet), 480px (celular)
+   ══════════════════════════════════════════════════ */
+
+/* ── OVERLAY DO DRAWER (fundo escuro ao abrir sidebar) ── */
+#sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.5);
+  z-index: 998;
+  backdrop-filter: blur(2px);
+}
+#sidebar-overlay.active { display: block; }
+
+/* ── HAMBURGER BUTTON (aparece só em mobile) ── */
+#hamburger-btn {
+  display: none;
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  color: var(--txt);
+  font-size: 20px;
+  flex-shrink: 0;
+  transition: background .15s;
+}
+#hamburger-btn:active { background: var(--surface2); }
+
+/* ═════════════════ TABLET (768px) ═════════════════ */
+@media (max-width: 768px) {
+
+  /* Sidebar vira drawer */
+  .sidebar {
+    position: fixed !important;
+    left: -280px !important;
+    top: 0; bottom: 0;
+    width: 260px !important;
+    z-index: 999;
+    transition: left .28s cubic-bezier(.4,0,.2,1) !important;
+    box-shadow: none;
+  }
+  .sidebar.mobile-open {
+    left: 0 !important;
+    box-shadow: 4px 0 32px rgba(0,0,0,.3) !important;
+  }
+  /* Sidebar não expande mais com hover em mobile */
+  .sidebar:hover { width: 260px !important; }
+  /* Labels sempre visíveis quando drawer aberto */
+  .sidebar .ni-label { opacity: 1 !important; }
+  .sidebar .nav-sec { opacity: 1 !important; height: auto !important; padding: 10px 10px 4px !important; }
+  .sidebar .logo-text, .sidebar .logo-sub { opacity: 1 !important; }
+  .sidebar .ni-tip { display: none !important; }
+  .sidebar .user-name, .sidebar .logout-btn { opacity: 1 !important; }
+
+  /* Main ocupa tudo (sem margin da sidebar) */
+  .main { margin-left: 0 !important; }
+
+  /* Hamburger aparece */
+  #hamburger-btn { display: flex; }
+
+  /* Topbar: hamburger à esquerda */
+  .topbar { padding: 0 12px; gap: 8px; }
+  .topbar-title { font-size: 14px; }
+  .topbar-right { gap: 6px; }
+
+  /* Botões da topbar menores */
+  .topbar-right .btn { padding: 6px 10px !important; font-size: 12px !important; }
+
+  /* Grid de stats: 2 colunas */
+  .sg { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+
+  /* Cards: padding menor */
+  .card { padding: 14px !important; border-radius: 14px !important; }
+
+  /* Abas (fin-tabs): scroll horizontal */
+  .fin-tabs { overflow-x: auto; flex-wrap: nowrap !important; padding-bottom: 2px; }
+  .fin-tabs::-webkit-scrollbar { height: 0; }
+  .fin-tab { white-space: nowrap; flex-shrink: 0; }
+
+  /* Tabelas: scroll horizontal */
+  .tw { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { min-width: 600px; }
+
+  /* Modais: mais largos */
+  .modal { max-width: calc(100vw - 32px) !important; margin: 16px !important; max-height: 90vh; overflow-y: auto; }
+
+  /* Tela Netflix */
+  .nf-grid { gap: 12px !important; }
+  .nf-avatar { width: 80px !important; height: 80px !important; border-radius: 14px !important; }
+  .nf-nome { font-size: 12px !important; }
+  .nf-title { font-size: clamp(24px, 7vw, 48px) !important; }
+
+  /* Formulários: campos maiores para touch */
+  input, select, textarea {
+    min-height: 44px !important;
+    font-size: 16px !important; /* Evita zoom automático no iOS */
+    border-radius: 10px !important;
+  }
+
+  /* Botões: mínimo 44px para touch */
+  .btn { min-height: 40px !important; }
+  .btn-sm { min-height: 36px !important; }
+  .btn-xs { min-height: 32px !important; }
+
+  /* PDV: colunas flexíveis */
+  .pdv-cols { flex-direction: column !important; }
+  .pdv-left { width: 100% !important; }
+  .pdv-right { width: 100% !important; }
+}
+
+/* ═════════════════ CELULAR (480px) ═════════════════ */
+@media (max-width: 480px) {
+
+  /* Topbar mais compacta */
+  .topbar { height: 54px !important; padding: 0 10px; }
+  .topbar-title { font-size: 13px; }
+
+  /* Stats: 1 coluna */
+  .sg { grid-template-columns: 1fr 1fr !important; }
+
+  /* Card stats: mais compacto */
+  .stat-val { font-size: 20px !important; }
+
+  /* Modais: quase fullscreen */
+  .modal-overlay { align-items: flex-end !important; padding: 0 !important; }
+  .modal {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    border-radius: 20px 20px 0 0 !important;
+    max-height: 92vh !important;
+  }
+
+  /* Botões de ação: empilhar */
+  .modal-footer { flex-wrap: wrap !important; gap: 8px !important; }
+  .modal-footer .btn { flex: 1; min-width: 120px; justify-content: center; }
+
+  /* Tela de PIN: ajuste de tamanho */
+  #pin-screen .pin-keys-grid { gap: 8px !important; }
+
+  /* Netflix: perfis em coluna no muito pequeno */
+  .nf-grid { gap: 10px !important; max-width: 100% !important; }
+  .nf-avatar { width: 70px !important; height: 70px !important; }
+
+  /* Tabela de usuários: ocultar coluna email em mobile */
+  .hide-mobile { display: none !important; }
+
+  /* Topbar-right: só ícones */
+  .topbar-right .btn span { display: none; }
+  .topbar-right .btn { padding: 8px !important; min-width: 40px; }
+
+  /* Page padding */
+  .page.active { padding: 12px !important; }
+
+  /* Slots preview: 1 coluna */
+  #slots-preview-grid { grid-template-columns: 1fr !important; }
+}
+
+/* ── TOUCH: Aumentar área de toque nos itens de nav ── */
+@media (hover: none) {
+  .ni { min-height: 44px; }
+  .btn { min-height: 44px; }
+  /* Remove hover effects que não fazem sentido em touch */
+  .sidebar:hover { width: var(--sw-mini) !important; }
+  .sidebar.mobile-open:hover { width: 260px !important; }
+}
 </style>
 </head>
 <body>
@@ -7102,6 +7274,73 @@ function removerPIN(userId) {
       createRipple({ clientX: touch.clientX, clientY: touch.clientY }, el);
     }
   }, { passive: true, capture: true });
+})();
+
+
+/* ══════════════════════════════════════════════════
+   DRAWER SIDEBAR MOBILE
+   ══════════════════════════════════════════════════ */
+function toggleSidebarMobile() {
+  const sidebar = document.querySelector('.sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  const icon    = document.getElementById('hamburger-icon');
+  const isOpen  = sidebar.classList.contains('mobile-open');
+
+  if (isOpen) {
+    sidebar.classList.remove('mobile-open');
+    overlay.classList.remove('active');
+    icon.className = 'ti ti-menu-2';
+    document.body.style.overflow = '';
+  } else {
+    sidebar.classList.add('mobile-open');
+    overlay.classList.add('active');
+    icon.className = 'ti ti-x';
+    document.body.style.overflow = 'hidden'; // Evita scroll do fundo
+  }
+}
+
+function closeSidebarMobile() {
+  const sidebar = document.querySelector('.sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  const icon    = document.getElementById('hamburger-icon');
+  sidebar.classList.remove('mobile-open');
+  overlay.classList.remove('active');
+  if (icon) icon.className = 'ti ti-menu-2';
+  document.body.style.overflow = '';
+}
+
+// Fecha drawer ao clicar em item de navegação (mobile)
+(function patchNavMobile() {
+  document.querySelectorAll('.ni').forEach(ni => {
+    ni.addEventListener('click', () => {
+      if (window.innerWidth <= 768) closeSidebarMobile();
+    });
+  });
+})();
+
+// Fecha drawer ao rotacionar para landscape
+window.addEventListener('resize', () => {
+  if (window.innerWidth > 768) closeSidebarMobile();
+});
+
+// Swipe para fechar o drawer (touch)
+(function swipeToClose() {
+  let startX = 0, startY = 0;
+  const sidebar = document.querySelector('.sidebar');
+  if (!sidebar) return;
+
+  sidebar.addEventListener('touchstart', e => {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+  }, { passive: true });
+
+  sidebar.addEventListener('touchmove', e => {
+    const dx = e.touches[0].clientX - startX;
+    const dy = Math.abs(e.touches[0].clientY - startY);
+    if (dx < -40 && dy < 60) { // Swipe left > 40px
+      closeSidebarMobile();
+    }
+  }, { passive: true });
 })();
 
 </script>
