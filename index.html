@@ -1578,7 +1578,12 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
     <div>
       <div class="ms">Identificação</div>
       <div class="fg"><label class="lbl">Nome *</label><input type="text" id="p-nome" placeholder="Nome do produto"></div>
-      <div class="g2"><div class="fg"><label class="lbl">SKU</label><input type="text" id="p-sku"></div><div class="fg"><label class="lbl">Cód. Barras</label><input type="text" id="p-bc"></div></div>
+      <div class="g2"><div class="fg"><label class="lbl">SKU</label><input type="text" id="p-sku"></div><div class="fg fg-scan"><label class="lbl">Cód. Barras</label>
+              <input type="text" id="p-bc" placeholder="0000000000000" oninput="buscarProdutoPorBarras(this.value)">
+              <button class="scan-btn" onclick="abrirScanner('p-bc')" title="Escanear com câmera">
+                <i class="ti ti-scan"></i>
+              </button>
+            </div></div>
       <div class="g2"><div class="fg"><label class="lbl">Categoria</label><select id="p-cat"><option>Celular</option><option>Acessório</option><option>Peça</option><option>Serviço</option><option>Outro</option></select></div><div class="fg"><label class="lbl">Marca</label><input type="text" id="p-marca"></div></div>
       <div class="ms">Preços</div>
       <div class="g2"><div class="fg"><label class="lbl">Custo R$</label><input type="number" id="p-custo" step="0.01" placeholder="0,00"></div><div class="fg"><label class="lbl">Preço R$ *</label><input type="number" id="p-preco" step="0.01" placeholder="0,00"></div></div>
@@ -1592,7 +1597,12 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
         </div>
       </div>
       <div id="p-est-fields" style="margin-top:8px">
-        <div class="g2"><div class="fg"><label class="lbl">Estoque</label><input type="number" id="p-est" value="1" min="0"></div><div class="fg"><label class="lbl">Est. Mínimo</label><input type="number" id="p-estmin" value="3" min="0"></div></div>
+        <div class="g2"><div class="fg fg-scan"><label class="lbl">Estoque</label>
+                  <input type="number" id="p-est" value="1" min="0">
+                  <button class="scan-btn" onclick="abrirQuickAjuste()" title="Ajuste rápido via scan" style="background:var(--success)">
+                    <i class="ti ti-plus"></i>
+                  </button>
+                </div><div class="fg"><label class="lbl">Est. Mínimo</label><input type="number" id="p-estmin" value="3" min="0"></div></div>
       </div>
       <div class="fg"><label class="lbl">Status</label><select id="p-status"><option value="ativo">Ativo</option><option value="inativo">Inativo</option></select></div>
       <div class="ms">Fotos</div>
@@ -2120,6 +2130,125 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
     </button>
   </div>
 </div></div>
+
+
+<!-- MODAL SCANNER DE CÂMERA -->
+<div class="modal-overlay" id="modal-scanner">
+  <div class="modal" style="max-width:420px;padding:0;overflow:hidden;border-radius:20px">
+    <!-- Header -->
+    <div class="scanner-header">
+      <div class="scanner-title">
+        <i class="ti ti-scan" style="color:var(--pri)"></i>
+        Escanear Código de Barras
+      </div>
+      <button onclick="fecharScanner()" style="background:none;border:none;font-size:20px;color:var(--txt3);cursor:pointer;padding:4px">
+        <i class="ti ti-x"></i>
+      </button>
+    </div>
+    <!-- Vídeo -->
+    <div id="scanner-video-wrap">
+      <video id="scanner-video" autoplay playsinline muted></video>
+      <div class="scanner-aim">
+        <div class="scanner-aim-box">
+          <div class="scanner-line"></div>
+          <span class="scanner-aim-corner1"></span>
+          <span class="scanner-aim-corner2"></span>
+        </div>
+      </div>
+    </div>
+    <!-- Status -->
+    <div class="scanner-status" id="scanner-status">
+      <i class="ti ti-camera"></i> Aponte para o código de barras
+    </div>
+    <!-- Input manual -->
+    <div class="scanner-manual">
+      <input type="text" id="scanner-manual-input" placeholder="Ou digite o código manualmente..." 
+             inputmode="numeric" onkeydown="if(event.key==='Enter') confirmarCodigoManual()">
+      <button class="btn btn-pri btn-sm" onclick="confirmarCodigoManual()">
+        <i class="ti ti-check"></i>
+      </button>
+    </div>
+    <!-- Footer -->
+    <div class="scanner-footer">
+      <button class="btn btn-out" onclick="fecharScanner()">Cancelar</button>
+      <button class="btn btn-out btn-sm" onclick="trocarCamera()" id="btn-trocar-camera" style="display:none">
+        <i class="ti ti-camera-rotate"></i> Trocar câmera
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL QUICK STOCK — Entrada rápida de estoque via scan -->
+<div class="modal-overlay" id="modal-quick-stock">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-title">
+      <i class="ti ti-package-import" style="color:var(--pri)"></i>
+      Entrada Rápida de Estoque
+    </div>
+    <div style="font-size:12.5px;color:var(--txt3);margin-bottom:14px">
+      Escaneie o produto e ajuste a quantidade. Ideal para recebimento de mercadorias.
+    </div>
+    <!-- Preview câmera compacto -->
+    <div class="qs-scanner-preview" id="qs-video-wrap">
+      <video id="qs-video" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover"></video>
+      <div class="scanner-aim" style="transform:scale(.75)">
+        <div class="scanner-aim-box"><div class="scanner-line"></div>
+          <span class="scanner-aim-corner1"></span><span class="scanner-aim-corner2"></span>
+        </div>
+      </div>
+    </div>
+    <!-- Produto encontrado -->
+    <div class="qs-product-found" id="qs-product-found" style="display:none">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--txt3);margin-bottom:6px">Produto encontrado</div>
+      <div style="font-weight:700;font-size:15px;color:var(--txt)" id="qs-prod-nome">—</div>
+      <div style="font-size:12px;color:var(--txt3);margin-top:2px" id="qs-prod-info">—</div>
+      <div style="font-size:12px;color:var(--txt2);margin-top:4px">
+        Estoque atual: <strong id="qs-est-atual">0</strong>
+      </div>
+    </div>
+    <!-- Não encontrado -->
+    <div id="qs-not-found" style="display:none;padding:12px;background:rgba(239,68,68,.07);border:1.5px solid rgba(239,68,68,.2);border-radius:10px;margin-bottom:14px;text-align:center">
+      <div style="font-size:13px;color:var(--danger);font-weight:600">Produto não encontrado</div>
+      <div style="font-size:11.5px;color:var(--txt3);margin-top:4px" id="qs-barcode-found">Código: —</div>
+      <button class="btn btn-pri btn-sm" style="margin-top:8px" onclick="cadastrarProdutoDoScan()">
+        <i class="ti ti-plus"></i> Cadastrar produto
+      </button>
+    </div>
+    <!-- Controle de quantidade -->
+    <div id="qs-qty-section" style="display:none;margin-bottom:16px">
+      <div style="font-size:12px;font-weight:700;color:var(--txt3);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">Quantidade a adicionar</div>
+      <div class="qs-qty-control">
+        <button class="qs-qty-btn" onclick="qsAjustarQty(-1)">−</button>
+        <input type="number" class="qs-qty-input" id="qs-qty" value="1" min="1" max="9999" inputmode="numeric">
+        <button class="qs-qty-btn" onclick="qsAjustarQty(1)">+</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn btn-out btn-sm" onclick="qsTipoOp('add')" id="qs-btn-add" style="flex:1">
+          <i class="ti ti-plus"></i> Entrada
+        </button>
+        <button class="btn btn-out btn-sm" onclick="qsTipoOp('set')" id="qs-btn-set" style="flex:1">
+          <i class="ti ti-pencil"></i> Definir total
+        </button>
+        <button class="btn btn-out btn-sm" onclick="qsTipoOp('sub')" id="qs-btn-sub" style="flex:1;color:var(--danger);border-color:var(--danger)">
+          <i class="ti ti-minus"></i> Saída
+        </button>
+      </div>
+    </div>
+    <!-- Manual -->
+    <div style="display:flex;gap:8px;margin-bottom:4px">
+      <input type="text" id="qs-manual-input" placeholder="Código manual..." 
+             inputmode="numeric" style="flex:1;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;background:var(--surface);color:var(--txt)"
+             onkeydown="if(event.key==='Enter') qsBuscarManual()">
+      <button class="btn btn-pri btn-sm" onclick="qsBuscarManual()"><i class="ti ti-search"></i></button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-out" onclick="fecharQuickStock()">Fechar</button>
+      <button class="btn btn-pri" id="qs-confirmar-btn" style="display:none" onclick="confirmarQuickStock()">
+        <i class="ti ti-check"></i> Confirmar
+      </button>
+    </div>
+  </div>
+</div>
 
 <!-- Confirm -->
 <div class="modal-overlay" id="modal-confirm"><div class="modal sm" style="padding:22px">
@@ -4483,7 +4612,12 @@ function gerarEmailCobEstilizado(c, vencidas, valAtrasado, emp, msg) {
       <p style="font-size:12px;color:#9D8FC5;margin-top:20px">Em caso de dúvidas, entre em contato: ${emp.tel||emp.email||''}</p>
     </div>
     <div class="footer">${emp.nome} ${emp.cnpj?'· CNPJ: '+emp.cnpj:''} ${emp.end?'· '+emp.end:''}</div>
-  </div></body></html>`;
+  </div>
+<!-- FAB QUICK STOCK (mobile) -->
+<button id="quick-stock-fab" onclick="abrirQuickStock()" title="Entrada rápida de estoque">
+  <i class="ti ti-barcode-off" style="font-size:20px"></i>
+</button>
+</body></html>`;
 }
 
 function gerarEmailCobTexto(c, vencidas, valAtrasado, emp, msg) {
@@ -4592,7 +4726,12 @@ function gerarCarnePDFFromContrato(c) {
     </div>
     ${parcHtml}
     <div style="text-align:center;font-size:11px;color:#9D8FC5;margin-top:12px">${emp.rodape}</div>
-  </div></body></html>`;
+  </div>
+<!-- FAB QUICK STOCK (mobile) -->
+<button id="quick-stock-fab" onclick="abrirQuickStock()" title="Entrada rápida de estoque">
+  <i class="ti ti-barcode-off" style="font-size:20px"></i>
+</button>
+</body></html>`;
   abrirPDFModal(html, 'Carne-'+c.numero);
 }
 
@@ -4687,7 +4826,12 @@ ${lin}`;
     pre{font-family:'Courier New',monospace;font-size:${largura===80?'12px':'10px'};line-height:1.5;color:#000;white-space:pre-wrap;max-width:${largura===80?'80mm':'58mm'};margin:0 auto}
     @media print{body{padding:0}@page{margin:0;size:${largura}mm auto}}
   </style></head>
-  <body><pre>${txt}</pre></body></html>`;
+  <body><pre>${txt}</pre>
+<!-- FAB QUICK STOCK (mobile) -->
+<button id="quick-stock-fab" onclick="abrirQuickStock()" title="Entrada rápida de estoque">
+  <i class="ti ti-barcode-off" style="font-size:20px"></i>
+</button>
+</body></html>`;
 }
 
 function imprimirCupomVenda(venda) {
@@ -5144,7 +5288,12 @@ function imprimirEtiqueta() {
   const p = G.produtos.find(x => x.id === prodId); if (!p) return;
   const qtd = parseInt(document.getElementById('etq-qtd')?.value) || 1;
   const preview = document.getElementById('etq-preview')?.innerHTML || '';
-  const html = `<!DOCTYPE html><html><head><style>body{margin:0;padding:10px;font-family:'DM Sans',sans-serif}@media print{@page{margin:2mm}}</style></head><body>${Array(qtd).fill(preview).join('')}</body></html>`;
+  const html = `<!DOCTYPE html><html><head><style>body{margin:0;padding:10px;font-family:'DM Sans',sans-serif}@media print{@page{margin:2mm}}</style></head><body>${Array(qtd).fill(preview).join('')}
+<!-- FAB QUICK STOCK (mobile) -->
+<button id="quick-stock-fab" onclick="abrirQuickStock()" title="Entrada rápida de estoque">
+  <i class="ti ti-barcode-off" style="font-size:20px"></i>
+</button>
+</body></html>`;
   pdfImprimir(html);
 }
 
@@ -5152,7 +5301,12 @@ function baixarEtiqueta() {
   const prodId = document.getElementById('etq-prod').value;
   const p = G.produtos.find(x => x.id === prodId); if (!p) return;
   const preview = document.getElementById('etq-preview')?.innerHTML || '';
-  pdfBaixar(`<!DOCTYPE html><html><head><style>body{margin:10px;font-family:'DM Sans',sans-serif}</style></head><body>${preview}</body></html>`, 'Etiqueta-' + (p.sku || p.nome.slice(0,15).replace(/\s/g,'_')));
+  pdfBaixar(`<!DOCTYPE html><html><head><style>body{margin:10px;font-family:'DM Sans',sans-serif}</style></head><body>${preview}
+<!-- FAB QUICK STOCK (mobile) -->
+<button id="quick-stock-fab" onclick="abrirQuickStock()" title="Entrada rápida de estoque">
+  <i class="ti ti-barcode-off" style="font-size:20px"></i>
+</button>
+</body></html>`, 'Etiqueta-' + (p.sku || p.nome.slice(0,15).replace(/\s/g,'_')));
 }
 
 // ── CHIPS DE CATEGORIA ─────────────────────────────────
@@ -6354,6 +6508,134 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
   .sidebar:hover { width: var(--sw-mini) !important; }
   .sidebar.mobile-open:hover { width: 260px !important; }
 }
+
+/* ══════════════════════════════════════════════════
+   SCANNER DE CÂMERA — CÓDIGO DE BARRAS
+   ══════════════════════════════════════════════════ */
+.scan-btn {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  width: 34px; height: 34px; border-radius: 8px;
+  background: var(--pri); border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 16px; transition: all .15s; flex-shrink: 0;
+}
+.scan-btn:active { transform: translateY(-50%) scale(0.92); }
+.scan-btn:hover { background: var(--pri2); }
+.fg-scan { position: relative; }
+.fg-scan input { padding-right: 48px !important; }
+
+/* Modal do scanner */
+#modal-scanner { z-index: 20000; }
+#modal-scanner .modal {
+  max-width: 420px; padding: 0; overflow: hidden;
+  border-radius: 20px;
+}
+.scanner-header {
+  padding: 16px 18px; display: flex; align-items: center;
+  justify-content: space-between; background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+}
+.scanner-title {
+  font-family: 'Syne', sans-serif; font-weight: 800; font-size: 15px;
+  color: var(--txt); display: flex; align-items: center; gap: 8px;
+}
+#scanner-video-wrap {
+  position: relative; background: #000;
+  aspect-ratio: 4/3; overflow: hidden;
+}
+#scanner-video { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* Mira de scan */
+.scanner-aim {
+  position: absolute; inset: 0; display: flex;
+  align-items: center; justify-content: center; pointer-events: none;
+}
+.scanner-aim-box {
+  width: 220px; height: 120px; position: relative;
+}
+.scanner-aim-box::before, .scanner-aim-box::after,
+.scanner-aim-corner1, .scanner-aim-corner2 {
+  content: ''; position: absolute;
+  width: 28px; height: 28px; border-color: #fff; border-style: solid;
+}
+.scanner-aim-box::before { top: 0; left: 0; border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
+.scanner-aim-box::after  { top: 0; right: 0; border-width: 3px 3px 0 0; border-radius: 0 4px 0 0; }
+.scanner-aim-corner1 { bottom: 0; left: 0; border-width: 0 0 3px 3px; border-radius: 0 0 0 4px; }
+.scanner-aim-corner2 { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
+/* Linha de scan animada */
+.scanner-line {
+  position: absolute; left: 10px; right: 10px; height: 2px;
+  background: linear-gradient(90deg, transparent, #5B47E0, transparent);
+  top: 10px; animation: scan-move 1.8s ease-in-out infinite; opacity: .85;
+}
+@keyframes scan-move {
+  0%   { top: 15%; opacity: 0.4; }
+  50%  { top: 80%; opacity: 1;   }
+  100% { top: 15%; opacity: 0.4; }
+}
+.scanner-status {
+  padding: 12px 16px; text-align: center; font-size: 13px; font-weight: 600;
+  color: var(--txt2); background: var(--bg2); min-height: 44px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.scanner-status.success { color: #16a34a; }
+.scanner-status.error   { color: var(--danger); }
+.scanner-manual {
+  padding: 12px 16px; background: var(--bg2);
+  border-top: 1px solid var(--border);
+  display: flex; gap: 8px;
+}
+.scanner-manual input {
+  flex: 1; padding: 10px 12px; border: 1.5px solid var(--border);
+  border-radius: 10px; font-size: 14px; background: var(--surface);
+  color: var(--txt); font-family: monospace;
+}
+.scanner-footer { padding: 12px 16px; background: var(--bg2); display: flex; gap: 8px; justify-content: flex-end; }
+
+/* ── QUICK STOCK MOBILE — Atualização rápida de estoque ── */
+#quick-stock-fab {
+  display: none;
+  position: fixed; bottom: 24px; right: 20px; z-index: 500;
+  width: 56px; height: 56px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--pri), var(--pri2));
+  border: none; cursor: pointer; color: #fff; font-size: 22px;
+  box-shadow: 0 4px 20px rgba(91,71,224,.45);
+  align-items: center; justify-content: center;
+  transition: transform .15s, box-shadow .15s;
+}
+#quick-stock-fab:active { transform: scale(0.93); box-shadow: 0 2px 8px rgba(91,71,224,.3); }
+@media (max-width: 768px) {
+  #quick-stock-fab { display: flex; }
+}
+
+/* Modal Quick Stock */
+#modal-quick-stock .modal {
+  max-width: 400px;
+}
+.qs-scanner-preview {
+  background: #000; border-radius: 12px; overflow: hidden;
+  aspect-ratio: 16/9; position: relative; margin-bottom: 14px;
+}
+.qs-scanner-preview video { width: 100%; height: 100%; object-fit: cover; }
+.qs-product-found {
+  padding: 12px 14px; border-radius: 10px;
+  border: 1.5px solid var(--border);
+  background: var(--surface); margin-bottom: 14px;
+}
+.qs-qty-control {
+  display: flex; align-items: center; gap: 0;
+  border: 1.5px solid var(--border); border-radius: 12px; overflow: hidden;
+}
+.qs-qty-btn {
+  width: 52px; height: 52px; border: none; background: var(--surface);
+  font-size: 22px; font-weight: 700; cursor: pointer; color: var(--pri);
+  transition: background .1s;
+}
+.qs-qty-btn:active { background: var(--pri-light); }
+.qs-qty-input {
+  flex: 1; text-align: center; font-size: 24px; font-weight: 800;
+  border: none; background: transparent; color: var(--txt);
+  font-family: 'Syne', sans-serif; min-width: 0; padding: 0 8px;
+}
 </style>
 </head>
 <body>
@@ -6395,6 +6677,11 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
     </div>
   </div>
 </div>
+
+<!-- FAB QUICK STOCK (mobile) -->
+<button id="quick-stock-fab" onclick="abrirQuickStock()" title="Entrada rápida de estoque">
+  <i class="ti ti-barcode-off" style="font-size:20px"></i>
+</button>
 </body></html>`;
 }
 
@@ -7343,6 +7630,338 @@ window.addEventListener('resize', () => {
   }, { passive: true });
 })();
 
+
+/* ══════════════════════════════════════════════════════
+   SCANNER DE CÓDIGO DE BARRAS — câmera + BarcodeDetector
+   ════════════════════════════════════════════════════ */
+
+let _scannerStream   = null;
+let _scannerInterval = null;
+let _scannerTargetId = null; // ID do input que vai receber o código
+let _scannerCameras  = [];
+let _scannerCamIdx   = 0;
+let _qsStream        = null;
+let _qsInterval      = null;
+let _qsProdId        = null;
+let _qsBarcode       = null;
+let _qsOp            = 'add'; // 'add' | 'set' | 'sub'
+
+/* Verifica suporte à BarcodeDetector API */
+function temBarcodeDetector() {
+  return 'BarcodeDetector' in window;
+}
+
+/* ── ABRIR SCANNER ───────────────────────────────────── */
+async function abrirScanner(inputTargetId) {
+  _scannerTargetId = inputTargetId;
+  openModal('modal-scanner');
+
+  const status = document.getElementById('scanner-status');
+  status.className = 'scanner-status';
+  status.innerHTML = '<i class="ti ti-loader ti-spin"></i> Iniciando câmera...';
+
+  try {
+    // Lista câmeras disponíveis
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    _scannerCameras = devices.filter(d => d.kind === 'videoinput');
+    // Preferir câmera traseira
+    _scannerCamIdx = _scannerCameras.findIndex(d =>
+      d.label.toLowerCase().includes('back') || d.label.toLowerCase().includes('rear') || d.label.includes('0')
+    );
+    if (_scannerCamIdx < 0) _scannerCamIdx = _scannerCameras.length - 1;
+    if (_scannerCamIdx < 0) _scannerCamIdx = 0;
+
+    // Mostra botão de trocar se tiver mais de 1 câmera
+    const btnTrocar = document.getElementById('btn-trocar-camera');
+    if (btnTrocar) btnTrocar.style.display = _scannerCameras.length > 1 ? '' : 'none';
+
+    await iniciarStreamScanner();
+  } catch(e) {
+    status.className = 'scanner-status error';
+    status.innerHTML = '<i class="ti ti-camera-off"></i> Sem acesso à câmera. Use o campo manual abaixo.';
+    console.error('Scanner error:', e);
+  }
+}
+
+async function iniciarStreamScanner() {
+  const video  = document.getElementById('scanner-video');
+  const status = document.getElementById('scanner-status');
+
+  // Para stream anterior
+  if (_scannerStream) _scannerStream.getTracks().forEach(t => t.stop());
+  if (_scannerInterval) clearInterval(_scannerInterval);
+
+  const camId = _scannerCameras[_scannerCamIdx]?.deviceId;
+  _scannerStream = await navigator.mediaDevices.getUserMedia({
+    video: camId
+      ? { deviceId: { exact: camId }, facingMode: { ideal: 'environment' } }
+      : { facingMode: { ideal: 'environment' } }
+  });
+  video.srcObject = _scannerStream;
+  await video.play();
+
+  status.className = 'scanner-status';
+  status.innerHTML = '<i class="ti ti-scan"></i> Aponte para o código de barras';
+
+  // Inicia detecção
+  if (temBarcodeDetector()) {
+    const detector = new BarcodeDetector({ formats: [
+      'ean_13','ean_8','upc_a','upc_e','code_39','code_128','qr_code','itf','codabar'
+    ]});
+    _scannerInterval = setInterval(async () => {
+      if (!video.videoWidth) return;
+      try {
+        const barcodes = await detector.detect(video);
+        if (barcodes.length > 0) {
+          const code = barcodes[0].rawValue;
+          await scannerAcertou(code);
+        }
+      } catch(e) { /* ignora frames com erro */ }
+    }, 300);
+  } else {
+    // Fallback: BarcodeDetector não suportado
+    status.className = 'scanner-status error';
+    status.innerHTML = '<i class="ti ti-alert-triangle"></i> Scanner automático não suportado neste browser. Use o campo manual abaixo.';
+  }
+}
+
+async function scannerAcertou(code) {
+  // Para o scan
+  if (_scannerInterval) { clearInterval(_scannerInterval); _scannerInterval = null; }
+  if (_scannerStream) { _scannerStream.getTracks().forEach(t => t.stop()); _scannerStream = null; }
+
+  // Vibra o celular (feedback tátil)
+  if (navigator.vibrate) navigator.vibrate([60, 30, 60]);
+
+  // Feedback visual
+  const status = document.getElementById('scanner-status');
+  status.className = 'scanner-status success';
+  status.innerHTML = `<i class="ti ti-check"></i> Código detectado: <strong>${code}</strong>`;
+
+  // Preenche o input alvo e fecha modal
+  setTimeout(() => {
+    const el = document.getElementById(_scannerTargetId);
+    if (el) {
+      el.value = code;
+      el.dispatchEvent(new Event('input'));
+    }
+    closeModal('modal-scanner');
+    // Se tiver busca por barras disponível, dispara
+    if (_scannerTargetId === 'p-bc') buscarProdutoPorBarras(code);
+  }, 600);
+}
+
+function trocarCamera() {
+  _scannerCamIdx = (_scannerCamIdx + 1) % _scannerCameras.length;
+  iniciarStreamScanner();
+}
+
+function fecharScanner() {
+  if (_scannerInterval) { clearInterval(_scannerInterval); _scannerInterval = null; }
+  if (_scannerStream) { _scannerStream.getTracks().forEach(t => t.stop()); _scannerStream = null; }
+  closeModal('modal-scanner');
+}
+
+function confirmarCodigoManual() {
+  const val = document.getElementById('scanner-manual-input')?.value?.trim();
+  if (!val) return;
+  scannerAcertou(val);
+  document.getElementById('scanner-manual-input').value = '';
+}
+
+/* ── BUSCAR PRODUTO POR CÓDIGO NO CADASTRO ──────────── */
+function buscarProdutoPorBarras(code) {
+  if (!code || code.length < 4) return;
+  const prod = (G.produtos || []).find(p => p.barcode === code || p.ean === code || p.sku === code);
+  if (prod) {
+    // Produto já existe — preenche campos
+    notify(`✅ Produto encontrado: ${prod.nome}`, 'success');
+    // Preencher todos os campos
+    const map = {
+      'p-nome': prod.nome, 'p-sku': prod.sku||'',
+      'p-marca': prod.marca||'', 'p-custo': prod.custo||0,
+      'p-preco': prod.preco||0, 'p-est': prod.estoque||0,
+    };
+    Object.entries(map).forEach(([id, val]) => {
+      const el = document.getElementById(id);
+      if (el) el.value = val;
+    });
+    // Selecionar categoria
+    const cat = document.getElementById('p-cat');
+    if (cat && prod.categoria) cat.value = prod.categoria;
+    // Status
+    const status = document.getElementById('p-status');
+    if (status) status.value = prod.ativo ? 'ativo' : 'inativo';
+    // ID para edição
+    document.getElementById('p-id').value = prod.id || '';
+    document.getElementById('prod-ttl').textContent = 'Editar Produto';
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   QUICK STOCK — Entrada rápida de estoque
+   ════════════════════════════════════════════════════ */
+async function abrirQuickStock() {
+  _qsProdId  = null;
+  _qsBarcode = null;
+  _qsOp      = 'add';
+
+  // Reset UI
+  document.getElementById('qs-product-found').style.display = 'none';
+  document.getElementById('qs-not-found').style.display = 'none';
+  document.getElementById('qs-qty-section').style.display = 'none';
+  document.getElementById('qs-confirmar-btn').style.display = 'none';
+  document.getElementById('qs-qty').value = 1;
+  document.getElementById('qs-manual-input').value = '';
+
+  openModal('modal-quick-stock');
+  await iniciarQsCamera();
+}
+
+async function iniciarQsCamera() {
+  const video = document.getElementById('qs-video');
+  if (!video) return;
+  try {
+    if (_qsStream) _qsStream.getTracks().forEach(t => t.stop());
+    if (_qsInterval) clearInterval(_qsInterval);
+    _qsStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' } }
+    });
+    video.srcObject = _qsStream;
+    await video.play();
+    if (!temBarcodeDetector()) return;
+    const detector = new BarcodeDetector({ formats: ['ean_13','ean_8','upc_a','code_128','code_39'] });
+    _qsInterval = setInterval(async () => {
+      if (!video.videoWidth || _qsProdId) return; // Para se já achou produto
+      try {
+        const barcodes = await detector.detect(video);
+        if (barcodes.length > 0) {
+          if (navigator.vibrate) navigator.vibrate(50);
+          qsProcessarBarcode(barcodes[0].rawValue);
+        }
+      } catch(e) {}
+    }, 350);
+  } catch(e) {
+    console.warn('QS camera error:', e);
+  }
+}
+
+function qsProcessarBarcode(code) {
+  _qsBarcode = code;
+  document.getElementById('qs-manual-input').value = code;
+
+  // Busca produto no estoque
+  const prod = (G.produtos || []).find(p =>
+    p.barcode === code || p.ean === code || p.sku === code
+  );
+
+  if (prod) {
+    _qsProdId = prod.id;
+    // Exibe produto encontrado
+    document.getElementById('qs-prod-nome').textContent = prod.nome;
+    document.getElementById('qs-prod-info').textContent =
+      `${prod.categoria || ''} · Cód: ${code}`;
+    document.getElementById('qs-est-atual').textContent = prod.estoque ?? '—';
+    document.getElementById('qs-product-found').style.display = '';
+    document.getElementById('qs-not-found').style.display = 'none';
+    document.getElementById('qs-qty-section').style.display = '';
+    document.getElementById('qs-confirmar-btn').style.display = '';
+    // Para a câmera (já achou)
+    if (_qsInterval) { clearInterval(_qsInterval); _qsInterval = null; }
+  } else {
+    // Produto não encontrado
+    _qsProdId = null;
+    document.getElementById('qs-barcode-found').textContent = 'Código: ' + code;
+    document.getElementById('qs-not-found').style.display = '';
+    document.getElementById('qs-product-found').style.display = 'none';
+    document.getElementById('qs-qty-section').style.display = 'none';
+    document.getElementById('qs-confirmar-btn').style.display = 'none';
+    if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
+  }
+}
+
+function qsBuscarManual() {
+  const val = document.getElementById('qs-manual-input')?.value?.trim();
+  if (val) qsProcessarBarcode(val);
+}
+
+function qsAjustarQty(delta) {
+  const inp = document.getElementById('qs-qty');
+  const val = parseInt(inp.value) || 1;
+  inp.value = Math.max(1, val + delta);
+}
+
+function qsTipoOp(op) {
+  _qsOp = op;
+  ['add','set','sub'].forEach(t => {
+    const btn = document.getElementById('qs-btn-' + t);
+    if (btn) {
+      btn.className = 'btn btn-sm ' + (t === op
+        ? (t === 'sub' ? 'btn-danger' : 'btn-pri')
+        : 'btn-out');
+      if (t === 'sub') btn.style.color = t === op ? '' : 'var(--danger)';
+    }
+  });
+}
+
+async function confirmarQuickStock() {
+  if (!_qsProdId) return;
+  const qty = parseInt(document.getElementById('qs-qty').value) || 1;
+  const prod = (G.produtos || []).find(p => p.id === _qsProdId);
+  if (!prod) return;
+
+  const estAtual = prod.estoque ?? 0;
+  let novoEst = estAtual;
+  if (_qsOp === 'add') novoEst = estAtual + qty;
+  else if (_qsOp === 'sub') novoEst = Math.max(0, estAtual - qty);
+  else if (_qsOp === 'set') novoEst = qty;
+
+  try {
+    setLoad(true);
+    await db.from('produtos').update({ estoque: novoEst }).eq('id', _qsProdId);
+    prod.estoque = novoEst;
+    setLoad(false);
+    fecharQuickStock();
+    notify(`✅ Estoque de "${prod.nome}" atualizado: ${estAtual} → ${novoEst}`, 'success');
+    auditLog('estoque_ajustado', { produto: prod.nome, de: estAtual, para: novoEst, op: _qsOp });
+    // Recarrega lista se estiver na página de produtos
+    if (typeof renderProdutos === 'function') renderProdutos();
+  } catch(e) {
+    setLoad(false);
+    notify('Erro ao atualizar estoque.', 'error');
+  }
+}
+
+function fecharQuickStock() {
+  if (_qsInterval) { clearInterval(_qsInterval); _qsInterval = null; }
+  if (_qsStream)   { _qsStream.getTracks().forEach(t => t.stop()); _qsStream = null; }
+  _qsProdId = null; _qsBarcode = null;
+  closeModal('modal-quick-stock');
+}
+
+// Fechar streams ao fechar modais
+document.addEventListener('click', e => {
+  if (e.target.closest('#modal-scanner') && !e.target.closest('.modal')) fecharScanner();
+  if (e.target.closest('#modal-quick-stock') && !e.target.closest('.modal')) fecharQuickStock();
+});
+
+/* Cadastrar produto direto do scan */
+function cadastrarProdutoDoScan() {
+  const code = _qsBarcode;
+  fecharQuickStock();
+  setTimeout(() => {
+    openModal('modal-prod');
+    document.getElementById('p-bc').value = code || '';
+    document.getElementById('p-nome').focus();
+    notify('Preencha os dados do produto e salve.', 'info');
+  }, 300);
+}
+
 </script>
+
+<!-- FAB QUICK STOCK (mobile) -->
+<button id="quick-stock-fab" onclick="abrirQuickStock()" title="Entrada rápida de estoque">
+  <i class="ti ti-barcode-off" style="font-size:20px"></i>
+</button>
 </body>
 </html>
