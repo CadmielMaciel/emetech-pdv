@@ -1556,13 +1556,13 @@ Dúvidas? Responda esta mensagem. 😊</textarea>
         </div>
         <!-- Lista -->
         <div id="usr-tab-lista">
-          <!-- Legenda de acesso -->
+          <!-- Legenda de acesso + plano -->
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:10px 14px;background:var(--surface);border-radius:10px;border:1px solid var(--border)">
             <i class="ti ti-info-circle" style="color:var(--pri);font-size:16px;flex-shrink:0"></i>
-            <div style="font-size:12.5px;color:var(--txt2)">
-              Gerencie o <strong>acesso ao sistema</strong> por e-mail/senha. O PIN da tela inicial é configurado em <strong>Perfis na Tela Inicial</strong>.
-              <span style="margin-left:6px;font-size:11px;color:var(--txt3)">· Futuramente: planos por quantidade de usuários.</span>
+            <div style="font-size:12.5px;color:var(--txt2);flex:1">
+              Gerencie o <strong>acesso ao sistema</strong> por e-mail/senha. O PIN é configurado em <strong>Perfis na Tela Inicial</strong>.
             </div>
+            <div id="usr-plano-info" style="text-align:right;flex-shrink:0"></div>
           </div>
           <div class="card" style="padding:0"><div class="tw"><table>
             <thead><tr><th>Usuário</th><th>E-mail de acesso</th><th>Nível</th><th>Acesso</th><th>Ações</th></tr></thead>
@@ -2443,6 +2443,89 @@ Eventos: MESSAGES_UPSERT</div>
   </div>
 </div>
 
+
+<!-- MODAL PLANOS -->
+<div class="modal-overlay" id="modal-planos">
+  <div class="modal" style="max-width:760px">
+    <div class="modal-title"><i class="ti ti-crown" style="color:var(--gold,#f59e0b)"></i> Planos EMETech PDV</div>
+    <div style="font-size:13px;color:var(--txt2);margin-bottom:20px">
+      Escolha o plano ideal para sua assistência técnica. O plano atual é salvo localmente e sincronizado pelo painel master.
+    </div>
+
+    <!-- Cards dos 3 planos -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px">
+
+      <!-- BÁSICO -->
+      <div class="plano-card" id="plano-card-basico" onclick="selecionarPlano('basico')">
+        <div class="plano-nome" style="color:var(--txt3)">Básico</div>
+        <div class="plano-preco">R$89<span>/mês</span></div>
+        <div class="plano-desc">Ideal para quem está começando</div>
+        <div class="plano-feat">
+          <div class="plano-feat-item ok"><i class="ti ti-check"></i> PDV completo</div>
+          <div class="plano-feat-item ok"><i class="ti ti-check"></i> Até 2 usuários</div>
+          <div class="plano-feat-item ok"><i class="ti ti-check"></i> 1 caixa</div>
+          <div class="plano-feat-item ok"><i class="ti ti-check"></i> Ordens de Serviço</div>
+          <div class="plano-feat-item ok"><i class="ti ti-check"></i> Estoque básico</div>
+          <div class="plano-feat-item ok"><i class="ti ti-check"></i> Clientes</div>
+          <div class="plano-feat-item no"><i class="ti ti-x"></i> Crediário</div>
+          <div class="plano-feat-item no"><i class="ti ti-x"></i> Relatórios avançados</div>
+          <div class="plano-feat-item no"><i class="ti ti-x"></i> WhatsApp automático</div>
+          <div class="plano-feat-item no"><i class="ti ti-x"></i> Múltiplos caixas</div>
+        </div>
+      </div>
+
+      <!-- PRO -->
+      <div class="plano-card" id="plano-card-pro" onclick="selecionarPlano('pro')" style="border-color:rgba(91,71,224,.4)">
+        <div style="position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:linear-gradient(90deg,var(--pri2),var(--pri));color:#fff;font-size:10px;font-weight:700;padding:3px 12px;border-radius:0 0 8px 8px;font-family:'DM Sans',sans-serif;white-space:nowrap">MAIS POPULAR</div>
+        <div class="plano-nome" style="color:var(--pri);margin-top:12px">Pro</div>
+        <div class="plano-preco" style="color:var(--pri)">R$149<span>/mês</span></div>
+        <div class="plano-desc">Para assistências em crescimento</div>
+        <div class="plano-feat">
+          <div class="plano-feat-item ok"><i class="ti ti-check"></i> Tudo do Básico</div>
+          <div class="plano-feat-item ok"><i class="ti ti-check"></i> Até 5 usuários</div>
+          <div class="plano-feat-item ok"><i class="ti ti-check"></i> Até 3 caixas</div>
+          <div class="plano-feat-item ok"><i class="ti ti-check"></i> Crediário completo</div>
+          <div class="plano-feat-item ok"><i class="ti ti-check"></i> Relatórios avançados</div>
+          <div class="plano-feat-item ok"><i class="ti ti-check"></i> Fornecedores</div>
+          <div class="plano-feat-item ok"><i class="ti ti-check"></i> Orçamentos</div>
+          <div class="plano-feat-item no"><i class="ti ti-x"></i> WhatsApp automático</div>
+          <div class="plano-feat-item no"><i class="ti ti-x"></i> API + Integrações</div>
+        </div>
+      </div>
+
+      <!-- ENTERPRISE -->
+      <div class="plano-card enterprise" id="plano-card-enterprise" onclick="selecionarPlano('enterprise')">
+        <div class="plano-nome" style="color:#b45309">Enterprise</div>
+        <div class="plano-preco" style="color:#b45309">R$299<span>/mês</span></div>
+        <div class="plano-desc">Para redes e múltiplas unidades</div>
+        <div class="plano-feat">
+          <div class="plano-feat-item ok"><i class="ti ti-check"></i> Tudo do Pro</div>
+          <div class="plano-feat-item ok"><i class="ti ti-check"></i> Usuários ilimitados</div>
+          <div class="plano-feat-item ok"><i class="ti ti-check"></i> Caixas ilimitados</div>
+          <div class="plano-feat-item ok"><i class="ti ti-check"></i> WhatsApp automático</div>
+          <div class="plano-feat-item ok"><i class="ti ti-check"></i> API + Integrações</div>
+          <div class="plano-feat-item ok"><i class="ti ti-check"></i> Inteligência Operacional</div>
+          <div class="plano-feat-item ok"><i class="ti ti-check"></i> Suporte prioritário</div>
+          <div class="plano-feat-item ok"><i class="ti ti-check"></i> Multi-unidade</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Limites atuais -->
+    <div class="card" style="padding:14px 16px;margin-bottom:4px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--txt3);margin-bottom:12px">Uso atual do plano</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px" id="plano-uso-grid"></div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-out" onclick="closeModal('modal-planos')">Fechar</button>
+      <button class="btn btn-pri" onclick="closeModal('modal-planos');go('config')">
+        <i class="ti ti-settings"></i> Configurações
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- Confirm -->
 <div class="modal-overlay" id="modal-confirm"><div class="modal sm" style="padding:22px">
   <div style="font-size:16px;font-weight:700;color:var(--txt);margin-bottom:7px" id="conf-title">Confirmar</div>
@@ -2584,6 +2667,7 @@ async function loadProfile(user){
   G.profile=p;G.role=p.role;
   document.getElementById('ls').classList.add('hidden');
   await loadAll();
+  initPlanos(); // inicializar planos após carregar dados
   // Mostra tela Netflix de seleção de perfil
   mostrarTelaNetflix();
 }
@@ -2628,6 +2712,15 @@ const PT={dashboard:'Dashboard',pdv:'PDV / Caixa',orcamentos:'Orçamentos',devol
 
 function go(page){
   if(!canAccess(G.role,page)){notify('Acesso não permitido.','error');return;}
+  // Verificar plano para páginas com restrição
+  const _featReq = {crediario:'crediario',fornecedores:'fornecedores',orcamentos:'orcamentos',inteligencia:'inteligencia',devolucoes:'devoluções',relatorios:'relatorios'};
+  if (_featReq[page] && typeof temFeature==='function' && !temFeature(_featReq[page])) {
+    const _pln = getPlanoAtual();
+    const _req = _featReq[page]==='inteligencia'?'Enterprise':'Pro';
+    notify(`🔒 Requer plano ${_req}. Você está no ${_pln.nome}.`,'warn');
+    openModal('modal-planos');
+    return;
+  }
   // Esconder todas as tabs mobile ao navegar (só reaparecem na página correta)
   if (window.innerWidth <= 768) {
     const pt = document.getElementById('pdv-mobile-tabs');
@@ -4020,6 +4113,18 @@ function renderUsuarios(q=''){
   const ehGerente = G.role === 'gerente';
   const podeMexer = ehAdmin || ehGerente;
 
+  // Atualizar info do plano
+  const _plInfo = document.getElementById('usr-plano-info');
+  if (_plInfo && typeof getPlanoAtual === 'function') {
+    const _pl = getPlanoAtual();
+    const _ativos = list.filter(u => u.ativo).length;
+    const _lim = _pl.limites.usuarios;
+    const _pct = Math.round((_ativos/_lim)*100);
+    _plInfo.innerHTML = `<span style="font-size:11.5px;color:${_pct>=90?'var(--danger)':'var(--txt3)'}">
+      ${_ativos}/${_lim > 900 ? '∞' : _lim} usuários
+      <span class="plano-badge ${_pl.cor}" style="margin-left:6px;cursor:pointer" onclick="openModal('modal-planos')">${_pl.nome}</span>
+    </span>`;
+  }
   document.getElementById('usr-table').innerHTML = list.length===0
     ? '<tr><td colspan="5" style="text-align:center;padding:28px;color:var(--txt3)">Nenhum usuário</td></tr>'
     : list.map(u => {
@@ -7657,6 +7762,85 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
   /* ── Tabela sem scroll forçado no desktop ── */
   table { min-width: 0 !important; }
 }
+
+/* ══════════════════════════════════════════════════
+   MÓDULO DE PLANOS — UI
+   ══════════════════════════════════════════════════ */
+
+/* Badge do plano na topbar */
+.plano-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 9px; border-radius: 6px; font-size: 11px;
+  font-weight: 700; cursor: pointer; transition: all .15s;
+  font-family: 'DM Sans', sans-serif;
+}
+.plano-badge.basico   { background: rgba(156,163,175,.15); color: var(--txt3); border: 1px solid var(--border); }
+.plano-badge.pro      { background: rgba(91,71,224,.12);   color: var(--pri);  border: 1px solid rgba(91,71,224,.3); }
+.plano-badge.enterprise { background: rgba(245,158,11,.12); color: #b45309; border: 1px solid rgba(245,158,11,.35); }
+.plano-badge:hover { opacity: .8; }
+
+/* Modal de planos */
+#modal-planos .modal { max-width: 760px; }
+.plano-card {
+  border: 2px solid var(--border); border-radius: 16px;
+  padding: 22px 20px; transition: all .2s; cursor: pointer;
+  position: relative; overflow: hidden;
+}
+.plano-card:hover { border-color: var(--pri); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.12); }
+.plano-card.ativo {
+  border-color: var(--pri);
+  box-shadow: 0 0 0 3px rgba(91,71,224,.15);
+}
+.plano-card.ativo::before {
+  content: '✓ Plano Atual';
+  position: absolute; top: 12px; right: 12px;
+  background: var(--pri); color: #fff;
+  font-size: 10px; font-weight: 700; padding: 3px 8px;
+  border-radius: 5px; font-family: 'DM Sans', sans-serif;
+}
+.plano-card.enterprise { border-color: rgba(245,158,11,.4); }
+.plano-card.enterprise:hover { border-color: #d97706; }
+.plano-card.enterprise.ativo { border-color: #d97706; box-shadow: 0 0 0 3px rgba(245,158,11,.15); }
+.plano-nome { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 18px; margin-bottom: 4px; }
+.plano-preco { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 28px; margin-bottom: 4px; }
+.plano-preco span { font-size: 14px; font-weight: 400; color: var(--txt3); }
+.plano-desc { font-size: 12.5px; color: var(--txt2); margin-bottom: 14px; }
+.plano-feat { display: flex; flex-direction: column; gap: 6px; }
+.plano-feat-item {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12.5px; color: var(--txt2);
+}
+.plano-feat-item i { font-size: 14px; flex-shrink: 0; }
+.plano-feat-item.ok i { color: var(--success); }
+.plano-feat-item.no i { color: var(--danger); }
+.plano-feat-item.no { opacity: .5; text-decoration: line-through; }
+
+/* Limite atingido — banner */
+.limite-banner {
+  background: rgba(245,158,11,.08); border: 1.5px solid rgba(245,158,11,.3);
+  border-radius: 10px; padding: 12px 14px;
+  display: flex; align-items: center; gap: 10px;
+  font-size: 13px; color: var(--txt2); margin-bottom: 14px;
+}
+.limite-banner i { color: var(--warn); font-size: 18px; flex-shrink: 0; }
+.limite-banner strong { color: var(--txt); }
+.limite-banner .upgrade-link {
+  margin-left: auto; font-size: 12px; font-weight: 700;
+  color: var(--pri); cursor: pointer; flex-shrink: 0;
+  white-space: nowrap;
+}
+.limite-banner .upgrade-link:hover { text-decoration: underline; }
+
+/* Bloqueio de funcionalidade */
+.feat-bloqueada {
+  position: relative; pointer-events: none; opacity: .45;
+  filter: grayscale(.5);
+}
+.feat-bloqueada::after {
+  content: '🔒';
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  font-size: 22px; pointer-events: none; z-index: 1;
+}
 </style>
 </head>
 <body>
@@ -9769,6 +9953,347 @@ window.addEventListener('resize', () => {
     closeSidebarMobile();
   } else {
     initOSMobile();
+  }
+});
+
+
+/* ══════════════════════════════════════════════════════════════════
+   MÓDULO DE PLANOS — EMETech PDV v4.0
+   Controle de funcionalidades por plano
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── DEFINIÇÃO DOS PLANOS ──────────────────────────────── */
+const PLANOS = {
+  basico: {
+    id: 'basico',
+    nome: 'Básico',
+    preco: 89,
+    cor: 'basico',
+    limites: {
+      usuarios:    2,
+      caixas:      1,
+      produtos:    200,   // máx de produtos cadastrados
+      os_mes:      50,    // OS por mês
+    },
+    features: {
+      pdv:            true,
+      os:             true,
+      clientes:       true,
+      produtos:       true,
+      estoque:        true,
+      dashboard:      true,
+      relatorios:     false,  // relatórios avançados
+      crediario:      false,
+      fornecedores:   false,
+      orcamentos:     false,
+      devoluções:     false,
+      inteligencia:   false,
+      whatsapp:       false,
+      multi_caixa:    false,
+      api:            false,
+    }
+  },
+  pro: {
+    id: 'pro',
+    nome: 'Pro',
+    preco: 149,
+    cor: 'pro',
+    limites: {
+      usuarios:    5,
+      caixas:      3,
+      produtos:    2000,
+      os_mes:      500,
+    },
+    features: {
+      pdv:            true,
+      os:             true,
+      clientes:       true,
+      produtos:       true,
+      estoque:        true,
+      dashboard:      true,
+      relatorios:     true,
+      crediario:      true,
+      fornecedores:   true,
+      orcamentos:     true,
+      devoluções:     true,
+      inteligencia:   false,
+      whatsapp:       false,
+      multi_caixa:    true,
+      api:            false,
+    }
+  },
+  enterprise: {
+    id: 'enterprise',
+    nome: 'Enterprise',
+    preco: 299,
+    cor: 'enterprise',
+    limites: {
+      usuarios:    999,
+      caixas:      999,
+      produtos:    999999,
+      os_mes:      999999,
+    },
+    features: {
+      pdv:            true,
+      os:             true,
+      clientes:       true,
+      produtos:       true,
+      estoque:        true,
+      dashboard:      true,
+      relatorios:     true,
+      crediario:      true,
+      fornecedores:   true,
+      orcamentos:     true,
+      devoluções:     true,
+      inteligencia:   true,
+      whatsapp:       true,
+      multi_caixa:    true,
+      api:            true,
+    }
+  }
+};
+
+/* ── GET/SET PLANO ATUAL ───────────────────────────────── */
+function getPlanoAtual() {
+  try {
+    const salvo = localStorage.getItem('emetech_plano');
+    if (salvo && PLANOS[salvo]) return PLANOS[salvo];
+  } catch(e) {}
+  return PLANOS.pro; // padrão: Pro (para não travar o sistema durante desenvolvimento)
+}
+
+function setPlanoAtual(planoId) {
+  if (!PLANOS[planoId]) return;
+  localStorage.setItem('emetech_plano', planoId);
+  aplicarRestricoesDePlano();
+  atualizarBadgePlano();
+}
+
+/* ── VERIFICAR SE TEM ACESSO ───────────────────────────── */
+function temFeature(feature) {
+  const plano = getPlanoAtual();
+  return plano.features[feature] === true;
+}
+
+function dentroDeLimite(tipo) {
+  const plano = getPlanoAtual();
+  const limite = plano.limites[tipo];
+  if (!limite) return true;
+  switch(tipo) {
+    case 'usuarios':  return (G.usuarios || []).filter(u => u.ativo).length < limite;
+    case 'caixas':    return (G.caixas    || []).length < limite;
+    case 'produtos':  return (G.produtos  || []).length < limite;
+    default:          return true;
+  }
+}
+
+function usoPorcentagem(tipo) {
+  const plano = getPlanoAtual();
+  const limite = plano.limites[tipo];
+  if (!limite || limite > 900) return 0;
+  let atual = 0;
+  switch(tipo) {
+    case 'usuarios': atual = (G.usuarios||[]).filter(u=>u.ativo).length; break;
+    case 'caixas':   atual = (G.caixas||[]).length; break;
+    case 'produtos': atual = (G.produtos||[]).length; break;
+  }
+  return Math.min(100, Math.round((atual / limite) * 100));
+}
+
+/* ── APLICAR RESTRIÇÕES NO UI ──────────────────────────── */
+function aplicarRestricoesDePlano() {
+  const plano = getPlanoAtual();
+
+  // Mapa: feature → seletor dos elementos no nav/menu
+  const featureNav = {
+    crediario:    '[onclick*="crediario"]',
+    relatorios:   '[onclick*="relatorios"]',
+    fornecedores: '[onclick*="fornecedores"]',
+    orcamentos:   '[onclick*="orcamentos"]',
+    inteligencia: '[onclick*="inteligencia"]',
+    devoluções:   '[onclick*="devolucoes"]',
+  };
+
+  Object.entries(featureNav).forEach(([feat, sel]) => {
+    const tem = plano.features[feat];
+    document.querySelectorAll(sel).forEach(el => {
+      if (!tem) {
+        el.style.opacity = '0.4';
+        el.style.pointerEvents = 'none';
+        el.title = `🔒 Disponível no plano ${feat === 'inteligencia' ? 'Enterprise' : 'Pro'}`;
+        // Adicionar ícone de cadeado se não tiver
+        if (!el.querySelector('.ni-lock-ico')) {
+          const lock = document.createElement('span');
+          lock.className = 'ni-lock-ico';
+          lock.style.cssText = 'font-size:10px;opacity:.7;margin-left:auto';
+          lock.innerHTML = '🔒';
+          el.appendChild(lock);
+        }
+      } else {
+        el.style.opacity = '';
+        el.style.pointerEvents = '';
+        el.title = '';
+        el.querySelector('.ni-lock-ico')?.remove();
+      }
+    });
+  });
+
+  // Ocultar colunas da sidebar que não fazem parte do plano
+  // (não remove, só desativa visual)
+}
+
+/* ── BADGE DO PLANO NA TOPBAR ──────────────────────────── */
+function atualizarBadgePlano() {
+  const plano = getPlanoAtual();
+  const badge = document.getElementById('plano-badge-topbar');
+  if (!badge) return;
+  badge.className = `plano-badge ${plano.cor}`;
+  const iconMap = { basico: '⚡', pro: '⭐', enterprise: '👑' };
+  badge.textContent = `${iconMap[plano.id] || ''} ${plano.nome}`;
+}
+
+/* ── MOSTRAR BANNER DE LIMITE ──────────────────────────── */
+function mostrarBannerLimite(tipo, container) {
+  const plano = getPlanoAtual();
+  const limite = plano.limites[tipo];
+  const nomes = { usuarios:'usuários', caixas:'caixas', produtos:'produtos' };
+  const el = document.createElement('div');
+  el.className = 'limite-banner';
+  el.innerHTML = `
+    <i class="ti ti-alert-triangle"></i>
+    <div>
+      <strong>Limite do plano ${plano.nome} atingido</strong> — máximo de ${limite} ${nomes[tipo]||tipo}.
+      <br>Faça upgrade para adicionar mais.
+    </div>
+    <span class="upgrade-link" onclick="openModal('modal-planos')">Ver planos →</span>`;
+  if (container) container.insertAdjacentElement('afterbegin', el);
+  return el;
+}
+
+/* ── MODAL: SELECIONAR PLANO ───────────────────────────── */
+function selecionarPlano(planoId) {
+  if (!PLANOS[planoId]) return;
+  const atual = getPlanoAtual();
+  if (atual.id === planoId) return; // já nesse plano
+
+  confirmAct(
+    `Mudar para plano ${PLANOS[planoId].nome}`,
+    `Deseja mudar para o plano ${PLANOS[planoId].nome} (R$ ${PLANOS[planoId].preco}/mês)?
+
+Em produção, isso seria processado pelo painel de cobrança.`,
+    () => {
+      setPlanoAtual(planoId);
+      renderModalPlanos();
+      notify(`✅ Plano ${PLANOS[planoId].nome} ativado!`, 'success');
+    }
+  );
+}
+
+function renderModalPlanos() {
+  const plano = getPlanoAtual();
+
+  // Marcar card ativo
+  ['basico','pro','enterprise'].forEach(p => {
+    const card = document.getElementById('plano-card-' + p);
+    if (card) card.classList.toggle('ativo', p === plano.id);
+  });
+
+  // Renderizar uso atual
+  const grid = document.getElementById('plano-uso-grid');
+  if (!grid) return;
+
+  const itens = [
+    { tipo:'usuarios', label:'Usuários', icon:'ti-users', cor:'var(--pri)' },
+    { tipo:'caixas',   label:'Caixas',   icon:'ti-device-desktop-analytics', cor:'var(--info,#3B82F6)' },
+    { tipo:'produtos', label:'Produtos', icon:'ti-package', cor:'var(--success)' },
+  ];
+
+  grid.innerHTML = itens.map(it => {
+    const limite = plano.limites[it.tipo];
+    const pct = usoPorcentagem(it.tipo);
+    const ilimitado = limite > 900;
+    let atual = 0;
+    switch(it.tipo) {
+      case 'usuarios': atual = (G.usuarios||[]).filter(u=>u.ativo).length; break;
+      case 'caixas':   atual = (G.caixas||[]).length; break;
+      case 'produtos': atual = (G.produtos||[]).length; break;
+    }
+    const corBarra = pct >= 90 ? 'var(--danger)' : pct >= 70 ? 'var(--warn)' : it.cor;
+
+    return `<div style="background:var(--surface);border-radius:10px;padding:12px 14px">
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px">
+        <i class="ti ${it.icon}" style="font-size:15px;color:${it.cor}"></i>
+        <span style="font-size:12px;font-weight:600;color:var(--txt2)">${it.label}</span>
+      </div>
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:var(--txt);margin-bottom:6px">
+        ${atual}${ilimitado ? '' : ` / ${limite}`}
+        ${ilimitado ? '<span style="font-size:11px;color:var(--txt3);font-family:var(--ff-body)"> ilimitado</span>' : ''}
+      </div>
+      ${!ilimitado ? `
+      <div style="background:var(--border);border-radius:99px;height:5px;overflow:hidden">
+        <div style="height:100%;border-radius:99px;background:${corBarra};width:${pct}%;transition:width .5s"></div>
+      </div>
+      <div style="font-size:10.5px;color:${pct>=90?'var(--danger)':'var(--txt3)'};margin-top:4px">${pct}% usado</div>
+      ` : ''}
+    </div>`;
+  }).join('');
+}
+
+/* ── INTERCEPTORES — bloquear ao atingir limite ────────── */
+/* Patch no Novo Usuário */
+const _origSalvarUsuario = typeof salvarUsuario === 'function' ? salvarUsuario : null;
+function verificarLimiteAntesDe(tipo, acao) {
+  if (dentroDeLimite(tipo)) {
+    acao();
+  } else {
+    const plano = getPlanoAtual();
+    const limite = plano.limites[tipo];
+    const nomes = { usuarios:'usuários', caixas:'caixas', produtos:'produtos' };
+    notify(`🔒 Limite de ${limite} ${nomes[tipo]||tipo} atingido no plano ${plano.nome}. Faça upgrade para continuar.`, 'warn');
+    openModal('modal-planos');
+  }
+}
+
+/* ── PATCH: verificar acesso a páginas bloqueadas ──────── */
+const _origCanAccess = canAccess;
+// Mapa de feature por página
+const PAGE_FEATURE_MAP = {
+  crediario:    'crediario',
+  fornecedores: 'fornecedores',
+  orcamentos:   'orcamentos',
+  inteligencia: 'inteligencia',
+  devolucoes:   'devoluções',
+  relatorios:   'relatorios',
+};
+
+/* Sobrescrever go() para verificar plano */
+const _origGo = go;
+const _goOrigRef = go;
+
+function goComPlano(page) {
+  const feat = PAGE_FEATURE_MAP[page];
+  if (feat && !temFeature(feat)) {
+    const plano = getPlanoAtual();
+    const planoNecessario = feat === 'inteligencia' ? 'Enterprise' : 'Pro';
+    notify(`🔒 "${page}" não está disponível no plano ${plano.nome}. Requer plano ${planoNecessario}.`, 'warn');
+    openModal('modal-planos');
+    return;
+  }
+  _origGo(page);
+}
+
+/* ── INICIALIZAR ───────────────────────────────────────── */
+function initPlanos() {
+  atualizarBadgePlano();
+  aplicarRestricoesDePlano();
+  // Substituir go() pelo wrapper
+  // (não substitui diretamente para manter compatibilidade)
+}
+
+/* Chamar ao abrir o modal */
+document.addEventListener('click', e => {
+  if (e.target.closest('#modal-planos')) {
+    renderModalPlanos();
   }
 });
 
