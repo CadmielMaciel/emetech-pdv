@@ -2661,6 +2661,9 @@ const PT={dashboard:'Dashboard',pdv:'PDV / Caixa',orcamentos:'Orçamentos',devol
 
 function go(page){
   if(!canAccess(G.role,page)){notify('Acesso não permitido.','error');return;}
+  // Esconder todas as tabs mobile ao navegar (serão reativadas pelas páginas corretas)
+  document.getElementById('pdv-mobile-tabs')?.classList.remove('tab-ativo');
+  document.getElementById('os-mobile-tabs')?.classList.remove('tab-ativo');
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+page)?.classList.add('active');
@@ -6980,11 +6983,15 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
 
 /* ── BARRA DE ABAS MOBILE DO PDV ── */
 .pdv-mobile-tabs {
-  display: none;
+  display: none !important;
   position: fixed; bottom: 0; left: 0; right: 0;
   background: var(--bg2); border-top: 1px solid var(--border);
   z-index: 400; padding: 0; height: 62px;
   box-shadow: 0 -4px 20px rgba(0,0,0,.1);
+}
+/* Só mostra em mobile E na página correta */
+@media (max-width: 768px) {
+  .pdv-mobile-tabs.tab-ativo { display: flex !important; }
 }
 .pdv-mtab {
   flex: 1; display: flex; flex-direction: column;
@@ -7009,8 +7016,8 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
 
 /* ── WRAPPER MOBILE ── */
 @media (max-width: 768px) {
-  /* Mostrar tabs mobile, esconder layout desktop */
-  .pdv-mobile-tabs { display: flex; }
+  /* Mostrar tabs mobile via classe controlada por JS */
+  /* .pdv-mobile-tabs.tab-ativo já está no CSS base */
 
   /* PDV wrap vira coluna única */
   .pdv-wrap {
@@ -7359,11 +7366,14 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
 
 /* Barra de abas inferior para OS (mobile) */
 .os-mobile-tabs {
-  display: none;
+  display: none !important;
   position: fixed; bottom: 0; left: 0; right: 0;
   background: var(--bg2); border-top: 1px solid var(--border);
   z-index: 400; height: 62px;
   box-shadow: 0 -4px 20px rgba(0,0,0,.08);
+}
+@media (max-width: 768px) {
+  .os-mobile-tabs.tab-ativo { display: flex !important; }
 }
 .os-mtab {
   flex: 1; display: flex; flex-direction: column;
@@ -7439,7 +7449,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
 @media (max-width: 768px) {
   /* Esconder layout desktop, mostrar mobile */
   .os-grid { display: none !important; }
-  .os-mobile-tabs { display: flex; }
+  /* .os-mobile-tabs.tab-ativo já está no CSS base */
   .os-fab { display: flex; }
 
   /* Page OS vira lista de cards */
@@ -9049,6 +9059,12 @@ function pdvMobileScan() {
 /* Inicializa o PDV mobile ao entrar na página */
 function initPDVMobile() {
   if (window.innerWidth > 768) return;
+  // Ativar tabs do PDV (só mobile)
+  const tabs = document.getElementById('pdv-mobile-tabs');
+  if (tabs) tabs.classList.add('tab-ativo');
+  // Desativar tabs da OS se estiverem ativas
+  const osTabs = document.getElementById('os-mobile-tabs');
+  if (osTabs) osTabs.classList.remove('tab-ativo');
   pdvMobileTab('prod');
   atualizarBadgeMobile();
 }
@@ -9705,6 +9721,12 @@ function initOSMobile() {
   if (window.innerWidth > 768) return;
   _osMobileAba = 'lista';
   _osMobileFiltro = 'todos';
+  // Ativar tabs da OS (só mobile)
+  const tabs = document.getElementById('os-mobile-tabs');
+  if (tabs) tabs.classList.add('tab-ativo');
+  // Desativar tabs do PDV
+  const pdvTabs = document.getElementById('pdv-mobile-tabs');
+  if (pdvTabs) pdvTabs.classList.remove('tab-ativo');
   const lista = document.getElementById('os-mobile-list');
   const busca = document.getElementById('os-mobile-busca');
   if (lista) lista.style.display = '';
@@ -9717,7 +9739,9 @@ function initOSMobile() {
 /* Inicializar ao navegar para OS */
 window.addEventListener('resize', () => {
   if (window.innerWidth > 768) {
-    // Desktop: esconder tudo mobile, mostrar layout normal
+    // Desktop: remover classe tab-ativo de todas as tabs
+    document.getElementById('pdv-mobile-tabs')?.classList.remove('tab-ativo');
+    document.getElementById('os-mobile-tabs')?.classList.remove('tab-ativo');
     const lista = document.getElementById('os-mobile-list');
     const busca = document.getElementById('os-mobile-busca');
     if (lista) lista.style.display = 'none';
