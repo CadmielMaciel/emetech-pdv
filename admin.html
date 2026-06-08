@@ -1,0 +1,1846 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EMETech — Painel Master</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg:     #07050F;
+  --bg2:    #0F0B1C;
+  --bg3:    #16102A;
+  --surface:#1C1535;
+  --border: #2A2048;
+  --border2:#362A5E;
+  --txt:    #EDE9FF;
+  --txt2:   #9B8FCC;
+  --txt3:   #5C5082;
+  --pri:    #7C3AED;
+  --pri2:   #5B47E0;
+  --pri-light: rgba(124,58,237,.12);
+  --glow:   rgba(124,58,237,.35);
+  --success:#10B981;
+  --danger: #EF4444;
+  --warn:   #F59E0B;
+  --gold:   #F59E0B;
+  --radius: 12px;
+  --shadow: 0 4px 24px rgba(0,0,0,.4);
+}
+
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:10px}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--txt);
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+/* ── TELA DE LOGIN ── */
+.login-screen {
+  position: fixed; inset: 0; z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(ellipse at 30% 20%, rgba(124,58,237,.2) 0%, transparent 60%),
+              radial-gradient(ellipse at 70% 80%, rgba(91,71,224,.15) 0%, transparent 60%),
+              var(--bg);
+}
+.login-box {
+  width: 100%; max-width: 380px;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  padding: 40px 36px;
+  box-shadow: 0 0 0 1px rgba(124,58,237,.2), var(--shadow);
+  animation: fadeUp .5s ease;
+}
+@keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+.login-logo {
+  width: 52px; height: 52px;
+  background: linear-gradient(135deg, var(--pri2), var(--pri));
+  border-radius: 14px; margin: 0 auto 16px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Syne', sans-serif; font-weight: 800;
+  font-size: 18px; color: #fff;
+  box-shadow: 0 8px 24px var(--glow);
+}
+.login-title {
+  font-family: 'Syne', sans-serif; font-weight: 800;
+  font-size: 20px; text-align: center; color: var(--txt);
+  margin-bottom: 4px;
+}
+.login-sub {
+  font-size: 12px; color: var(--txt3); text-align: center;
+  margin-bottom: 28px; letter-spacing: .5px;
+  text-transform: uppercase;
+}
+.login-label {
+  font-size: 11px; font-weight: 700; color: var(--txt2);
+  text-transform: uppercase; letter-spacing: .8px;
+  margin-bottom: 5px; display: block;
+}
+.login-input {
+  width: 100%; padding: 11px 14px;
+  background: var(--bg3); border: 1.5px solid var(--border);
+  border-radius: 10px; font-size: 14px; color: var(--txt);
+  font-family: 'DM Sans', sans-serif; outline: none;
+  transition: border-color .2s, box-shadow .2s;
+  margin-bottom: 14px;
+}
+.login-input:focus {
+  border-color: var(--pri);
+  box-shadow: 0 0 0 3px var(--pri-light);
+}
+.login-btn {
+  width: 100%; padding: 12px;
+  background: linear-gradient(135deg, var(--pri2), var(--pri));
+  color: #fff; border: none; border-radius: 11px;
+  font-size: 14px; font-weight: 700; cursor: pointer;
+  font-family: 'Syne', sans-serif; letter-spacing: .3px;
+  transition: all .2s; display: flex; align-items: center;
+  justify-content: center; gap: 8px;
+  box-shadow: 0 4px 16px var(--glow);
+}
+.login-btn:hover { opacity: .9; transform: translateY(-1px); }
+.login-btn:active { transform: translateY(0); }
+.login-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+.login-err {
+  background: rgba(239,68,68,.1); color: var(--danger);
+  border: 1px solid rgba(239,68,68,.3); border-radius: 8px;
+  padding: 9px 12px; font-size: 12.5px; font-weight: 600;
+  margin-bottom: 14px; display: none;
+}
+.login-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: rgba(245,158,11,.1); color: var(--gold);
+  border: 1px solid rgba(245,158,11,.3); border-radius: 6px;
+  font-size: 10.5px; font-weight: 700; padding: 3px 8px;
+  margin: 0 auto 20px; text-transform: uppercase; letter-spacing: 1px;
+  display: flex; width: fit-content;
+}
+
+/* ── APP LAYOUT ── */
+#app {
+  display: flex; height: 100vh; opacity: 0;
+  transition: opacity .4s;
+}
+#app.visible { opacity: 1; }
+
+/* Sidebar */
+.sidebar {
+  width: 220px; background: var(--bg2);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  flex-shrink: 0; position: relative;
+  overflow: hidden;
+}
+.sidebar::before {
+  content: ''; position: absolute;
+  top: 0; left: 0; right: 0; height: 200px;
+  background: radial-gradient(ellipse at top, rgba(124,58,237,.12), transparent);
+  pointer-events: none;
+}
+.sb-logo {
+  padding: 20px 18px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.sb-logo-badge {
+  display: flex; align-items: center; gap: 10px;
+}
+.sb-logo-icon {
+  width: 32px; height: 32px;
+  background: linear-gradient(135deg, var(--pri2), var(--pri));
+  border-radius: 9px; display: flex; align-items: center;
+  justify-content: center; font-family: 'Syne', sans-serif;
+  font-weight: 800; font-size: 12px; color: #fff;
+  box-shadow: 0 4px 12px var(--glow); flex-shrink: 0;
+}
+.sb-logo-text {
+  font-family: 'Syne', sans-serif; font-weight: 800;
+  font-size: 13px; color: var(--txt);
+}
+.sb-logo-sub {
+  font-size: 9px; color: var(--txt3);
+  text-transform: uppercase; letter-spacing: 1.5px;
+}
+.sb-nav { flex: 1; padding: 10px 8px; overflow-y: auto; }
+.sb-sec {
+  font-size: 9px; color: var(--txt3); font-weight: 700;
+  text-transform: uppercase; letter-spacing: 1.8px;
+  padding: 12px 10px 5px;
+}
+.sb-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 9px 10px; border-radius: 9px; cursor: pointer;
+  color: var(--txt3); font-size: 13px; font-weight: 500;
+  transition: all .15s; margin-bottom: 1px; user-select: none;
+}
+.sb-item:hover { background: var(--pri-light); color: var(--txt); }
+.sb-item.active {
+  background: linear-gradient(90deg, var(--pri-light), transparent);
+  color: var(--txt); font-weight: 600;
+  border-left: 2px solid var(--pri);
+  padding-left: 8px;
+}
+.sb-item i { font-size: 17px; flex-shrink: 0; }
+.sb-footer {
+  padding: 12px 10px;
+  border-top: 1px solid var(--border);
+}
+.sb-user {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; border-radius: 9px;
+  background: var(--bg3);
+}
+.sb-user-av {
+  width: 28px; height: 28px; border-radius: 7px;
+  background: linear-gradient(135deg, var(--pri2), var(--pri));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 800; color: #fff; flex-shrink: 0;
+}
+.sb-user-info { flex: 1; min-width: 0; }
+.sb-user-name { font-size: 12px; font-weight: 600; color: var(--txt); }
+.sb-user-role { font-size: 10px; color: var(--txt3); }
+.sb-logout {
+  background: none; border: none; color: var(--txt3);
+  cursor: pointer; font-size: 15px; padding: 3px;
+  border-radius: 5px; transition: color .15s;
+}
+.sb-logout:hover { color: var(--danger); }
+
+/* Main */
+.main {
+  flex: 1; display: flex; flex-direction: column;
+  overflow: hidden; min-width: 0;
+}
+.topbar {
+  background: var(--bg2); border-bottom: 1px solid var(--border);
+  padding: 0 24px; height: 60px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+}
+.topbar-title {
+  font-family: 'Syne', sans-serif; font-weight: 700;
+  font-size: 15px; color: var(--txt);
+  display: flex; align-items: center; gap: 10px;
+}
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.content {
+  flex: 1; overflow-y: auto; padding: 24px;
+}
+
+/* ── PAGES ── */
+.page { display: none; animation: fi .2s ease; }
+.page.active { display: block; }
+@keyframes fi {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── COMPONENTES ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px; border-radius: 9px; font-size: 13px;
+  font-weight: 600; cursor: pointer; border: none;
+  transition: all .15s; font-family: 'DM Sans', sans-serif;
+  white-space: nowrap;
+}
+.btn:active { transform: scale(.96); }
+.btn-pri {
+  background: linear-gradient(135deg, var(--pri2), var(--pri));
+  color: #fff; box-shadow: 0 2px 12px var(--glow);
+}
+.btn-pri:hover { opacity: .9; }
+.btn-out {
+  background: transparent; border: 1.5px solid var(--border2);
+  color: var(--txt2);
+}
+.btn-out:hover { border-color: var(--pri); color: var(--pri); background: var(--pri-light); }
+.btn-danger {
+  background: rgba(239,68,68,.1); color: var(--danger);
+  border: 1.5px solid rgba(239,68,68,.3);
+}
+.btn-danger:hover { background: rgba(239,68,68,.2); }
+.btn-success {
+  background: rgba(16,185,129,.1); color: var(--success);
+  border: 1.5px solid rgba(16,185,129,.3);
+}
+.btn-success:hover { background: rgba(16,185,129,.2); }
+.btn-sm { padding: 5px 11px; font-size: 12px; }
+.btn-xs { padding: 3px 8px; font-size: 11px; border-radius: 6px; }
+
+.card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px;
+  transition: border-color .2s;
+}
+.card:hover { border-color: var(--border2); }
+
+.badge {
+  display: inline-flex; align-items: center;
+  padding: 2px 8px; border-radius: 5px;
+  font-size: 11px; font-weight: 700;
+}
+.badge-green { background: rgba(16,185,129,.12); color: var(--success); border: 1px solid rgba(16,185,129,.25); }
+.badge-red   { background: rgba(239,68,68,.12);  color: var(--danger);  border: 1px solid rgba(239,68,68,.25); }
+.badge-gold  { background: rgba(245,158,11,.12); color: var(--gold);    border: 1px solid rgba(245,158,11,.25); }
+.badge-pri   { background: var(--pri-light);     color: var(--pri);     border: 1px solid rgba(124,58,237,.3); }
+.badge-gray  { background: rgba(255,255,255,.05); color: var(--txt3);   border: 1px solid var(--border); }
+
+.stat-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 24px; }
+.stat-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 18px;
+  position: relative; overflow: hidden;
+  transition: border-color .2s, transform .2s;
+}
+.stat-card:hover { border-color: var(--border2); transform: translateY(-2px); }
+.stat-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, var(--pri2), var(--pri));
+}
+.stat-icon {
+  width: 36px; height: 36px; border-radius: 9px;
+  background: var(--pri-light); display: flex;
+  align-items: center; justify-content: center;
+  font-size: 18px; color: var(--pri); margin-bottom: 12px;
+}
+.stat-val {
+  font-family: 'Syne', sans-serif; font-weight: 800;
+  font-size: 24px; color: var(--txt); margin-bottom: 2px;
+}
+.stat-lbl { font-size: 11.5px; color: var(--txt3); }
+
+/* Tabela */
+.tw { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th {
+  text-align: left; font-size: 10.5px; font-weight: 700;
+  color: var(--txt3); text-transform: uppercase; letter-spacing: .9px;
+  padding: 10px 14px; background: var(--bg3);
+  border-bottom: 1px solid var(--border);
+}
+td {
+  padding: 12px 14px; font-size: 13px; color: var(--txt);
+  border-bottom: 1px solid var(--border); vertical-align: middle;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--pri-light); }
+
+/* Modal */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(7,5,15,.8);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000; opacity: 0; pointer-events: none;
+  transition: opacity .22s; padding: 16px;
+  backdrop-filter: blur(4px);
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal {
+  background: var(--bg2); border: 1px solid var(--border2);
+  border-radius: 18px; padding: 28px; width: 100%;
+  max-width: 520px; max-height: 92vh; overflow-y: auto;
+  transform: translateY(16px) scale(.98);
+  transition: transform .22s;
+  box-shadow: 0 24px 64px rgba(0,0,0,.6), 0 0 0 1px rgba(124,58,237,.15);
+}
+.modal-overlay.open .modal { transform: translateY(0) scale(1); }
+.modal.lg { max-width: 700px; }
+.modal-title {
+  font-family: 'Syne', sans-serif; font-weight: 800;
+  font-size: 17px; color: var(--txt);
+  margin-bottom: 20px; display: flex; align-items: center; gap: 10px;
+}
+.modal-title i { color: var(--pri); font-size: 20px; }
+.modal-footer { display: flex; gap: 8px; margin-top: 20px; justify-content: flex-end; }
+.fg { margin-bottom: 14px; }
+.lbl {
+  display: block; font-size: 11px; font-weight: 700;
+  color: var(--txt2); text-transform: uppercase; letter-spacing: .7px;
+  margin-bottom: 5px;
+}
+input, select, textarea {
+  width: 100%; padding: 9px 13px;
+  background: var(--bg3); border: 1.5px solid var(--border);
+  border-radius: 9px; font-size: 13px; color: var(--txt);
+  font-family: 'DM Sans', sans-serif; outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--pri);
+  box-shadow: 0 0 0 3px var(--pri-light);
+}
+input::placeholder { color: var(--txt3); }
+select option { background: var(--bg2); }
+.ms {
+  font-size: 10px; font-weight: 700; color: var(--txt3);
+  text-transform: uppercase; letter-spacing: 1px;
+  padding: 10px 0 7px; border-bottom: 1px solid var(--border);
+  margin-bottom: 12px;
+}
+
+/* ── EMPRESA CARD ── */
+.empresa-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 14px; padding: 20px; transition: all .2s;
+  position: relative; overflow: hidden;
+}
+.empresa-card:hover { border-color: var(--border2); transform: translateY(-2px); box-shadow: var(--shadow); }
+.empresa-card.bloqueada { border-color: rgba(239,68,68,.3); }
+.empresa-card.bloqueada::before {
+  content: ''; position: absolute; inset: 0;
+  background: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(239,68,68,.02) 20px, rgba(239,68,68,.02) 40px);
+  pointer-events: none;
+}
+.empresa-avatar {
+  width: 44px; height: 44px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Syne', sans-serif; font-weight: 800;
+  font-size: 16px; color: #fff; flex-shrink: 0;
+}
+.empresa-meta { font-size: 11px; color: var(--txt3); margin-top: 2px; }
+.empresa-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* ── TOGGLE ── */
+.toggle {
+  position: relative; width: 44px; height: 24px; flex-shrink: 0;
+}
+.toggle input { opacity: 0; width: 0; height: 0; }
+.tslider {
+  position: absolute; inset: 0;
+  background: var(--border2); border-radius: 24px;
+  cursor: pointer; transition: .25s;
+}
+.tslider::before {
+  content: ''; position: absolute;
+  width: 18px; height: 18px; left: 3px; top: 3px;
+  background: #fff; border-radius: 50%; transition: .25s;
+}
+.toggle input:checked + .tslider { background: var(--success); }
+.toggle input:checked + .tslider::before { transform: translateX(20px); }
+.toggle input:disabled + .tslider { opacity: .4; cursor: not-allowed; }
+
+/* ── NOTIFY ── */
+.notif-stack {
+  position: fixed; bottom: 20px; right: 20px;
+  z-index: 5000; display: flex; flex-direction: column; gap: 8px;
+  pointer-events: none;
+}
+.notif {
+  background: var(--bg2); border: 1px solid var(--border2);
+  color: var(--txt); padding: 11px 16px; border-radius: 11px;
+  font-size: 13px; font-weight: 600;
+  display: flex; align-items: center; gap: 8px;
+  transform: translateX(110px); opacity: 0; transition: all .3s;
+  pointer-events: all; min-width: 220px; max-width: 340px;
+  box-shadow: var(--shadow);
+}
+.notif.show { transform: translateX(0); opacity: 1; }
+.notif-success { border-color: rgba(16,185,129,.4); }
+.notif-error   { border-color: rgba(239,68,68,.4); }
+.notif-info    { border-color: rgba(124,58,237,.4); }
+
+/* ── LOADING ── */
+.loading-overlay {
+  position: fixed; inset: 0;
+  background: rgba(7,5,15,.7);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 9000; opacity: 0; pointer-events: none; transition: opacity .2s;
+}
+.loading-overlay.show { opacity: 1; pointer-events: all; }
+.spinner {
+  width: 40px; height: 40px;
+  border: 3px solid rgba(255,255,255,.15);
+  border-top-color: var(--pri); border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── CONFIRM ── */
+.confirm-overlay {
+  position: fixed; inset: 0; z-index: 8000;
+  background: rgba(7,5,15,.8); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity .2s; padding: 16px;
+}
+.confirm-overlay.show { opacity: 1; pointer-events: all; }
+.confirm-box {
+  background: var(--bg2); border: 1px solid var(--border2);
+  border-radius: 16px; padding: 28px; max-width: 400px; width: 100%;
+  box-shadow: var(--shadow);
+}
+.confirm-title { font-family: 'Syne',sans-serif; font-weight: 800; font-size: 16px; margin-bottom: 8px; }
+.confirm-msg { font-size: 13.5px; color: var(--txt2); margin-bottom: 20px; line-height: 1.5; }
+.confirm-footer { display: flex; gap: 8px; justify-content: flex-end; }
+
+/* ── BLOCO DE CODIGO ── */
+.code-block {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 16px;
+  font-family: 'DM Mono', monospace; font-size: 12px; color: var(--txt2);
+  overflow-x: auto; white-space: pre;
+}
+
+/* ── PROGRESS BAR ── */
+.prog-bar-wrap { background: var(--bg3); border-radius: 99px; height: 6px; overflow: hidden; }
+.prog-bar { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--pri2), var(--pri)); transition: width .5s; }
+
+/* ── TABS ── */
+.tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+.tab-btn {
+  padding: 9px 16px; background: none; border: none;
+  color: var(--txt3); font-size: 13px; font-weight: 600;
+  cursor: pointer; border-bottom: 2px solid transparent;
+  transition: all .15s; font-family: 'DM Sans', sans-serif;
+  margin-bottom: -1px;
+}
+.tab-btn.active { color: var(--pri); border-bottom-color: var(--pri); }
+.tab-btn:hover:not(.active) { color: var(--txt2); }
+
+/* ── HEADER SEÇÃO ── */
+.sec-hdr {
+  display: flex; align-items: center;
+  justify-content: space-between; margin-bottom: 18px; gap: 12px;
+}
+.sec-title {
+  font-family: 'Syne', sans-serif; font-weight: 700;
+  font-size: 16px; color: var(--txt);
+}
+
+/* ── ACTIVITY FEED ── */
+.feed-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 0; border-bottom: 1px solid var(--border);
+}
+.feed-item:last-child { border-bottom: none; }
+.feed-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--pri); flex-shrink: 0; margin-top: 5px;
+}
+.feed-dot.green { background: var(--success); }
+.feed-dot.red   { background: var(--danger); }
+.feed-dot.gold  { background: var(--gold); }
+.feed-time { font-size: 11px; color: var(--txt3); margin-top: 2px; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .sidebar { display: none; }
+  .stat-grid { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- TELA DE LOGIN -->
+<div class="login-screen" id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">M</div>
+    <div class="login-title">Painel Master</div>
+    <div class="login-sub">EMETech SaaS — Acesso restrito</div>
+    <div class="login-badge"><i class="ti ti-shield-lock" style="font-size:12px"></i> Somente administradores</div>
+    <div class="login-err" id="login-err"></div>
+    <div>
+      <label class="login-label">E-mail</label>
+      <input type="email" class="login-input" id="login-email" placeholder="seu@email.com" autocomplete="email">
+    </div>
+    <div>
+      <label class="login-label">Senha</label>
+      <input type="password" class="login-input" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="login-btn" id="login-btn" onclick="doLogin()">
+      <i class="ti ti-lock-open" style="font-size:16px"></i> Entrar no painel
+    </button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-badge">
+        <div class="sb-logo-icon">M</div>
+        <div>
+          <div class="sb-logo-text">EMETech</div>
+          <div class="sb-logo-sub">Master Panel</div>
+        </div>
+      </div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-sec">Gestão</div>
+      <div class="sb-item active" onclick="go('dashboard')"><i class="ti ti-layout-dashboard"></i> Dashboard</div>
+      <div class="sb-item" onclick="go('empresas')"><i class="ti ti-building-store"></i> Empresas</div>
+      <div class="sb-item" onclick="go('planos')"><i class="ti ti-credit-card"></i> Planos</div>
+      <div class="sb-sec">Operações</div>
+      <div class="sb-item" onclick="go('updates')"><i class="ti ti-cloud-upload"></i> Updates</div>
+      <div class="sb-item" onclick="go('logs')"><i class="ti ti-activity"></i> Logs</div>
+      <div class="sb-sec">Sistema</div>
+      <div class="sb-item" onclick="go('config')"><i class="ti ti-settings"></i> Configurações</div>
+    </nav>
+    <div class="sb-footer">
+      <div class="sb-user">
+        <div class="sb-user-av" id="sb-av">—</div>
+        <div class="sb-user-info">
+          <div class="sb-user-name" id="sb-nome">—</div>
+          <div class="sb-user-role">Admin Master</div>
+        </div>
+        <button class="sb-logout" onclick="doLogout()" title="Sair"><i class="ti ti-logout"></i></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title">
+        <i class="ti ti-layout-dashboard" id="topbar-icon" style="color:var(--pri)"></i>
+        <span id="topbar-title">Dashboard</span>
+      </div>
+      <div class="topbar-right">
+        <span id="topbar-date" style="font-size:12px;color:var(--txt3)"></span>
+        <button class="btn btn-pri btn-sm" onclick="abrirNovaEmpresa()">
+          <i class="ti ti-plus"></i> Nova empresa
+        </button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ══ PAGE: DASHBOARD ══ -->
+      <div class="page active" id="page-dashboard">
+        <div class="stat-grid" id="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon"><i class="ti ti-building-store"></i></div>
+            <div class="stat-val" id="st-total">—</div>
+            <div class="stat-lbl">Empresas cadastradas</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:rgba(16,185,129,.12);color:var(--success)"><i class="ti ti-check"></i></div>
+            <div class="stat-val" id="st-ativas" style="color:var(--success)">—</div>
+            <div class="stat-lbl">Empresas ativas</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:rgba(239,68,68,.12);color:var(--danger)"><i class="ti ti-lock"></i></div>
+            <div class="stat-val" id="st-bloq" style="color:var(--danger)">—</div>
+            <div class="stat-lbl">Bloqueadas</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:rgba(245,158,11,.12);color:var(--gold)"><i class="ti ti-currency-dollar"></i></div>
+            <div class="stat-val" id="st-mrr" style="color:var(--gold)">—</div>
+            <div class="stat-lbl">MRR estimado</div>
+          </div>
+        </div>
+
+        <!-- Grid 2 colunas -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <!-- Empresas recentes -->
+          <div class="card">
+            <div class="sec-hdr">
+              <div class="sec-title">Empresas</div>
+              <button class="btn btn-out btn-sm" onclick="go('empresas')">Ver todas</button>
+            </div>
+            <div id="dash-empresas-list">
+              <div style="color:var(--txt3);font-size:13px;text-align:center;padding:20px">Carregando...</div>
+            </div>
+          </div>
+
+          <!-- Feed de atividade -->
+          <div class="card">
+            <div class="sec-hdr">
+              <div class="sec-title">Atividade recente</div>
+            </div>
+            <div id="feed-list">
+              <div style="color:var(--txt3);font-size:13px;text-align:center;padding:20px">Sem atividade registrada</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ PAGE: EMPRESAS ══ -->
+      <div class="page" id="page-empresas">
+        <div class="sec-hdr">
+          <div class="sec-title">Todas as empresas</div>
+          <div style="display:flex;gap:8px">
+            <input type="text" id="empresa-search" placeholder="Buscar empresa..." style="max-width:220px;padding:7px 12px;font-size:13px" oninput="renderEmpresas()">
+            <button class="btn btn-pri btn-sm" onclick="abrirNovaEmpresa()">
+              <i class="ti ti-plus"></i> Nova empresa
+            </button>
+          </div>
+        </div>
+        <div id="empresas-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px">
+          <div style="color:var(--txt3);font-size:13px;padding:20px">Carregando...</div>
+        </div>
+      </div>
+
+      <!-- ══ PAGE: PLANOS ══ -->
+      <div class="page" id="page-planos">
+        <div class="sec-hdr">
+          <div class="sec-title">Planos e preços</div>
+          <button class="btn btn-pri btn-sm" onclick="openModal('modal-plano')">
+            <i class="ti ti-plus"></i> Novo plano
+          </button>
+        </div>
+        <div id="planos-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">
+        </div>
+        <div style="margin-top:24px" class="card">
+          <div class="sec-title" style="margin-bottom:14px">Associar plano a empresa</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end">
+            <div class="fg" style="margin:0">
+              <label class="lbl">Empresa</label>
+              <select id="assoc-empresa-sel"></select>
+            </div>
+            <div class="fg" style="margin:0">
+              <label class="lbl">Plano</label>
+              <select id="assoc-plano-sel"></select>
+            </div>
+            <button class="btn btn-pri" onclick="associarPlano()"><i class="ti ti-check"></i> Aplicar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ PAGE: UPDATES ══ -->
+      <div class="page" id="page-updates">
+        <div class="sec-hdr">
+          <div class="sec-title">Gerenciamento de atualizações</div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+
+          <!-- Update global -->
+          <div class="card" style="border-color:rgba(124,58,237,.3)">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+              <div style="width:38px;height:38px;border-radius:10px;background:var(--pri-light);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--pri)">
+                <i class="ti ti-cloud-upload"></i>
+              </div>
+              <div>
+                <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px">Update Global</div>
+                <div style="font-size:12px;color:var(--txt3)">Aplica para TODAS as empresas</div>
+              </div>
+            </div>
+            <div class="fg">
+              <label class="lbl">Versão atual do sistema</label>
+              <input type="text" id="upd-versao-global" placeholder="v4.0.0" value="v4.0.0">
+            </div>
+            <div class="fg">
+              <label class="lbl">Notas da versão</label>
+              <textarea id="upd-notas-global" rows="3" placeholder="O que mudou nesta versão..."></textarea>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+              <label class="toggle">
+                <input type="checkbox" id="upd-forcar" checked>
+                <span class="tslider"></span>
+              </label>
+              <span style="font-size:13px;color:var(--txt2)">Forçar reload nas empresas</span>
+            </div>
+            <button class="btn btn-pri" onclick="enviarUpdateGlobal()" style="width:100%">
+              <i class="ti ti-world-upload"></i> Publicar para todas as empresas
+            </button>
+          </div>
+
+          <!-- Update seletivo -->
+          <div class="card">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+              <div style="width:38px;height:38px;border-radius:10px;background:rgba(16,185,129,.1);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--success)">
+                <i class="ti ti-building-store"></i>
+              </div>
+              <div>
+                <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px">Update Seletivo</div>
+                <div style="font-size:12px;color:var(--txt3)">Aplica apenas na empresa escolhida</div>
+              </div>
+            </div>
+            <div class="fg">
+              <label class="lbl">Empresa</label>
+              <select id="upd-empresa-sel"></select>
+            </div>
+            <div class="fg">
+              <label class="lbl">Tipo de atualização</label>
+              <select id="upd-tipo">
+                <option value="patch">Patch (correção)</option>
+                <option value="feature">Feature (nova funcionalidade)</option>
+                <option value="config">Configuração personalizada</option>
+                <option value="custom">Customização exclusiva</option>
+              </select>
+            </div>
+            <div class="fg">
+              <label class="lbl">Descrição</label>
+              <textarea id="upd-notas-sel" rows="3" placeholder="Descreva o que muda para esta empresa..."></textarea>
+            </div>
+            <button class="btn btn-success" onclick="enviarUpdateSeletivo()" style="width:100%">
+              <i class="ti ti-send"></i> Enviar update para empresa
+            </button>
+          </div>
+        </div>
+
+        <!-- Histórico de updates -->
+        <div class="card">
+          <div class="sec-title" style="margin-bottom:14px">Histórico de updates</div>
+          <div class="tw">
+            <table>
+              <thead>
+                <tr>
+                  <th>Data</th><th>Tipo</th><th>Empresa</th><th>Versão</th><th>Notas</th><th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="updates-history"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ PAGE: LOGS ══ -->
+      <div class="page" id="page-logs">
+        <div class="sec-hdr">
+          <div class="sec-title">Log de atividade global</div>
+          <button class="btn btn-out btn-sm" onclick="carregarLogs()"><i class="ti ti-refresh"></i> Atualizar</button>
+        </div>
+        <div class="card">
+          <div id="logs-list">
+            <div style="color:var(--txt3);font-size:13px;text-align:center;padding:20px">Carregando logs...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ PAGE: CONFIG ══ -->
+      <div class="page" id="page-config">
+        <div class="sec-hdr"><div class="sec-title">Configurações do painel</div></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="card">
+            <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:16px">Segurança do painel</div>
+            <div class="fg">
+              <label class="lbl">Senha do painel master</label>
+              <input type="password" id="cfg-senha-nova" placeholder="Nova senha...">
+            </div>
+            <div class="fg">
+              <label class="lbl">Confirmar senha</label>
+              <input type="password" id="cfg-senha-conf" placeholder="Repita a nova senha...">
+            </div>
+            <button class="btn btn-pri" onclick="alterarSenha()"><i class="ti ti-check"></i> Salvar senha</button>
+          </div>
+          <div class="card">
+            <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:16px">Informações do sistema</div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
+                <span style="font-size:13px;color:var(--txt2)">Versão do painel</span>
+                <span class="badge badge-pri">v1.0.0</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
+                <span style="font-size:13px;color:var(--txt2)">Supabase URL</span>
+                <span style="font-size:11px;font-family:'DM Mono',monospace;color:var(--txt3)">icgfpfwc...supabase.co</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0">
+                <span style="font-size:13px;color:var(--txt2)">Repositório</span>
+                <a href="https://github.com/CadmielMaciel/emetech-pdv" target="_blank" style="font-size:12px;color:var(--pri)">emetech-pdv ↗</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- ══ MODAIS ══ -->
+
+<!-- Nova/Editar Empresa -->
+<div class="modal-overlay" id="modal-empresa">
+  <div class="modal">
+    <div class="modal-title"><i class="ti ti-building-store"></i><span id="modal-empresa-title">Nova Empresa</span></div>
+    <input type="hidden" id="emp-id">
+    <div class="ms">Dados da empresa</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="fg">
+        <label class="lbl">Nome da empresa *</label>
+        <input type="text" id="emp-nome" placeholder="Assistência Silva">
+      </div>
+      <div class="fg">
+        <label class="lbl">CNPJ / CPF</label>
+        <input type="text" id="emp-doc" placeholder="00.000.000/0001-00">
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="fg">
+        <label class="lbl">Cidade</label>
+        <input type="text" id="emp-cidade" placeholder="Salvador">
+      </div>
+      <div class="fg">
+        <label class="lbl">Estado</label>
+        <select id="emp-estado">
+          <option value="">Selecione...</option>
+          <option>BA</option><option>SP</option><option>RJ</option><option>MG</option>
+          <option>RS</option><option>PR</option><option>SC</option><option>GO</option>
+          <option>PE</option><option>CE</option><option>MA</option><option>PA</option>
+          <option>AM</option><option>MS</option><option>MT</option><option>ES</option>
+          <option>RN</option><option>PB</option><option>AL</option><option>SE</option>
+          <option>PI</option><option>TO</option><option>RO</option><option>AC</option>
+          <option>RR</option><option>AP</option><option>DF</option>
+        </select>
+      </div>
+    </div>
+    <div class="ms">Acesso ao sistema</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="fg">
+        <label class="lbl">E-mail de acesso *</label>
+        <input type="email" id="emp-email" placeholder="empresa@email.com">
+      </div>
+      <div class="fg">
+        <label class="lbl">Senha inicial</label>
+        <input type="text" id="emp-senha" placeholder="Gerada automaticamente" id="emp-senha">
+      </div>
+    </div>
+    <div class="ms">Plano e cobrança</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+      <div class="fg">
+        <label class="lbl">Plano</label>
+        <select id="emp-plano">
+          <option value="basic">Básico — R$ 89/mês</option>
+          <option value="pro">Pro — R$ 149/mês</option>
+          <option value="enterprise">Enterprise — R$ 299/mês</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label class="lbl">Vencimento (dia)</label>
+        <input type="number" id="emp-venc" min="1" max="28" value="10" placeholder="10">
+      </div>
+      <div class="fg">
+        <label class="lbl">Status</label>
+        <select id="emp-status">
+          <option value="ativa">Ativa</option>
+          <option value="bloqueada">Bloqueada</option>
+          <option value="trial">Trial</option>
+          <option value="cancelada">Cancelada</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg">
+      <label class="lbl">Observações internas</label>
+      <textarea id="emp-obs" rows="2" placeholder="Notas sobre a empresa (apenas você vê)..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-out" onclick="closeModal('modal-empresa')">Cancelar</button>
+      <button class="btn btn-pri" onclick="salvarEmpresa()"><i class="ti ti-check"></i> Salvar empresa</button>
+    </div>
+  </div>
+</div>
+
+<!-- Detalhes da Empresa -->
+<div class="modal-overlay" id="modal-detalhes">
+  <div class="modal lg">
+    <div class="modal-title"><i class="ti ti-building-store"></i><span id="det-titulo">Detalhes</span></div>
+    <div class="tabs">
+      <button class="tab-btn active" onclick="detTab('geral',this)">Geral</button>
+      <button class="tab-btn" onclick="detTab('acesso',this)">Acesso</button>
+      <button class="tab-btn" onclick="detTab('updates',this)">Updates</button>
+      <button class="tab-btn" onclick="detTab('bloqueio',this)">Bloqueio</button>
+    </div>
+    <!-- Aba Geral -->
+    <div id="det-tab-geral">
+      <div id="det-geral-content"></div>
+    </div>
+    <!-- Aba Acesso -->
+    <div id="det-tab-acesso" style="display:none">
+      <div id="det-acesso-content"></div>
+    </div>
+    <!-- Aba Updates -->
+    <div id="det-tab-updates" style="display:none">
+      <div id="det-updates-content"></div>
+    </div>
+    <!-- Aba Bloqueio -->
+    <div id="det-tab-bloqueio" style="display:none">
+      <div id="det-bloqueio-content"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-out" onclick="closeModal('modal-detalhes')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Novo Plano -->
+<div class="modal-overlay" id="modal-plano">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-title"><i class="ti ti-credit-card"></i> Novo Plano</div>
+    <input type="hidden" id="plano-id">
+    <div class="fg">
+      <label class="lbl">Nome do plano *</label>
+      <input type="text" id="plano-nome" placeholder="Básico">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="fg">
+        <label class="lbl">Preço mensal (R$)</label>
+        <input type="number" id="plano-preco" min="0" step="0.01" placeholder="89.00">
+      </div>
+      <div class="fg">
+        <label class="lbl">Máx. usuários</label>
+        <input type="number" id="plano-usuarios" min="1" placeholder="3">
+      </div>
+    </div>
+    <div class="fg">
+      <label class="lbl">Funcionalidades incluídas</label>
+      <textarea id="plano-features" rows="3" placeholder="PDV, Estoque, OS, Crediário..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-out" onclick="closeModal('modal-plano')">Cancelar</button>
+      <button class="btn btn-pri" onclick="salvarPlano()"><i class="ti ti-check"></i> Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-title" id="confirm-title">Confirmar ação</div>
+    <div class="confirm-msg" id="confirm-msg"></div>
+    <div class="confirm-footer">
+      <button class="btn btn-out" onclick="closeConfirm()">Cancelar</button>
+      <button class="btn btn-danger" id="confirm-ok-btn" onclick="runConfirm()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Notificações -->
+<div class="notif-stack" id="notif-stack"></div>
+
+<!-- Loading -->
+<div class="loading-overlay" id="loading"><div class="spinner"></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ══════════════════════════════════════════════════════
+   PAINEL MASTER — EMETech SaaS
+   Arquivo: admin.html
+   Hospedagem: mesmo repo que index.html (Vercel)
+   Acesso: emetech-pdv.vercel.app/admin.html
+   ══════════════════════════════════════════════════════ */
+
+const SURL = 'https://icgfpfwcnhkjglrmnuca.supabase.co';
+const SKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljZ2ZwZndjbmhramdscm1udWNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwODA2OTEsImV4cCI6MjA5NTY1NjY5MX0.xDGiGCIlqXaqdWhWo0NoNi_XUdlw5raCogO_Jnc0ezw';
+
+const { createClient } = supabase;
+const db = createClient(SURL, SKEY);
+
+/* ── ESTADO ── */
+let G = {
+  user: null,
+  empresas: [],
+  planos: [],
+  logs: [],
+  updates: [],
+};
+
+let _confirmFn = null;
+let _empresaAtual = null;
+
+/* ── DADOS LOCAIS (localStorage) ── */
+function getEmpresas() {
+  try { return JSON.parse(localStorage.getItem('master_empresas') || '[]'); } catch { return []; }
+}
+function saveEmpresas(arr) {
+  localStorage.setItem('master_empresas', JSON.stringify(arr));
+}
+function getPlanos() {
+  try {
+    const p = JSON.parse(localStorage.getItem('master_planos') || 'null');
+    return p || [
+      { id:'basic',      nome:'Básico',      preco:89,   usuarios:2,  features:'PDV, Estoque básico, 1 caixa' },
+      { id:'pro',        nome:'Pro',         preco:149,  usuarios:5,  features:'PDV, Estoque, OS, Crediário, Relatórios' },
+      { id:'enterprise', nome:'Enterprise',  preco:299,  usuarios:15, features:'Tudo + Multi-caixa, API, Suporte prioritário' },
+    ];
+  } catch { return []; }
+}
+function savePlanos(arr) {
+  localStorage.setItem('master_planos', JSON.stringify(arr));
+}
+function getLogs() {
+  try { return JSON.parse(localStorage.getItem('master_logs') || '[]'); } catch { return []; }
+}
+function addLog(acao, detalhe, empresaNome = 'Global') {
+  const logs = getLogs();
+  logs.unshift({
+    ts: new Date().toISOString(),
+    acao, detalhe, empresa: empresaNome,
+    user: G.user?.email || 'master',
+  });
+  // Manter apenas 200 logs
+  localStorage.setItem('master_logs', JSON.stringify(logs.slice(0, 200)));
+}
+function getUpdates() {
+  try { return JSON.parse(localStorage.getItem('master_updates') || '[]'); } catch { return []; }
+}
+function addUpdate(entry) {
+  const arr = getUpdates();
+  arr.unshift({ ...entry, ts: new Date().toISOString() });
+  localStorage.setItem('master_updates', JSON.stringify(arr.slice(0, 100)));
+}
+
+/* ── AUTH ── */
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('login-err');
+  const btn   = document.getElementById('login-btn');
+  errEl.style.display = 'none';
+
+  if (!email || !pass) {
+    errEl.textContent = 'Preencha e-mail e senha.';
+    errEl.style.display = 'block'; return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px"></div> Entrando...';
+
+  try {
+    const { data, error } = await db.auth.signInWithPassword({ email, password: pass });
+    if (error) throw error;
+
+    // Verificar se é admin
+    const { data: perfil } = await db.from('usuarios').select('*').eq('email', email).single();
+    if (!perfil || perfil.role !== 'admin') {
+      await db.auth.signOut();
+      throw new Error('Acesso negado. Apenas administradores podem acessar o painel master.');
+    }
+
+    G.user = data.user;
+    G.perfil = perfil;
+    iniciarApp();
+  } catch(e) {
+    errEl.textContent = e.message || 'Erro ao entrar.';
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ti ti-lock-open" style="font-size:16px"></i> Entrar no painel';
+  }
+}
+
+async function doLogout() {
+  await db.auth.signOut();
+  location.reload();
+}
+
+/* ── INICIAR APP ── */
+function iniciarApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+
+  // Preencher sidebar
+  const nome = G.perfil?.nome || G.user?.email || '—';
+  document.getElementById('sb-nome').textContent = nome;
+  document.getElementById('sb-av').textContent = nome.slice(0,2).toUpperCase();
+  document.getElementById('topbar-date').textContent =
+    new Date().toLocaleDateString('pt-BR', { weekday:'short', day:'2-digit', month:'short', year:'numeric' });
+
+  // Carregar dados
+  G.empresas = getEmpresas();
+  G.planos = getPlanos();
+  G.logs = getLogs();
+  G.updates = getUpdates();
+
+  renderDashboard();
+  renderEmpresas();
+  renderPlanos();
+  renderUpdates();
+  populateSelects();
+  go('dashboard');
+}
+
+/* ── NAVEGAÇÃO ── */
+const PAGE_TITLES = {
+  dashboard: { title:'Dashboard',    icon:'ti-layout-dashboard' },
+  empresas:  { title:'Empresas',     icon:'ti-building-store'   },
+  planos:    { title:'Planos',       icon:'ti-credit-card'      },
+  updates:   { title:'Updates',      icon:'ti-cloud-upload'     },
+  logs:      { title:'Logs',         icon:'ti-activity'         },
+  config:    { title:'Configurações',icon:'ti-settings'         },
+};
+
+function go(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sb-item').forEach(i => i.classList.remove('active'));
+
+  document.getElementById('page-' + page)?.classList.add('active');
+  document.querySelectorAll('.sb-item').forEach(el => {
+    if (el.getAttribute('onclick')?.includes(`'${page}'`)) el.classList.add('active');
+  });
+
+  const info = PAGE_TITLES[page] || { title: page, icon: 'ti-circle' };
+  document.getElementById('topbar-title').textContent = info.title;
+  document.getElementById('topbar-icon').className = 'ti ' + info.icon;
+  document.getElementById('topbar-icon').style.color = 'var(--pri)';
+
+  if (page === 'logs') carregarLogs();
+}
+
+/* ── DASHBOARD ── */
+function renderDashboard() {
+  const empresas = G.empresas;
+  const ativas   = empresas.filter(e => e.status === 'ativa').length;
+  const bloq     = empresas.filter(e => e.status === 'bloqueada').length;
+  const mrr      = empresas
+    .filter(e => e.status === 'ativa')
+    .reduce((acc, e) => {
+      const plano = G.planos.find(p => p.id === e.plano);
+      return acc + (plano?.preco || 0);
+    }, 0);
+
+  document.getElementById('st-total').textContent = empresas.length;
+  document.getElementById('st-ativas').textContent = ativas;
+  document.getElementById('st-bloq').textContent = bloq;
+  document.getElementById('st-mrr').textContent = 'R$ ' + mrr.toLocaleString('pt-BR', { minimumFractionDigits:2 });
+
+  // Lista resumida
+  const list = document.getElementById('dash-empresas-list');
+  if (empresas.length === 0) {
+    list.innerHTML = '<div style="color:var(--txt3);font-size:13px;text-align:center;padding:20px">Nenhuma empresa cadastrada ainda</div>';
+    return;
+  }
+  list.innerHTML = empresas.slice(0,5).map(e => {
+    const statusCor = { ativa:'green', bloqueada:'red', trial:'gold', cancelada:'gray' }[e.status] || 'gray';
+    const ini = (e.nome || '?').slice(0,2).toUpperCase();
+    const cor = stringToColor(e.id || e.nome);
+    return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="width:34px;height:34px;border-radius:9px;background:${cor};display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:#fff;flex-shrink:0">${ini}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:13px;color:var(--txt)">${e.nome}</div>
+        <div style="font-size:11px;color:var(--txt3)">${e.cidade||'—'} · ${e.email||'—'}</div>
+      </div>
+      <span class="badge badge-${statusCor}">${e.status}</span>
+    </div>`;
+  }).join('');
+
+  // Feed
+  const logs = G.logs.slice(0,8);
+  const feedEl = document.getElementById('feed-list');
+  if (logs.length === 0) {
+    feedEl.innerHTML = '<div style="color:var(--txt3);font-size:13px;text-align:center;padding:20px">Sem atividade</div>';
+    return;
+  }
+  const dotMap = { criada:'green', bloqueada:'red', desbloqueada:'green', update:'', excluida:'red', plano:'' };
+  feedEl.innerHTML = logs.map(l => {
+    const dot = dotMap[l.acao] || '';
+    const ts = new Date(l.ts).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+    return `<div class="feed-item">
+      <div class="feed-dot ${dot}"></div>
+      <div style="flex:1">
+        <div style="font-size:13px;color:var(--txt);font-weight:500">${l.detalhe}</div>
+        <div class="feed-time">${ts} · ${l.empresa}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ── EMPRESAS ── */
+function renderEmpresas() {
+  const q = (document.getElementById('empresa-search')?.value || '').toLowerCase();
+  const empresas = G.empresas.filter(e =>
+    !q || e.nome?.toLowerCase().includes(q) || e.email?.toLowerCase().includes(q) || e.cidade?.toLowerCase().includes(q)
+  );
+
+  const grid = document.getElementById('empresas-grid');
+  if (!grid) return;
+
+  if (empresas.length === 0) {
+    grid.innerHTML = `<div style="color:var(--txt3);font-size:13px;padding:30px;text-align:center;grid-column:1/-1">
+      ${G.empresas.length === 0 ? 'Nenhuma empresa cadastrada. Clique em "+ Nova empresa" para começar.' : 'Nenhuma empresa encontrada.'}
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = empresas.map(e => {
+    const bloqueada = e.status === 'bloqueada';
+    const plano = G.planos.find(p => p.id === e.plano);
+    const statusCor = { ativa:'green', bloqueada:'red', trial:'gold', cancelada:'gray' }[e.status] || 'gray';
+    const cor = stringToColor(e.id || e.nome);
+    const ini = (e.nome || '?').slice(0,2).toUpperCase();
+
+    return `<div class="empresa-card ${bloqueada ? 'bloqueada' : ''}">
+      <!-- Header -->
+      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:14px">
+        <div class="empresa-avatar" style="background:${cor}">${ini}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:var(--txt);margin-bottom:3px">${e.nome}</div>
+          <div class="empresa-meta">${e.cidade||'—'}${e.estado?', '+e.estado:''}</div>
+          <div class="empresa-meta" style="font-family:'DM Mono',monospace">${e.email||'—'}</div>
+        </div>
+        <span class="badge badge-${statusCor}" style="flex-shrink:0">${e.status}</span>
+      </div>
+
+      <!-- Plano -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--bg3);border-radius:8px;margin-bottom:12px">
+        <span style="font-size:12px;color:var(--txt3)">Plano</span>
+        <span style="font-size:12px;font-weight:600;color:var(--txt)">${plano ? plano.nome + ' · R$ ' + plano.preco + '/mês' : e.plano || '—'}</span>
+      </div>
+
+      <!-- Toggle de bloqueio -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div>
+          <div style="font-size:12.5px;font-weight:600;color:${bloqueada ? 'var(--danger)' : 'var(--success)'}">
+            <i class="ti ti-${bloqueada ? 'lock' : 'lock-open'}"></i>
+            ${bloqueada ? 'Acesso bloqueado' : 'Acesso liberado'}
+          </div>
+          ${e.motivoBloqueio ? `<div style="font-size:11px;color:var(--txt3);margin-top:2px">${e.motivoBloqueio}</div>` : ''}
+        </div>
+        <label class="toggle" title="${bloqueada ? 'Desbloquear' : 'Bloquear'}">
+          <input type="checkbox" ${!bloqueada ? 'checked' : ''} onchange="toggleBloqueio('${e.id}', this.checked)">
+          <span class="tslider"></span>
+        </label>
+      </div>
+
+      <!-- Ações -->
+      <div class="empresa-actions">
+        <button class="btn btn-out btn-xs" onclick="abrirDetalhes('${e.id}')"><i class="ti ti-eye"></i> Detalhes</button>
+        <button class="btn btn-out btn-xs" onclick="editarEmpresa('${e.id}')"><i class="ti ti-edit"></i> Editar</button>
+        <button class="btn btn-out btn-xs" onclick="enviarUpdateParaEmpresa('${e.id}')"><i class="ti ti-cloud-upload"></i> Update</button>
+        <button class="btn btn-danger btn-xs" onclick="excluirEmpresa('${e.id}')"><i class="ti ti-trash"></i></button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ── NOVA/EDITAR EMPRESA ── */
+function abrirNovaEmpresa() {
+  document.getElementById('emp-id').value = '';
+  document.getElementById('emp-nome').value = '';
+  document.getElementById('emp-doc').value = '';
+  document.getElementById('emp-cidade').value = '';
+  document.getElementById('emp-estado').value = '';
+  document.getElementById('emp-email').value = '';
+  document.getElementById('emp-plano').value = 'basic';
+  document.getElementById('emp-venc').value = '10';
+  document.getElementById('emp-status').value = 'ativa';
+  document.getElementById('emp-obs').value = '';
+  // Gerar senha sugerida
+  document.getElementById('emp-senha').value = gerarSenha();
+  document.getElementById('modal-empresa-title').textContent = 'Nova Empresa';
+  openModal('modal-empresa');
+}
+
+function editarEmpresa(id) {
+  const e = G.empresas.find(x => x.id === id);
+  if (!e) return;
+  document.getElementById('emp-id').value = e.id;
+  document.getElementById('emp-nome').value = e.nome || '';
+  document.getElementById('emp-doc').value = e.doc || '';
+  document.getElementById('emp-cidade').value = e.cidade || '';
+  document.getElementById('emp-estado').value = e.estado || '';
+  document.getElementById('emp-email').value = e.email || '';
+  document.getElementById('emp-senha').value = '(manter atual)';
+  document.getElementById('emp-plano').value = e.plano || 'basic';
+  document.getElementById('emp-venc').value = e.venc || 10;
+  document.getElementById('emp-status').value = e.status || 'ativa';
+  document.getElementById('emp-obs').value = e.obs || '';
+  document.getElementById('modal-empresa-title').textContent = 'Editar — ' + e.nome;
+  openModal('modal-empresa');
+}
+
+function salvarEmpresa() {
+  const id    = document.getElementById('emp-id').value;
+  const nome  = document.getElementById('emp-nome').value.trim();
+  const email = document.getElementById('emp-email').value.trim();
+  if (!nome || !email) { notify('Preencha nome e e-mail.', 'error'); return; }
+
+  if (id) {
+    // Editar
+    const idx = G.empresas.findIndex(e => e.id === id);
+    if (idx >= 0) {
+      G.empresas[idx] = {
+        ...G.empresas[idx],
+        nome, doc: document.getElementById('emp-doc').value,
+        cidade: document.getElementById('emp-cidade').value,
+        estado: document.getElementById('emp-estado').value,
+        email,
+        plano: document.getElementById('emp-plano').value,
+        venc: document.getElementById('emp-venc').value,
+        status: document.getElementById('emp-status').value,
+        obs: document.getElementById('emp-obs').value,
+        updatedAt: new Date().toISOString(),
+      };
+      addLog('editada', `Empresa "${nome}" atualizada`, nome);
+      notify(`✅ ${nome} atualizada!`, 'success');
+    }
+  } else {
+    // Nova
+    const novaEmpresa = {
+      id: 'emp_' + Date.now(),
+      nome, doc: document.getElementById('emp-doc').value,
+      cidade: document.getElementById('emp-cidade').value,
+      estado: document.getElementById('emp-estado').value,
+      email,
+      senha: document.getElementById('emp-senha').value,
+      plano: document.getElementById('emp-plano').value,
+      venc: document.getElementById('emp-venc').value,
+      status: document.getElementById('emp-status').value,
+      obs: document.getElementById('emp-obs').value,
+      createdAt: new Date().toISOString(),
+    };
+    G.empresas.unshift(novaEmpresa);
+    addLog('criada', `Nova empresa "${nome}" cadastrada`, nome);
+    notify(`✅ Empresa "${nome}" criada com sucesso!`, 'success');
+  }
+
+  saveEmpresas(G.empresas);
+  closeModal('modal-empresa');
+  renderEmpresas();
+  renderDashboard();
+  populateSelects();
+}
+
+function excluirEmpresa(id) {
+  const e = G.empresas.find(x => x.id === id);
+  if (!e) return;
+  confirmAct('Excluir empresa', `Excluir "${e.nome}" permanentemente? Esta ação não pode ser desfeita.`, () => {
+    G.empresas = G.empresas.filter(x => x.id !== id);
+    saveEmpresas(G.empresas);
+    addLog('excluida', `Empresa "${e.nome}" excluída`, e.nome);
+    notify(`Empresa "${e.nome}" excluída.`, 'info');
+    renderEmpresas();
+    renderDashboard();
+    populateSelects();
+  }, 'Excluir');
+}
+
+/* ── TOGGLE BLOQUEIO ── */
+function toggleBloqueio(id, ativar) {
+  const e = G.empresas.find(x => x.id === id);
+  if (!e) return;
+
+  if (!ativar) {
+    // Bloquear — pedir motivo
+    const motivo = prompt(`Motivo do bloqueio de "${e.nome}":\n(ex: Inadimplência, Cancelamento, etc.)`);
+    if (motivo === null) {
+      renderEmpresas(); return; // Cancelou
+    }
+    e.status = 'bloqueada';
+    e.motivoBloqueio = motivo || 'Bloqueado pelo administrador';
+    addLog('bloqueada', `Empresa "${e.nome}" bloqueada: ${e.motivoBloqueio}`, e.nome);
+    notify(`🔒 "${e.nome}" bloqueada.`, 'warn');
+  } else {
+    // Desbloquear
+    e.status = 'ativa';
+    e.motivoBloqueio = '';
+    addLog('desbloqueada', `Empresa "${e.nome}" desbloqueada`, e.nome);
+    notify(`✅ "${e.nome}" desbloqueada.`, 'success');
+  }
+
+  saveEmpresas(G.empresas);
+  renderEmpresas();
+  renderDashboard();
+}
+
+/* ── DETALHES DA EMPRESA ── */
+function abrirDetalhes(id) {
+  const e = G.empresas.find(x => x.id === id);
+  if (!e) return;
+  _empresaAtual = e;
+
+  document.getElementById('det-titulo').textContent = e.nome;
+  detTab('geral', null);
+  openModal('modal-detalhes');
+}
+
+function detTab(tab, btn) {
+  ['geral','acesso','updates','bloqueio'].forEach(t => {
+    document.getElementById('det-tab-' + t).style.display = t === tab ? '' : 'none';
+  });
+  document.querySelectorAll('#modal-detalhes .tab-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  else {
+    const btns = document.querySelectorAll('#modal-detalhes .tab-btn');
+    if (btns[0]) btns[0].classList.add('active');
+  }
+
+  const e = _empresaAtual;
+  if (!e) return;
+  const plano = G.planos.find(p => p.id === e.plano);
+
+  if (tab === 'geral') {
+    document.getElementById('det-geral-content').innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        ${campo('Empresa', e.nome)}
+        ${campo('CNPJ/CPF', e.doc || '—')}
+        ${campo('Cidade', (e.cidade||'—') + (e.estado ? ', '+e.estado : ''))}
+        ${campo('E-mail', e.email)}
+        ${campo('Plano', plano ? plano.nome : e.plano)}
+        ${campo('Vencimento', 'Dia ' + (e.venc||'—'))}
+        ${campo('Status', e.status)}
+        ${campo('Cadastrada em', e.createdAt ? new Date(e.createdAt).toLocaleDateString('pt-BR') : '—')}
+      </div>
+      ${e.obs ? `<div style="margin-top:14px;padding:12px;background:var(--bg3);border-radius:9px;font-size:13px;color:var(--txt2)"><strong style="color:var(--txt3);font-size:11px;text-transform:uppercase;letter-spacing:.8px">Observações</strong><br>${e.obs}</div>` : ''}
+    `;
+  } else if (tab === 'acesso') {
+    document.getElementById('det-acesso-content').innerHTML = `
+      <div style="margin-bottom:16px">
+        <div class="lbl">URL de acesso da empresa</div>
+        <div class="code-block">https://emetech-pdv.vercel.app</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+        ${campo('E-mail de login', e.email)}
+        ${campo('Senha inicial', e.senha || '(não registrada)')}
+      </div>
+      <div style="padding:12px 14px;background:var(--pri-light);border-radius:10px;border:1px solid rgba(124,58,237,.3)">
+        <div style="font-size:12px;font-weight:700;color:var(--pri);margin-bottom:4px"><i class="ti ti-info-circle"></i> Como a empresa acessa</div>
+        <div style="font-size:12.5px;color:var(--txt2)">A empresa acessa o mesmo <code style="background:var(--bg3);padding:1px 5px;border-radius:4px">index.html</code> com as credenciais acima. O sistema identifica a empresa pelo e-mail do admin e carrega os dados isolados pelo Supabase.</div>
+      </div>
+    `;
+  } else if (tab === 'updates') {
+    const upds = G.updates.filter(u => u.empresa === e.id || u.empresa === 'global');
+    document.getElementById('det-updates-content').innerHTML = `
+      <div style="margin-bottom:16px;display:flex;justify-content:flex-end">
+        <button class="btn btn-pri btn-sm" onclick="enviarUpdateParaEmpresa('${e.id}')">
+          <i class="ti ti-cloud-upload"></i> Enviar update
+        </button>
+      </div>
+      ${upds.length === 0
+        ? '<div style="color:var(--txt3);text-align:center;padding:20px">Nenhum update enviado ainda</div>'
+        : upds.map(u => `
+          <div style="padding:10px 0;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:center">
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:600;color:var(--txt)">${u.tipo||'update'} · ${u.versao||'—'}</div>
+              <div style="font-size:11.5px;color:var(--txt3);margin-top:2px">${u.notas||''}</div>
+            </div>
+            <div style="font-size:11px;color:var(--txt3)">${new Date(u.ts).toLocaleDateString('pt-BR')}</div>
+            <span class="badge badge-green">Enviado</span>
+          </div>
+        `).join('')
+      }
+    `;
+  } else if (tab === 'bloqueio') {
+    const bloqueada = e.status === 'bloqueada';
+    document.getElementById('det-bloqueio-content').innerHTML = `
+      <div style="text-align:center;padding:20px 0">
+        <div style="font-size:48px;margin-bottom:12px">${bloqueada ? '🔒' : '✅'}</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:18px;color:${bloqueada ? 'var(--danger)' : 'var(--success)'};margin-bottom:8px">
+          ${bloqueada ? 'Empresa bloqueada' : 'Empresa com acesso liberado'}
+        </div>
+        ${e.motivoBloqueio ? `<div style="font-size:13px;color:var(--txt2);margin-bottom:16px">Motivo: ${e.motivoBloqueio}</div>` : ''}
+        <div style="font-size:13px;color:var(--txt2);margin-bottom:24px">
+          ${bloqueada
+            ? 'Ao acessar o sistema, a empresa verá a tela de bloqueio com mensagem de inadimplência.'
+            : 'A empresa tem acesso completo ao sistema.'}
+        </div>
+        <label class="toggle" style="margin:0 auto;display:block;width:fit-content" title="${bloqueada ? 'Desbloquear' : 'Bloquear'}">
+          <input type="checkbox" ${!bloqueada ? 'checked' : ''} onchange="toggleBloqueio('${e.id}', this.checked);detTab('bloqueio',null)">
+          <span class="tslider"></span>
+        </label>
+        <div style="margin-top:8px;font-size:12px;color:var(--txt3)">Clique para ${bloqueada ? 'desbloquear' : 'bloquear'}</div>
+      </div>
+      ${bloqueada ? `
+        <div style="margin-top:16px;padding:14px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:10px">
+          <div style="font-size:12px;font-weight:700;color:var(--danger);margin-bottom:8px">Tela exibida para a empresa:</div>
+          <div style="font-size:13px;color:var(--txt2);font-style:italic">
+            "⊘ Acesso suspenso<br>${e.motivoBloqueio || 'Regularize sua situação para continuar usando o sistema.'}<br>Entre em contato: [seu contato]"
+          </div>
+        </div>
+      ` : ''}
+    `;
+  }
+}
+
+function campo(label, valor) {
+  return `<div style="background:var(--bg3);border-radius:9px;padding:10px 12px">
+    <div style="font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px">${label}</div>
+    <div style="font-size:13px;color:var(--txt)">${valor}</div>
+  </div>`;
+}
+
+/* ── PLANOS ── */
+function renderPlanos() {
+  const grid = document.getElementById('planos-grid');
+  if (!grid) return;
+
+  const cores = ['var(--pri)', 'var(--success)', 'var(--gold)'];
+  grid.innerHTML = G.planos.map((p, i) => `
+    <div class="card" style="border-top:3px solid ${cores[i%cores.length]};position:relative">
+      <div style="position:absolute;top:14px;right:14px;display:flex;gap:5px">
+        <button class="btn btn-out btn-xs" onclick="editarPlano('${p.id}')"><i class="ti ti-edit"></i></button>
+      </div>
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:var(--txt);margin-bottom:4px">${p.nome}</div>
+      <div style="font-size:28px;font-weight:800;color:${cores[i%cores.length]};margin-bottom:8px">
+        R$ ${(p.preco||0).toLocaleString('pt-BR', {minimumFractionDigits:2})}
+        <span style="font-size:14px;color:var(--txt3)">/mês</span>
+      </div>
+      <div style="font-size:12.5px;color:var(--txt2);margin-bottom:10px">Até ${p.usuarios||'—'} usuários</div>
+      <div style="font-size:12.5px;color:var(--txt2);line-height:1.5">${p.features||''}</div>
+      <div style="margin-top:12px;font-size:11.5px;color:var(--txt3)">
+        ${G.empresas.filter(e => e.plano === p.id && e.status==='ativa').length} empresa(s) ativa(s)
+      </div>
+    </div>
+  `).join('');
+
+  // Selects de associação
+  const assocEmp = document.getElementById('assoc-empresa-sel');
+  const assocPlan = document.getElementById('assoc-plano-sel');
+  if (assocEmp) assocEmp.innerHTML = G.empresas.map(e => `<option value="${e.id}">${e.nome}</option>`).join('');
+  if (assocPlan) assocPlan.innerHTML = G.planos.map(p => `<option value="${p.id}">${p.nome} — R$ ${p.preco}/mês</option>`).join('');
+}
+
+function editarPlano(id) {
+  const p = G.planos.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('plano-id').value = p.id;
+  document.getElementById('plano-nome').value = p.nome;
+  document.getElementById('plano-preco').value = p.preco;
+  document.getElementById('plano-usuarios').value = p.usuarios;
+  document.getElementById('plano-features').value = p.features;
+  openModal('modal-plano');
+}
+
+function salvarPlano() {
+  const id       = document.getElementById('plano-id').value;
+  const nome     = document.getElementById('plano-nome').value.trim();
+  const preco    = parseFloat(document.getElementById('plano-preco').value) || 0;
+  const usuarios = parseInt(document.getElementById('plano-usuarios').value) || 1;
+  const features = document.getElementById('plano-features').value.trim();
+
+  if (!nome) { notify('Nome obrigatório.', 'error'); return; }
+
+  if (id) {
+    const idx = G.planos.findIndex(p => p.id === id);
+    if (idx >= 0) G.planos[idx] = { ...G.planos[idx], nome, preco, usuarios, features };
+  } else {
+    G.planos.push({ id: 'plano_' + Date.now(), nome, preco, usuarios, features });
+  }
+
+  savePlanos(G.planos);
+  document.getElementById('plano-id').value = '';
+  closeModal('modal-plano');
+  renderPlanos();
+  addLog('plano', `Plano "${nome}" salvo`);
+  notify('✅ Plano salvo!', 'success');
+}
+
+function associarPlano() {
+  const empId   = document.getElementById('assoc-empresa-sel').value;
+  const planoId = document.getElementById('assoc-plano-sel').value;
+  const e = G.empresas.find(x => x.id === empId);
+  const p = G.planos.find(x => x.id === planoId);
+  if (!e || !p) return;
+  e.plano = planoId;
+  saveEmpresas(G.empresas);
+  addLog('plano', `Plano "${p.nome}" aplicado a "${e.nome}"`, e.nome);
+  notify(`✅ Plano "${p.nome}" aplicado a "${e.nome}"!`, 'success');
+  renderEmpresas();
+  renderDashboard();
+  renderPlanos();
+}
+
+/* ── UPDATES ── */
+function renderUpdates() {
+  const tbody = document.getElementById('updates-history');
+  if (!tbody) return;
+  const updates = G.updates;
+  if (updates.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--txt3);padding:20px">Nenhum update registrado</td></tr>';
+    return;
+  }
+  tbody.innerHTML = updates.map(u => {
+    const e = G.empresas.find(x => x.id === u.empresa);
+    const ts = new Date(u.ts).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' });
+    return `<tr>
+      <td style="font-size:12px;color:var(--txt3)">${ts}</td>
+      <td><span class="badge badge-pri">${u.tipo}</span></td>
+      <td>${u.empresa === 'global' ? '🌐 Todas' : (e?.nome || u.empresa)}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px">${u.versao||'—'}</td>
+      <td style="font-size:12px;color:var(--txt2)">${u.notas||'—'}</td>
+      <td><span class="badge badge-green">✓ Enviado</span></td>
+    </tr>`;
+  }).join('');
+
+  // Popular select da aba updates
+  const sel = document.getElementById('upd-empresa-sel');
+  if (sel) sel.innerHTML = G.empresas.map(e => `<option value="${e.id}">${e.nome}</option>`).join('');
+}
+
+function enviarUpdateGlobal() {
+  const versao = document.getElementById('upd-versao-global').value.trim();
+  const notas  = document.getElementById('upd-notas-global').value.trim();
+  if (!versao) { notify('Informe a versão.', 'error'); return; }
+
+  confirmAct(
+    'Publicar update global',
+    `Isso marcará todas as ${G.empresas.length} empresa(s) com o update "${versao}". Continuar?`,
+    () => {
+      addUpdate({ tipo:'global', versao, notas, empresa:'global' });
+      addLog('update', `Update global "${versao}" publicado`, 'Global');
+      G.updates = getUpdates();
+      renderUpdates();
+      renderDashboard();
+      notify(`✅ Update "${versao}" publicado para todas as empresas!`, 'success');
+    },
+    'Publicar'
+  );
+}
+
+function enviarUpdateSeletivo() {
+  const empId = document.getElementById('upd-empresa-sel').value;
+  const tipo  = document.getElementById('upd-tipo').value;
+  const notas = document.getElementById('upd-notas-sel').value.trim();
+  const e = G.empresas.find(x => x.id === empId);
+  if (!e) { notify('Selecione uma empresa.', 'error'); return; }
+
+  addUpdate({ tipo, versao:'patch', notas, empresa: empId });
+  addLog('update', `Update "${tipo}" enviado para "${e.nome}": ${notas}`, e.nome);
+  G.updates = getUpdates();
+  renderUpdates();
+  renderDashboard();
+  notify(`✅ Update enviado para "${e.nome}"!`, 'success');
+  document.getElementById('upd-notas-sel').value = '';
+}
+
+function enviarUpdateParaEmpresa(id) {
+  const e = G.empresas.find(x => x.id === id);
+  if (!e) return;
+  // Selecionar essa empresa na aba de updates e navegar
+  go('updates');
+  setTimeout(() => {
+    const sel = document.getElementById('upd-empresa-sel');
+    if (sel) sel.value = id;
+    document.getElementById('upd-notas-sel').focus();
+  }, 100);
+}
+
+/* ── LOGS ── */
+function carregarLogs() {
+  G.logs = getLogs();
+  const el = document.getElementById('logs-list');
+  if (!el) return;
+  if (G.logs.length === 0) {
+    el.innerHTML = '<div style="color:var(--txt3);text-align:center;padding:20px">Sem logs</div>';
+    return;
+  }
+  const dotMap = { criada:'green', bloqueada:'red', desbloqueada:'green', update:'', excluida:'red', plano:'', editada:'' };
+  el.innerHTML = G.logs.map(l => {
+    const dot = dotMap[l.acao] || '';
+    const ts = new Date(l.ts).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    return `<div class="feed-item">
+      <div class="feed-dot ${dot}"></div>
+      <div style="flex:1">
+        <div style="font-size:13px;color:var(--txt)">${l.detalhe}</div>
+        <div class="feed-time">${ts} · ${l.empresa} · ${l.user}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ── CONFIG ── */
+async function alterarSenha() {
+  const nova = document.getElementById('cfg-senha-nova').value;
+  const conf = document.getElementById('cfg-senha-conf').value;
+  if (!nova || nova.length < 6) { notify('Senha muito curta (min. 6 caracteres).', 'error'); return; }
+  if (nova !== conf) { notify('Senhas não coincidem.', 'error'); return; }
+  try {
+    setLoad(true);
+    const { error } = await db.auth.updateUser({ password: nova });
+    setLoad(false);
+    if (error) throw error;
+    notify('✅ Senha alterada com sucesso!', 'success');
+    document.getElementById('cfg-senha-nova').value = '';
+    document.getElementById('cfg-senha-conf').value = '';
+  } catch(e) {
+    setLoad(false);
+    notify('Erro ao alterar senha: ' + (e.message || ''), 'error');
+  }
+}
+
+/* ── HELPERS ── */
+function populateSelects() {
+  const sel1 = document.getElementById('upd-empresa-sel');
+  if (sel1) sel1.innerHTML = G.empresas.map(e => `<option value="${e.id}">${e.nome}</option>`).join('');
+  const sel2 = document.getElementById('assoc-empresa-sel');
+  if (sel2) sel2.innerHTML = G.empresas.map(e => `<option value="${e.id}">${e.nome}</option>`).join('');
+  const sel3 = document.getElementById('assoc-plano-sel');
+  if (sel3) sel3.innerHTML = G.planos.map(p => `<option value="${p.id}">${p.nome} — R$ ${p.preco}/mês</option>`).join('');
+}
+
+function openModal(id) {
+  const m = document.getElementById(id);
+  if (m) { m.classList.add('open'); }
+}
+function closeModal(id) {
+  const m = document.getElementById(id);
+  if (m) m.classList.remove('open');
+}
+
+function confirmAct(titulo, msg, fn, btnLabel = 'Confirmar') {
+  _confirmFn = fn;
+  document.getElementById('confirm-title').textContent = titulo;
+  document.getElementById('confirm-msg').textContent = msg;
+  document.getElementById('confirm-ok-btn').textContent = btnLabel;
+  document.getElementById('confirm-overlay').classList.add('show');
+}
+function closeConfirm() {
+  document.getElementById('confirm-overlay').classList.remove('show');
+  _confirmFn = null;
+}
+function runConfirm() {
+  closeConfirm();
+  if (_confirmFn) _confirmFn();
+}
+
+function setLoad(show) {
+  document.getElementById('loading').classList.toggle('show', show);
+}
+
+let _notifTimer = {};
+function notify(msg, type = 'info') {
+  const stack = document.getElementById('notif-stack');
+  const id = 'n_' + Date.now();
+  const icons = { success:'ti-check', error:'ti-alert-triangle', info:'ti-info-circle', warn:'ti-alert-circle' };
+  const colors = { success:'var(--success)', error:'var(--danger)', info:'var(--pri)', warn:'var(--gold)' };
+  const div = document.createElement('div');
+  div.id = id;
+  div.className = `notif notif-${type}`;
+  div.innerHTML = `<i class="ti ${icons[type]||'ti-info-circle'}" style="color:${colors[type]||'var(--pri)'};font-size:16px"></i>${msg}`;
+  stack.appendChild(div);
+  requestAnimationFrame(() => div.classList.add('show'));
+  _notifTimer[id] = setTimeout(() => {
+    div.classList.remove('show');
+    setTimeout(() => div.remove(), 400);
+  }, 3500);
+}
+
+function gerarSenha() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#!';
+  return Array.from({ length: 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+}
+
+function stringToColor(str) {
+  const colors = [
+    '#5B47E0','#7C3AED','#1D4ED8','#059669','#D97706',
+    '#DC2626','#0E7490','#7C2D12','#1E40AF','#065F46',
+  ];
+  let hash = 0;
+  for (let i = 0; i < (str||'').length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  return colors[Math.abs(hash) % colors.length];
+}
+
+// Fechar modal ao clicar fora
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+});
+
+// Inicializar — verificar se já está logado
+(async () => {
+  const { data: { session } } = await db.auth.getSession();
+  if (session?.user) {
+    const { data: perfil } = await db.from('usuarios').select('*').eq('email', session.user.email).single();
+    if (perfil?.role === 'admin') {
+      G.user = session.user;
+      G.perfil = perfil;
+      iniciarApp();
+      return;
+    }
+  }
+  // Mostrar login
+  document.getElementById('login-screen').style.display = 'flex';
+})();
+</script>
+</body>
+</html>
