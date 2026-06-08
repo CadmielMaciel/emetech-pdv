@@ -6563,7 +6563,7 @@ function pdfBase({ titulo, numero, tipo, conteudo, assinatura, wmSrc, wmOp }) {
   position:fixed;bottom:24px;right:24px;background:rgba(255,255,255,.1);
   border:1.5px solid rgba(255,255,255,.2);border-radius:10px;
   color:rgba(255,255,255,.6);padding:8px 16px;font-size:12px;font-weight:600;
-  cursor:pointer;display:flex;align-items:center;gap:7px;transition:all .2s;
+  cursor:pointer;display:none;align-items:center;gap:7px;transition:all .2s;
   font-family:'DM Sans',sans-serif;backdrop-filter:blur(8px);
 }
 .nf-manage-btn:hover { background:rgba(255,255,255,.18);color:#fff; }
@@ -7576,6 +7576,111 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
   font-family: 'DM Sans', sans-serif; outline: none;
 }
 .os-search-input:focus { border-color: var(--pri); }
+
+/* ══════════════════════════════════════════════════
+   DESKTOP OVERRIDE — garantir layout correto ≥ 769px
+   Nenhum elemento mobile aparece no desktop
+   ══════════════════════════════════════════════════ */
+@media (min-width: 769px) {
+
+  /* ── Esconder todos os elementos exclusivos mobile ── */
+  .pdv-mobile-tabs,
+  .os-mobile-tabs,
+  .os-fab,
+  .pdv-scan-fab,
+  #quick-stock-fab,
+  #hamburger-btn,
+  #sidebar-overlay,
+  #os-mobile-list,
+  #os-mobile-busca,
+  .nf-manage-btn,
+  .pdv-add-toast,
+  .os-filter-bar { display: none !important; }
+
+  /* ── Restaurar layout PDV desktop ── */
+  .pdv-wrap {
+    flex-direction: row !important;
+    height: calc(100vh - var(--th) - 36px) !important;
+    overflow: visible !important;
+  }
+  .pdv-left {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    overflow: visible !important;
+  }
+  .pdv-tb {
+    flex-direction: row !important;
+    gap: 8px !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border-bottom: none !important;
+  }
+  .pg {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)) !important;
+    gap: 8px !important;
+    padding: 0 !important;
+  }
+  .pc {
+    flex-direction: column !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 10px 8px !important;
+    border-radius: 10px !important;
+    align-items: center !important;
+    text-align: center !important;
+  }
+  .cart { display: flex !important; }
+
+  /* ── Restaurar layout OS desktop ── */
+  .os-grid { display: grid !important; }
+  #page-os.active { padding: 18px !important; }
+  #modal-os-det .modal {
+    max-width: 680px !important;
+    width: auto !important;
+    margin: 16px !important;
+    border-radius: 16px !important;
+    max-height: 92vh !important;
+    padding: 28px !important;
+    overflow: auto !important;
+  }
+  #modal-os-det.modal-overlay {
+    align-items: center !important;
+    padding: 16px !important;
+  }
+
+  /* ── Restaurar sidebar desktop ── */
+  .sidebar {
+    position: relative !important;
+    left: 0 !important;
+    box-shadow: none !important;
+    transition: width .25s !important;
+  }
+  .main { margin-left: 0 !important; }
+
+  /* ── Restaurar grid de stats ── */
+  .sg { grid-template-columns: repeat(4, 1fr) !important; }
+
+  /* ── Restaurar modais desktop ── */
+  .modal-overlay { align-items: center !important; padding: 16px !important; }
+  .modal {
+    max-width: var(--modal-max, 560px) !important;
+    width: auto !important;
+    margin: 16px !important;
+    border-radius: 16px !important;
+    max-height: 92vh !important;
+  }
+
+  /* ── Restaurar inputs desktop (sem font-size:16px forçado) ── */
+  input, select, textarea { font-size: 13px !important; }
+
+  /* ── Slots preview em 3 colunas no desktop ── */
+  #slots-preview-grid { grid-template-columns: repeat(3, 1fr) !important; }
+
+  /* ── Tabela sem scroll forçado no desktop ── */
+  table { min-width: 0 !important; }
+}
 </style>
 </head>
 <body>
@@ -9612,11 +9717,21 @@ function initOSMobile() {
 /* Inicializar ao navegar para OS */
 window.addEventListener('resize', () => {
   if (window.innerWidth > 768) {
-    // Voltar ao layout desktop
+    // Desktop: esconder tudo mobile, mostrar layout normal
     const lista = document.getElementById('os-mobile-list');
     const busca = document.getElementById('os-mobile-busca');
     if (lista) lista.style.display = 'none';
     if (busca) busca.style.display = 'none';
+    // Restaurar os-grid
+    const osGrid = document.querySelector('.os-grid');
+    if (osGrid) osGrid.style.display = '';
+    // Restaurar pdv layout
+    const pdvLeft = document.querySelector('.pdv-left');
+    const pdvCart = document.querySelector('.cart');
+    if (pdvLeft) pdvLeft.style.display = '';
+    if (pdvCart) pdvCart.style.display = '';
+    // Fechar drawer sidebar se aberto
+    closeSidebarMobile();
   } else {
     initOSMobile();
   }
