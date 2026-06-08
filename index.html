@@ -832,6 +832,41 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
         </div>
       </div>
 
+
+      <!-- ABAS MOBILE DA OS -->
+      <div class="os-mobile-tabs" id="os-mobile-tabs">
+        <button class="os-mtab active" id="os-mtab-lista" onclick="osMobileTab('lista')">
+          <i class="ti ti-list"></i>Lista
+        </button>
+        <button class="os-mtab" id="os-mtab-nova" onclick="osMobileAbrirNova()">
+          <i class="ti ti-file-plus"></i>Nova OS
+        </button>
+        <button class="os-mtab" id="os-mtab-busca" onclick="osMobileTab('busca')">
+          <i class="ti ti-search"></i>Buscar
+        </button>
+        <button class="os-mtab" id="os-mtab-minha" onclick="osMobileTab('minha')">
+          <i class="ti ti-user-check"></i>Minhas
+        </button>
+      </div>
+      <!-- Lista mobile de OS -->
+      <div id="os-mobile-list" style="display:none">
+        <div class="os-filter-bar">
+          <button class="os-filter-chip active" onclick="osFiltraMobile('todos',this)">Todos</button>
+          <button class="os-filter-chip" onclick="osFiltraMobile('Aguardando',this)">⏳ Aguardando</button>
+          <button class="os-filter-chip" onclick="osFiltraMobile('Em Análise',this)">🔍 Em Análise</button>
+          <button class="os-filter-chip" onclick="osFiltraMobile('Em Reparo',this)">🔧 Em Reparo</button>
+          <button class="os-filter-chip" onclick="osFiltraMobile('Pronto',this)">✅ Pronto</button>
+        </div>
+        <div id="os-cards-mobile"></div>
+      </div>
+      <!-- Busca mobile -->
+      <div id="os-mobile-busca" style="display:none">
+        <div class="os-search-mobile">
+          <input class="os-search-input" id="os-search-m" placeholder="Buscar cliente, aparelho, OS..." oninput="renderOSMobile()">
+        </div>
+        <div id="os-cards-busca"></div>
+      </div>
+
       <!-- HISTÓRICO OS -->
       <div class="page" id="page-os-hist">
         <div class="filter-bar">
@@ -2634,7 +2669,7 @@ function go(page){
   const R={
     dashboard:renderDashboard,
     pdv:()=>{ setTimeout(initPDVMobile, 80);renderPDVGrid();popSelects();checkCaixaStatus();},
-    orcamentos:()=>{renderOrcamentos();popSelects();popProdSel();},
+    orcamentos:()=>{ setTimeout(initOSMobile, 80);renderOrcamentos();popSelects();popProdSel();},
     devolucoes:renderDevolucoes,
     os:()=>{renderOSList();popSelects();popTecSel();},
     'os-hist':()=>{popOSFiltros();renderOSHist();},
@@ -3499,6 +3534,7 @@ function renderOSList(q=''){
       <span style="font-weight:700;color:var(--pri)">${o.total>0?fmt(o.total):'—'}</span>
     </div>
   </div>`).join('');
+  renderOSMobile();
 }
 
 function detOS(id){
@@ -3514,7 +3550,108 @@ function detOS(id){
       <div class="tl-content"><div class="tl-lbl">${s}</div>${ent?`<div class="tl-time">${fmtDT(ent.data)}</div>`:''}</div>
     </div>`;
   }).join('');
-  document.getElementById('os-det-content').innerHTML=`
+  // Detectar mobile
+  const isMobile = window.innerWidth <= 768;
+
+  if (isMobile) {
+    // Layout mobile — header sticky + body scroll + footer sticky
+    const steps=['Aguardando','Em Análise','Em Reparo','Pronto'];
+    const ci=steps.indexOf(o.status);
+    const tlH = steps.map((s,i)=>{
+      const done=i<ci, cur=s===o.status;
+      return `<div class="tl-step-h ${done?'done':''} ${cur?'cur':''}">
+        <div class="tl-dot-h"><i class="ti ti-${done?'check':cur?'loader':'circle'}"></i></div>
+        <div class="tl-lbl-h">${s}</div>
+      </div>`;
+    }).join('');
+
+    document.getElementById('os-det-content').innerHTML = `
+      <!-- Header fixo -->
+      <div class="os-det-header">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <div style="flex:1">
+            <div style="font-size:12px;color:var(--txt3);font-family:'DM Mono',monospace">${o.numero}</div>
+            <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:17px;color:var(--txt)">${o.aparelho}</div>
+            <div style="font-size:12.5px;color:var(--txt2);margin-top:1px">
+              <i class="ti ti-user" style="font-size:12px"></i> ${o.cliente_nome}
+              ${o.tecnico_nome?` · <i class="ti ti-badge" style="font-size:12px"></i> ${o.tecnico_nome}`:''}
+            </div>
+          </div>
+          <span class="tag ${OC[o.status]}" style="font-size:12px;padding:5px 10px">${o.status}</span>
+        </div>
+        <!-- Timeline horizontal -->
+        <div class="tl-mobile">${tlH}</div>
+      </div>
+
+      <!-- Body scrollável -->
+      <div class="os-det-body">
+
+        <!-- Ações rápidas -->
+        <div class="os-quick-actions" style="margin-bottom:16px">
+          ${next?`<div class="os-qa-btn pri" onclick="advOS('${o.id}','${next}');closeModal('modal-os-det')">
+            <i class="ti ti-arrow-right"></i>
+            <span>Avançar: ${next}</span>
+          </div>`:'<div></div>'}
+          <div class="os-qa-btn wpp" onclick="abrirWppOS('${o.id}')">
+            <i class="ti ti-brand-whatsapp"></i>
+            <span>WhatsApp</span>
+          </div>
+          <div class="os-qa-btn warn" onclick="imprimirOS('${o.id}')">
+            <i class="ti ti-printer"></i>
+            <span>Imprimir</span>
+          </div>
+          <div class="os-qa-btn" onclick="editarOSMobile('${o.id}')">
+            <i class="ti ti-edit"></i>
+            <span>Editar</span>
+          </div>
+        </div>
+
+        <!-- Valor e garantia -->
+        <div style="background:var(--pri-light);border-radius:12px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--pri);text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px">Total OS</div>
+            <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:var(--pri)">${fmt(o.total||0)}</div>
+          </div>
+          ${o.garantia_dias?`<div style="text-align:right">
+            <div style="font-size:11px;color:var(--pri);font-weight:700;margin-bottom:2px">Garantia</div>
+            <div style="font-size:16px;font-weight:700;color:var(--txt)">${o.garantia_dias} dias</div>
+          </div>`:''}
+        </div>
+
+        <!-- Dados da OS -->
+        <div style="display:flex;flex-direction:column;gap:10px">
+          ${[
+            ['Aparelho',   o.aparelho,   'ti-device-mobile'],
+            ['IMEI/Série', o.imei,       'ti-fingerprint'],
+            ['Defeito',    o.defeito,    'ti-alert-triangle'],
+            ['Diagnóstico',o.diagnostico,'ti-stethoscope'],
+            ['Prazo',      o.prazo_entrega ? new Date(o.prazo_entrega).toLocaleDateString('pt-BR') : null, 'ti-calendar'],
+            ['Obs.',       o.observacoes, 'ti-notes'],
+          ].filter(r=>r[1]).map(r=>`
+            <div style="background:var(--surface);border-radius:10px;padding:12px 14px">
+              <div style="font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px">
+                <i class="ti ${r[2]}" style="font-size:11px"></i> ${r[0]}
+              </div>
+              <div style="font-size:13.5px;color:var(--txt);line-height:1.4">${r[1]}</div>
+            </div>
+          `).join('')}
+        </div>
+
+        <!-- Fotos se houver -->
+        ${(o.fotos||[]).length>0?`
+        <div style="margin-top:14px">
+          <div style="font-size:11px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Fotos</div>
+          <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px">
+            ${(o.fotos||[]).map(f=>`<img src="${f}" style="width:80px;height:80px;border-radius:10px;object-fit:cover;flex-shrink:0">`).join('')}
+          </div>
+        </div>`:''}
+
+        <div style="height:16px"></div>
+      </div>`;
+
+  } else {
+    // Layout desktop original
+    document.getElementById('os-det-content').innerHTML=`
     <div class="modal-title"><i class="ti ti-tools"></i><div><div>${o.numero}</div><div style="font-size:12px;font-weight:400;color:var(--txt3)">${o.aparelho}</div></div></div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
       <span class="tag ${OC[o.status]}">${o.status}</span>
@@ -3528,6 +3665,8 @@ function detOS(id){
       </div>
       <div><div style="font-size:10.5px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Timeline</div><div class="tl">${tl}</div></div>
     </div>`;
+  }
+
   const footer=document.getElementById('os-det-footer');
   footer.innerHTML='';
   const cb=document.createElement('button');cb.className='btn btn-out btn-sm';cb.textContent='Fechar';cb.onclick=()=>closeModal('modal-os-det');footer.appendChild(cb);
@@ -7213,6 +7352,230 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
 .wpp-api-ok { background: rgba(16,185,129,.1); color: var(--success); border: 1px solid rgba(16,185,129,.3); }
 .wpp-api-err { background: rgba(239,68,68,.1); color: var(--danger); border: 1px solid rgba(239,68,68,.3); }
 .wpp-api-off { background: var(--surface); color: var(--txt3); border: 1px solid var(--border); }
+
+/* ══════════════════════════════════════════════════
+   OS MOBILE — Layout otimizado para celular
+   ══════════════════════════════════════════════════ */
+
+/* Barra de abas inferior para OS (mobile) */
+.os-mobile-tabs {
+  display: none;
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--bg2); border-top: 1px solid var(--border);
+  z-index: 400; height: 62px;
+  box-shadow: 0 -4px 20px rgba(0,0,0,.08);
+}
+.os-mtab {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 2px;
+  padding: 8px 4px; border: none; background: none;
+  cursor: pointer; color: var(--txt3); font-size: 10px;
+  font-weight: 600; transition: color .15s;
+  font-family: 'DM Sans', sans-serif; position: relative;
+}
+.os-mtab i { font-size: 21px; }
+.os-mtab.active { color: var(--pri); }
+
+/* Botão flutuante — Nova OS (mobile) */
+.os-fab {
+  display: none;
+  position: fixed; bottom: 76px; right: 18px; z-index: 401;
+  width: 54px; height: 54px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--pri), var(--pri2));
+  border: none; cursor: pointer; color: #fff; font-size: 22px;
+  box-shadow: 0 4px 18px rgba(91,71,224,.4);
+  align-items: center; justify-content: center;
+  transition: transform .15s;
+}
+.os-fab:active { transform: scale(.91); }
+
+/* Cards de OS na lista mobile */
+.os-card-mobile {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 14px; padding: 14px 16px;
+  transition: border-color .15s; cursor: pointer;
+  position: relative; overflow: hidden;
+}
+.os-card-mobile:active { background: var(--surface); }
+.os-card-mobile::before {
+  content: ''; position: absolute;
+  left: 0; top: 0; bottom: 0; width: 3px;
+  border-radius: 3px 0 0 3px;
+}
+.os-card-mobile.status-aguardando::before { background: var(--txt3); }
+.os-card-mobile.status-analise::before   { background: var(--info,#3B82F6); }
+.os-card-mobile.status-reparo::before    { background: var(--warn); }
+.os-card-mobile.status-pronto::before    { background: var(--success); }
+.os-card-mobile.status-entregue::before  { background: var(--border); }
+
+.os-card-num { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--txt3); }
+.os-card-aparelho { font-weight: 700; font-size: 15px; color: var(--txt); margin: 2px 0; }
+.os-card-cliente { font-size: 12.5px; color: var(--txt2); }
+.os-card-row { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
+
+/* Status pill */
+.os-status-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 9px; border-radius: 99px; font-size: 11px; font-weight: 700;
+}
+
+/* Filtros mobile */
+.os-filter-bar {
+  display: flex; gap: 6px; overflow-x: auto; padding: 0 0 8px;
+  flex-shrink: 0;
+}
+.os-filter-bar::-webkit-scrollbar { height: 0; }
+.os-filter-chip {
+  white-space: nowrap; padding: 6px 12px;
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: 99px; font-size: 12px; font-weight: 600;
+  color: var(--txt3); cursor: pointer; transition: all .15s; flex-shrink: 0;
+}
+.os-filter-chip.active {
+  background: var(--pri-light); border-color: var(--pri); color: var(--pri);
+}
+
+/* Modal de OS detail otimizado para mobile */
+@media (max-width: 768px) {
+  /* Esconder layout desktop, mostrar mobile */
+  .os-grid { display: none !important; }
+  .os-mobile-tabs { display: flex; }
+  .os-fab { display: flex; }
+
+  /* Page OS vira lista de cards */
+  #page-os.active {
+    padding: 12px 12px 80px !important;
+    display: flex !important;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  /* Painel lista mobile */
+  #os-mobile-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  /* Modal de detalhe OS — fullscreen */
+  #modal-os-det .modal {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    border-radius: 20px 20px 0 0 !important;
+    max-height: 94vh !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+  #modal-os-det.modal-overlay {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+
+  /* Formulário nova OS — stack vertical */
+  .os-form-mobile .g2,
+  .os-form-mobile .g3 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Botões de ação OS — maiores para touch */
+  #os-det-footer .btn {
+    flex: 1;
+    justify-content: center;
+    min-height: 46px;
+    font-size: 14px;
+  }
+  #os-det-footer {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    background: var(--bg2);
+  }
+}
+
+/* Modal OS detail interno — header + scroll + footer fixo */
+.os-det-header {
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+  position: sticky; top: 0; z-index: 10;
+  flex-shrink: 0;
+}
+.os-det-body {
+  flex: 1; overflow-y: auto;
+  padding: 16px 18px;
+  -webkit-overflow-scrolling: touch;
+}
+.os-det-footer-mobile {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  background: var(--bg2);
+  display: flex; gap: 8px; flex-wrap: wrap;
+  position: sticky; bottom: 0; z-index: 10;
+  flex-shrink: 0;
+}
+
+/* Ações rápidas na OS (mobile) */
+.os-quick-actions {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 8px; margin-bottom: 16px;
+}
+.os-qa-btn {
+  padding: 14px 10px; border-radius: 12px;
+  border: 1.5px solid var(--border); background: var(--surface);
+  cursor: pointer; text-align: center; transition: all .15s;
+  font-family: 'DM Sans', sans-serif;
+}
+.os-qa-btn:active { transform: scale(.96); }
+.os-qa-btn i { font-size: 22px; display: block; margin-bottom: 5px; }
+.os-qa-btn span { font-size: 12px; font-weight: 600; color: var(--txt2); }
+.os-qa-btn.pri { border-color: var(--pri); background: var(--pri-light); }
+.os-qa-btn.pri i, .os-qa-btn.pri span { color: var(--pri); }
+.os-qa-btn.success { border-color: var(--success); background: rgba(16,185,129,.08); }
+.os-qa-btn.success i, .os-qa-btn.success span { color: var(--success); }
+.os-qa-btn.warn { border-color: var(--warn); background: rgba(245,158,11,.08); }
+.os-qa-btn.warn i, .os-qa-btn.warn span { color: var(--warn); }
+.os-qa-btn.wpp { border-color: #25D366; background: rgba(37,211,102,.08); }
+.os-qa-btn.wpp i, .os-qa-btn.wpp span { color: #25D366; }
+
+/* Timeline mobile — compacta */
+.tl-mobile { display: flex; gap: 0; overflow-x: auto; padding: 4px 0 8px; }
+.tl-mobile::-webkit-scrollbar { height: 0; }
+.tl-step-h {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 6px; flex-shrink: 0; min-width: 80px; position: relative;
+}
+.tl-step-h:not(:last-child)::after {
+  content: ''; position: absolute;
+  top: 14px; left: 50%; right: -50%;
+  height: 2px; background: var(--border);
+  z-index: 0;
+}
+.tl-step-h.done::after { background: var(--success); }
+.tl-dot-h {
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 2px solid var(--border); background: var(--bg2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; z-index: 1; position: relative;
+}
+.tl-step-h.done .tl-dot-h { border-color: var(--success); background: var(--success); color: #fff; }
+.tl-step-h.cur .tl-dot-h  { border-color: var(--pri); background: var(--pri); color: #fff; }
+.tl-lbl-h { font-size: 10px; font-weight: 600; color: var(--txt3); text-align: center; }
+.tl-step-h.done .tl-lbl-h { color: var(--success); }
+.tl-step-h.cur .tl-lbl-h  { color: var(--pri); }
+
+/* Busca OS mobile */
+.os-search-mobile {
+  display: flex; gap: 8px; margin-bottom: 12px;
+}
+.os-search-input {
+  flex: 1; padding: 10px 14px;
+  background: var(--bg2); border: 1.5px solid var(--border);
+  border-radius: 12px; font-size: 14px; color: var(--txt);
+  font-family: 'DM Sans', sans-serif; outline: none;
+}
+.os-search-input:focus { border-color: var(--pri); }
 </style>
 </head>
 <body>
@@ -9073,6 +9436,190 @@ const _origRenderAparencia = typeof renderAparencia === 'function' ? renderApare
 /* Executar ao carregar a página de aparência */
 document.addEventListener('DOMContentLoaded', () => {
   setTimeout(carregarConfigWpp, 500);
+});
+
+
+/* ══════════════════════════════════════════════════
+   OS MOBILE — Lista e navegação
+   ══════════════════════════════════════════════════ */
+
+let _osMobileFiltro = 'todos';
+let _osMobileAba = 'lista';
+
+function osMobileTab(aba) {
+  if (window.innerWidth > 768) return;
+  _osMobileAba = aba;
+
+  // Painéis
+  const lista  = document.getElementById('os-mobile-list');
+  const busca  = document.getElementById('os-mobile-busca');
+
+  if (lista) lista.style.display = 'none';
+  if (busca) busca.style.display = 'none';
+
+  if (aba === 'lista') {
+    if (lista) lista.style.display = '';
+    renderOSMobile();
+  } else if (aba === 'busca') {
+    if (busca) busca.style.display = '';
+    setTimeout(() => document.getElementById('os-search-m')?.focus(), 100);
+  } else if (aba === 'minha') {
+    if (lista) lista.style.display = '';
+    // Filtrar só as OS do operador atual
+    _osMobileFiltro = '__minha';
+    renderOSMobile();
+  }
+
+  // Atualizar tabs ativas
+  document.querySelectorAll('.os-mtab').forEach(t => t.classList.remove('active'));
+  const tab = document.getElementById('os-mtab-' + aba);
+  if (tab) tab.classList.add('active');
+}
+
+function osMobileAbrirNova() {
+  if (window.innerWidth > 768) return;
+  // Rolar para o formulário de nova OS no desktop, ou abrir modal no mobile
+  openModal('modal-nova-os-mobile');
+}
+
+function osFiltraMobile(status, btn) {
+  _osMobileFiltro = status;
+  document.querySelectorAll('.os-filter-chip').forEach(c => c.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderOSMobile();
+}
+
+function renderOSMobile() {
+  if (window.innerWidth > 768) return;
+
+  const search = (document.getElementById('os-search-m')?.value || '').toLowerCase();
+  const isSearch = _osMobileAba === 'busca';
+
+  let lista = G.os || [];
+
+  // Filtro de status
+  if (_osMobileFiltro === '__minha') {
+    lista = lista.filter(o => o.tecnico_id === G.profile?.id || o.tecnico_nome === G.profile?.nome);
+  } else if (_osMobileFiltro !== 'todos') {
+    lista = lista.filter(o => o.status === _osMobileFiltro);
+  }
+
+  // Filtro de busca
+  if (search) {
+    lista = lista.filter(o =>
+      (o.cliente_nome||'').toLowerCase().includes(search) ||
+      (o.aparelho||'').toLowerCase().includes(search) ||
+      (o.numero||'').toLowerCase().includes(search) ||
+      (o.defeito||'').toLowerCase().includes(search)
+    );
+  }
+
+  // Ordenar: mais recentes primeiro
+  lista = [...lista].sort((a,b) => new Date(b.created_at||0) - new Date(a.created_at||0));
+
+  const containerId = isSearch ? 'os-cards-busca' : 'os-cards-mobile';
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const statusClass = {
+    'Aguardando': 'status-aguardando',
+    'Em Análise': 'status-analise',
+    'Em Reparo':  'status-reparo',
+    'Pronto':     'status-pronto',
+    'Entregue':   'status-entregue',
+  };
+  const statusCor = {
+    'Aguardando': 'tag-gry',
+    'Em Análise': 'tag-blu',
+    'Em Reparo':  'tag-amb',
+    'Pronto':     'tag-grn',
+    'Entregue':   'tag-gry',
+  };
+
+  if (lista.length === 0) {
+    container.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--txt3)">
+      <i class="ti ti-file-off" style="font-size:40px;display:block;margin-bottom:10px;opacity:.4"></i>
+      ${search ? 'Nenhuma OS encontrada' : 'Nenhuma OS neste filtro'}
+    </div>`;
+    return;
+  }
+
+  container.innerHTML = lista.map(o => {
+    const sc = statusClass[o.status] || '';
+    const stag = statusCor[o.status] || 'tag-gry';
+    const prazo = o.prazo_entrega
+      ? new Date(o.prazo_entrega).toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit'})
+      : '';
+    const vencido = o.prazo_entrega && new Date(o.prazo_entrega) < new Date() && o.status !== 'Entregue';
+
+    return `<div class="os-card-mobile ${sc}" onclick="detOS('${o.id}');openModal('modal-os-det')">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+        <div style="flex:1;min-width:0">
+          <div class="os-card-num">${o.numero} ${o.tecnico_nome?'· '+o.tecnico_nome:''}</div>
+          <div class="os-card-aparelho">${o.aparelho}</div>
+          <div class="os-card-cliente">
+            <i class="ti ti-user" style="font-size:11px"></i> ${o.cliente_nome}
+          </div>
+        </div>
+        <span class="tag ${stag}" style="flex-shrink:0;font-size:10.5px">${o.status}</span>
+      </div>
+      <div class="os-card-row">
+        <div style="font-size:12.5px;color:var(--txt2)">
+          <i class="ti ti-tools" style="font-size:11px"></i>
+          ${(o.defeito||'').slice(0,35)}${(o.defeito||'').length>35?'...':''}
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          ${prazo ? `<span style="font-size:11px;color:${vencido?'var(--danger)':'var(--txt3)'}">
+            <i class="ti ti-calendar" style="font-size:11px"></i> ${prazo}${vencido?' ⚠️':''}
+          </span>` : ''}
+          ${o.total ? `<span style="font-size:12.5px;font-weight:700;color:var(--pri)">${fmt(o.total)}</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* Modal de Nova OS para mobile */
+function editarOSMobile(osId) {
+  const o = G.os.find(x => x.id === osId);
+  if (!o) return;
+  // Preencher campos do formulário e navegar para ele
+  closeModal('modal-os-det');
+  setTimeout(() => {
+    // Em mobile, rolar para o topo onde fica o formulário
+    if (window.innerWidth > 768) {
+      document.getElementById('os-ap')?.scrollIntoView({ behavior:'smooth' });
+    } else {
+      notify('Use a aba "Nova OS" para editar.', 'info');
+    }
+  }, 200);
+}
+
+/* Inicializar OS mobile ao entrar na página */
+function initOSMobile() {
+  if (window.innerWidth > 768) return;
+  _osMobileAba = 'lista';
+  _osMobileFiltro = 'todos';
+  const lista = document.getElementById('os-mobile-list');
+  const busca = document.getElementById('os-mobile-busca');
+  if (lista) lista.style.display = '';
+  if (busca) busca.style.display = 'none';
+  renderOSMobile();
+  document.querySelectorAll('.os-mtab').forEach(t => t.classList.remove('active'));
+  document.getElementById('os-mtab-lista')?.classList.add('active');
+}
+
+/* Inicializar ao navegar para OS */
+window.addEventListener('resize', () => {
+  if (window.innerWidth > 768) {
+    // Voltar ao layout desktop
+    const lista = document.getElementById('os-mobile-list');
+    const busca = document.getElementById('os-mobile-busca');
+    if (lista) lista.style.display = 'none';
+    if (busca) busca.style.display = 'none';
+  } else {
+    initOSMobile();
+  }
 });
 
 </script>
