@@ -2522,7 +2522,7 @@ const LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 580" 
 
 /* ── SUPABASE CONFIG ─────────────────────────────────── */
 const SURL = 'https://icgfpfwcnhkjglrmnuca.supabase.co';
-const SKEY = 'sb_publishable_wMj9DjSyr_5oblApVRoOqA_47E3022p';
+const SKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljZ2ZwZndjbmhramdscm1udWNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwODA2OTEsImV4cCI6MjA5NTY1NjY5MX0.xDGiGCIlqXaqdWhWo0NoNi_XUdlw5raCogO_Jnc0ezw';
 const { createClient } = supabase;
 const db = createClient(SURL, SKEY);
 
@@ -9165,9 +9165,9 @@ function renderChatWpp(osId) {
       ? `<span class="wpp-tick ${m.lida ? 'lida' : ''}"><i class="ti ti-checks"></i></span>`
       : '';
 
+    const textoHtml = (m.texto || '').split('\n').join('<br>').replace(/\*([^*]+)\*/g,'<strong>$1</strong>');
     msgEl.innerHTML = `
-      <div class="wpp-bubble">${m.texto.replace(/
-/g,'<br>').replace(/\*(.*?)\*/g,'<strong>$1</strong>')}</div>
+      <div class="wpp-bubble">${textoHtml}</div>
       <div class="wpp-msg-meta">
         ${m.direcao === 'bot' ? '<i class="ti ti-robot" style="font-size:10px"></i> Bot · ' : ''}
         ${timeStr} ${tick}
