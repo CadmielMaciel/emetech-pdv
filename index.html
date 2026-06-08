@@ -571,6 +571,30 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
             <button class="btn btn-danger btn-sm" onclick="fecharCaixa()"><i class="ti ti-lock"></i>Fechar Caixa</button>
           </div>
         </div>
+        <!-- ABAS MOBILE DO PDV -->
+        <div class="pdv-mobile-tabs" id="pdv-mobile-tabs">
+          <button class="pdv-mtab active" id="pdv-tab-prod" onclick="pdvMobileTab('prod')">
+            <i class="ti ti-layout-grid"></i>
+            Produtos
+          </button>
+          <button class="pdv-mtab" id="pdv-tab-scan" onclick="pdvMobileScan()">
+            <i class="ti ti-scan"></i>
+            Scanner
+          </button>
+          <button class="pdv-mtab" id="pdv-tab-cart" onclick="pdvMobileTab('cart')">
+            <i class="ti ti-shopping-cart"></i>
+            <span class="pdv-mtab-badge" id="pdv-tab-badge">0</span>
+            Carrinho
+          </button>
+          <button class="pdv-mtab" id="pdv-tab-pay" onclick="pdvMobileTab('pay')">
+            <i class="ti ti-credit-card"></i>
+            Pagar
+          </button>
+        </div>
+
+        <!-- TOAST de adição (mobile) -->
+        <div class="pdv-add-toast" id="pdv-add-toast">✓ Produto adicionado</div>
+
         <div class="pdv-wrap" id="pdv-wrap">
           <div class="pdv-left">
             <div class="pdv-tb">
@@ -1216,6 +1240,57 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
             <div class="card-title"><i class="ti ti-photo" style="color:var(--pri);margin-right:6px"></i>Logos do Sistema</div>
             <button class="btn btn-pri btn-sm" onclick="salvarAparencia()"><i class="ti ti-device-floppy"></i>Salvar Tudo</button>
           </div>
+        
+        <!-- Configuração WhatsApp -->
+        <div class="card" style="margin-top:20px">
+          <div class="card-hdr">
+            <div class="card-title" style="display:flex;align-items:center;gap:8px">
+              <i class="ti ti-brand-whatsapp" style="color:#25D366;font-size:18px"></i>
+              Integração WhatsApp
+            </div>
+            <span class="wpp-api-status wpp-api-off" id="wpp-api-badge">⚪ Desconectado</span>
+          </div>
+          <div style="font-size:12.5px;color:var(--txt2);margin-bottom:14px">
+            Configure a Evolution API para enviar notificações automáticas de OS via WhatsApp.
+          </div>
+          <div class="g2" style="gap:12px;margin-bottom:12px">
+            <div class="fg"><label class="lbl">URL da Evolution API</label>
+              <input type="url" id="wpp-api-url" placeholder="https://evo.seusite.com.br">
+              <div style="font-size:11px;color:var(--txt3);margin-top:3px">Endereço do seu servidor</div>
+            </div>
+            <div class="fg"><label class="lbl">API Key</label>
+              <input type="password" id="wpp-api-key" placeholder="sua-api-key-aqui">
+            </div>
+          </div>
+          <div class="g2" style="gap:12px;margin-bottom:12px">
+            <div class="fg"><label class="lbl">Nome da instância</label>
+              <input type="text" id="wpp-instancia" placeholder="emetech-pdv">
+            </div>
+            <div class="fg"><label class="lbl">Número do bot (com DDI)</label>
+              <input type="text" id="wpp-numero" placeholder="5571999999999">
+            </div>
+          </div>
+          <div class="ms">Templates de mensagem</div>
+          <div class="fg"><label class="lbl">OS Recebida</label>
+            <textarea id="wpp-tpl-recebida" rows="2">Olá {nome}! 📱 Recebemos seu *{aparelho}* na assistência.
+OS nº *{numero}* — Defeito: {defeito} ✅</textarea>
+          </div>
+          <div class="fg"><label class="lbl">OS Pronta</label>
+            <textarea id="wpp-tpl-pronta" rows="2">✅ Olá {nome}! Seu *{aparelho}* está pronto!
+Valor: *{total}* | OS nº {numero} 🎉</textarea>
+          </div>
+          <div class="fg"><label class="lbl">Resposta automática de status</label>
+            <textarea id="wpp-tpl-status" rows="3">Olá {nome}! 🔧 OS nº *{numero}* — {aparelho}
+Status: *{status}*
+{info_extra}
+Dúvidas? Responda esta mensagem. 😊</textarea>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+            <button class="btn btn-pri btn-sm" onclick="salvarConfigWpp()"><i class="ti ti-check"></i> Salvar WhatsApp</button>
+            <button class="btn btn-out btn-sm" onclick="testarConexaoWpp()"><i class="ti ti-wifi"></i> Testar conexão</button>
+            <button class="btn btn-out btn-sm" onclick="abrirWebhookGuia()"><i class="ti ti-info-circle"></i> Como configurar</button>
+          </div>
+        </div>
           <div class="g2" style="gap:20px">
 
             <!-- Logo Login -->
@@ -2250,6 +2325,122 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
   </div>
 </div>
 
+
+<!-- MODAL WHATSAPP DA OS -->
+<div class="modal-overlay" id="modal-wpp-os">
+  <div class="modal" style="max-width:520px;padding:0;overflow:hidden;border-radius:18px">
+    <!-- Header -->
+    <div style="padding:14px 18px;background:linear-gradient(135deg,#0a5c2e,#128C7E);display:flex;align-items:center;gap:12px">
+      <div style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff">
+        <i class="ti ti-brand-whatsapp"></i>
+      </div>
+      <div style="flex:1">
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:#fff" id="wpp-os-cliente-nome">WhatsApp</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.7)" id="wpp-os-info">OS #—</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="wpp-api-status wpp-api-off" id="wpp-modal-status" style="font-size:10px">⚪ API off</span>
+        <button onclick="closeModal('modal-wpp-os')" style="background:none;border:none;color:rgba(255,255,255,.7);font-size:20px;cursor:pointer"><i class="ti ti-x"></i></button>
+      </div>
+    </div>
+
+    <div class="os-wpp-tab" id="wpp-chat-container">
+      <!-- Aviso sem telefone -->
+      <div id="wpp-no-phone" style="display:none" class="wpp-phone-warning">
+        <i class="ti ti-alert-triangle" style="color:var(--warn);font-size:16px;flex-shrink:0"></i>
+        <div>
+          <strong style="color:var(--warn)">Telefone do cliente não cadastrado.</strong>
+          <div style="margin-top:2px">Cadastre o WhatsApp do cliente para enviar mensagens.</div>
+        </div>
+      </div>
+
+      <!-- Config bar -->
+      <div class="wpp-config-bar">
+        <div style="display:flex;align-items:center;gap:6px">
+          <span class="wpp-status-dot" id="wpp-dot"></span>
+          <span id="wpp-phone-display" style="font-family:'DM Mono',monospace;color:var(--txt2)">+55 00 00000-0000</span>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-out btn-xs" onclick="abrirTemplatesWpp()"><i class="ti ti-template"></i> Templates</button>
+          <button class="btn btn-out btn-xs" onclick="atualizarChatWpp()"><i class="ti ti-refresh"></i></button>
+        </div>
+      </div>
+
+      <!-- Templates de acesso rápido -->
+      <div class="wpp-templates" id="wpp-templates-bar">
+        <button class="wpp-tpl-btn" onclick="usarTemplateWpp('recebida')">📱 OS Recebida</button>
+        <button class="wpp-tpl-btn" onclick="usarTemplateWpp('analise')">🔍 Em Análise</button>
+        <button class="wpp-tpl-btn" onclick="usarTemplateWpp('reparo')">🔧 Em Reparo</button>
+        <button class="wpp-tpl-btn" onclick="usarTemplateWpp('pronta')">✅ OS Pronta</button>
+        <button class="wpp-tpl-btn" onclick="usarTemplateWpp('peca')">⏳ Aguard. Peça</button>
+        <button class="wpp-tpl-btn" onclick="usarTemplateWpp('status')">📊 Status atual</button>
+      </div>
+
+      <!-- Área do chat -->
+      <div class="wpp-chat" id="wpp-chat-msgs">
+        <div class="wpp-empty" id="wpp-empty-state">
+          <i class="ti ti-brand-whatsapp"></i>
+          <div class="wpp-empty-txt">Nenhuma mensagem ainda.<br>Use os templates acima para notificar o cliente.</div>
+        </div>
+      </div>
+
+      <!-- Input -->
+      <div class="wpp-input-bar">
+        <textarea class="wpp-input" id="wpp-input-msg" placeholder="Mensagem..." rows="1"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();enviarMsgWpp()}"
+          oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,80)+'px'"></textarea>
+        <button class="wpp-send-btn" id="wpp-send-btn" onclick="enviarMsgWpp()" title="Enviar">
+          <i class="ti ti-send"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal guia do webhook -->
+<div class="modal-overlay" id="modal-webhook-guia">
+  <div class="modal lg">
+    <div class="modal-title"><i class="ti ti-webhook"></i> Configurando o Webhook — Evolution API</div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="alert-box alert-info">
+        <i class="ti ti-info-circle" style="font-size:15px;flex-shrink:0"></i>
+        <div style="font-size:13px">O webhook recebe mensagens do cliente no WhatsApp e responde automaticamente com o status da OS. Funciona 24h, sem precisar que alguém esteja online.</div>
+      </div>
+
+      <div style="font-size:13px;font-weight:700;color:var(--txt);margin-bottom:-6px">1. Configuração no Evolution API</div>
+      <div style="font-size:12.5px;color:var(--txt2)">No painel da sua Evolution API, crie uma instância e configure o webhook:</div>
+      <div class="code-block" style="background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:12px;font-family:'DM Mono',monospace;font-size:12px;color:var(--txt2);overflow-x:auto">Webhook URL: https://emetech-pdv.vercel.app/api/whatsapp
+Eventos: MESSAGES_UPSERT</div>
+
+      <div style="font-size:13px;font-weight:700;color:var(--txt);margin-bottom:-6px">2. Arquivo do webhook (já criado)</div>
+      <div style="font-size:12.5px;color:var(--txt2)">O arquivo <code style="background:var(--surface);padding:1px 5px;border-radius:4px">api/whatsapp.js</code> já está no repositório GitHub. O Vercel detecta automaticamente e cria o endpoint.</div>
+
+      <div style="font-size:13px;font-weight:700;color:var(--txt);margin-bottom:-6px">3. Fluxo de funcionamento</div>
+      <div style="font-size:12.5px;color:var(--txt2);line-height:1.6">
+        📱 Cliente envia "status" no WhatsApp →<br>
+        🔗 Evolution API encaminha para o webhook →<br>
+        💾 Webhook busca a OS no Supabase pelo número →<br>
+        📤 Webhook responde automaticamente com o status →<br>
+        💬 Chat aparece registrado aqui na OS
+      </div>
+
+      <div style="font-size:13px;font-weight:700;color:var(--txt);margin-bottom:-6px">4. Palavras-chave reconhecidas</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12.5px">
+        <div style="padding:8px 10px;background:var(--surface);border-radius:8px"><strong>status, andamento, pronto</strong><br><span style="color:var(--txt3)">→ Responde com status da OS</span></div>
+        <div style="padding:8px 10px;background:var(--surface);border-radius:8px"><strong>cancelar, cancelamento</strong><br><span style="color:var(--txt3)">→ Alerta o técnico responsável</span></div>
+        <div style="padding:8px 10px;background:var(--surface);border-radius:8px"><strong>oi, olá, bom dia, boa tarde</strong><br><span style="color:var(--txt3)">→ Mensagem de boas-vindas</span></div>
+        <div style="padding:8px 10px;background:var(--surface);border-radius:8px"><strong>Qualquer outra mensagem</strong><br><span style="color:var(--txt3)">→ Resposta padrão + status</span></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-out" onclick="closeModal('modal-webhook-guia')">Fechar</button>
+      <a href="https://github.com/CadmielMaciel/emetech-pdv" target="_blank" class="btn btn-pri">
+        <i class="ti ti-brand-github"></i> Ver no GitHub
+      </a>
+    </div>
+  </div>
+</div>
+
 <!-- Confirm -->
 <div class="modal-overlay" id="modal-confirm"><div class="modal sm" style="padding:22px">
   <div style="font-size:16px;font-weight:700;color:var(--txt);margin-bottom:7px" id="conf-title">Confirmar</div>
@@ -2442,7 +2633,7 @@ function go(page){
   document.querySelectorAll('.ni').forEach(el=>{if(el.getAttribute('onclick')?.includes(`'${page}'`))el.classList.add('active');});
   const R={
     dashboard:renderDashboard,
-    pdv:()=>{renderPDVGrid();popSelects();checkCaixaStatus();},
+    pdv:()=>{ setTimeout(initPDVMobile, 80);renderPDVGrid();popSelects();checkCaixaStatus();},
     orcamentos:()=>{renderOrcamentos();popSelects();popProdSel();},
     devolucoes:renderDevolucoes,
     os:()=>{renderOSList();popSelects();popTecSel();},
@@ -3343,6 +3534,13 @@ function detOS(id){
   if(next&&['admin','gerente','tecnico'].includes(G.role)){
     const ab=document.createElement('button');ab.className='btn btn-pri btn-sm';ab.innerHTML=`<i class="ti ti-arrow-right"></i>Avançar: ${next}`;ab.onclick=()=>advOS(id,next);footer.appendChild(ab);
   }
+  // Botão WhatsApp
+  const wbtn=document.createElement('button');
+  wbtn.className='btn btn-sm';
+  wbtn.style.cssText='background:rgba(37,211,102,.1);color:#25D366;border:1.5px solid rgba(37,211,102,.3)';
+  wbtn.innerHTML='<i class="ti ti-brand-whatsapp"></i> WhatsApp';
+  wbtn.onclick=()=>abrirWppOS(id);
+  footer.appendChild(wbtn);
   const pbtn=document.createElement('button');pbtn.className='btn btn-out btn-sm';pbtn.innerHTML='<i class="ti ti-file-text"></i>Gerar PDF';pbtn.onclick=()=>gerarPdfOS(id);footer.appendChild(pbtn);
   openModal('modal-os-det');
 }
@@ -6636,6 +6834,385 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
   border: none; background: transparent; color: var(--txt);
   font-family: 'Syne', sans-serif; min-width: 0; padding: 0 8px;
 }
+
+/* ══════════════════════════════════════════════════
+   PDV MOBILE — Layout vertical, touch-first
+   ══════════════════════════════════════════════════ */
+
+/* ── BARRA DE ABAS MOBILE DO PDV ── */
+.pdv-mobile-tabs {
+  display: none;
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--bg2); border-top: 1px solid var(--border);
+  z-index: 400; padding: 0; height: 62px;
+  box-shadow: 0 -4px 20px rgba(0,0,0,.1);
+}
+.pdv-mtab {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 2px;
+  padding: 8px 4px; border: none; background: none;
+  cursor: pointer; color: var(--txt3); font-size: 10px;
+  font-weight: 600; letter-spacing: .3px; transition: color .15s;
+  font-family: 'DM Sans', sans-serif; position: relative;
+}
+.pdv-mtab i { font-size: 22px; transition: color .15s; }
+.pdv-mtab.active { color: var(--pri); }
+.pdv-mtab.active i { color: var(--pri); }
+/* Badge do carrinho na tab */
+.pdv-mtab-badge {
+  position: absolute; top: 6px; right: calc(50% - 18px);
+  background: var(--pri); color: #fff; font-size: 9px;
+  font-weight: 800; border-radius: 99px; padding: 1px 5px;
+  min-width: 16px; text-align: center; display: none;
+  font-family: 'DM Sans', sans-serif;
+}
+.pdv-mtab-badge.show { display: block; }
+
+/* ── WRAPPER MOBILE ── */
+@media (max-width: 768px) {
+  /* Mostrar tabs mobile, esconder layout desktop */
+  .pdv-mobile-tabs { display: flex; }
+
+  /* PDV wrap vira coluna única */
+  .pdv-wrap {
+    flex-direction: column !important;
+    gap: 0 !important;
+    height: calc(100vh - 110px) !important;
+    overflow: hidden;
+  }
+
+  /* Painel de produtos */
+  .pdv-left {
+    display: none;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+  }
+  .pdv-left.pdv-mobile-show { display: flex !important; }
+
+  /* Campo de busca maior */
+  .pdv-tb {
+    flex-direction: column !important;
+    gap: 6px !important;
+    padding: 8px !important;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .bc-wrap, .ps-wrap {
+    height: 46px !important;
+    border-radius: 12px !important;
+    font-size: 15px !important;
+  }
+  .bc-wrap input, .ps-wrap input {
+    font-size: 15px !important;
+    height: 100% !important;
+  }
+
+  /* Ocultar dica de atalhos de teclado */
+  .pdv-left > div:nth-child(2) { display: none !important; }
+
+  /* Grade de produtos — 2 colunas, botões maiores */
+  .pg {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+    padding: 8px !important;
+    overflow-y: auto !important;
+    flex: 1;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px !important;
+  }
+
+  /* Cards de produto — GRANDES para touch */
+  .pc {
+    flex-direction: column !important;
+    height: auto !important;
+    min-height: 90px !important;
+    padding: 10px 8px !important;
+    border-radius: 14px !important;
+    gap: 4px !important;
+    align-items: center !important;
+    text-align: center;
+    justify-content: center;
+  }
+  .pc-img { width: 36px !important; height: 36px !important; font-size: 16px !important; }
+  .pc-nome { font-size: 11.5px !important; line-height: 1.3 !important; -webkit-line-clamp: 2 !important; }
+  .pc-preco { font-size: 13px !important; font-weight: 800 !important; }
+  .pc-est { font-size: 10px !important; }
+
+  /* Botão de adicionar — toque direto */
+  .pc-add {
+    width: 32px !important; height: 32px !important;
+    border-radius: 8px !important;
+    margin-top: 4px !important;
+    font-size: 16px !important;
+  }
+
+  /* Painel do carrinho mobile */
+  .cart {
+    display: none;
+    flex-direction: column;
+    height: 100%;
+    border: none !important;
+    border-radius: 0 !important;
+    overflow: hidden;
+  }
+  .cart.pdv-mobile-show { display: flex !important; }
+
+  /* Header do carrinho mais compacto */
+  .cart-hdr { padding: 10px 12px !important; flex-shrink: 0; }
+
+  /* Items do carrinho com mais espaço para touch */
+  .cart-items { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .ci { padding: 10px 12px !important; min-height: 56px; }
+  .ci-nome { font-size: 13px !important; }
+  .ci-qty { gap: 2px !important; }
+  .ci-qty button { width: 32px !important; height: 32px !important; font-size: 16px !important; border-radius: 8px !important; }
+
+  /* Footer do carrinho */
+  .cart-footer { padding: 10px 12px !important; flex-shrink: 0; }
+  .cr { padding: 5px 0 !important; }
+
+  /* Botões de pagamento maiores */
+  .pay-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+  .pb { height: 52px !important; font-size: 13px !important; border-radius: 12px !important; }
+
+  /* Botão Finalizar */
+  .btn-fin {
+    height: 56px !important;
+    font-size: 16px !important;
+    border-radius: 14px !important;
+    letter-spacing: .3px;
+  }
+
+  /* Painel de pagamento mobile */
+  #pdv-mobile-pay {
+    display: none;
+    flex-direction: column;
+    height: 100%;
+    padding: 12px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  #pdv-mobile-pay.pdv-mobile-show { display: flex !important; }
+
+  /* Alerta caixa fechado */
+  #caixa-fechado-warn { padding: 12px; }
+  #caixa-aberto-ops { padding: 8px 12px 0; }
+
+  /* Page do PDV sem padding lateral excessivo */
+  #page-pdv.active { padding: 0 !important; }
+
+  /* Quick add — feedback visual ao adicionar */
+  .pc:active { transform: scale(0.95); }
+}
+
+/* ── SCANNER FAB no PDV (mobile) ── */
+.pdv-scan-fab {
+  display: none;
+  position: fixed; bottom: 76px; right: 16px;
+  width: 52px; height: 52px; border-radius: 50%;
+  background: var(--pri); border: none; color: #fff;
+  font-size: 22px; cursor: pointer; z-index: 401;
+  align-items: center; justify-content: center;
+  box-shadow: 0 4px 16px rgba(91,71,224,.4);
+  transition: transform .15s;
+}
+.pdv-scan-fab:active { transform: scale(0.9); }
+@media (max-width: 768px) {
+  .pdv-scan-fab { display: flex; }
+}
+
+/* ── TOAST de produto adicionado (mobile) ── */
+.pdv-add-toast {
+  position: fixed; bottom: 76px; left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--pri); color: #fff;
+  padding: 10px 18px; border-radius: 99px;
+  font-size: 13px; font-weight: 700;
+  opacity: 0; pointer-events: none;
+  transition: all .25s; z-index: 450;
+  white-space: nowrap; max-width: 280px;
+  text-align: center;
+}
+.pdv-add-toast.show {
+  opacity: 1; transform: translateX(-50%) translateY(0);
+}
+
+/* ── CAMPO SCANNER NA BARRA DO PDV ── */
+@media (max-width: 768px) {
+  .bc-wrap { position: relative; }
+  .bc-scan-btn {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; color: var(--pri); font-size: 20px;
+    cursor: pointer; padding: 4px; display: flex; align-items: center;
+  }
+}
+
+/* ══════════════════════════════════════════════════
+   MÓDULO WHATSAPP — Chat da OS
+   ══════════════════════════════════════════════════ */
+
+/* Aba WhatsApp no modal de OS */
+.os-wpp-tab {
+  display: flex; flex-direction: column; gap: 0;
+  height: 440px; overflow: hidden;
+}
+
+/* Config bar */
+.wpp-config-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 12px; background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  font-size: 12px; flex-shrink: 0;
+}
+.wpp-status-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--txt3); display: inline-block; margin-right: 5px;
+}
+.wpp-status-dot.online { background: var(--success); box-shadow: 0 0 6px rgba(16,185,129,.5); }
+
+/* Chat window */
+.wpp-chat {
+  flex: 1; overflow-y: auto; padding: 12px;
+  display: flex; flex-direction: column; gap: 8px;
+  background: linear-gradient(180deg, var(--surface) 0%, var(--bg2) 100%);
+  -webkit-overflow-scrolling: touch;
+}
+.wpp-chat::-webkit-scrollbar { width: 3px; }
+.wpp-chat::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 10px; }
+
+/* Mensagens */
+.wpp-msg {
+  display: flex; flex-direction: column; max-width: 78%;
+  animation: msgIn .2s ease;
+}
+@keyframes msgIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.wpp-msg.saida { align-self: flex-end; }
+.wpp-msg.entrada { align-self: flex-start; }
+
+.wpp-bubble {
+  padding: 8px 12px; border-radius: 12px;
+  font-size: 13px; line-height: 1.45;
+  position: relative; word-break: break-word;
+}
+.wpp-msg.saida .wpp-bubble {
+  background: linear-gradient(135deg, var(--pri), var(--pri2));
+  color: #fff; border-bottom-right-radius: 4px;
+}
+.wpp-msg.entrada .wpp-bubble {
+  background: var(--bg2); border: 1px solid var(--border);
+  color: var(--txt); border-bottom-left-radius: 4px;
+}
+.wpp-msg.bot .wpp-bubble {
+  background: rgba(16,185,129,.08);
+  border: 1px solid rgba(16,185,129,.2);
+  color: var(--txt);
+}
+.wpp-msg-meta {
+  font-size: 10px; color: var(--txt3); margin-top: 3px;
+  display: flex; align-items: center; gap: 4px;
+}
+.wpp-msg.saida .wpp-msg-meta { justify-content: flex-end; }
+
+/* Status da mensagem */
+.wpp-tick { font-size: 12px; color: rgba(255,255,255,.7); }
+.wpp-tick.lida { color: #4FC3F7; }
+
+/* Separador de data */
+.wpp-date-sep {
+  text-align: center; font-size: 11px; color: var(--txt3);
+  padding: 4px 10px; background: var(--surface);
+  border-radius: 99px; align-self: center;
+  border: 1px solid var(--border); margin: 4px 0;
+}
+
+/* Templates de mensagem */
+.wpp-templates {
+  padding: 8px 12px; border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  display: flex; gap: 6px; overflow-x: auto; flex-shrink: 0;
+}
+.wpp-templates::-webkit-scrollbar { height: 0; }
+.wpp-tpl-btn {
+  white-space: nowrap; padding: 5px 10px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 99px; font-size: 11.5px; font-weight: 600;
+  color: var(--txt2); cursor: pointer; transition: all .15s;
+  flex-shrink: 0;
+}
+.wpp-tpl-btn:hover { border-color: var(--pri); color: var(--pri); background: var(--pri-light); }
+
+/* Input bar */
+.wpp-input-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 12px; background: var(--bg2);
+  border-top: 1px solid var(--border); flex-shrink: 0;
+}
+.wpp-input {
+  flex: 1; padding: 9px 14px;
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: 22px; font-size: 13px; color: var(--txt);
+  font-family: 'DM Sans', sans-serif; outline: none;
+  transition: border-color .2s; resize: none;
+  max-height: 80px; overflow-y: auto; line-height: 1.4;
+}
+.wpp-input:focus { border-color: var(--pri); }
+.wpp-send-btn {
+  width: 38px; height: 38px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--pri), var(--pri2));
+  border: none; cursor: pointer; color: #fff; font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: all .15s; box-shadow: 0 2px 8px rgba(91,71,224,.3);
+}
+.wpp-send-btn:hover { transform: scale(1.08); }
+.wpp-send-btn:active { transform: scale(.93); }
+.wpp-send-btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+
+/* Empty state */
+.wpp-empty {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  color: var(--txt3); gap: 10px; padding: 20px;
+}
+.wpp-empty i { font-size: 42px; opacity: .35; }
+.wpp-empty-txt { font-size: 13px; text-align: center; }
+
+/* Telefone do cliente */
+.wpp-phone-warning {
+  padding: 10px 14px; background: rgba(245,158,11,.08);
+  border: 1px solid rgba(245,158,11,.3); border-radius: 10px;
+  font-size: 12.5px; color: var(--txt2);
+  display: flex; align-items: center; gap: 8px;
+  margin: 8px 12px; flex-shrink: 0;
+}
+
+/* Botão WhatsApp no card da OS */
+.wpp-os-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: 7px; font-size: 11.5px;
+  font-weight: 600; cursor: pointer; border: 1.5px solid rgba(37,211,102,.4);
+  background: rgba(37,211,102,.08); color: #25D366;
+  transition: all .15s;
+}
+.wpp-os-btn:hover { background: rgba(37,211,102,.15); }
+
+/* Config WhatsApp no Aparência */
+.wpp-config-card {
+  background: var(--bg2); border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg); padding: 20px; margin-bottom: 16px;
+}
+.wpp-api-status {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 99px; font-size: 11.5px; font-weight: 700;
+}
+.wpp-api-ok { background: rgba(16,185,129,.1); color: var(--success); border: 1px solid rgba(16,185,129,.3); }
+.wpp-api-err { background: rgba(239,68,68,.1); color: var(--danger); border: 1px solid rgba(239,68,68,.3); }
+.wpp-api-off { background: var(--surface); color: var(--txt3); border: 1px solid var(--border); }
 </style>
 </head>
 <body>
@@ -7956,6 +8533,547 @@ function cadastrarProdutoDoScan() {
     notify('Preencha os dados do produto e salve.', 'info');
   }, 300);
 }
+
+
+/* ══════════════════════════════════════════════════
+   PDV MOBILE — Controle de abas
+   ══════════════════════════════════════════════════ */
+
+let _pdvMobileAba = 'prod';
+
+function pdvMobileTab(aba) {
+  if (window.innerWidth > 768) return;
+  _pdvMobileAba = aba;
+
+  // Painéis
+  const left = document.querySelector('.pdv-left');
+  const cart = document.querySelector('.cart');
+  const pay  = document.getElementById('pdv-mobile-pay');
+
+  [left, cart, pay].forEach(el => el?.classList.remove('pdv-mobile-show'));
+
+  if (aba === 'prod') {
+    left?.classList.add('pdv-mobile-show');
+    // Foca campo de busca
+    setTimeout(() => document.getElementById('ps-field')?.focus(), 100);
+  } else if (aba === 'cart') {
+    cart?.classList.add('pdv-mobile-show');
+  } else if (aba === 'pay') {
+    cart?.classList.add('pdv-mobile-show');
+    // Rola para o footer de pagamento
+    setTimeout(() => {
+      document.querySelector('.cart-footer')?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }, 100);
+  }
+
+  // Atualiza tabs ativas
+  document.querySelectorAll('.pdv-mtab').forEach(t => t.classList.remove('active'));
+  const tab = document.getElementById('pdv-tab-' + aba);
+  if (tab) tab.classList.add('active');
+}
+
+function pdvMobileScan() {
+  // Abre scanner e coloca resultado no campo de código de barras do PDV
+  abrirScanner('bc-field');
+  // Após detectar código, o campo bc-field dispara handleBC
+}
+
+/* Inicializa o PDV mobile ao entrar na página */
+function initPDVMobile() {
+  if (window.innerWidth > 768) return;
+  pdvMobileTab('prod');
+  atualizarBadgeMobile();
+}
+
+/* Atualiza badge do carrinho na tab */
+function atualizarBadgeMobile() {
+  const qtd = (G.cart || []).reduce((acc, i) => acc + i.qty, 0);
+  const badge = document.getElementById('pdv-tab-badge');
+  if (!badge) return;
+  badge.textContent = qtd;
+  badge.classList.toggle('show', qtd > 0);
+}
+
+/* Toast de produto adicionado (mobile) */
+let _toastTimer = null;
+function mostrarToastPDV(nome) {
+  if (window.innerWidth > 768) return;
+  const toast = document.getElementById('pdv-add-toast');
+  if (!toast) return;
+  toast.textContent = '✓ ' + (nome || 'Produto adicionado');
+  toast.classList.add('show');
+  if (_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => toast.classList.remove('show'), 1800);
+  // Atualiza badge
+  atualizarBadgeMobile();
+  // Vibra levemente
+  if (navigator.vibrate) navigator.vibrate(30);
+}
+
+/* Patch: ao inicializar PDV, verificar se mobile */
+const _origGoPDV = window.go;
+document.addEventListener('DOMContentLoaded', () => {
+  // Inicializa se já está na página de PDV
+  if (document.querySelector('#page-pdv.active')) initPDVMobile();
+});
+
+/* Reinicializa ao navegar para PDV */
+const _origGoFn = typeof go === 'function' ? go : null;
+
+
+/* ══════════════════════════════════════════════════════════════════════
+   PLANO: INTEGRAÇÃO WHATSAPP BIDIRECIONAL — EMETech PDV v4.0
+   ════════════════════════════════════════════════════════════════════
+   
+   OBJETIVO: O cliente envia mensagem via WhatsApp perguntando sobre
+   o andamento da OS. O sistema recebe, identifica a OS pelo número
+   do cliente e responde automaticamente com o status atual.
+   O técnico pode também atualizar o status diretamente pelo chat.
+
+   ARQUITETURA:
+   ┌─────────────────────────────────────────────────────────────────┐
+   │  Cliente → WhatsApp → Webhook (Vercel Function) → Supabase    │
+   │  Supabase → Status da OS → Resposta automática → Cliente       │
+   └─────────────────────────────────────────────────────────────────┘
+
+   COMPONENTES:
+   1. API WHATSAPP (escolher uma):
+      - Evolution API (self-hosted, gratuito, recomendado)
+      - Z-API (R$69/mês, mais simples)
+      - Twilio WhatsApp Sandbox (US$0.05/msg, fácil integração)
+
+   2. WEBHOOK (api/whatsapp.js no Vercel):
+      - Recebe mensagem do cliente
+      - Extrai número de telefone
+      - Busca cliente no Supabase por telefone
+      - Busca OS aberta do cliente
+      - Detecta intenção:
+        * "status", "andamento", "pronto", "OS" → responde com status
+        * "cancelar" → alerta no painel do técnico
+        * Outros → resposta padrão + link para ligar
+      - Salva histórico em tabela 'mensagens_whatsapp'
+
+   3. PAINEL NO PDV (OS → aba WhatsApp):
+      - Histórico de mensagens da OS
+      - Botão "Notificar cliente" com template:
+        * OS recebida: "Olá {nome}, recebemos seu {aparelho}. Nº OS: {id}"
+        * Em andamento: "Seu {aparelho} está sendo analisado..."
+        * Pronto: "✅ Seu {aparelho} está pronto! Valor: R$ {total}"
+        * Aguardando peça: "Seu aparelho aguarda peça. Prazo: {data}"
+      - Toggle para ativar/desativar notificações por OS
+
+   4. RESPOSTAS AUTOMÁTICAS (bot simples):
+      CLIENTE: "qual o status da minha ordem?"
+      BOT: "Olá João! 🔧 OS #1042 — iPhone 13 Pro Max
+            Status: Em manutenção
+            Técnico: Pedro Santos
+            Previsão: Hoje até 18h
+            Dúvidas? Responda esta mensagem ou ligue: (71) 99999-9999"
+
+   5. SEGURANÇA:
+      - Verificar token do webhook
+      - Rate limit por número
+      - Apenas OS dos últimos 30 dias
+      - Cliente só vê SUAS OS
+
+   TABELAS SUPABASE NECESSÁRIAS:
+      - mensagens_whatsapp (id, os_id, numero, direcao, conteudo, ts)
+      - config_whatsapp (empresa_id, api_key, numero_bot, ativo)
+
+   PRÓXIMA IMPLEMENTAÇÃO: após Painel Master SaaS
+   ══════════════════════════════════════════════════════════════════ */
+
+
+/* ══════════════════════════════════════════════════════════════════
+   MÓDULO WHATSAPP — EMETech PDV v4.0
+   Evolution API · Respostas automáticas de OS
+   ══════════════════════════════════════════════════════════════════ */
+
+let _wppOsAtual   = null; // OS sendo exibida no chat
+let _wppMensagens = {};   // Cache: { os_id: [msgs] }
+
+/* ── CONFIG ───────────────────────────────────────────────────── */
+function getWppConfig() {
+  try { return JSON.parse(localStorage.getItem('emetech_wpp_cfg') || 'null') || {}; } catch { return {}; }
+}
+function saveWppConfig(cfg) {
+  localStorage.setItem('emetech_wpp_cfg', JSON.stringify(cfg));
+}
+function getMsgsOS(osId) {
+  try {
+    const all = JSON.parse(localStorage.getItem('emetech_wpp_msgs') || '{}');
+    return all[osId] || [];
+  } catch { return []; }
+}
+function saveMsgOS(osId, msgs) {
+  try {
+    const all = JSON.parse(localStorage.getItem('emetech_wpp_msgs') || '{}');
+    all[osId] = msgs.slice(-100); // manter últimas 100 por OS
+    localStorage.setItem('emetech_wpp_msgs', JSON.stringify(all));
+  } catch {}
+}
+
+/* ── ABRIR CHAT DA OS ──────────────────────────────────────────── */
+function abrirWppOS(osId) {
+  const os = G.os.find(x => x.id === osId);
+  if (!os) return;
+  _wppOsAtual = os;
+
+  // Preencher header
+  document.getElementById('wpp-os-cliente-nome').textContent = os.cliente_nome || 'Cliente';
+  document.getElementById('wpp-os-info').textContent = `OS ${os.numero} · ${os.aparelho}`;
+
+  // Verificar telefone do cliente
+  const cli = (G.clientes || []).find(c => c.id === os.cliente_id || c.nome === os.cliente_nome);
+  const telefone = cli?.whatsapp || cli?.telefone || os.cliente_tel || '';
+  const telLimpo = telefone.replace(/\D/g, '');
+
+  const phoneDisplay = document.getElementById('wpp-phone-display');
+  const noPhone = document.getElementById('wpp-no-phone');
+  const sendBtn = document.getElementById('wpp-send-btn');
+
+  if (telLimpo) {
+    phoneDisplay.textContent = formatarTelefone(telLimpo);
+    if (noPhone) noPhone.style.display = 'none';
+    if (sendBtn) sendBtn.disabled = false;
+  } else {
+    phoneDisplay.textContent = 'Sem telefone cadastrado';
+    if (noPhone) noPhone.style.display = '';
+    if (sendBtn) sendBtn.disabled = true;
+  }
+
+  // Atualizar status da API
+  const cfg = getWppConfig();
+  const statusBadge = document.getElementById('wpp-modal-status');
+  const dot = document.getElementById('wpp-dot');
+  if (cfg.apiUrl && cfg.apiKey) {
+    if (statusBadge) { statusBadge.className = 'wpp-api-status wpp-api-ok'; statusBadge.textContent = '🟢 API conectada'; }
+    if (dot) dot.classList.add('online');
+  } else {
+    if (statusBadge) { statusBadge.className = 'wpp-api-status wpp-api-off'; statusBadge.textContent = '⚪ API não configurada'; }
+    if (dot) dot.classList.remove('online');
+  }
+
+  renderChatWpp(osId);
+  openModal('modal-wpp-os');
+
+  // Scroll para o final
+  setTimeout(() => {
+    const chat = document.getElementById('wpp-chat-msgs');
+    if (chat) chat.scrollTop = chat.scrollHeight;
+  }, 100);
+}
+
+/* ── RENDERIZAR CHAT ──────────────────────────────────────────── */
+function renderChatWpp(osId) {
+  const chat = document.getElementById('wpp-chat-msgs');
+  if (!chat) return;
+
+  const msgs = getMsgsOS(osId);
+  const empty = document.getElementById('wpp-empty-state');
+
+  if (msgs.length === 0) {
+    if (empty) empty.style.display = '';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  let lastDate = '';
+  chat.innerHTML = '';
+  if (empty) chat.appendChild(empty);
+
+  msgs.forEach(m => {
+    const d = new Date(m.ts);
+    const dateStr = d.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'2-digit' });
+    if (dateStr !== lastDate) {
+      const sep = document.createElement('div');
+      sep.className = 'wpp-date-sep';
+      sep.textContent = dateStr;
+      chat.appendChild(sep);
+      lastDate = dateStr;
+    }
+
+    const msgEl = document.createElement('div');
+    const dir = m.direcao === 'saida' ? 'saida' : (m.direcao === 'bot' ? 'bot' : 'entrada');
+    msgEl.className = `wpp-msg ${dir}`;
+
+    const timeStr = d.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+    const tick = m.direcao === 'saida'
+      ? `<span class="wpp-tick ${m.lida ? 'lida' : ''}"><i class="ti ti-checks"></i></span>`
+      : '';
+
+    msgEl.innerHTML = `
+      <div class="wpp-bubble">${m.texto.replace(/
+/g,'<br>').replace(/\*(.*?)\*/g,'<strong>$1</strong>')}</div>
+      <div class="wpp-msg-meta">
+        ${m.direcao === 'bot' ? '<i class="ti ti-robot" style="font-size:10px"></i> Bot · ' : ''}
+        ${timeStr} ${tick}
+      </div>`;
+    chat.appendChild(msgEl);
+  });
+
+  chat.scrollTop = chat.scrollHeight;
+}
+
+/* ── ENVIAR MENSAGEM ──────────────────────────────────────────── */
+async function enviarMsgWpp(textoCustom) {
+  if (!_wppOsAtual) return;
+  const os = _wppOsAtual;
+  const input = document.getElementById('wpp-input-msg');
+  const texto = textoCustom || input?.value?.trim();
+  if (!texto) return;
+
+  const cli = (G.clientes || []).find(c => c.id === os.cliente_id || c.nome === os.cliente_nome);
+  const telefone = (cli?.whatsapp || cli?.telefone || os.cliente_tel || '').replace(/\D/g, '');
+
+  if (!telefone) {
+    notify('Cadastre o WhatsApp do cliente para enviar mensagens.', 'warn');
+    return;
+  }
+
+  const cfg = getWppConfig();
+
+  // Salvar mensagem localmente (otimista)
+  const msg = {
+    id: 'msg_' + Date.now(),
+    os_id: os.id,
+    direcao: 'saida',
+    texto,
+    ts: new Date().toISOString(),
+    lida: false,
+  };
+
+  const msgs = getMsgsOS(os.id);
+  msgs.push(msg);
+  saveMsgOS(os.id, msgs);
+  renderChatWpp(os.id);
+  if (input) { input.value = ''; input.style.height = 'auto'; }
+
+  // Tentar enviar via Evolution API
+  if (cfg.apiUrl && cfg.apiKey && cfg.instancia) {
+    try {
+      const res = await fetch(`${cfg.apiUrl}/message/sendText/${cfg.instancia}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': cfg.apiKey,
+        },
+        body: JSON.stringify({
+          number: telefone,
+          text: texto,
+        }),
+      });
+      if (res.ok) {
+        msg.lida = false;
+        saveMsgOS(os.id, msgs);
+        notify('✅ Mensagem enviada!', 'success');
+      } else {
+        notify('⚠️ API retornou erro. Mensagem salva localmente.', 'warn');
+      }
+    } catch(e) {
+      notify('Não foi possível enviar. API offline? Mensagem salva localmente.', 'warn');
+    }
+  } else {
+    notify('Configure a Evolution API em Aparência & Marca para enviar mensagens reais.', 'info');
+  }
+}
+
+/* ── TEMPLATES ────────────────────────────────────────────────── */
+const WPP_TEMPLATES = {
+  recebida: () => {
+    const os = _wppOsAtual; if (!os) return '';
+    const cfg = getWppConfig();
+    return (cfg.tplRecebida || `Olá {nome}! 📱 Recebemos seu *{aparelho}* aqui na assistência.
+OS nº *{numero}* — Defeito: {defeito}
+Entraremos em contato assim que analisarmos. ✅`)
+      .replace(/{nome}/g,     os.cliente_nome || 'Cliente')
+      .replace(/{aparelho}/g, os.aparelho || '')
+      .replace(/{numero}/g,   os.numero || '')
+      .replace(/{defeito}/g,  os.defeito || '')
+      .replace(/{empresa}/g,  getWppConfig().empresa || 'nossa assistência');
+  },
+  analise: () => {
+    const os = _wppOsAtual; if (!os) return '';
+    return `Olá ${os.cliente_nome}! 🔍 Seu *${os.aparelho}* está sendo analisado.
+OS nº *${os.numero}* — Em breve traremos o diagnóstico completo.`;
+  },
+  reparo: () => {
+    const os = _wppOsAtual; if (!os) return '';
+    return `Olá ${os.cliente_nome}! 🔧 Seu *${os.aparelho}* está em reparo.
+OS nº *${os.numero}* — Nossos técnicos estão trabalhando nele agora!`;
+  },
+  pronta: () => {
+    const os = _wppOsAtual; if (!os) return '';
+    const cfg = getWppConfig();
+    return (cfg.tplPronta || `✅ Olá {nome}! Seu *{aparelho}* está pronto!
+Valor: *{total}* | OS nº {numero}
+Pode passar para retirar! 🎉`)
+      .replace(/{nome}/g,     os.cliente_nome || 'Cliente')
+      .replace(/{aparelho}/g, os.aparelho || '')
+      .replace(/{numero}/g,   os.numero || '')
+      .replace(/{total}/g,    fmt(os.total || 0));
+  },
+  peca: () => {
+    const os = _wppOsAtual; if (!os) return '';
+    return `Olá ${os.cliente_nome}! ⏳ Seu *${os.aparelho}* aguarda chegada de peça.
+OS nº *${os.numero}* — Avisaremos assim que chegar!`;
+  },
+  status: () => {
+    const os = _wppOsAtual; if (!os) return '';
+    const cfg = getWppConfig();
+    const statusPt = { 'Aguardando':'⏳ Aguardando análise','Em Análise':'🔍 Em análise','Em Reparo':'🔧 Em reparo','Pronto':'✅ Pronto para retirada','Entregue':'📦 Entregue' };
+    const infoExtra = os.tecnico_nome ? `Técnico: ${os.tecnico_nome}` : '';
+    return (cfg.tplStatus || `Olá {nome}! 🔧 Status da sua OS:
+
+*OS nº {numero}* — {aparelho}
+Status: *{status}*
+{info_extra}
+
+Dúvidas? Responda esta mensagem. 😊`)
+      .replace(/{nome}/g,       os.cliente_nome || 'Cliente')
+      .replace(/{numero}/g,     os.numero || '')
+      .replace(/{aparelho}/g,   os.aparelho || '')
+      .replace(/{status}/g,     statusPt[os.status] || os.status)
+      .replace(/{info_extra}/g, infoExtra);
+  },
+};
+
+function usarTemplateWpp(tipo) {
+  const fn = WPP_TEMPLATES[tipo];
+  if (!fn) return;
+  const texto = fn();
+  if (!texto) return;
+  const input = document.getElementById('wpp-input-msg');
+  if (input) {
+    input.value = texto;
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 80) + 'px';
+    input.focus();
+  }
+}
+
+function abrirTemplatesWpp() {
+  // Mostrar/ocultar barra de templates
+  const bar = document.getElementById('wpp-templates-bar');
+  if (bar) bar.style.display = bar.style.display === 'none' ? '' : 'none';
+}
+
+function atualizarChatWpp() {
+  if (_wppOsAtual) renderChatWpp(_wppOsAtual.id);
+}
+
+function formatarTelefone(tel) {
+  if (!tel) return '';
+  const t = tel.replace(/\D/g, '');
+  if (t.length === 13) return `+${t.slice(0,2)} (${t.slice(2,4)}) ${t.slice(4,9)}-${t.slice(9)}`;
+  if (t.length === 11) return `(${t.slice(0,2)}) ${t.slice(2,7)}-${t.slice(7)}`;
+  return tel;
+}
+
+/* ── CONFIGURAÇÃO WPP ─────────────────────────────────────────── */
+function salvarConfigWpp() {
+  const cfg = {
+    apiUrl:      document.getElementById('wpp-api-url')?.value?.trim()?.replace(/\/$/, ''),
+    apiKey:      document.getElementById('wpp-api-key')?.value?.trim(),
+    instancia:   document.getElementById('wpp-instancia')?.value?.trim(),
+    numero:      document.getElementById('wpp-numero')?.value?.trim(),
+    tplRecebida: document.getElementById('wpp-tpl-recebida')?.value,
+    tplPronta:   document.getElementById('wpp-tpl-pronta')?.value,
+    tplStatus:   document.getElementById('wpp-tpl-status')?.value,
+  };
+  saveWppConfig(cfg);
+  notify('✅ Configuração WhatsApp salva!', 'success');
+  atualizarBadgeWpp();
+}
+
+function carregarConfigWpp() {
+  const cfg = getWppConfig();
+  const set = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined) el.value = val; };
+  set('wpp-api-url', cfg.apiUrl);
+  set('wpp-api-key', cfg.apiKey);
+  set('wpp-instancia', cfg.instancia);
+  set('wpp-numero', cfg.numero);
+  if (cfg.tplRecebida) set('wpp-tpl-recebida', cfg.tplRecebida);
+  if (cfg.tplPronta)   set('wpp-tpl-pronta', cfg.tplPronta);
+  if (cfg.tplStatus)   set('wpp-tpl-status', cfg.tplStatus);
+  atualizarBadgeWpp();
+}
+
+function atualizarBadgeWpp() {
+  const cfg = getWppConfig();
+  const badge = document.getElementById('wpp-api-badge');
+  if (!badge) return;
+  if (cfg.apiUrl && cfg.apiKey) {
+    badge.className = 'wpp-api-status wpp-api-ok';
+    badge.textContent = '🟢 Configurado';
+  } else {
+    badge.className = 'wpp-api-status wpp-api-off';
+    badge.textContent = '⚪ Desconectado';
+  }
+}
+
+async function testarConexaoWpp() {
+  const cfg = getWppConfig();
+  if (!cfg.apiUrl || !cfg.apiKey) {
+    notify('Configure a URL e a API Key primeiro.', 'warn'); return;
+  }
+  try {
+    notify('Testando conexão...', 'info');
+    const res = await fetch(`${cfg.apiUrl}/instance/fetchInstances`, {
+      headers: { 'apikey': cfg.apiKey }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      notify(`✅ Conexão OK! ${Array.isArray(data) ? data.length + ' instância(s) encontrada(s)' : ''}`, 'success');
+      const badge = document.getElementById('wpp-api-badge');
+      if (badge) { badge.className = 'wpp-api-status wpp-api-ok'; badge.textContent = '🟢 Conectado'; }
+    } else {
+      notify('API respondeu com erro: ' + res.status, 'error');
+    }
+  } catch(e) {
+    notify('Não foi possível conectar à API. Verifique a URL.', 'error');
+  }
+}
+
+function abrirWebhookGuia() {
+  openModal('modal-webhook-guia');
+}
+
+/* ── RECEBER MENSAGEM (chamado pelo webhook via Supabase Realtime) ── */
+function receberMsgWppInbound(payload) {
+  const { os_id, texto, numero, ts } = payload;
+  if (!os_id) return;
+
+  const msg = {
+    id: 'msg_in_' + Date.now(),
+    os_id,
+    direcao: 'entrada',
+    texto,
+    ts: ts || new Date().toISOString(),
+    lida: false,
+  };
+
+  const msgs = getMsgsOS(os_id);
+  msgs.push(msg);
+  saveMsgOS(os_id, msgs);
+
+  // Se o chat desta OS estiver aberto, atualizar
+  if (_wppOsAtual?.id === os_id) {
+    renderChatWpp(os_id);
+  }
+
+  // Notificação
+  const os = G.os.find(x => x.id === os_id);
+  notify(`📱 WhatsApp — ${os?.cliente_nome || numero}: "${texto.slice(0,40)}..."`, 'info');
+}
+
+/* ── PATCH: ao inicializar renderAparencia, carregar config WPP ── */
+const _origRenderAparencia = typeof renderAparencia === 'function' ? renderAparencia : null;
+
+/* Executar ao carregar a página de aparência */
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(carregarConfigWpp, 500);
+});
 
 </script>
 
