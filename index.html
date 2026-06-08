@@ -571,26 +571,8 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
             <button class="btn btn-danger btn-sm" onclick="fecharCaixa()"><i class="ti ti-lock"></i>Fechar Caixa</button>
           </div>
         </div>
-        <!-- ABAS MOBILE DO PDV -->
-        <div class="pdv-mobile-tabs" id="pdv-mobile-tabs">
-          <button class="pdv-mtab active" id="pdv-tab-prod" onclick="pdvMobileTab('prod')">
-            <i class="ti ti-layout-grid"></i>
-            Produtos
-          </button>
-          <button class="pdv-mtab" id="pdv-tab-scan" onclick="pdvMobileScan()">
-            <i class="ti ti-scan"></i>
-            Scanner
-          </button>
-          <button class="pdv-mtab" id="pdv-tab-cart" onclick="pdvMobileTab('cart')">
-            <i class="ti ti-shopping-cart"></i>
-            <span class="pdv-mtab-badge" id="pdv-tab-badge">0</span>
-            Carrinho
-          </button>
-          <button class="pdv-mtab" id="pdv-tab-pay" onclick="pdvMobileTab('pay')">
-            <i class="ti ti-credit-card"></i>
-            Pagar
-          </button>
-        </div>
+
+        <!-- TOAST de adição
 
         <!-- TOAST de adição (mobile) -->
         <div class="pdv-add-toast" id="pdv-add-toast">✓ Produto adicionado</div>
@@ -833,21 +815,6 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
       </div>
 
 
-      <!-- ABAS MOBILE DA OS -->
-      <div class="os-mobile-tabs" id="os-mobile-tabs">
-        <button class="os-mtab active" id="os-mtab-lista" onclick="osMobileTab('lista')">
-          <i class="ti ti-list"></i>Lista
-        </button>
-        <button class="os-mtab" id="os-mtab-nova" onclick="osMobileAbrirNova()">
-          <i class="ti ti-file-plus"></i>Nova OS
-        </button>
-        <button class="os-mtab" id="os-mtab-busca" onclick="osMobileTab('busca')">
-          <i class="ti ti-search"></i>Buscar
-        </button>
-        <button class="os-mtab" id="os-mtab-minha" onclick="osMobileTab('minha')">
-          <i class="ti ti-user-check"></i>Minhas
-        </button>
-      </div>
       <!-- Lista mobile de OS -->
       <div id="os-mobile-list" style="display:none">
         <div class="os-filter-bar">
@@ -2661,9 +2628,13 @@ const PT={dashboard:'Dashboard',pdv:'PDV / Caixa',orcamentos:'Orçamentos',devol
 
 function go(page){
   if(!canAccess(G.role,page)){notify('Acesso não permitido.','error');return;}
-  // Esconder todas as tabs mobile ao navegar (serão reativadas pelas páginas corretas)
-  document.getElementById('pdv-mobile-tabs')?.classList.remove('tab-ativo');
-  document.getElementById('os-mobile-tabs')?.classList.remove('tab-ativo');
+  // Esconder todas as tabs mobile ao navegar (só reaparecem na página correta)
+  if (window.innerWidth <= 768) {
+    const pt = document.getElementById('pdv-mobile-tabs');
+    const ot = document.getElementById('os-mobile-tabs');
+    if (pt) pt.style.display = 'none';
+    if (ot) ot.style.display = 'none';
+  }
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+page)?.classList.add('active');
@@ -6989,10 +6960,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
   z-index: 400; padding: 0; height: 62px;
   box-shadow: 0 -4px 20px rgba(0,0,0,.1);
 }
-/* Só mostra em mobile E na página correta */
-@media (max-width: 768px) {
-  .pdv-mobile-tabs.tab-ativo { display: flex !important; }
-}
+/* display controlado por JS: style.display='flex' só em mobile */
 .pdv-mtab {
   flex: 1; display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 2px;
@@ -7372,9 +7340,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
   z-index: 400; height: 62px;
   box-shadow: 0 -4px 20px rgba(0,0,0,.08);
 }
-@media (max-width: 768px) {
-  .os-mobile-tabs.tab-ativo { display: flex !important; }
-}
+/* display controlado por JS: style.display='flex' só em mobile */
 .os-mtab {
   flex: 1; display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 2px;
@@ -9057,14 +9023,37 @@ function pdvMobileScan() {
 }
 
 /* Inicializa o PDV mobile ao entrar na página */
+function criarTabsPDVMobile() {
+  if (document.getElementById('pdv-mobile-tabs')) return;
+  const tabs = document.createElement('div');
+  tabs.className = 'pdv-mobile-tabs';
+  tabs.id = 'pdv-mobile-tabs';
+  tabs.innerHTML = `
+    <button class="pdv-mtab active" id="pdv-tab-prod" onclick="pdvMobileTab('prod')">
+      <i class="ti ti-layout-grid"></i>Produtos
+    </button>
+    <button class="pdv-mtab" id="pdv-tab-scan" onclick="pdvMobileScan()">
+      <i class="ti ti-scan"></i>Scanner
+    </button>
+    <button class="pdv-mtab" id="pdv-tab-cart" onclick="pdvMobileTab('cart')">
+      <i class="ti ti-shopping-cart"></i>
+      <span class="pdv-mtab-badge" id="pdv-tab-badge">0</span>Carrinho
+    </button>
+    <button class="pdv-mtab" id="pdv-tab-pay" onclick="pdvMobileTab('pay')">
+      <i class="ti ti-credit-card"></i>Pagar
+    </button>`;
+  document.body.appendChild(tabs);
+}
+
 function initPDVMobile() {
   if (window.innerWidth > 768) return;
-  // Ativar tabs do PDV (só mobile)
-  const tabs = document.getElementById('pdv-mobile-tabs');
-  if (tabs) tabs.classList.add('tab-ativo');
-  // Desativar tabs da OS se estiverem ativas
+  criarTabsPDVMobile();
+  // Esconder OS tabs se existir
   const osTabs = document.getElementById('os-mobile-tabs');
-  if (osTabs) osTabs.classList.remove('tab-ativo');
+  if (osTabs) osTabs.style.display = 'none';
+  // Mostrar PDV tabs
+  const tabs = document.getElementById('pdv-mobile-tabs');
+  if (tabs) tabs.style.display = 'flex';
   pdvMobileTab('prod');
   atualizarBadgeMobile();
 }
@@ -9717,16 +9706,38 @@ function editarOSMobile(osId) {
 }
 
 /* Inicializar OS mobile ao entrar na página */
+function criarTabsOSMobile() {
+  if (document.getElementById('os-mobile-tabs')) return;
+  const tabs = document.createElement('div');
+  tabs.className = 'os-mobile-tabs';
+  tabs.id = 'os-mobile-tabs';
+  tabs.innerHTML = `
+    <button class="os-mtab active" id="os-mtab-lista" onclick="osMobileTab('lista')">
+      <i class="ti ti-list"></i>Lista
+    </button>
+    <button class="os-mtab" id="os-mtab-nova" onclick="osMobileAbrirNova()">
+      <i class="ti ti-file-plus"></i>Nova OS
+    </button>
+    <button class="os-mtab" id="os-mtab-busca" onclick="osMobileTab('busca')">
+      <i class="ti ti-search"></i>Buscar
+    </button>
+    <button class="os-mtab" id="os-mtab-minha" onclick="osMobileTab('minha')">
+      <i class="ti ti-user-check"></i>Minhas
+    </button>`;
+  document.body.appendChild(tabs);
+}
+
 function initOSMobile() {
   if (window.innerWidth > 768) return;
   _osMobileAba = 'lista';
   _osMobileFiltro = 'todos';
-  // Ativar tabs da OS (só mobile)
-  const tabs = document.getElementById('os-mobile-tabs');
-  if (tabs) tabs.classList.add('tab-ativo');
-  // Desativar tabs do PDV
+  criarTabsOSMobile();
+  // Esconder PDV tabs se existir
   const pdvTabs = document.getElementById('pdv-mobile-tabs');
-  if (pdvTabs) pdvTabs.classList.remove('tab-ativo');
+  if (pdvTabs) pdvTabs.style.display = 'none';
+  // Mostrar OS tabs
+  const tabs = document.getElementById('os-mobile-tabs');
+  if (tabs) tabs.style.display = 'flex';
   const lista = document.getElementById('os-mobile-list');
   const busca = document.getElementById('os-mobile-busca');
   if (lista) lista.style.display = '';
@@ -9739,9 +9750,9 @@ function initOSMobile() {
 /* Inicializar ao navegar para OS */
 window.addEventListener('resize', () => {
   if (window.innerWidth > 768) {
-    // Desktop: remover classe tab-ativo de todas as tabs
-    document.getElementById('pdv-mobile-tabs')?.classList.remove('tab-ativo');
-    document.getElementById('os-mobile-tabs')?.classList.remove('tab-ativo');
+    // Desktop: destruir as tabs mobile se existirem
+    document.getElementById('pdv-mobile-tabs')?.remove();
+    document.getElementById('os-mobile-tabs')?.remove();
     const lista = document.getElementById('os-mobile-list');
     const busca = document.getElementById('os-mobile-busca');
     if (lista) lista.style.display = 'none';
