@@ -2526,6 +2526,77 @@ Eventos: MESSAGES_UPSERT</div>
   </div>
 </div>
 
+
+<!-- MODAL DOCUMENTOS OS -->
+<div class="modal-overlay" id="modal-docs-os">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-title">
+      <i class="ti ti-file-text" style="color:var(--pri)"></i>
+      <span id="modal-docs-titulo">Documentos da OS</span>
+    </div>
+    <div style="font-size:13px;color:var(--txt2);margin-bottom:18px" id="modal-docs-sub">
+      Gere documentos A4 em PDF para impressão ou envio digital.
+    </div>
+
+    <!-- Grid de tipos de documento -->
+    <div class="doc-btn-grid">
+      <div class="doc-btn-card" onclick="gerarTermoEntrada()">
+        <i class="ti ti-device-mobile-down"></i>
+        <div class="doc-btn-nome">Termo de Entrada</div>
+        <div class="doc-btn-desc">Recebimento do aparelho para conserto. Assinar na entrega.</div>
+      </div>
+      <div class="doc-btn-card" onclick="gerarTermoRetirada()">
+        <i class="ti ti-device-mobile-up"></i>
+        <div class="doc-btn-nome">Termo de Retirada</div>
+        <div class="doc-btn-desc">Devolução do aparelho ao cliente após o serviço.</div>
+      </div>
+      <div class="doc-btn-card" onclick="gerarOrcamentoPDF()">
+        <i class="ti ti-receipt"></i>
+        <div class="doc-btn-nome">Orçamento</div>
+        <div class="doc-btn-desc">Proposta de serviço com valores e prazo.</div>
+      </div>
+      <div class="doc-btn-card" onclick="gerarOrdemServicoPDF()">
+        <i class="ti ti-clipboard-text"></i>
+        <div class="doc-btn-nome">Ordem de Serviço</div>
+        <div class="doc-btn-desc">Documento completo da OS com dados técnicos.</div>
+      </div>
+      <div class="doc-btn-card" onclick="gerarComprovanteRecebimento()">
+        <i class="ti ti-package-import"></i>
+        <div class="doc-btn-nome">Comprovante de Recebimento</div>
+        <div class="doc-btn-desc">Protocolo de entrada com condição física e acessórios do aparelho.</div>
+      </div>
+      <div class="doc-btn-card" onclick="gerarLaudoEntrega()">
+        <i class="ti ti-package-export"></i>
+        <div class="doc-btn-nome">Laudo de Entrega</div>
+        <div class="doc-btn-desc">Confirmação de retirada com serviço realizado, valor pago e garantia.</div>
+      </div>
+    </div>
+
+    <!-- Opções extras -->
+    <div style="background:var(--surface);border-radius:10px;padding:12px 14px;margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--txt3);margin-bottom:10px">Opções</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;color:var(--txt2)">
+          <input type="checkbox" id="doc-opt-logo" checked style="width:auto;min-height:auto">
+          Incluir logo da empresa
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;color:var(--txt2)">
+          <input type="checkbox" id="doc-opt-assinatura" checked style="width:auto;min-height:auto">
+          Incluir campos de assinatura
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;color:var(--txt2)">
+          <input type="checkbox" id="doc-opt-2via" style="width:auto;min-height:auto">
+          Imprimir em 2 vias (empresa + cliente)
+        </label>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-out" onclick="closeModal('modal-docs-os')">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Confirm -->
 <div class="modal-overlay" id="modal-confirm"><div class="modal sm" style="padding:22px">
   <div style="font-size:16px;font-weight:700;color:var(--txt);margin-bottom:7px" id="conf-title">Confirmar</div>
@@ -3663,9 +3734,9 @@ function detOS(id){
             <i class="ti ti-brand-whatsapp"></i>
             <span>WhatsApp</span>
           </div>
-          <div class="os-qa-btn warn" onclick="imprimirOS('${o.id}')">
-            <i class="ti ti-printer"></i>
-            <span>Imprimir</span>
+          <div class="os-qa-btn warn" onclick="abrirDocumentosOS('${o.id}')">
+            <i class="ti ti-file-text"></i>
+            <span>Documentos</span>
           </div>
           <div class="os-qa-btn" onclick="editarOSMobile('${o.id}')">
             <i class="ti ti-edit"></i>
@@ -3740,6 +3811,12 @@ function detOS(id){
   if(next&&['admin','gerente','tecnico'].includes(G.role)){
     const ab=document.createElement('button');ab.className='btn btn-pri btn-sm';ab.innerHTML=`<i class="ti ti-arrow-right"></i>Avançar: ${next}`;ab.onclick=()=>advOS(id,next);footer.appendChild(ab);
   }
+  // Botão Documentos
+  const dbtn=document.createElement('button');
+  dbtn.className='btn btn-sm btn-out';
+  dbtn.innerHTML='<i class="ti ti-file-text"></i> Documentos';
+  dbtn.onclick=()=>abrirDocumentosOS(id);
+  footer.appendChild(dbtn);
   // Botão WhatsApp
   const wbtn=document.createElement('button');
   wbtn.className='btn btn-sm';
@@ -7841,6 +7918,36 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
   position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
   font-size: 22px; pointer-events: none; z-index: 1;
 }
+
+/* ══════════════════════════════════════════════════
+   DOCUMENTOS OS — Termos e Comprovantes PDF A4
+   ══════════════════════════════════════════════════ */
+.doc-btn-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 12px; margin-bottom: 16px;
+}
+.doc-btn-card {
+  border: 1.5px solid var(--border); border-radius: 14px;
+  padding: 18px 16px; cursor: pointer; transition: all .2s;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 10px; text-align: center; background: var(--surface);
+}
+.doc-btn-card:hover {
+  border-color: var(--pri); background: var(--pri-light);
+  transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.08);
+}
+.doc-btn-card:active { transform: scale(.97); }
+.doc-btn-card i { font-size: 32px; color: var(--pri); }
+.doc-btn-card .doc-btn-nome {
+  font-family: 'Syne', sans-serif; font-weight: 700;
+  font-size: 13.5px; color: var(--txt);
+}
+.doc-btn-card .doc-btn-desc { font-size: 12px; color: var(--txt3); }
+.doc-assinatura-box {
+  border: 1px dashed var(--border2); border-radius: 8px;
+  height: 70px; display: flex; align-items: flex-end;
+  padding: 8px 12px; font-size: 11px; color: var(--txt3);
+}
 </style>
 </head>
 <body>
@@ -10296,6 +10403,893 @@ document.addEventListener('click', e => {
     renderModalPlanos();
   }
 });
+
+
+/* ══════════════════════════════════════════════════════════════════
+   DOCUMENTOS OS — Termos e Comprovantes PDF A4
+   ══════════════════════════════════════════════════════════════════ */
+
+let _docOsAtual = null;
+
+function abrirDocumentosOS(osId) {
+  const os = (G.os || []).find(x => x.id === osId);
+  if (!os) return;
+  _docOsAtual = os;
+  document.getElementById('modal-docs-titulo').textContent = `Documentos — OS ${os.numero}`;
+  document.getElementById('modal-docs-sub').textContent =
+    `${os.aparelho} · ${os.cliente_nome} · Status: ${os.status}`;
+  openModal('modal-docs-os');
+}
+
+/* ── DADOS COMUNS ──────────────────────────────────────────────── */
+function getDocDados() {
+  const os  = _docOsAtual;
+  const m   = getMarca ? getMarca() : {};
+  const emp = m.empresa || {};
+  const cli = (G.clientes || []).find(c => c.id === os.cliente_id || c.nome === os.cliente_nome) || {};
+  const tec = (G.usuarios || []).find(u => u.id === os.tecnico_id || u.nome === os.tecnico_nome) || {};
+  const usaLogo = document.getElementById('doc-opt-logo')?.checked !== false;
+  const usaAssin = document.getElementById('doc-opt-assinatura')?.checked !== false;
+  const dual = document.getElementById('doc-opt-2via')?.checked === true;
+
+  const hoje = new Date().toLocaleDateString('pt-BR', {day:'2-digit',month:'long',year:'numeric'});
+  const logoHtml = usaLogo && m.logoSidebar
+    ? `<img src="${m.logoSidebar}" style="height:52px;object-fit:contain">`
+    : `<div style="font-family:'Arial Black',sans-serif;font-weight:900;font-size:22px;color:#fff">${(emp.nome||'EMETech').slice(0,2).toUpperCase()}</div>`;
+
+  return { os, m, emp, cli, tec, usaLogo, usaAssin, dual, hoje, logoHtml };
+}
+
+/* ── CSS BASE DOS DOCUMENTOS A4 ────────────────────────────────── */
+function getCssDocA4(corPrimaria) {
+  const cor = corPrimaria || '#5B47E0';
+  return `
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Inter',Arial,sans-serif;background:#f5f5f5;color:#1a1a2e}
+    .page{width:210mm;min-height:297mm;background:#fff;margin:0 auto;padding:0;box-shadow:0 0 20px rgba(0,0,0,.12);position:relative;overflow:hidden}
+    @media print{body{background:#fff}.page{box-shadow:none;margin:0}}
+    /* Header */
+    .doc-header{background:linear-gradient(135deg,${cor}dd,${cor});padding:20px 28px;display:flex;align-items:center;justify-content:space-between}
+    .doc-header-logo{display:flex;align-items:center;gap:14px}
+    .doc-header-logo-box{width:52px;height:52px;border-radius:12px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;overflow:hidden}
+    .doc-emp-nome{font-size:17px;font-weight:800;color:#fff}
+    .doc-emp-dados{font-size:10px;color:rgba(255,255,255,.75);margin-top:3px;line-height:1.5}
+    .doc-header-right{text-align:right;color:#fff}
+    .doc-tipo{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:2px;opacity:.75;margin-bottom:4px}
+    .doc-num{font-size:22px;font-weight:800;font-family:'Inter',sans-serif}
+    .doc-data{font-size:10px;opacity:.7;margin-top:3px}
+    /* Corpo */
+    .doc-body{padding:22px 28px}
+    /* Seção */
+    .doc-sec{margin-bottom:18px}
+    .doc-sec-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:${cor};border-bottom:2px solid ${cor}22;padding-bottom:5px;margin-bottom:10px}
+    /* Grid de info */
+    .doc-grid{display:grid;gap:10px}
+    .doc-grid-2{grid-template-columns:1fr 1fr}
+    .doc-grid-3{grid-template-columns:1fr 1fr 1fr}
+    .doc-field{background:#f8f8fc;border-radius:7px;padding:9px 12px}
+    .doc-field-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#888;margin-bottom:3px}
+    .doc-field-value{font-size:13px;font-weight:600;color:#1a1a2e}
+    .doc-field-value.mono{font-family:'Courier New',monospace;font-size:12px}
+    /* Defeito/diagnóstico — destaque */
+    .doc-defeito{background:#fff3cd;border:1.5px solid #ffc107;border-radius:8px;padding:10px 14px}
+    .doc-diag{background:#e8f5e9;border:1.5px solid #4caf50;border-radius:8px;padding:10px 14px}
+    /* Aparelho highlight */
+    .doc-aparelho-box{background:linear-gradient(135deg,${cor}15,${cor}08);border:1.5px solid ${cor}33;border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:14px;margin-bottom:18px}
+    .doc-aparelho-icon{width:44px;height:44px;border-radius:10px;background:${cor};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+    .doc-aparelho-nome{font-size:17px;font-weight:800;color:#1a1a2e}
+    .doc-aparelho-imei{font-size:11px;color:#666;margin-top:3px;font-family:'Courier New',monospace}
+    /* Valor destaque */
+    .doc-valor-box{background:${cor};border-radius:10px;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;color:#fff}
+    .doc-valor-lbl{font-size:11px;font-weight:600;opacity:.85}
+    .doc-valor-num{font-size:24px;font-weight:800;font-family:'Inter',sans-serif}
+    /* Assinaturas */
+    .doc-assin{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:24px}
+    .doc-assin-box{border-top:2px solid #333;padding-top:8px;text-align:center}
+    .doc-assin-label{font-size:10px;font-weight:600;color:#555}
+    .doc-assin-nome{font-size:11px;color:#888;margin-top:3px}
+    /* Termos */
+    .doc-termos{background:#f8f8f8;border-radius:8px;padding:10px 14px;font-size:9.5px;color:#666;line-height:1.5;border:1px solid #e0e0e0}
+    /* Status badge */
+    .doc-status{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:99px;font-size:10.5px;font-weight:700}
+    /* VIA separador */
+    .doc-via-sep{border:none;border-top:3px dashed #ccc;margin:20px 0;position:relative}
+    .doc-via-sep::before{content:'✂ RECORTE AQUI';position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:#fff;padding:0 10px;font-size:9px;color:#999;font-style:italic}
+    /* Footer */
+    .doc-footer{position:absolute;bottom:0;left:0;right:0;background:${cor}12;padding:10px 28px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid ${cor}22}
+    .doc-footer-txt{font-size:8.5px;color:#999}
+    /* Print btn */
+    .print-bar{background:#1a1a2e;padding:12px 20px;display:flex;gap:10px;justify-content:flex-end;align-items:center;position:sticky;top:0;z-index:100}
+    @media print{.print-bar{display:none}}
+    .print-btn{padding:8px 18px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:700;font-family:'Inter',sans-serif}
+    .print-btn-pri{background:${cor};color:#fff}
+    .print-btn-out{background:transparent;border:1.5px solid rgba(255,255,255,.3);color:#fff}
+  `;
+}
+
+/* ── FUNÇÃO UTILITÁRIA: Valor via ──────────────────────────────── */
+function docVia(conteudo, viaLabel) {
+  return `<div class="page">
+    <div style="position:absolute;top:8px;right:12px;font-size:9px;font-weight:700;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:1px;z-index:1">${viaLabel}</div>
+    ${conteudo}
+  </div>`;
+}
+
+/* ══════════════════════════════════════════════════
+   TERMO DE ENTRADA DE APARELHO
+   ══════════════════════════════════════════════════ */
+function gerarTermoEntrada() {
+  const { os, m, emp, cli, tec, usaAssin, dual, hoje, logoHtml } = getDocDados();
+  const cor = m.paleta?.c1 || '#5B47E0';
+
+  const statusCor = { 'Aguardando':'#f59e0b','Em Análise':'#3b82f6','Em Reparo':'#8b5cf6','Pronto':'#10b981','Entregue':'#6b7280' };
+
+  const corpo = `
+    <div class="doc-header">
+      <div class="doc-header-logo">
+        <div class="doc-header-logo-box">${logoHtml}</div>
+        <div>
+          <div class="doc-emp-nome">${emp.nome || 'Assistência Técnica'}</div>
+          <div class="doc-emp-dados">
+            ${emp.cnpj ? `CNPJ: ${emp.cnpj}<br>` : ''}
+            ${emp.tel ? `Tel: ${emp.tel}<br>` : ''}
+            ${emp.end || ''}
+          </div>
+        </div>
+      </div>
+      <div class="doc-header-right">
+        <div class="doc-tipo">Termo de Entrada</div>
+        <div class="doc-num">${os.numero}</div>
+        <div class="doc-data">${hoje}</div>
+      </div>
+    </div>
+
+    <div class="doc-body">
+      <!-- Aparelho -->
+      <div class="doc-aparelho-box">
+        <div class="doc-aparelho-icon">📱</div>
+        <div>
+          <div class="doc-aparelho-nome">${os.aparelho}</div>
+          ${os.imei ? `<div class="doc-aparelho-imei">IMEI/Série: ${os.imei}</div>` : ''}
+        </div>
+        <div style="margin-left:auto">
+          <div class="doc-status" style="background:${statusCor[os.status]||'#6b7280'}22;color:${statusCor[os.status]||'#6b7280'};border:1px solid ${statusCor[os.status]||'#6b7280'}44">
+            ${os.status}
+          </div>
+        </div>
+      </div>
+
+      <!-- Dados do cliente -->
+      <div class="doc-sec">
+        <div class="doc-sec-title">Dados do Cliente</div>
+        <div class="doc-grid doc-grid-2">
+          <div class="doc-field">
+            <div class="doc-field-label">Nome completo</div>
+            <div class="doc-field-value">${os.cliente_nome || '—'}</div>
+          </div>
+          <div class="doc-field">
+            <div class="doc-field-label">Telefone / WhatsApp</div>
+            <div class="doc-field-value mono">${cli.telefone || cli.whatsapp || '—'}</div>
+          </div>
+          ${cli.cpf ? `<div class="doc-field"><div class="doc-field-label">CPF</div><div class="doc-field-value mono">${cli.cpf}</div></div>` : ''}
+          ${cli.email ? `<div class="doc-field"><div class="doc-field-label">E-mail</div><div class="doc-field-value">${cli.email}</div></div>` : ''}
+        </div>
+      </div>
+
+      <!-- Dados da OS -->
+      <div class="doc-sec">
+        <div class="doc-sec-title">Dados do Serviço</div>
+        <div class="doc-grid doc-grid-3" style="margin-bottom:10px">
+          <div class="doc-field">
+            <div class="doc-field-label">Data de entrada</div>
+            <div class="doc-field-value">${os.created_at ? new Date(os.created_at).toLocaleDateString('pt-BR') : hoje}</div>
+          </div>
+          <div class="doc-field">
+            <div class="doc-field-label">Prazo previsto</div>
+            <div class="doc-field-value">${os.prazo_entrega ? new Date(os.prazo_entrega).toLocaleDateString('pt-BR') : '—'}</div>
+          </div>
+          <div class="doc-field">
+            <div class="doc-field-label">Técnico responsável</div>
+            <div class="doc-field-value">${tec.nome || os.tecnico_nome || '—'}</div>
+          </div>
+        </div>
+        <!-- Defeito -->
+        <div class="doc-defeito" style="margin-bottom:10px">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#856404;margin-bottom:5px">⚠️ Defeito relatado pelo cliente</div>
+          <div style="font-size:13px;color:#533f03;line-height:1.5">${os.defeito || '—'}</div>
+        </div>
+        ${os.observacoes ? `
+        <div class="doc-field">
+          <div class="doc-field-label">Observações / Acessórios</div>
+          <div class="doc-field-value" style="font-weight:400;font-size:12px">${os.observacoes}</div>
+        </div>` : ''}
+      </div>
+
+      <!-- Valor estimado -->
+      ${os.total ? `
+      <div class="doc-valor-box" style="margin-bottom:18px">
+        <div><div class="doc-valor-lbl">Valor estimado do serviço</div><div style="font-size:9px;opacity:.7">Sujeito a alteração após diagnóstico</div></div>
+        <div class="doc-valor-num">${fmt(os.total)}</div>
+      </div>` : ''}
+
+      <!-- Termos -->
+      <div class="doc-termos" style="margin-bottom:${usaAssin ? '16px' : '0'}">
+        <strong>Termos e condições:</strong> O cliente declara estar ciente de que:<br>
+        1. O aparelho será analisado e um orçamento será apresentado antes de qualquer reparo;<br>
+        2. Caso o orçamento não seja aprovado, será cobrada taxa de diagnóstico conforme tabela;<br>
+        3. Aparelhos não retirados em até 90 dias após a notificação serão descartados;<br>
+        4. A empresa não se responsabiliza por dados armazenados no dispositivo;<br>
+        5. A garantia do serviço é de ${os.garantia_dias || 90} dias para o defeito reparado.
+      </div>
+
+      ${usaAssin ? `
+      <div class="doc-assin">
+        <div class="doc-assin-box">
+          <div class="doc-assin-label">Assinatura do Cliente</div>
+          <div class="doc-assin-nome">${os.cliente_nome || ''}</div>
+        </div>
+        <div class="doc-assin-box">
+          <div class="doc-assin-label">Responsável pela Recepção</div>
+          <div class="doc-assin-nome">${emp.nome || 'Assistência Técnica'}</div>
+        </div>
+      </div>` : ''}
+    </div>
+
+    <div class="doc-footer">
+      <div class="doc-footer-txt">${emp.nome || 'Assistência Técnica'} ${emp.cnpj ? '· CNPJ: '+emp.cnpj : ''}</div>
+      <div class="doc-footer-txt">OS ${os.numero} · Emitido em ${hoje}</div>
+    </div>`;
+
+  const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+    <title>Termo de Entrada — ${os.numero}</title>
+    <style>${getCssDocA4(cor)}</style></head><body>
+    <div class="print-bar">
+      <span style="color:rgba(255,255,255,.6);font-size:12px;flex:1">Termo de Entrada · ${os.numero}</span>
+      <button class="print-btn print-btn-out" onclick="window.close()">Fechar</button>
+      <button class="print-btn print-btn-pri" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
+    </div>
+    ${dual
+      ? docVia(corpo,'1ª Via — Empresa') + `<div class="doc-via-sep"></div>` + docVia(corpo,'2ª Via — Cliente')
+      : `<div class="page">${corpo}</div>`}
+  </body></html>`;
+
+  closeModal('modal-docs-os');
+  abrirPDFModal(html, `Termo-Entrada-${os.numero}`);
+}
+
+/* ══════════════════════════════════════════════════
+   TERMO DE RETIRADA / ENTREGA AO CLIENTE
+   ══════════════════════════════════════════════════ */
+function gerarTermoRetirada() {
+  const { os, m, emp, cli, tec, usaAssin, dual, hoje, logoHtml } = getDocDados();
+  const cor = m.paleta?.c1 || '#5B47E0';
+
+  const corpo = `
+    <div class="doc-header">
+      <div class="doc-header-logo">
+        <div class="doc-header-logo-box">${logoHtml}</div>
+        <div>
+          <div class="doc-emp-nome">${emp.nome || 'Assistência Técnica'}</div>
+          <div class="doc-emp-dados">
+            ${emp.cnpj ? `CNPJ: ${emp.cnpj}<br>` : ''}
+            ${emp.tel ? `Tel: ${emp.tel}<br>` : ''}
+            ${emp.end || ''}
+          </div>
+        </div>
+      </div>
+      <div class="doc-header-right">
+        <div class="doc-tipo">Comprovante de Entrega</div>
+        <div class="doc-num">${os.numero}</div>
+        <div class="doc-data">${hoje}</div>
+      </div>
+    </div>
+
+    <div class="doc-body">
+      <!-- Aparelho -->
+      <div class="doc-aparelho-box">
+        <div class="doc-aparelho-icon">✅</div>
+        <div>
+          <div class="doc-aparelho-nome">${os.aparelho}</div>
+          ${os.imei ? `<div class="doc-aparelho-imei">IMEI/Série: ${os.imei}</div>` : ''}
+        </div>
+        <div style="margin-left:auto">
+          <div class="doc-status" style="background:#10b98122;color:#10b981;border:1px solid #10b98144">
+            ✓ Entregue
+          </div>
+        </div>
+      </div>
+
+      <!-- Cliente -->
+      <div class="doc-sec">
+        <div class="doc-sec-title">Dados do Cliente</div>
+        <div class="doc-grid doc-grid-2">
+          <div class="doc-field">
+            <div class="doc-field-label">Nome completo</div>
+            <div class="doc-field-value">${os.cliente_nome || '—'}</div>
+          </div>
+          <div class="doc-field">
+            <div class="doc-field-label">Telefone / WhatsApp</div>
+            <div class="doc-field-value mono">${cli.telefone || cli.whatsapp || '—'}</div>
+          </div>
+          ${cli.cpf ? `<div class="doc-field"><div class="doc-field-label">CPF</div><div class="doc-field-value mono">${cli.cpf}</div></div>` : ''}
+          ${cli.email ? `<div class="doc-field"><div class="doc-field-label">E-mail</div><div class="doc-field-value">${cli.email}</div></div>` : ''}
+        </div>
+      </div>
+
+      <!-- Serviço realizado -->
+      <div class="doc-sec">
+        <div class="doc-sec-title">Serviço Realizado</div>
+        <div class="doc-grid doc-grid-3" style="margin-bottom:10px">
+          <div class="doc-field">
+            <div class="doc-field-label">Data de entrada</div>
+            <div class="doc-field-value">${os.created_at ? new Date(os.created_at).toLocaleDateString('pt-BR') : '—'}</div>
+          </div>
+          <div class="doc-field">
+            <div class="doc-field-label">Data de entrega</div>
+            <div class="doc-field-value" style="color:#10b981;font-weight:700">${hoje}</div>
+          </div>
+          <div class="doc-field">
+            <div class="doc-field-label">Técnico responsável</div>
+            <div class="doc-field-value">${tec.nome || os.tecnico_nome || '—'}</div>
+          </div>
+        </div>
+        <div class="doc-defeito" style="margin-bottom:10px">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#856404;margin-bottom:5px">Problema relatado</div>
+          <div style="font-size:12.5px;color:#533f03">${os.defeito || '—'}</div>
+        </div>
+        ${os.diagnostico ? `
+        <div class="doc-diag">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#1b5e20;margin-bottom:5px">✅ Serviço executado / Diagnóstico</div>
+          <div style="font-size:12.5px;color:#1b5e20">${os.diagnostico}</div>
+        </div>` : ''}
+      </div>
+
+      <!-- Valor e garantia -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">
+        <div class="doc-valor-box">
+          <div>
+            <div class="doc-valor-lbl">Valor cobrado</div>
+            <div style="font-size:9px;opacity:.7">Pago em ${new Date().toLocaleDateString('pt-BR')}</div>
+          </div>
+          <div class="doc-valor-num">${fmt(os.total || 0)}</div>
+        </div>
+        <div style="background:#e8f5e9;border:1.5px solid #4caf50;border-radius:10px;padding:12px 18px">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#1b5e20;margin-bottom:4px">🛡️ Garantia do serviço</div>
+          <div style="font-size:22px;font-weight:800;color:#1b5e20">${os.garantia_dias || 90} dias</div>
+          <div style="font-size:9px;color:#388e3c;margin-top:2px">Para o defeito reparado</div>
+        </div>
+      </div>
+
+      <!-- Termos de retirada -->
+      <div class="doc-termos" style="margin-bottom:${usaAssin ? '16px' : '0'}">
+        <strong>Declaração de recebimento:</strong> Eu, <strong>${os.cliente_nome || '__________________________'}</strong>,
+        declaro ter recebido o aparelho <strong>${os.aparelho}</strong> (OS ${os.numero}) em
+        perfeito estado de funcionamento para o defeito reparado, e estou ciente:<br>
+        1. A garantia de <strong>${os.garantia_dias || 90} dias</strong> cobre apenas o defeito informado neste documento;<br>
+        2. Danos causados por queda, líquidos ou mau uso não estão cobertos pela garantia;<br>
+        3. Em caso de reclamação em garantia, o aparelho deve ser apresentado sem indícios de violação.
+      </div>
+
+      ${usaAssin ? `
+      <div class="doc-assin">
+        <div class="doc-assin-box">
+          <div class="doc-assin-label">Assinatura do Cliente — Ciente e de acordo</div>
+          <div class="doc-assin-nome">${os.cliente_nome || ''} · ${hoje}</div>
+        </div>
+        <div class="doc-assin-box">
+          <div class="doc-assin-label">Responsável pela Entrega</div>
+          <div class="doc-assin-nome">${emp.nome || 'Assistência Técnica'}</div>
+        </div>
+      </div>` : ''}
+    </div>
+
+    <div class="doc-footer">
+      <div class="doc-footer-txt">${emp.nome || 'Assistência Técnica'} ${emp.cnpj ? '· CNPJ: '+emp.cnpj : ''}</div>
+      <div class="doc-footer-txt">Garantia válida até: ${new Date(Date.now()+(os.garantia_dias||90)*86400000).toLocaleDateString('pt-BR')}</div>
+    </div>`;
+
+  const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+    <title>Comprovante de Entrega — ${os.numero}</title>
+    <style>${getCssDocA4(cor)}</style></head><body>
+    <div class="print-bar">
+      <span style="color:rgba(255,255,255,.6);font-size:12px;flex:1">Comprovante de Entrega · ${os.numero}</span>
+      <button class="print-btn print-btn-out" onclick="window.close()">Fechar</button>
+      <button class="print-btn print-btn-pri" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
+    </div>
+    ${dual
+      ? docVia(corpo,'1ª Via — Empresa') + `<div class="doc-via-sep"></div>` + docVia(corpo,'2ª Via — Cliente')
+      : `<div class="page">${corpo}</div>`}
+  </body></html>`;
+
+  closeModal('modal-docs-os');
+  abrirPDFModal(html, `Termo-Entrega-${os.numero}`);
+}
+
+/* ══════════════════════════════════════════════════
+   ORÇAMENTO PDF
+   ══════════════════════════════════════════════════ */
+function gerarOrcamentoPDF() {
+  const { os, m, emp, cli, tec, usaAssin, dual, hoje, logoHtml } = getDocDados();
+  const cor = m.paleta?.c1 || '#5B47E0';
+
+  const corpo = `
+    <div class="doc-header">
+      <div class="doc-header-logo">
+        <div class="doc-header-logo-box">${logoHtml}</div>
+        <div>
+          <div class="doc-emp-nome">${emp.nome || 'Assistência Técnica'}</div>
+          <div class="doc-emp-dados">${emp.cnpj ? `CNPJ: ${emp.cnpj}<br>` : ''}${emp.tel || ''}</div>
+        </div>
+      </div>
+      <div class="doc-header-right">
+        <div class="doc-tipo">Orçamento de Serviço</div>
+        <div class="doc-num">${os.numero}</div>
+        <div class="doc-data">Válido por 7 dias · ${hoje}</div>
+      </div>
+    </div>
+    <div class="doc-body">
+      <div class="doc-aparelho-box">
+        <div class="doc-aparelho-icon">📋</div>
+        <div>
+          <div class="doc-aparelho-nome">${os.aparelho}</div>
+          ${os.imei ? `<div class="doc-aparelho-imei">IMEI/Série: ${os.imei}</div>` : ''}
+        </div>
+      </div>
+      <div class="doc-sec">
+        <div class="doc-sec-title">Cliente</div>
+        <div class="doc-grid doc-grid-2">
+          <div class="doc-field"><div class="doc-field-label">Nome</div><div class="doc-field-value">${os.cliente_nome || '—'}</div></div>
+          <div class="doc-field"><div class="doc-field-label">Telefone</div><div class="doc-field-value mono">${cli.telefone || cli.whatsapp || '—'}</div></div>
+        </div>
+      </div>
+      <div class="doc-sec">
+        <div class="doc-sec-title">Diagnóstico e Proposta</div>
+        <div class="doc-defeito" style="margin-bottom:10px">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#856404;margin-bottom:5px">Problema identificado</div>
+          <div style="font-size:13px;color:#533f03">${os.defeito || '—'}</div>
+        </div>
+        ${os.diagnostico ? `<div class="doc-diag" style="margin-bottom:10px">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#1b5e20;margin-bottom:5px">Solução proposta</div>
+          <div style="font-size:13px;color:#1b5e20">${os.diagnostico}</div>
+        </div>` : ''}
+        <!-- Tabela de serviços -->
+        <table style="width:100%;border-collapse:collapse;margin-top:10px">
+          <thead>
+            <tr style="background:${cor};color:#fff">
+              <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;border-radius:6px 0 0 0">Serviço / Peça</th>
+              <th style="padding:8px 12px;text-align:right;font-size:11px;font-weight:700">Qtd</th>
+              <th style="padding:8px 12px;text-align:right;font-size:11px;font-weight:700;border-radius:0 6px 0 0">Valor</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="background:#f8f8fc">
+              <td style="padding:10px 12px;font-size:13px;border-bottom:1px solid #eee">${os.defeito || 'Serviço conforme diagnóstico'}</td>
+              <td style="padding:10px 12px;text-align:right;font-size:13px;border-bottom:1px solid #eee">1</td>
+              <td style="padding:10px 12px;text-align:right;font-size:13px;font-weight:700;border-bottom:1px solid #eee">${fmt(os.total || 0)}</td>
+            </tr>
+            <tr>
+              <td colspan="2" style="padding:10px 12px;font-size:12px;font-weight:700;text-align:right;color:#555">TOTAL</td>
+              <td style="padding:10px 12px;text-align:right;font-size:16px;font-weight:800;color:${cor}">${fmt(os.total || 0)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+        <div class="doc-field"><div class="doc-field-label">Prazo de execução</div><div class="doc-field-value">${os.prazo_entrega ? new Date(os.prazo_entrega).toLocaleDateString('pt-BR') : 'A confirmar'}</div></div>
+        <div class="doc-field"><div class="doc-field-label">Garantia do serviço</div><div class="doc-field-value">${os.garantia_dias || 90} dias</div></div>
+      </div>
+      <div class="doc-termos" style="margin-bottom:${usaAssin?'16px':'0'}">
+        Este orçamento é válido por 7 dias a partir da data de emissão. Após aprovação, o prazo de execução inicia no próximo dia útil.
+        Peças substituídas ficam à disposição do cliente por 30 dias. Taxa de diagnóstico: cobrada caso o orçamento não seja aprovado.
+      </div>
+      ${usaAssin ? `<div class="doc-assin">
+        <div class="doc-assin-box"><div class="doc-assin-label">Aprovação do Cliente</div><div class="doc-assin-nome">${os.cliente_nome || ''}</div></div>
+        <div class="doc-assin-box"><div class="doc-assin-label">Técnico Responsável</div><div class="doc-assin-nome">${tec.nome || emp.nome || ''}</div></div>
+      </div>` : ''}
+    </div>
+    <div class="doc-footer">
+      <div class="doc-footer-txt">${emp.nome || ''} ${emp.cnpj ? '· CNPJ: '+emp.cnpj : ''}</div>
+      <div class="doc-footer-txt">Orçamento ${os.numero} · ${hoje}</div>
+    </div>`;
+
+  const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+    <title>Orçamento — ${os.numero}</title>
+    <style>${getCssDocA4(cor)}</style></head><body>
+    <div class="print-bar">
+      <span style="color:rgba(255,255,255,.6);font-size:12px;flex:1">Orçamento · ${os.numero}</span>
+      <button class="print-btn print-btn-out" onclick="window.close()">Fechar</button>
+      <button class="print-btn print-btn-pri" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
+    </div>
+    <div class="page">${corpo}</div>
+  </body></html>`;
+
+  closeModal('modal-docs-os');
+  abrirPDFModal(html, `Orcamento-${os.numero}`);
+}
+
+/* ══════════════════════════════════════════════════
+   ORDEM DE SERVIÇO COMPLETA PDF
+   ══════════════════════════════════════════════════ */
+function gerarOrdemServicoPDF() {
+  const { os, m, emp, cli, tec, usaAssin, dual, hoje, logoHtml } = getDocDados();
+  const cor = m.paleta?.c1 || '#5B47E0';
+
+  const statusCor = { 'Aguardando':'#f59e0b','Em Análise':'#3b82f6','Em Reparo':'#8b5cf6','Pronto':'#10b981','Entregue':'#6b7280' };
+
+  const corpo = `
+    <div class="doc-header">
+      <div class="doc-header-logo">
+        <div class="doc-header-logo-box">${logoHtml}</div>
+        <div>
+          <div class="doc-emp-nome">${emp.nome || 'Assistência Técnica'}</div>
+          <div class="doc-emp-dados">${emp.cnpj?`CNPJ: ${emp.cnpj}<br>`:''} ${emp.tel||''} ${emp.end?'<br>'+emp.end:''}</div>
+        </div>
+      </div>
+      <div class="doc-header-right">
+        <div class="doc-tipo">Ordem de Serviço</div>
+        <div class="doc-num">${os.numero}</div>
+        <div class="doc-data">${hoje}</div>
+      </div>
+    </div>
+    <div class="doc-body">
+      <div class="doc-aparelho-box">
+        <div class="doc-aparelho-icon">🔧</div>
+        <div style="flex:1">
+          <div class="doc-aparelho-nome">${os.aparelho}</div>
+          ${os.imei?`<div class="doc-aparelho-imei">IMEI/Série: ${os.imei}</div>`:''}
+        </div>
+        <div class="doc-status" style="background:${statusCor[os.status]||'#6b7280'}22;color:${statusCor[os.status]||'#6b7280'};border:1px solid ${statusCor[os.status]||'#6b7280'}44;font-size:12px;padding:6px 14px">
+          ${os.status}
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+        <div class="doc-sec">
+          <div class="doc-sec-title">Cliente</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div class="doc-field"><div class="doc-field-label">Nome</div><div class="doc-field-value">${os.cliente_nome||'—'}</div></div>
+            <div class="doc-field"><div class="doc-field-label">Telefone</div><div class="doc-field-value mono">${cli.telefone||cli.whatsapp||'—'}</div></div>
+            ${cli.cpf?`<div class="doc-field"><div class="doc-field-label">CPF</div><div class="doc-field-value mono">${cli.cpf}</div></div>`:''}
+          </div>
+        </div>
+        <div class="doc-sec">
+          <div class="doc-sec-title">Informações</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div class="doc-field"><div class="doc-field-label">Data de entrada</div><div class="doc-field-value">${os.created_at?new Date(os.created_at).toLocaleDateString('pt-BR'):hoje}</div></div>
+            <div class="doc-field"><div class="doc-field-label">Prazo</div><div class="doc-field-value">${os.prazo_entrega?new Date(os.prazo_entrega).toLocaleDateString('pt-BR'):'—'}</div></div>
+            <div class="doc-field"><div class="doc-field-label">Técnico</div><div class="doc-field-value">${tec.nome||os.tecnico_nome||'—'}</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="doc-sec">
+        <div class="doc-sec-title">Diagnóstico Técnico</div>
+        <div class="doc-defeito" style="margin-bottom:10px">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#856404;margin-bottom:5px">Defeito relatado</div>
+          <div style="font-size:13px;color:#533f03">${os.defeito||'—'}</div>
+        </div>
+        ${os.diagnostico?`<div class="doc-diag" style="margin-bottom:10px">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#1b5e20;margin-bottom:5px">Diagnóstico/Serviço executado</div>
+          <div style="font-size:13px;color:#1b5e20">${os.diagnostico}</div>
+        </div>`:''}
+        ${os.observacoes?`<div class="doc-field"><div class="doc-field-label">Observações</div><div class="doc-field-value" style="font-weight:400;font-size:12px">${os.observacoes}</div></div>`:''}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
+        <div class="doc-valor-box" style="grid-column:span 2">
+          <div><div class="doc-valor-lbl">Valor do Serviço</div></div>
+          <div class="doc-valor-num">${fmt(os.total||0)}</div>
+        </div>
+        <div style="background:#e8f5e9;border:1.5px solid #4caf50;border-radius:10px;padding:12px 14px;text-align:center">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#1b5e20;margin-bottom:4px">Garantia</div>
+          <div style="font-size:20px;font-weight:800;color:#1b5e20">${os.garantia_dias||90}d</div>
+        </div>
+      </div>
+      ${usaAssin?`<div class="doc-assin">
+        <div class="doc-assin-box"><div class="doc-assin-label">Assinatura do Cliente</div><div class="doc-assin-nome">${os.cliente_nome||''}</div></div>
+        <div class="doc-assin-box"><div class="doc-assin-label">Técnico Responsável</div><div class="doc-assin-nome">${tec.nome||emp.nome||''}</div></div>
+      </div>`:''}
+    </div>
+    <div class="doc-footer">
+      <div class="doc-footer-txt">${emp.nome||''} ${emp.cnpj?'· CNPJ: '+emp.cnpj:''}</div>
+      <div class="doc-footer-txt">OS ${os.numero} · ${hoje}</div>
+    </div>`;
+
+  const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+    <title>OS ${os.numero}</title>
+    <style>${getCssDocA4(cor)}</style></head><body>
+    <div class="print-bar">
+      <span style="color:rgba(255,255,255,.6);font-size:12px;flex:1">Ordem de Serviço · ${os.numero}</span>
+      <button class="print-btn print-btn-out" onclick="window.close()">Fechar</button>
+      <button class="print-btn print-btn-pri" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
+    </div>
+    ${dual?docVia(corpo,'1ª Via — Empresa')+`<div class="doc-via-sep"></div>`+docVia(corpo,'2ª Via — Cliente'):`<div class="page">${corpo}</div>`}
+  </body></html>`;
+
+  closeModal('modal-docs-os');
+  abrirPDFModal(html, `OS-${os.numero}`);
+}
+
+
+/* ══════════════════════════════════════════════════════════════════
+   COMPROVANTE DE RECEBIMENTO — Protocolo de entrada do aparelho
+   Imprime em A4, 2 vias (empresa e cliente)
+   ══════════════════════════════════════════════════════════════════ */
+function gerarComprovanteRecebimento() {
+  const { os, m, emp, cli, tec, usaAssin, dual, hoje, logoHtml } = getDocDados();
+  const cor = m.paleta?.c1 || '#5B47E0';
+
+  // Bloco de uma via
+  const via = (titulo) => `
+    <div class="doc-page" style="page-break-after:always">
+      <div class="doc-header">
+        <div class="doc-header-logo">
+          <div class="doc-header-logo-box">${logoHtml}</div>
+          <div>
+            <div class="doc-emp-nome">${emp.nome || 'Assistência Técnica'}</div>
+            <div class="doc-emp-dados">
+              ${emp.cnpj ? `CNPJ: ${emp.cnpj}<br>` : ''}
+              ${emp.tel  ? `Tel: ${emp.tel}<br>`   : ''}
+              ${emp.end  ? emp.end                  : ''}
+            </div>
+          </div>
+        </div>
+        <div class="doc-header-right">
+          <div class="doc-tipo">Comprovante de Recebimento</div>
+          <div class="doc-num">${os.numero}</div>
+          <div class="doc-data">${hoje}</div>
+          <div style="margin-top:6px;font-size:10px;font-weight:700;padding:3px 10px;border-radius:5px;background:${cor}22;color:${cor};border:1px solid ${cor}44">${titulo}</div>
+        </div>
+      </div>
+
+      <div class="doc-body">
+        <!-- Aparelho -->
+        <div class="doc-aparelho-box">
+          <div class="doc-aparelho-icon">📱</div>
+          <div style="flex:1">
+            <div class="doc-aparelho-nome">${os.aparelho}</div>
+            ${os.imei ? `<div class="doc-aparelho-imei">IMEI/Série: <strong>${os.imei}</strong></div>` : ''}
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:10px;color:#6b7280;margin-bottom:2px">Protocolo</div>
+            <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:${cor}">${os.numero}</div>
+          </div>
+        </div>
+
+        <!-- Dados do cliente -->
+        <div class="doc-sec">
+          <div class="doc-sec-title">Dados do Cliente</div>
+          <div class="doc-grid doc-grid-2">
+            <div class="doc-field"><div class="doc-field-label">Nome completo</div><div class="doc-field-value">${os.cliente_nome || '—'}</div></div>
+            <div class="doc-field"><div class="doc-field-label">Telefone / WhatsApp</div><div class="doc-field-value mono">${cli.telefone || cli.whatsapp || '—'}</div></div>
+            ${cli.cpf   ? `<div class="doc-field"><div class="doc-field-label">CPF</div><div class="doc-field-value mono">${cli.cpf}</div></div>` : ''}
+            ${cli.email ? `<div class="doc-field"><div class="doc-field-label">E-mail</div><div class="doc-field-value">${cli.email}</div></div>` : ''}
+          </div>
+        </div>
+
+        <!-- Condição do aparelho -->
+        <div class="doc-sec">
+          <div class="doc-sec-title">Condição Física na Entrada</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px">
+            ${['Tela íntegra','Sem trincas','Sem amassados','Câmera ok','Botões ok','Carregando','Biometria ok','Sem líquido'].map(item =>
+              `<div style="display:flex;align-items:center;gap:6px;padding:7px 10px;border:1px solid #e5e7eb;border-radius:7px;font-size:11px">
+                <div style="width:14px;height:14px;border:2px solid #9ca3af;border-radius:3px;flex-shrink:0"></div>
+                ${item}
+              </div>`
+            ).join('')}
+          </div>
+          <div class="doc-field" style="margin-top:6px">
+            <div class="doc-field-label">Observações sobre condição física</div>
+            <div class="doc-field-value" style="min-height:40px;padding:8px">${os.observacoes || '&nbsp;'}</div>
+          </div>
+        </div>
+
+        <!-- Acessórios -->
+        <div class="doc-sec">
+          <div class="doc-sec-title">Acessórios Entregues</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+            ${['Capinha','Carregador','Cabo USB','Fone de ouvido','Caixa original','Película','SIM Card','Cartão de memória'].map(item =>
+              `<div style="display:flex;align-items:center;gap:6px;padding:7px 10px;border:1px solid #e5e7eb;border-radius:7px;font-size:11px">
+                <div style="width:14px;height:14px;border:2px solid #9ca3af;border-radius:3px;flex-shrink:0"></div>
+                ${item}
+              </div>`
+            ).join('')}
+          </div>
+        </div>
+
+        <!-- Defeito relatado -->
+        <div class="doc-sec">
+          <div class="doc-sec-title">Defeito Relatado pelo Cliente</div>
+          <div class="doc-field-value" style="min-height:50px;padding:10px 12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;font-size:13px">
+            ${os.defeito || '—'}
+          </div>
+        </div>
+
+        <!-- Previsão e técnico -->
+        <div class="doc-sec">
+          <div class="doc-grid doc-grid-3">
+            <div class="doc-field"><div class="doc-field-label">Técnico responsável</div><div class="doc-field-value">${os.tecnico_nome || '—'}</div></div>
+            <div class="doc-field"><div class="doc-field-label">Prazo previsto</div><div class="doc-field-value">${os.prazo_entrega ? new Date(os.prazo_entrega).toLocaleDateString('pt-BR') : '—'}</div></div>
+            <div class="doc-field"><div class="doc-field-label">Valor estimado</div><div class="doc-field-value">${os.total ? 'R$ '+Number(os.total).toFixed(2).replace('.',',') : 'A definir'}</div></div>
+          </div>
+        </div>
+
+        <!-- Aviso legal -->
+        <div style="background:#fff8e7;border:1px solid #fde68a;border-radius:8px;padding:10px 12px;font-size:11px;color:#92400e;margin-bottom:16px;line-height:1.5">
+          ⚠️ <strong>A empresa não se responsabiliza por danos causados pelo mau uso do aparelho antes da entrada.</strong>
+          O cliente declara que as informações acima são verdadeiras e autoriza a realização do serviço.
+        </div>
+
+        <!-- Assinatura -->
+        ${usaAssin ? `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:8px">
+          <div>
+            <div style="border-top:2px solid #d1d5db;padding-top:8px;text-align:center;font-size:11px;color:#6b7280">
+              Assinatura do Cliente<br>
+              <strong>${os.cliente_nome || '—'}</strong>
+            </div>
+          </div>
+          <div>
+            <div style="border-top:2px solid #d1d5db;padding-top:8px;text-align:center;font-size:11px;color:#6b7280">
+              Responsável pela Empresa<br>
+              <strong>${emp.nome || '—'}</strong>
+            </div>
+          </div>
+        </div>` : ''}
+
+        <!-- Rodapé -->
+        <div style="text-align:center;margin-top:16px;font-size:10px;color:#9ca3af;border-top:1px solid #e5e7eb;padding-top:8px">
+          ${emp.nome || ''} ${emp.cnpj ? '· CNPJ: '+emp.cnpj : ''} ${emp.tel ? '· '+emp.tel : ''}<br>
+          ${emp.rodape || 'Obrigado pela preferência!'}
+        </div>
+      </div>
+    </div>`;
+
+  const html = dual ? via('1ª Via — Empresa') + via('2ª Via — Cliente') : via('Via Única');
+  abrirPDFModal(`<!DOCTYPE html><html><head><meta charset="UTF-8">${getDocCSS(cor)}</head><body>${html}</body></html>`, 'Comprovante-'+os.numero);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   LAUDO DE ENTREGA — Confirmação de retirada do aparelho
+   Com serviço realizado, valor cobrado e garantia
+   ══════════════════════════════════════════════════════════════════ */
+function gerarLaudoEntrega() {
+  const { os, m, emp, cli, tec, usaAssin, dual, hoje, logoHtml } = getDocDados();
+  const cor = m.paleta?.c1 || '#5B47E0';
+
+  const via = (titulo) => `
+    <div class="doc-page" style="page-break-after:always">
+      <div class="doc-header">
+        <div class="doc-header-logo">
+          <div class="doc-header-logo-box">${logoHtml}</div>
+          <div>
+            <div class="doc-emp-nome">${emp.nome || 'Assistência Técnica'}</div>
+            <div class="doc-emp-dados">
+              ${emp.cnpj ? `CNPJ: ${emp.cnpj}<br>` : ''}
+              ${emp.tel  ? `Tel: ${emp.tel}<br>`   : ''}
+              ${emp.end  ? emp.end                  : ''}
+            </div>
+          </div>
+        </div>
+        <div class="doc-header-right">
+          <div class="doc-tipo">Laudo de Entrega</div>
+          <div class="doc-num">${os.numero}</div>
+          <div class="doc-data">${hoje}</div>
+          <div style="margin-top:6px;font-size:10px;font-weight:700;padding:3px 10px;border-radius:5px;background:#10b98122;color:#10b981;border:1px solid #10b98144">${titulo}</div>
+        </div>
+      </div>
+
+      <div class="doc-body">
+        <!-- Aparelho -->
+        <div class="doc-aparelho-box" style="background:#f0fdf4;border:1px solid #bbf7d0">
+          <div class="doc-aparelho-icon">✅</div>
+          <div style="flex:1">
+            <div class="doc-aparelho-nome">${os.aparelho}</div>
+            ${os.imei ? `<div class="doc-aparelho-imei">IMEI/Série: <strong>${os.imei}</strong></div>` : ''}
+            <div style="font-size:11px;color:#15803d;margin-top:3px;font-weight:700">Serviço concluído e entregue</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:10px;color:#6b7280;margin-bottom:2px">OS</div>
+            <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:#10b981">${os.numero}</div>
+          </div>
+        </div>
+
+        <!-- Cliente -->
+        <div class="doc-sec">
+          <div class="doc-sec-title">Dados do Cliente</div>
+          <div class="doc-grid doc-grid-2">
+            <div class="doc-field"><div class="doc-field-label">Nome completo</div><div class="doc-field-value">${os.cliente_nome || '—'}</div></div>
+            <div class="doc-field"><div class="doc-field-label">Telefone / WhatsApp</div><div class="doc-field-value mono">${cli.telefone || cli.whatsapp || '—'}</div></div>
+            ${cli.cpf ? `<div class="doc-field"><div class="doc-field-label">CPF</div><div class="doc-field-value mono">${cli.cpf}</div></div>` : ''}
+          </div>
+        </div>
+
+        <!-- Laudo técnico -->
+        <div class="doc-sec">
+          <div class="doc-sec-title">Laudo Técnico</div>
+          <div class="doc-grid doc-grid-2" style="margin-bottom:10px">
+            <div class="doc-field"><div class="doc-field-label">Defeito relatado</div><div class="doc-field-value" style="min-height:36px">${os.defeito || '—'}</div></div>
+            <div class="doc-field"><div class="doc-field-label">Diagnóstico</div><div class="doc-field-value" style="min-height:36px">${os.diagnostico || '—'}</div></div>
+          </div>
+          <div class="doc-field"><div class="doc-field-label">Serviço realizado / Peças substituídas</div><div class="doc-field-value" style="min-height:50px;padding:8px">${os.observacoes || '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'}</div></div>
+        </div>
+
+        <!-- Financeiro -->
+        <div class="doc-sec">
+          <div class="doc-sec-title">Valores</div>
+          <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:14px;font-size:13px">
+            <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #e5e7eb">
+              <span style="color:#6b7280">Mão de obra</span>
+              <span>${os.total ? 'Incluso' : '—'}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #e5e7eb">
+              <span style="color:#6b7280">Peças</span>
+              <span>${os.total ? 'Incluso' : '—'}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:10px 0 0;font-weight:800;font-size:16px">
+              <span>Total cobrado</span>
+              <span style="color:${cor}">${os.total ? 'R$ '+Number(os.total).toFixed(2).replace('.',',') : '—'}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Garantia -->
+        <div class="doc-sec">
+          <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px;display:flex;align-items:center;gap:14px">
+            <div style="font-size:28px">🛡️</div>
+            <div>
+              <div style="font-weight:700;font-size:14px;color:#1e40af;margin-bottom:3px">Garantia do Serviço</div>
+              <div style="font-size:12.5px;color:#3b82f6">
+                ${os.garantia_dias
+                  ? `<strong>${os.garantia_dias} dias</strong> a partir de ${hoje}.
+                     Válida para o mesmo defeito reparado, exceto danos físicos ou por líquido.`
+                  : 'Sem garantia registrada. Consulte nossa política de garantia.'}
+              </div>
+            </div>
+            <div style="margin-left:auto;text-align:right;flex-shrink:0">
+              <div style="font-size:10px;color:#6b7280">Válida até</div>
+              <div style="font-weight:700;font-size:13px;color:#1e40af">
+                ${os.garantia_dias
+                  ? (() => { const d = new Date(); d.setDate(d.getDate()+(os.garantia_dias||0)); return d.toLocaleDateString('pt-BR'); })()
+                  : '—'}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Declaração -->
+        <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px;font-size:11.5px;color:#374151;margin-bottom:16px;line-height:1.6">
+          Eu, <strong>${os.cliente_nome || '___________________________'}</strong>, declaro que recebi o aparelho
+          <strong>${os.aparelho}</strong> (OS nº <strong>${os.numero}</strong>) devidamente reparado,
+          conferindo o funcionamento antes da retirada, e que estou de acordo com o serviço prestado e o valor cobrado.
+        </div>
+
+        <!-- Assinaturas -->
+        ${usaAssin ? `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:8px">
+          <div>
+            <div style="border-top:2px solid #d1d5db;padding-top:8px;text-align:center;font-size:11px;color:#6b7280">
+              Assinatura do Cliente<br>
+              <strong>${os.cliente_nome || '—'}</strong>
+            </div>
+          </div>
+          <div>
+            <div style="border-top:2px solid #d1d5db;padding-top:8px;text-align:center;font-size:11px;color:#6b7280">
+              Responsável pela Empresa<br>
+              <strong>${emp.nome || '—'}</strong>
+            </div>
+          </div>
+        </div>` : ''}
+
+        <!-- Rodapé -->
+        <div style="text-align:center;margin-top:16px;font-size:10px;color:#9ca3af;border-top:1px solid #e5e7eb;padding-top:8px">
+          ${emp.nome || ''} ${emp.cnpj ? '· CNPJ: '+emp.cnpj : ''} ${emp.tel ? '· '+emp.tel : ''}<br>
+          ${emp.rodape || 'Obrigado pela preferência! Volte sempre.'}
+        </div>
+      </div>
+    </div>`;
+
+  const html = dual ? via('1ª Via — Empresa') + via('2ª Via — Cliente') : via('Via Única');
+  abrirPDFModal(`<!DOCTYPE html><html><head><meta charset="UTF-8">${getDocCSS(cor)}</head><body>${html}</body></html>`, 'Laudo-Entrega-'+os.numero);
+}
 
 </script>
 
