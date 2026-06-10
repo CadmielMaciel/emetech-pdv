@@ -119,6 +119,29 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);min-
 .tb-btn{width:34px;height:34px;border-radius:8px;border:1.5px solid var(--border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--txt2);font-size:17px;transition:var(--trans)}
 .tb-btn:hover{border-color:var(--pri);color:var(--pri);background:var(--pri-light)}
 .caixa-pill{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600}
+.net-pill{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:var(--trans)}
+.net-pill.online{background:#D1FAE5;color:#059669}
+.net-pill.offline{background:#FEF3C7;color:#D97706;animation:netpulse 1.6s ease-in-out infinite}
+.net-pill.syncing{background:#DBEAFE;color:#2563EB}
+[data-theme="dark"] .net-pill.online{background:#064E3B;color:#34D399}
+[data-theme="dark"] .net-pill.offline{background:#451A03;color:#FBBF24}
+[data-theme="dark"] .net-pill.syncing{background:#1E3A8A;color:#60A5FA}
+@keyframes netpulse{0%,100%{opacity:1}50%{opacity:.55}}
+.net-pill .ti-loader-2{animation:spin 1s linear infinite}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.pending-badge{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;border-radius:8px;background:var(--danger);color:#fff;font-size:10px;font-weight:800;padding:0 4px;margin-left:4px}
+.agenda-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.agenda-dow{text-align:center;font-size:11px;font-weight:700;color:var(--txt3);padding:4px 0;text-transform:uppercase}
+.agenda-day{min-height:78px;border:1px solid var(--border);border-radius:8px;padding:5px;font-size:11px;background:var(--surface);transition:var(--trans)}
+.agenda-day.empty{background:transparent;border-color:transparent}
+.agenda-day.today{border-color:var(--pri);box-shadow:0 0 0 1px var(--pri) inset}
+.agenda-day-num{font-weight:700;font-size:12px;margin-bottom:3px;color:var(--txt2)}
+.agenda-day.today .agenda-day-num{color:var(--pri)}
+.agenda-item{display:block;border-radius:5px;padding:2px 5px;margin-bottom:2px;font-size:10px;font-weight:600;color:#fff;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.agenda-item.os{background:var(--pri)}
+.agenda-item.prod{background:var(--success)}
+.agenda-item.atrasado{background:var(--danger)}
+@media(max-width:768px){.agenda-day{min-height:54px;font-size:9px}.agenda-item{font-size:9px}.agenda-dow{font-size:9px}}
 .caixa-aberto{background:#ECFDF5;color:#059669;border:1.5px solid #A7F3D0}
 .caixa-fechado{background:#FEF2F2;color:var(--danger);border:1.5px solid #FECACA}
 .content{flex:1;overflow-y:auto;padding:18px}
@@ -498,6 +521,8 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
       <div class="nav-sec">Serviços</div>
       <div class="ni" onclick="go('os')" data-p="admin,gerente,tecnico"><i class="ti ti-tools"></i><span class="ni-label">Ordens de Serviço</span><span class="ni-tip">OS</span></div>
       <div class="ni" onclick="go('os-hist')" data-p="admin,gerente,tecnico"><i class="ti ti-history"></i><span class="ni-label">Histórico OS</span><span class="ni-tip">Histórico OS</span></div>
+      <div class="ni" onclick="go('agenda')" data-p="admin,gerente,tecnico,operador"><i class="ti ti-calendar-event"></i><span class="ni-label">Agenda de Entregas</span><span class="ni-tip">Agenda</span></div>
+      <div class="ni" onclick="go('comissoes')" data-p="admin,gerente"><i class="ti ti-award"></i><span class="ni-label">Comissão Técnicos</span><span class="ni-tip">Comissões</span></div>
       <div class="nav-sec">Estoque & Produtos</div>
       <div class="ni" onclick="go('produtos')" data-p="admin,gerente"><i class="ti ti-device-mobile"></i><span class="ni-label">Produtos</span><span class="ni-tip">Produtos</span></div>
       <div class="ni" onclick="go('estoque')" data-p="admin,gerente"><i class="ti ti-package"></i><span class="ni-label">Movimentações</span><span class="ni-tip">Movimentações</span></div>
@@ -526,7 +551,9 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
     <div class="topbar">
       <div class="topbar-title" id="topbar-title">Dashboard</div>
       <div class="topbar-right">
+        <div id="net-pill" class="net-pill online" onclick="syncOfflineQueue(true)" title="Status de conexão"><i class="ti ti-wifi" style="font-size:14px"></i><span id="net-pill-txt">Online</span><span id="net-pending" class="pending-badge" style="display:none">0</span></div>
         <div id="caixa-pill" class="caixa-pill caixa-fechado" style="cursor:pointer" onclick="go('pdv')"><i class="ti ti-cash" style="font-size:14px"></i><span id="caixa-pill-txt">Caixa Fechado</span></div>
+        <button class="tb-btn" id="som-pdv-btn" onclick="toggleSomPDV()" title="Som do PDV"><i class="ti ti-volume"></i></button>
         <button class="tb-btn" onclick="openModal('modal-cupom-config')" title="Config. Cupom"><i class="ti ti-receipt"></i></button>
         <span style="font-size:11.5px;color:var(--txt3)" id="tb-date"></span>
         <button class="tb-btn" onclick="toggleDark()" id="dark-btn"><i class="ti ti-moon"></i></button>
@@ -848,6 +875,58 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
           <tbody id="os-hist-table"></tbody>
         </table></div></div>
       </div>
+
+      <!-- AGENDA DE ENTREGAS -->
+      <div class="page" id="page-agenda">
+        <div class="filter-bar" style="align-items:center">
+          <button class="tb-btn" onclick="agendaMudarMes(-1)"><i class="ti ti-chevron-left"></i></button>
+          <div id="agenda-mes-label" style="font-weight:700;font-size:14px;min-width:160px;text-align:center"></div>
+          <button class="tb-btn" onclick="agendaMudarMes(1)"><i class="ti ti-chevron-right"></i></button>
+          <button class="btn btn-out btn-sm" onclick="agendaIrHoje()"><i class="ti ti-calendar"></i>Hoje</button>
+          <div style="flex:1"></div>
+          <div style="display:flex;align-items:center;gap:14px;font-size:11.5px;color:var(--txt2)">
+            <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--pri);margin-right:4px"></span>OS</span>
+            <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--success);margin-right:4px"></span>Produto</span>
+            <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--danger);margin-right:4px"></span>Atrasado</span>
+          </div>
+        </div>
+        <div class="card" style="padding:14px">
+          <div id="agenda-grid" class="agenda-grid"></div>
+        </div>
+        <div class="ms" style="margin-top:16px">Próximas entregas</div>
+        <div class="card" style="padding:0"><div class="tw"><table>
+          <thead><tr><th>Data</th><th>Tipo</th><th>Cliente</th><th>Detalhe</th><th>Status</th></tr></thead>
+          <tbody id="agenda-lista"></tbody>
+        </table></div></div>
+      </div>
+
+      <!-- COMISSÃO POR TÉCNICO -->
+      <div class="page" id="page-comissoes">
+        <div class="filter-bar">
+          <input type="date" id="com-de" onchange="renderComissoes()">
+          <span style="color:var(--txt3);font-size:13px">até</span>
+          <input type="date" id="com-ate" onchange="renderComissoes()">
+          <button class="btn btn-out btn-sm" onclick="setComissaoPeriodo('mes')">Este mês</button>
+          <button class="btn btn-out btn-sm" onclick="setComissaoPeriodo('mes-passado')">Mês passado</button>
+          <button class="btn btn-out btn-sm" onclick="setComissaoPeriodo('tudo')">Tudo</button>
+        </div>
+        <div class="g4" style="margin-bottom:14px">
+          <div class="sc"><div class="sc-icon"><i class="ti ti-tools"></i></div><div class="sc-val" id="com-total-os">0</div><div class="sc-lbl">OS Concluídas</div></div>
+          <div class="sc"><div class="sc-icon" style="background:#EFF6FF"><i class="ti ti-currency-dollar" style="color:var(--info)"></i></div><div class="sc-val" id="com-total-fat">R$ 0,00</div><div class="sc-lbl">Faturamento em Serviços</div></div>
+          <div class="sc"><div class="sc-icon" style="background:#ECFDF5"><i class="ti ti-award" style="color:var(--success)"></i></div><div class="sc-val" id="com-total-comissao">R$ 0,00</div><div class="sc-lbl">Total em Comissões</div></div>
+          <div class="sc"><div class="sc-icon" style="background:#FFFBEB"><i class="ti ti-users" style="color:var(--warn)"></i></div><div class="sc-val" id="com-total-tecs">0</div><div class="sc-lbl">Técnicos Ativos</div></div>
+        </div>
+        <div class="card" style="padding:0"><div class="tw"><table>
+          <thead><tr><th>Técnico</th><th>OS Concluídas</th><th>Faturamento (Serviços)</th><th>% Comissão</th><th>Comissão a Pagar</th><th></th></tr></thead>
+          <tbody id="com-table"></tbody>
+        </table></div></div>
+        <div class="ms" style="margin-top:16px;display:none" id="com-detalhe-titulo"></div>
+        <div class="card" style="padding:0;display:none" id="com-detalhe-card"><div class="tw"><table>
+          <thead><tr><th>OS</th><th>Cliente</th><th>Aparelho</th><th>Conclusão</th><th>Valor Serviço</th><th>Comissão</th></tr></thead>
+          <tbody id="com-detalhe-table"></tbody>
+        </table></div></div>
+      </div>
+
 
       <!-- PRODUTOS -->
       <div class="page" id="page-produtos">
@@ -1546,7 +1625,7 @@ Dúvidas? Responda esta mensagem. 😊</textarea>
       <div class="page" id="page-usuarios">
         <div style="display:flex;gap:8px;margin-bottom:12px">
           <div class="ig" style="flex:1"><i class="ti ti-search"></i><input type="text" placeholder="Buscar usuário..." oninput="renderUsuarios(this.value)"></div>
-          <button class="btn btn-pri" onclick="openModal('modal-usr')"><i class="ti ti-user-plus"></i>Novo Usuário</button>
+          <button class="btn btn-pri" onclick="document.getElementById('u-comissao-grp').style.display='none';document.getElementById('u-comissao').value='';openModal('modal-usr')"><i class="ti ti-user-plus"></i>Novo Usuário</button>
         </div>
         <div class="fin-tabs" style="margin-bottom:14px">
           <button class="fin-tab active" onclick="usrTab('lista',this)"><i class="ti ti-users" style="font-size:13px"></i> Usuários</button>
@@ -1738,6 +1817,7 @@ Dúvidas? Responda esta mensagem. 😊</textarea>
     <div class="fg"><label class="lbl">Cliente</label><select id="orc-cli"></select></div>
     <div class="fg"><label class="lbl">Validade</label><input type="date" id="orc-val"></div>
   </div>
+  <div class="fg"><label class="lbl">Previsão de Entrega (produto físico)</label><input type="date" id="orc-entrega"></div>
   <div class="fg"><label class="lbl">Observações</label><textarea id="orc-obs" rows="2" placeholder="Informações adicionais..."></textarea></div>
   <div class="ms">Itens</div>
   <div style="display:flex;gap:7px;margin-bottom:8px">
@@ -1873,7 +1953,8 @@ Dúvidas? Responda esta mensagem. 😊</textarea>
   <div class="fg"><label class="lbl">Nome *</label><input type="text" id="u-nome"></div>
   <div class="fg"><label class="lbl">E-mail *</label><input type="email" id="u-email"></div>
   <div id="u-pass-grp" class="fg"><label class="lbl">Senha (mín. 6 chars) *</label><input type="password" id="u-pass"></div>
-  <div class="fg"><label class="lbl">Nível *</label><select id="u-role"><option value="operador">Operador de Caixa</option><option value="tecnico">Técnico</option><option value="gerente">Gerente</option><option value="admin">Administrador</option></select></div>
+  <div class="fg"><label class="lbl">Nível *</label><select id="u-role" onchange="toggleComissaoField()"><option value="operador">Operador de Caixa</option><option value="tecnico">Técnico</option><option value="gerente">Gerente</option><option value="admin">Administrador</option></select></div>
+  <div class="fg" id="u-comissao-grp" style="display:none"><label class="lbl">Comissão por OS concluída (%)</label><input type="number" id="u-comissao" step="0.1" min="0" max="100" placeholder="Ex: 10"></div>
   <div class="fg"><label class="lbl">Status</label><select id="u-ativo"><option value="true">Ativo</option><option value="false">Inativo</option></select></div>
   <div class="alert-box alert-info" style="font-size:12px"><i class="ti ti-info-circle"></i>Crie o login no Supabase → Authentication → Users. O perfil aqui define as permissões.</div>
   <div class="modal-footer">
@@ -2647,6 +2728,223 @@ const SKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 const { createClient } = supabase;
 const db = createClient(SURL, SKEY);
 
+/* ── PWA OFFLINE: IndexedDB + FILA DE VENDAS ──────────── */
+const OFFDB_NAME='emetech_offline';
+const OFFDB_VERSION=1;
+let _offdb=null;
+
+function openOffDB(){
+  return new Promise((resolve,reject)=>{
+    if(_offdb)return resolve(_offdb);
+    const req=indexedDB.open(OFFDB_NAME,OFFDB_VERSION);
+    req.onupgradeneeded=e=>{
+      const d=e.target.result;
+      if(!d.objectStoreNames.contains('vendas_pendentes')) d.createObjectStore('vendas_pendentes',{keyPath:'_offid',autoIncrement:true});
+      if(!d.objectStoreNames.contains('cache_produtos')) d.createObjectStore('cache_produtos',{keyPath:'id'});
+      if(!d.objectStoreNames.contains('cache_clientes')) d.createObjectStore('cache_clientes',{keyPath:'id'});
+    };
+    req.onsuccess=e=>{_offdb=e.target.result;resolve(_offdb);};
+    req.onerror=e=>reject(e.target.error);
+  });
+}
+
+function offTx(store,mode){
+  return openOffDB().then(d=>d.transaction(store,mode).objectStore(store));
+}
+
+async function offAddVenda(venda){
+  const s=await offTx('vendas_pendentes','readwrite');
+  return new Promise((res,rej)=>{
+    const r=s.add({...venda,_criado_offline:new Date().toISOString()});
+    r.onsuccess=()=>res(r.result);
+    r.onerror=()=>rej(r.error);
+  });
+}
+
+async function offGetVendas(){
+  const s=await offTx('vendas_pendentes','readonly');
+  return new Promise((res,rej)=>{
+    const r=s.getAll();
+    r.onsuccess=()=>res(r.result);
+    r.onerror=()=>rej(r.error);
+  });
+}
+
+async function offDeleteVenda(_offid){
+  const s=await offTx('vendas_pendentes','readwrite');
+  return new Promise((res,rej)=>{
+    const r=s.delete(_offid);
+    r.onsuccess=()=>res();
+    r.onerror=()=>rej(r.error);
+  });
+}
+
+async function offCacheProdutos(produtos){
+  const s=await offTx('cache_produtos','readwrite');
+  produtos.forEach(p=>s.put(p));
+}
+async function offCacheClientes(clientes){
+  const s=await offTx('cache_clientes','readwrite');
+  clientes.forEach(c=>s.put(c));
+}
+async function offGetProdutos(){
+  const s=await offTx('cache_produtos','readonly');
+  return new Promise((res,rej)=>{const r=s.getAll();r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});
+}
+async function offGetClientes(){
+  const s=await offTx('cache_clientes','readonly');
+  return new Promise((res,rej)=>{const r=s.getAll();r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});
+}
+
+async function updatePendingBadge(){
+  try{
+    const pend=await offGetVendas();
+    const badge=document.getElementById('net-pending');
+    if(!badge)return;
+    if(pend.length>0){badge.style.display='';badge.textContent=pend.length;}
+    else badge.style.display='none';
+  }catch(e){}
+}
+
+function setNetPill(state){
+  const pill=document.getElementById('net-pill');
+  const txt=document.getElementById('net-pill-txt');
+  const ic=pill?.querySelector('i');
+  if(!pill)return;
+  pill.classList.remove('online','offline','syncing');
+  if(state==='offline'){
+    pill.classList.add('offline');txt.textContent='Offline';
+    ic.className='ti ti-wifi-off';
+    pill.title='Sem conexão — vendas serão guardadas e enviadas depois';
+  }else if(state==='syncing'){
+    pill.classList.add('syncing');txt.textContent='Sincronizando...';
+    ic.className='ti ti-loader-2';
+    pill.title='Enviando vendas pendentes...';
+  }else{
+    pill.classList.add('online');txt.textContent='Online';
+    ic.className='ti ti-wifi';
+    pill.title='Conectado';
+  }
+}
+
+let _syncing=false;
+async function syncOfflineQueue(manual){
+  if(_syncing)return;
+  if(!navigator.onLine){if(manual)notify('Você está offline. As vendas serão enviadas quando a conexão voltar.','warn');return;}
+  const pend=await offGetVendas();
+  if(pend.length===0){if(manual)notify('Nada pendente para sincronizar.','info');setNetPill('online');return;}
+  _syncing=true;setNetPill('syncing');
+  let ok=0,fail=0;
+  for(const v of pend){
+    const {_offid,_criado_offline,...venda}=v;
+    try{
+      // Reaplica baixa de estoque (idempotente: usa estoque atual do servidor)
+      for(const ci of venda.itens){
+        const {data:prod}=await db.from('produtos').select('id,estoque,estoque_infinito').eq('id',ci.id).single();
+        if(prod&&!prod.estoque_infinito){
+          const ne=Math.max(0,prod.estoque-ci.qty);
+          await db.from('produtos').update({estoque:ne}).eq('id',prod.id);
+          await regMov(prod.id,ci.nome||'',  'saida',ci.qty,ne,'Venda PDV (offline sincronizada)');
+        }
+      }
+      const {error}=await db.from('vendas').insert(venda);
+      if(error)throw error;
+      await offDeleteVenda(_offid);
+      ok++;
+    }catch(e){
+      fail++;
+      console.error('Falha ao sincronizar venda offline',e);
+    }
+  }
+  _syncing=false;
+  await updatePendingBadge();
+  setNetPill(navigator.onLine?'online':'offline');
+  if(ok>0)notify(`${ok} venda(s) offline sincronizada(s) com sucesso!`,'success',4000);
+  if(fail>0)notify(`${fail} venda(s) não puderam ser sincronizadas. Tente novamente.`,'error',4500);
+  if(ok>0)await loadAll();
+}
+
+window.addEventListener('online',()=>{setNetPill('online');syncOfflineQueue(false);});
+window.addEventListener('offline',()=>{setNetPill('offline');notify('Sem conexão. Vendas serão guardadas localmente.','warn',4000);});
+
+/* ── PWA: MANIFEST + SERVICE WORKER (embutidos, sem arquivos externos) ── */
+function registerPWA(){
+  try{
+    // Manifest via Blob
+    const manifest={
+      name:'EMETech ERP PDV',
+      short_name:'EMETech PDV',
+      start_url:'.',
+      display:'standalone',
+      background_color:'#F4F2FB',
+      theme_color:'#5B47E0',
+      icons:[{
+        src:'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"><rect width="192" height="192" rx="32" fill="%235B47E0"/><text x="96" y="118" font-size="84" font-family="Arial,sans-serif" font-weight="800" fill="%23fff" text-anchor="middle">E</text></svg>'),
+        sizes:'192x192',
+        type:'image/svg+xml'
+      }]
+    };
+    const manifestBlob=new Blob([JSON.stringify(manifest)],{type:'application/json'});
+    const manifestUrl=URL.createObjectURL(manifestBlob);
+    const link=document.createElement('link');
+    link.rel='manifest';link.href=manifestUrl;
+    document.head.appendChild(link);
+
+    // OBS: Service Worker via Blob/data URL não é suportado pelos navegadores
+    // (scripts de SW precisam ser http(s) same-origin). Sem um arquivo sw.js
+    // separado na raiz do projeto, o "app shell" não pode ser pré-cacheado.
+    // O modo offline do PDV continua funcionando via IndexedDB (fila de vendas
+    // e cache de produtos/clientes), que não depende de Service Worker.
+  }catch(e){console.warn('PWA setup falhou:',e);}
+}
+
+// Inicializa PWA e indicador de rede assim que possível
+document.addEventListener('DOMContentLoaded',()=>{
+  registerPWA();
+  setNetPill(navigator.onLine?'online':'offline');
+  updatePendingBadge();
+  if(navigator.onLine) syncOfflineQueue(false);
+  const somBtn=document.getElementById('som-pdv-btn');
+  if(somBtn)somBtn.innerHTML=G.somPDV?'<i class="ti ti-volume"></i>':'<i class="ti ti-volume-off"></i>';
+});
+
+/* ── SONS DO PDV (sintetizados via Web Audio API, sem arquivos externos) ── */
+let _audioCtx=null;
+function getAudioCtx(){
+  if(!_audioCtx){
+    try{_audioCtx=new (window.AudioContext||window.webkitAudioContext)();}catch(e){return null;}
+  }
+  if(_audioCtx.state==='suspended')_audioCtx.resume();
+  return _audioCtx;
+}
+function beep(freq=880,dur=0.08,type='sine',vol=0.18,delay=0){
+  if(G.somPDV===false)return;
+  const ctx=getAudioCtx();if(!ctx)return;
+  const t0=ctx.currentTime+delay;
+  const osc=ctx.createOscillator();
+  const gain=ctx.createGain();
+  osc.type=type;osc.frequency.setValueAtTime(freq,t0);
+  gain.gain.setValueAtTime(vol,t0);
+  gain.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+  osc.connect(gain);gain.connect(ctx.destination);
+  osc.start(t0);osc.stop(t0+dur);
+}
+// Item adicionado ao carrinho — beep curto e agudo
+function somAddItem(){beep(1100,0.06,'sine',0.15);}
+// Venda finalizada — sequência de dois tons (confirmação)
+function somVendaOk(){beep(880,0.09,'sine',0.18);beep(1320,0.13,'sine',0.18,0.10);}
+// Erro/aviso — tom grave curto
+function somErro(){beep(220,0.18,'square',0.12);}
+
+function toggleSomPDV(){
+  G.somPDV=!(G.somPDV===false)?false:true;
+  localStorage.setItem('emetech_som_pdv',G.somPDV?'1':'0');
+  const btn=document.getElementById('som-pdv-btn');
+  if(btn)btn.innerHTML=G.somPDV?'<i class="ti ti-volume"></i>':'<i class="ti ti-volume-off"></i>';
+  notify(G.somPDV?'Som do PDV ativado':'Som do PDV desativado','info',1800);
+  if(G.somPDV)somAddItem();
+}
+
 /* ── ESTADO GLOBAL ───────────────────────────────────── */
 let G = {
   user:null, profile:null, role:null,
@@ -2657,6 +2955,8 @@ let G = {
   osCounter:1, prodFotos:[], orcItems:[],
   charts: {}
 };
+// Restaura preferência salva de som
+G.somPDV = localStorage.getItem('emetech_som_pdv')!=='0';
 
 /* ── UTILS ───────────────────────────────────────────── */
 const fmt = v => 'R$ '+(v||0).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
@@ -2704,7 +3004,7 @@ const RC = {admin:'r-admin',gerente:'r-gerente',operador:'r-operador',tecnico:'r
 const RH = {admin:'dashboard',gerente:'dashboard',operador:'pdv',tecnico:'os'};
 
 function canAccess(role,page){
-  const P={dashboard:['admin','gerente'],pdv:['admin','gerente','operador'],caixas:['admin','gerente'],crediario:['admin','gerente','operador'],orcamentos:['admin','gerente','operador'],'os-hist':['admin','gerente','tecnico'],devolucoes:['admin','gerente'],os:['admin','gerente','tecnico'],produtos:['admin','gerente'],estoque:['admin','gerente'],fornecedores:['admin','gerente'],financeiro:['admin','gerente'],clientes:['admin','gerente','operador','tecnico'],relatorios:['admin','gerente'],inteligencia:['admin','gerente'],usuarios:['admin'],aparencia:['admin']};
+  const P={dashboard:['admin','gerente'],pdv:['admin','gerente','operador'],caixas:['admin','gerente'],crediario:['admin','gerente','operador'],orcamentos:['admin','gerente','operador'],'os-hist':['admin','gerente','tecnico'],devolucoes:['admin','gerente'],os:['admin','gerente','tecnico'],agenda:['admin','gerente','tecnico','operador'],comissoes:['admin','gerente'],produtos:['admin','gerente'],estoque:['admin','gerente'],fornecedores:['admin','gerente'],financeiro:['admin','gerente'],clientes:['admin','gerente','operador','tecnico'],relatorios:['admin','gerente'],inteligencia:['admin','gerente'],usuarios:['admin'],aparencia:['admin']};
   return (P[page]||[]).includes(role);
 }
 
@@ -2774,12 +3074,15 @@ async function loadAll(){
     const {count}=await db.from('ordens_servico').select('*',{count:'exact',head:true});
     G.osCounter=(count||0)+1;
     updateCaixaPill();
+    // Cache offline (PDV continua funcionando sem internet)
+    offCacheProdutos(G.produtos).catch(()=>{});
+    offCacheClientes(G.clientes).catch(()=>{});
   }catch(e){notify('Erro ao carregar dados.','error');}
   finally{setLoad(false);}
 }
 
 /* ── NAVEGAÇÃO ───────────────────────────────────────── */
-const PT={dashboard:'Dashboard',pdv:'PDV / Caixa',orcamentos:'Orçamentos',devolucoes:'Devoluções',os:'Ordens de Serviço','os-hist':'Histórico OS',produtos:'Produtos',estoque:'Movimentações de Estoque',fornecedores:'Fornecedores',financeiro:'Financeiro',clientes:'Clientes',relatorios:'Relatórios',usuarios:'Usuários & Acesso',aparencia:'Aparência & Marca',inteligencia:'Inteligência Operacional',caixas:'Gestão de Caixas',crediario:'Crediário'};
+const PT={dashboard:'Dashboard',pdv:'PDV / Caixa',orcamentos:'Orçamentos',devolucoes:'Devoluções',os:'Ordens de Serviço','os-hist':'Histórico OS',agenda:'Agenda de Entregas',comissoes:'Comissão por Técnico',produtos:'Produtos',estoque:'Movimentações de Estoque',fornecedores:'Fornecedores',financeiro:'Financeiro',clientes:'Clientes',relatorios:'Relatórios',usuarios:'Usuários & Acesso',aparencia:'Aparência & Marca',inteligencia:'Inteligência Operacional',caixas:'Gestão de Caixas',crediario:'Crediário'};
 
 function go(page){
   if(!canAccess(G.role,page)){notify('Acesso não permitido.','error');return;}
@@ -2811,6 +3114,8 @@ function go(page){
     devolucoes:renderDevolucoes,
     os:()=>{renderOSList();popSelects();popTecSel();},
     'os-hist':()=>{popOSFiltros();renderOSHist();},
+    agenda:renderAgenda,
+    comissoes:renderComissoes,
     produtos:renderProdTable,
     estoque:()=>{popMovFiltros();renderMov();},
     fornecedores:renderFornecedores,
@@ -2935,15 +3240,28 @@ async function saveProd(){
   if(!nome||!preco){notify('Nome e preço obrigatórios!','error');return;}
   const inf=document.getElementById('p-inf').checked;
   const id=document.getElementById('p-id').value;
-  const payload={nome,sku:document.getElementById('p-sku').value||'SKU-'+Date.now(),barcode:document.getElementById('p-bc').value,categoria:document.getElementById('p-cat').value,marca:document.getElementById('p-marca').value,custo:parseFloat(document.getElementById('p-custo').value)||0,preco,estoque_infinito:inf,estoque:inf?null:parseInt(document.getElementById('p-est').value)||0,estoque_minimo:inf?0:parseInt(document.getElementById('p-estmin').value)||0,status:document.getElementById('p-status').value,fotos:G.prodFotos};
+  const custo=parseFloat(document.getElementById('p-custo').value)||0;
+  const payload={nome,sku:document.getElementById('p-sku').value||'SKU-'+Date.now(),barcode:document.getElementById('p-bc').value,categoria:document.getElementById('p-cat').value,marca:document.getElementById('p-marca').value,custo,preco,estoque_infinito:inf,estoque:inf?null:parseInt(document.getElementById('p-est').value)||0,estoque_minimo:inf?0:parseInt(document.getElementById('p-estmin').value)||0,status:document.getElementById('p-status').value,fotos:G.prodFotos};
   setLoad(true);
   let err,data;
+  // Detecta mudança de preço/custo ANTES de salvar (para registrar histórico)
+  let regHist=null;
+  if(id){
+    const old=G.produtos.find(x=>x.id===id);
+    if(old&&(old.custo!==custo||old.preco!==preco)){
+      regHist={produto_id:id,produto_nome:nome,custo_anterior:old.custo||0,custo_novo:custo,preco_anterior:old.preco||0,preco_novo:preco,operador_id:G.profile.id,operador_nome:G.profile.nome};
+    }
+  }
   if(id){({error:err,data}=await db.from('produtos').update(payload).eq('id',id).select().single());}
   else{({error:err,data}=await db.from('produtos').insert(payload).select().single());}
   setLoad(false);
   if(err){notify('Erro: '+err.message,'error');return;}
   if(id){const i=G.produtos.findIndex(x=>x.id===id);if(i>=0)G.produtos[i]={...G.produtos[i],...payload};}
   else if(data)G.produtos.push(data);
+  // Registra histórico de preço (não bloqueia o fluxo se falhar)
+  if(regHist){
+    db.from('historico_precos').insert(regHist).then(({error})=>{if(error)console.warn('Erro ao registrar histórico de preço:',error);});
+  }
   notify(id?'Produto atualizado!':'Produto cadastrado!');
   closeModal('modal-prod');clearProdForm();renderProdTable();renderPDVGrid();
 }
@@ -2998,7 +3316,8 @@ function renderProdTable(q=''){
       <td>${p.estoque_infinito?'<span class="tag tag-inf">♾️</span>':`<span style="font-weight:600;color:${ez?'var(--danger)':eb?'var(--warn)':'var(--success)'}">${p.estoque}</span>${eb?'<span class="tag tag-amb" style="font-size:9.5px;margin-left:3px">Baixo</span>':''}${ez?'<span class="tag tag-red" style="font-size:9.5px;margin-left:3px">Zerado</span>':''}`}</td>
       <td><span class="tag ${p.status==='ativo'?'tag-grn':'tag-gry'}">${p.status==='ativo'?'Ativo':'Inativo'}</span></td>
       <td><div style="display:flex;gap:3px">${ce?`<button class="btn btn-out btn-xs" onclick="editProd('${p.id}')"><i class="ti ti-edit"></i></button>`:''}
-        <button class="btn-ghost btn-xs" onclick="verMovProd('${p.id}')" title="Histórico"><i class="ti ti-history"></i></button>
+        <button class="btn-ghost btn-xs" onclick="verMovProd('${p.id}')" title="Histórico de Estoque"><i class="ti ti-history"></i></button>
+        <button class="btn-ghost btn-xs" onclick="verHistoricoPreco('${p.id}')" title="Histórico de Preços"><i class="ti ti-chart-line"></i></button>
         <button class="btn-ghost btn-xs" onclick="abrirEtiqueta('${p.id}')" title="Etiqueta"><i class="ti ti-tag"></i></button>
         ${ce?`<button class="btn btn-danger btn-xs" onclick="delProd('${p.id}')"><i class="ti ti-trash"></i></button>`:''}</div></td>
     </tr>`;
@@ -3048,8 +3367,9 @@ function renderPDVGrid(){
 function addToCart(id){
   const p=G.produtos.find(x=>x.id===id);if(!p)return;
   const ci=G.cart.find(x=>x.id===id);
-  if(ci){if(!p.estoque_infinito&&ci.qty>=p.estoque){notify('Estoque máximo!','warn');return;}ci.qty++;}
+  if(ci){if(!p.estoque_infinito&&ci.qty>=p.estoque){somErro();notify('Estoque máximo!','warn');return;}ci.qty++;}
   else{G.cart.push({id,nome:p.nome,preco:p.preco,custo:p.custo||0,qty:1,inf:!!p.estoque_infinito});}
+  somAddItem();
   renderCart();
   // Atualiza sugestões após adicionar item
   setTimeout(renderSugestoesPDV, 100);
@@ -3134,7 +3454,7 @@ function renderMistoTotal(totalForcado){
 
 async function finalizeSale(){
   if(!G.cart.length)return;
-  if(!G.caixaAtual){notify('Abra o caixa antes de vender!','warn');return;}
+  if(!G.caixaAtual){somErro();notify('Abra o caixa antes de vender!','warn');return;}
   const sub=G.cart.reduce((s,i)=>s+i.preco*i.qty,0);
   const desc=parseFloat(document.getElementById('c-desc').value)||0;
   const acr=parseFloat(document.getElementById('c-acr').value)||0;
@@ -3145,31 +3465,66 @@ async function finalizeSale(){
   const cliNome=cli?.options[cli.selectedIndex]?.text||'Consumidor Final';
   const pagamentos=G.payMethod==='misto'?G.payMisto:[{forma:G.payMethod,valor:total}];
   const troco=G.payMethod==='dinheiro'?Math.max(0,sub-total):0;
-  setLoad(true);
-  // Baixar estoque
-  for(const ci of G.cart){
-    const p=G.produtos.find(x=>x.id===ci.id);
-    if(p&&!p.estoque_infinito){
-      const ne=Math.max(0,p.estoque-ci.qty);
-      await db.from('produtos').update({estoque:ne}).eq('id',p.id);
-      await regMov(p.id,p.nome,'saida',ci.qty,ne,'Venda PDV');
-      p.estoque=ne;
-    }
-  }
-  const venda={caixa_id:G.caixaAtual.id,cliente_id:cliId||null,cliente_nome:cliNome,operador_id:G.profile.id,operador_nome:G.profile.nome,itens:G.cart,subtotal:sub,desconto_pct:desc,desconto_valor:sub*desc/100,acrescimo_valor:acr,total,custo_total:custo,lucro:total-custo,pagamentos,pagamento:G.payMethod==='misto'?'misto':G.payMethod,troco};
-  // Verifica inadimplência do cliente antes de finalizar
-  if (clienteId && verificarInadimplencia(clienteId)) {
+  // Verifica inadimplência do cliente antes de finalizar (somente online)
+  if (navigator.onLine && cliId && typeof verificarInadimplencia==='function' && verificarInadimplencia(cliId)) {
     notify('⚠️ Cliente com parcelas em atraso no crediário!', 'warn', 5000);
     const continuar = window.confirm('Este cliente possui parcelas em atraso no crediário. Deseja continuar com a venda assim mesmo?');
-    if (!continuar) { setLoad(false); return; }
+    if (!continuar) return;
   }
-  const {error}=await db.from('vendas').insert(venda);
+  const venda={caixa_id:G.caixaAtual.id,cliente_id:cliId||null,cliente_nome:cliNome,operador_id:G.profile.id,operador_nome:G.profile.nome,itens:G.cart,subtotal:sub,desconto_pct:desc,desconto_valor:sub*desc/100,acrescimo_valor:acr,total,custo_total:custo,lucro:total-custo,pagamentos,pagamento:G.payMethod==='misto'?'misto':G.payMethod,troco};
+
+  if(!navigator.onLine){
+    // ── MODO OFFLINE: guarda venda na fila local, baixa estoque só na memória local ──
+    for(const ci of G.cart){
+      const p=G.produtos.find(x=>x.id===ci.id);
+      if(p&&!p.estoque_infinito) p.estoque=Math.max(0,p.estoque-ci.qty);
+    }
+    await offAddVenda(venda);
+    await updatePendingBadge();
+    G.vendas.unshift({...venda,criado_em:new Date().toISOString(),_pendente_offline:true});
+    document.getElementById('vok-info').textContent=`${G.cart.length} item(s) · ${cliNome} (offline)`;
+    document.getElementById('vok-total').textContent=fmt(total);
+    document.getElementById('vok-troco').textContent=troco>0?`Troco: ${fmt(troco)}`:'';
+    notify('Sem conexão: venda guardada e será enviada automaticamente quando voltar.','warn',4500);
+    somVendaOk();
+    openModal('modal-venda-ok');renderDashboard();
+    return;
+  }
+
+  setLoad(true);
+  try{
+    // Baixar estoque
+    for(const ci of G.cart){
+      const p=G.produtos.find(x=>x.id===ci.id);
+      if(p&&!p.estoque_infinito){
+        const ne=Math.max(0,p.estoque-ci.qty);
+        await db.from('produtos').update({estoque:ne}).eq('id',p.id);
+        await regMov(p.id,p.nome,'saida',ci.qty,ne,'Venda PDV');
+        p.estoque=ne;
+      }
+    }
+    const {error}=await db.from('vendas').insert(venda);
+    if(error)throw error;
+  }catch(e){
+    setLoad(false);
+    // Falhou no meio (ex: caiu a conexão agora) — guarda offline pra não perder a venda
+    await offAddVenda(venda);
+    await updatePendingBadge();
+    notify('Falha ao enviar venda. Guardada para sincronizar depois.','warn',4500);
+    somErro();
+    G.vendas.unshift({...venda,criado_em:new Date().toISOString(),_pendente_offline:true});
+    document.getElementById('vok-info').textContent=`${G.cart.length} item(s) · ${cliNome}`;
+    document.getElementById('vok-total').textContent=fmt(total);
+    document.getElementById('vok-troco').textContent=troco>0?`Troco: ${fmt(troco)}`:'';
+    openModal('modal-venda-ok');renderDashboard();
+    return;
+  }
   setLoad(false);
-  if(error){notify('Erro: '+error.message,'error');return;}
   G.vendas.unshift({...venda,criado_em:new Date().toISOString()});
   document.getElementById('vok-info').textContent=`${G.cart.length} item(s) · ${cliNome}`;
   document.getElementById('vok-total').textContent=fmt(total);
   document.getElementById('vok-troco').textContent=troco>0?`Troco: ${fmt(troco)}`:'';
+  somVendaOk();
   openModal('modal-venda-ok');renderDashboard();
 }
 
@@ -3178,6 +3533,7 @@ function abrirModalOrcamento(){
   G.orcItems=[];renderOrcItems();
   document.getElementById('orc-id').value='';document.getElementById('orc-obs').value='';document.getElementById('orc-desc').value=0;
   document.getElementById('orc-ttl').textContent='Novo Orçamento';
+  document.getElementById('orc-entrega').value='';
   const d=new Date();d.setDate(d.getDate()+30);
   document.getElementById('orc-val').value=d.toISOString().split('T')[0];
   openModal('modal-orc');
@@ -3216,7 +3572,7 @@ async function saveOrcamento(status='aberto'){
   const sub=G.orcItems.reduce((s,i)=>s+i.preco*i.qty,0);
   const desc=parseFloat(document.getElementById('orc-desc').value)||0;
   const total=sub*(1-desc/100);
-  const payload={cliente_id:cliSel?.value||null,cliente_nome:cliSel?.options[cliSel.selectedIndex]?.text||'Consumidor Final',operador_id:G.profile.id,operador_nome:G.profile.nome,itens:G.orcItems,subtotal:sub,desconto_pct:desc,total,validade:document.getElementById('orc-val').value||null,observacoes:document.getElementById('orc-obs').value,status};
+  const payload={cliente_id:cliSel?.value||null,cliente_nome:cliSel?.options[cliSel.selectedIndex]?.text||'Consumidor Final',operador_id:G.profile.id,operador_nome:G.profile.nome,itens:G.orcItems,subtotal:sub,desconto_pct:desc,total,validade:document.getElementById('orc-val').value||null,data_entrega_prevista:document.getElementById('orc-entrega').value||null,observacoes:document.getElementById('orc-obs').value,status};
   setLoad(true);
   const {data,error}=await db.from('orcamentos').insert(payload).select().single();
   setLoad(false);
@@ -3626,6 +3982,58 @@ function verMovProd(id){
   openModal('modal-os-det');
 }
 
+/* ── HISTÓRICO DE PREÇOS/CUSTOS ─────────────────────────── */
+async function verHistoricoPreco(id){
+  const p=G.produtos.find(x=>x.id===id);if(!p)return;
+  document.getElementById('os-det-content').innerHTML=`<div class="modal-title"><i class="ti ti-chart-line"></i>Histórico de Preços — ${p?.nome||''}</div><div class="empty-st"><div class="spinner" style="margin:0 auto"></div><h3 style="margin-top:10px">Carregando...</h3></div>`;
+  document.getElementById('os-det-footer').innerHTML='<button class="btn btn-out" onclick="closeModal(\'modal-os-det\')">Fechar</button>';
+  openModal('modal-os-det');
+
+  const {data,error}=await db.from('historico_precos').select('*').eq('produto_id',id).order('criado_em',{ascending:false});
+  if(error){
+    document.getElementById('os-det-content').innerHTML=`<div class="modal-title"><i class="ti ti-chart-line"></i>Histórico de Preços — ${p?.nome||''}</div><div class="empty-st"><i class="ti ti-alert-circle"></i><h3>Erro ao carregar</h3><p style="font-size:12px;color:var(--txt3)">${error.message}</p></div>`;
+    return;
+  }
+  const list=data||[];
+  if(list.length===0){
+    document.getElementById('os-det-content').innerHTML=`<div class="modal-title"><i class="ti ti-chart-line"></i>Histórico de Preços — ${p?.nome||''}</div>
+      <div class="empty-st"><i class="ti ti-chart-line"></i><h3>Sem alterações registradas</h3><p style="font-size:12px;color:var(--txt3)">Atual: Custo ${fmt(p.custo||0)} · Preço ${fmt(p.preco||0)}</p></div>`;
+    return;
+  }
+  // Monta série cronológica (mais antigo → mais recente) incluindo valor atual no fim
+  const cronologico=[...list].reverse();
+  const labels=cronologico.map(h=>fmtD(h.criado_em));
+  const custos=cronologico.map(h=>h.custo_novo);
+  const precos=cronologico.map(h=>h.preco_novo);
+  labels.push('Atual');custos.push(p.custo||0);precos.push(p.preco||0);
+
+  const tableRows=list.map(h=>{
+    const varCusto=h.custo_novo-h.custo_anterior;
+    const varPreco=h.preco_novo-h.preco_anterior;
+    const corC=varCusto>0?'var(--danger)':varCusto<0?'var(--success)':'var(--txt3)';
+    const corP=varPreco>0?'var(--success)':varPreco<0?'var(--danger)':'var(--txt3)';
+    return `<tr>
+      <td style="font-size:11.5px">${fmtDT(h.criado_em)}</td>
+      <td>${fmt(h.custo_anterior)} → <strong>${fmt(h.custo_novo)}</strong> <span style="color:${corC};font-size:11px">(${varCusto>=0?'+':''}${fmt(varCusto)})</span></td>
+      <td>${fmt(h.preco_anterior)} → <strong>${fmt(h.preco_novo)}</strong> <span style="color:${corP};font-size:11px">(${varPreco>=0?'+':''}${fmt(varPreco)})</span></td>
+      <td style="color:var(--txt2);font-size:12px">${h.operador_nome||'—'}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('os-det-content').innerHTML=`<div class="modal-title"><i class="ti ti-chart-line"></i>Histórico de Preços — ${p?.nome||''}</div>
+    <div style="height:200px;margin-bottom:14px"><canvas id="chart-hist-preco"></canvas></div>
+    <div class="tw"><table><thead><tr><th>Data</th><th>Custo</th><th>Preço</th><th>Usuário</th></tr></thead><tbody>${tableRows}</tbody></table></div>`;
+
+  if(G.charts.histPreco)G.charts.histPreco.destroy();
+  const ctx=document.getElementById('chart-hist-preco');
+  if(ctx){
+    G.charts.histPreco=new Chart(ctx,{type:'line',data:{labels,datasets:[
+      {label:'Custo',data:custos,borderColor:'#EF4444',backgroundColor:'rgba(239,68,68,.1)',tension:.25,fill:true},
+      {label:'Preço',data:precos,borderColor:'#5B47E0',backgroundColor:'rgba(91,71,224,.1)',tension:.25,fill:true}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:11}}}},scales:{y:{ticks:{callback:v=>'R$'+v,font:{size:10}}},x:{ticks:{font:{size:10}}}}}});
+  }
+}
+
 /* ── OS ──────────────────────────────────────────────── */
 const ON={'Aguardando':'Em Análise','Em Análise':'Em Reparo','Em Reparo':'Aguardando Peça','Aguardando Peça':'Pronto',Pronto:'Entregue'};
 const OP={Aguardando:8,'Em Análise':25,'Em Reparo':55,'Aguardando Peça':45,Pronto:90,Entregue:100};
@@ -3932,9 +4340,37 @@ function renderDashboard(){
   document.getElementById('d-lucro').textContent=fmt(lucro);
   document.getElementById('d-os').textContent=osAb;
   document.getElementById('d-venc').textContent=recVenc;
-  // Alertas
-  const bx=G.produtos.filter(p=>!p.estoque_infinito&&p.estoque===0);
-  document.getElementById('d-alerts').innerHTML=bx.length>0?`<div class="alert-box alert-danger" style="margin-bottom:12px"><i class="ti ti-alert-circle" style="font-size:16px"></i><div><strong>${bx.length} produto(s) sem estoque:</strong> ${bx.map(p=>p.nome).join(', ')}</div></div>`:'';
+  // ── ALERTAS INTELIGENTES ──────────────────────────────
+  let alertsHtml='';
+  // 1) OS com prazo vencido (não entregues)
+  const hojeStr=new Date().toISOString().split('T')[0];
+  const osAtrasadas=G.os.filter(o=>o.status!=='Entregue'&&o.prazo&&o.prazo<hojeStr);
+  if(osAtrasadas.length>0){
+    alertsHtml+=`<div class="alert-box alert-danger" style="margin-bottom:12px;cursor:pointer" onclick="go('os')"><i class="ti ti-clock-exclamation" style="font-size:16px"></i><div><strong>${osAtrasadas.length} OS passaram do prazo:</strong> ${osAtrasadas.slice(0,4).map(o=>o.numero).join(', ')}${osAtrasadas.length>4?'...':''}</div></div>`;
+  }
+  // 2) Estoque baixo (acima de zero, mas no mínimo ou abaixo) — separado do "sem estoque"
+  const estBaixo=G.produtos.filter(p=>!p.estoque_infinito&&p.estoque>0&&p.estoque<=(p.estoque_minimo||3));
+  if(estBaixo.length>0){
+    alertsHtml+=`<div class="alert-box alert-warn" style="margin-bottom:12px;cursor:pointer" onclick="go('estoque')"><i class="ti ti-package" style="font-size:16px"></i><div><strong>Estoque baixo em ${estBaixo.length} produto(s):</strong> ${estBaixo.slice(0,4).map(p=>p.nome).join(', ')}${estBaixo.length>4?'...':''}</div></div>`;
+  }
+  // 3) Sem estoque (zerado)
+  const semEst=G.produtos.filter(p=>!p.estoque_infinito&&p.estoque===0);
+  if(semEst.length>0){
+    alertsHtml+=`<div class="alert-box alert-danger" style="margin-bottom:12px;cursor:pointer" onclick="go('estoque')"><i class="ti ti-alert-circle" style="font-size:16px"></i><div><strong>${semEst.length} produto(s) sem estoque:</strong> ${semEst.slice(0,4).map(p=>p.nome).join(', ')}${semEst.length>4?'...':''}</div></div>`;
+  }
+  // 4) Crediário vencido hoje (parcelas com vencimento = hoje, status aberto)
+  const crediarioHoje=G.receber.filter(r=>r.status!=='pago'&&r.data_vencimento===hojeStr);
+  const clientesCrediarioHoje=[...new Set(crediarioHoje.map(r=>r.cliente_nome).filter(Boolean))];
+  if(crediarioHoje.length>0){
+    alertsHtml+=`<div class="alert-box alert-warn" style="margin-bottom:12px;cursor:pointer" onclick="go('crediario')"><i class="ti ti-calendar-due" style="font-size:16px"></i><div><strong>${clientesCrediarioHoje.length} cliente(s) com crediário vencendo hoje:</strong> ${clientesCrediarioHoje.slice(0,4).join(', ')}${clientesCrediarioHoje.length>4?'...':''}</div></div>`;
+  }
+  // 5) Crediário já vencido (atrasado, dias anteriores)
+  const crediarioAtrasado=G.receber.filter(r=>r.status!=='pago'&&r.data_vencimento<hojeStr);
+  const clientesCrediarioAtrasado=[...new Set(crediarioAtrasado.map(r=>r.cliente_nome).filter(Boolean))];
+  if(crediarioAtrasado.length>0){
+    alertsHtml+=`<div class="alert-box alert-danger" style="margin-bottom:12px;cursor:pointer" onclick="go('crediario')"><i class="ti ti-cash-off" style="font-size:16px"></i><div><strong>${clientesCrediarioAtrasado.length} cliente(s) com crediário em atraso:</strong> ${clientesCrediarioAtrasado.slice(0,4).join(', ')}${clientesCrediarioAtrasado.length>4?'...':''}</div></div>`;
+  }
+  document.getElementById('d-alerts').innerHTML=alertsHtml;
   // Últimas vendas
   document.getElementById('d-ult-v').innerHTML=G.vendas.length===0?'<div class="empty-st" style="padding:16px"><i class="ti ti-shopping-cart-off"></i><p>Nenhuma venda</p></div>':`<div class="tw"><table><thead><tr><th>Cliente</th><th>Total</th><th>Lucro</th></tr></thead><tbody>${G.vendas.slice(0,5).map(v=>`<tr><td>${v.cliente_nome}</td><td style="font-weight:700">${fmt(v.total)}</td><td style="color:var(--success);font-weight:700">${fmt(v.lucro||0)}</td></tr>`).join('')}</tbody></table></div>`;
   // OS abertas
@@ -3958,7 +4394,179 @@ function renderDashboard(){
   if(ctxfc){G.charts.fc=new Chart(ctxfc,{type:'bar',data:{labels:['A Receber','A Pagar','Saldo'],datasets:[{data:[entH,saiH,entH-saiH],backgroundColor:['rgba(16,185,129,.75)','rgba(239,68,68,.75)',entH-saiH>=0?'rgba(91,71,224,.75)':'rgba(239,68,68,.75)'],borderRadius:5,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:11}}},y:{ticks:{callback:v=>'R$'+v,font:{size:10}}}}}});}
 }
 
-/* ── APARÊNCIA & MARCA ───────────────────────────────── */
+/* ── AGENDA DE ENTREGAS ──────────────────────────────── */
+let _agendaRef=new Date(); // mês/ano em exibição
+
+function agendaMudarMes(delta){
+  _agendaRef.setMonth(_agendaRef.getMonth()+delta);
+  renderAgenda();
+}
+function agendaIrHoje(){
+  _agendaRef=new Date();
+  renderAgenda();
+}
+
+// Coleta todos os "eventos de entrega": OS (prazo) + Orçamentos (data_entrega_prevista)
+function agendaColetarEventos(){
+  const eventos=[];
+  G.os.forEach(o=>{
+    if(o.prazo&&o.status!=='Entregue'){
+      eventos.push({data:o.prazo,tipo:'os',cliente:o.cliente_nome||'—',detalhe:`OS ${o.numero} · ${o.aparelho||''}`,status:o.status,ref:o.id});
+    }
+  });
+  G.orcamentos.forEach(o=>{
+    if(o.data_entrega_prevista&&o.status!=='convertido'&&o.status!=='cancelado'){
+      const itens=(o.itens||[]).map(i=>i.nome).join(', ');
+      eventos.push({data:o.data_entrega_prevista,tipo:'prod',cliente:o.cliente_nome||'—',detalhe:itens||'Produto(s)',status:o.status,ref:o.id});
+    }
+  });
+  return eventos;
+}
+
+function renderAgenda(){
+  const hojeStr=new Date().toISOString().split('T')[0];
+  const eventos=agendaColetarEventos();
+  const ano=_agendaRef.getFullYear(), mes=_agendaRef.getMonth();
+  document.getElementById('agenda-mes-label').textContent=_agendaRef.toLocaleDateString('pt-BR',{month:'long',year:'numeric'}).replace(/^\w/,c=>c.toUpperCase());
+
+  // Mapa de eventos por data (YYYY-MM-DD)
+  const porData={};
+  eventos.forEach(e=>{(porData[e.data]=porData[e.data]||[]).push(e);});
+
+  // Monta grid do mês
+  const primeiroDia=new Date(ano,mes,1);
+  const ultimoDia=new Date(ano,mes+1,0);
+  const diasNoMes=ultimoDia.getDate();
+  const diaSemanaInicio=primeiroDia.getDay(); // 0=domingo
+
+  let html=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map(d=>`<div class="agenda-dow">${d}</div>`).join('');
+  for(let i=0;i<diaSemanaInicio;i++) html+='<div class="agenda-day empty"></div>';
+  for(let dia=1;dia<=diasNoMes;dia++){
+    const dataStr=`${ano}-${String(mes+1).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
+    const evs=porData[dataStr]||[];
+    const isToday=dataStr===hojeStr;
+    let itemsHtml=evs.slice(0,3).map(e=>{
+      const atrasado=dataStr<hojeStr&&e.status!=='Pronto'&&e.status!=='Entregue';
+      const cls=atrasado?'atrasado':(e.tipo==='os'?'os':'prod');
+      return `<span class="agenda-item ${cls}" title="${e.cliente} — ${e.detalhe}" onclick="${e.tipo==='os'?`go('os')`:`go('orcamentos')`}">${e.cliente}</span>`;
+    }).join('');
+    if(evs.length>3) itemsHtml+=`<span style="font-size:9px;color:var(--txt3)">+${evs.length-3} mais</span>`;
+    html+=`<div class="agenda-day${isToday?' today':''}"><div class="agenda-day-num">${dia}</div>${itemsHtml}</div>`;
+  }
+  document.getElementById('agenda-grid').innerHTML=html;
+
+  // Lista de próximas entregas (a partir de hoje, ordenadas)
+  const proximas=eventos.filter(e=>e.status!=='Pronto'&&e.status!=='Entregue').sort((a,b)=>a.data.localeCompare(b.data));
+  document.getElementById('agenda-lista').innerHTML=proximas.length===0?'<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--txt3)">Nenhuma entrega agendada</td></tr>':proximas.map(e=>{
+    const atrasado=e.data<hojeStr;
+    return `<tr>
+      <td style="font-weight:700;${atrasado?'color:var(--danger)':''}">${fmtD(e.data+'T12:00')}${atrasado?' <i class="ti ti-alert-triangle" title="Atrasado"></i>':''}</td>
+      <td><span class="tag ${e.tipo==='os'?'tag-pur':'tag-grn'}" style="font-size:10px">${e.tipo==='os'?'Ordem de Serviço':'Produto'}</span></td>
+      <td>${e.cliente}</td>
+      <td>${e.detalhe}</td>
+      <td><span class="tag ${OC[e.status]||'tag-gry'}" style="font-size:10px">${e.status}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+/* ── COMISSÃO POR TÉCNICO ────────────────────────────── */
+function setComissaoPeriodo(p){
+  const hoje=new Date();
+  let de,ate;
+  if(p==='mes'){
+    de=new Date(hoje.getFullYear(),hoje.getMonth(),1);
+    ate=new Date(hoje.getFullYear(),hoje.getMonth()+1,0);
+  }else if(p==='mes-passado'){
+    de=new Date(hoje.getFullYear(),hoje.getMonth()-1,1);
+    ate=new Date(hoje.getFullYear(),hoje.getMonth(),0);
+  }else{ // tudo
+    document.getElementById('com-de').value='';
+    document.getElementById('com-ate').value='';
+    renderComissoes();return;
+  }
+  document.getElementById('com-de').value=de.toISOString().split('T')[0];
+  document.getElementById('com-ate').value=ate.toISOString().split('T')[0];
+  renderComissoes();
+}
+
+async function renderComissoes(){
+  // Padrão: mês atual, se nada selecionado
+  if(!document.getElementById('com-de').value&&!document.getElementById('com-ate').value){
+    setComissaoPeriodo('mes');return; // setComissaoPeriodo já chama renderComissoes()
+  }
+  const de=document.getElementById('com-de').value;
+  const ate=document.getElementById('com-ate').value;
+  setLoad(true);
+  // OS concluídas (Pronto ou Entregue), busca ampla e filtra período no cliente
+  const {data,error}=await db.from('ordens_servico').select('*').in('status',['Pronto','Entregue']).limit(1000);
+  setLoad(false);
+  if(error){notify('Erro ao carregar OS: '+error.message,'error');return;}
+  let list=data||[];
+  // Filtra por período usando data_conclusao (fallback criado_em)
+  if(de)list=list.filter(o=>(o.data_conclusao||o.criado_em)>=de);
+  if(ate)list=list.filter(o=>(o.data_conclusao||o.criado_em)<=(ate+'T23:59:59'));
+
+  // Agrupa por técnico
+  const porTec={};
+  list.forEach(o=>{
+    const key=o.tecnico_id||o.tecnico_nome||'sem-tecnico';
+    if(!porTec[key])porTec[key]={nome:o.tecnico_nome||'Sem técnico',id:o.tecnico_id,os:[],fat:0};
+    porTec[key].os.push(o);
+    porTec[key].fat+=(o.valor_servico||0);
+  });
+
+  const grupos=Object.values(porTec);
+  let totalOS=0,totalFat=0,totalComissao=0;
+  const tecsAtivos=new Set();
+
+  const rows=grupos.map(g=>{
+    const usr=G.usuarios.find(u=>u.id===g.id||u.nome===g.nome);
+    const pct=usr?.comissao_pct||0;
+    const comissao=g.fat*(pct/100);
+    totalOS+=g.os.length;totalFat+=g.fat;totalComissao+=comissao;
+    if(g.nome!=='Sem técnico')tecsAtivos.add(g.nome);
+    return {nome:g.nome,id:g.id,qtdOS:g.os.length,fat:g.fat,pct,comissao,os:g.os};
+  }).sort((a,b)=>b.comissao-a.comissao);
+
+  document.getElementById('com-total-os').textContent=totalOS;
+  document.getElementById('com-total-fat').textContent=fmt(totalFat);
+  document.getElementById('com-total-comissao').textContent=fmt(totalComissao);
+  document.getElementById('com-total-tecs').textContent=tecsAtivos.size;
+
+  document.getElementById('com-table').innerHTML=rows.length===0?'<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--txt3)">Nenhuma OS concluída no período</td></tr>':rows.map((r,idx)=>`<tr>
+    <td style="font-weight:600">${r.nome}</td>
+    <td>${r.qtdOS}</td>
+    <td style="font-weight:700;color:var(--pri)">${fmt(r.fat)}</td>
+    <td>${r.pct?r.pct+'%':'<span style="color:var(--txt3)">não definido</span>'}</td>
+    <td style="font-weight:700;color:${r.comissao>0?'var(--success)':'var(--txt3)'}">${fmt(r.comissao)}</td>
+    <td><button class="btn btn-out btn-xs" onclick="verDetalheComissao(${idx})"><i class="ti ti-list"></i> Ver OS</button></td>
+  </tr>`).join('');
+
+  G._comissaoRows=rows; // guarda para o detalhe
+  document.getElementById('com-detalhe-card').style.display='none';
+  document.getElementById('com-detalhe-titulo').style.display='none';
+}
+
+function verDetalheComissao(idx){
+  const r=G._comissaoRows?.[idx];if(!r)return;
+  document.getElementById('com-detalhe-titulo').textContent=`OS de ${r.nome} no período`;
+  document.getElementById('com-detalhe-titulo').style.display='';
+  document.getElementById('com-detalhe-card').style.display='';
+  document.getElementById('com-detalhe-table').innerHTML=r.os.map(o=>{
+    const comissaoOS=(o.valor_servico||0)*(r.pct/100);
+    return `<tr>
+      <td style="font-weight:700;color:var(--pri)">${o.numero}</td>
+      <td>${o.cliente_nome}</td>
+      <td>${o.aparelho||'—'}</td>
+      <td style="font-size:11.5px;color:var(--txt3)">${o.data_conclusao?fmtD(o.data_conclusao):fmtD(o.criado_em)}</td>
+      <td>${fmt(o.valor_servico||0)}</td>
+      <td style="font-weight:700;color:var(--success)">${fmt(comissaoOS)}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('com-detalhe-card').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+
 
 // Estado das imagens de marca
 const MARCA_DEFAULT_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 110" fill="white" style="width:100%;height:100%"><rect x="5" y="4" width="90" height="10" rx="2"/><polygon points="5,14 18,14 18,26 5,14"/><polygon points="95,14 82,14 82,26 95,14"/><rect x="5" y="14" width="13" height="62" rx="1"/><rect x="82" y="14" width="13" height="62" rx="1"/><polygon points="18,14 34,14 52,44 52,56 38,56 18,22"/><polygon points="82,14 66,14 48,44 48,56 62,56 82,22"/><rect x="44" y="50" width="12" height="26" rx="1"/><rect x="5" y="76" width="90" height="10" rx="2"/><polygon points="5,86 18,86 5,98"/><polygon points="95,86 82,86 95,98"/><rect x="5" y="96" width="90" height="10" rx="2"/></svg>`;
@@ -4170,17 +4778,23 @@ async function saveUsr(){
   const email=document.getElementById('u-email').value.trim();
   const role=document.getElementById('u-role').value;
   const ativo=document.getElementById('u-ativo').value==='true';
+  const comissao_pct=role==='tecnico'?(parseFloat(document.getElementById('u-comissao').value)||0):0;
   const editId=document.getElementById('u-id').value;
   if(!nome||!email){notify('Nome e e-mail obrigatórios!','error');return;}
   setLoad(true);
   let err;
-  if(editId){({error:err}=await db.from('usuarios').update({nome,role,ativo}).eq('id',editId));}
-  else{({error:err}=await db.from('usuarios').insert({nome,email,role,ativo}));}
+  if(editId){({error:err}=await db.from('usuarios').update({nome,role,ativo,comissao_pct}).eq('id',editId));}
+  else{({error:err}=await db.from('usuarios').insert({nome,email,role,ativo,comissao_pct}));}
   setLoad(false);
   if(err){notify('Erro: '+err.message,'error');return;}
   notify(editId?'Usuário atualizado!':'Perfil criado! Crie o login no Supabase Auth.');
   const {data}=await db.from('usuarios').select('*').order('nome');G.usuarios=data||[];
   closeModal('modal-usr');renderUsuarios();
+}
+
+function toggleComissaoField(){
+  const role=document.getElementById('u-role').value;
+  document.getElementById('u-comissao-grp').style.display=role==='tecnico'?'':'none';
 }
 
 function renderUsuarios(q=''){
@@ -4258,6 +4872,8 @@ function editUsr(id){
   document.getElementById('u-email').value=u.email;
   document.getElementById('u-role').value=u.role;
   document.getElementById('u-ativo').value=u.ativo?'true':'false';
+  document.getElementById('u-comissao').value=u.comissao_pct||'';
+  toggleComissaoField();
   document.getElementById('usr-ttl').textContent='Editar Usuário';
   document.getElementById('u-pass-grp').style.display='none';
   openModal('modal-usr');
