@@ -523,6 +523,11 @@ select option { background: var(--bg2); }
 .fin-bloqueado { background: rgba(239,68,68,.12); color: var(--danger); border: 1px solid rgba(239,68,68,.25); }
 @keyframes pulseWarn { 0%,100%{opacity:1} 50%{opacity:.55} }
 
+/* ── WHATSAPP (NOVO) ── */
+.wpp-status-badge { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:6px; font-size:11px; font-weight:700; }
+.wpp-on  { background: rgba(37,211,102,.12); color: #25D366; border: 1px solid rgba(37,211,102,.3); }
+.wpp-off { background: rgba(255,255,255,.05); color: var(--txt3); border: 1px solid var(--border); }
+
 .kpi-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 14px; margin-bottom: 24px; }
 .kpi-card {
   background: var(--bg2); border: 1px solid var(--border);
@@ -634,6 +639,7 @@ select option { background: var(--bg2); }
       <div class="sb-item" onclick="go('cobrancas')"><i class="ti ti-receipt"></i> Cobranças</div>
       <div class="sb-item" onclick="go('planos')"><i class="ti ti-credit-card"></i> Planos</div>
       <div class="sb-sec">Operações</div>
+      <div class="sb-item" onclick="go('whatsapp')"><i class="ti ti-brand-whatsapp"></i> WhatsApp</div>
       <div class="sb-item" onclick="go('updates')"><i class="ti ti-cloud-upload"></i> Updates</div>
       <div class="sb-item" onclick="go('logs')"><i class="ti ti-activity"></i> Logs</div>
       <div class="sb-sec">Sistema</div>
@@ -862,6 +868,20 @@ select option { background: var(--bg2); }
         </div>
       </div>
 
+      <!-- ══ PAGE: WHATSAPP (NOVO) ══ -->
+      <div class="page" id="page-whatsapp">
+        <div class="sec-hdr">
+          <div class="sec-title">Integração WhatsApp por empresa</div>
+          <input type="text" id="wpp-busca-empresa" placeholder="Buscar empresa..." style="max-width:220px;padding:7px 12px;font-size:13px" oninput="renderWhatsapp()">
+        </div>
+        <div style="font-size:12.5px;color:var(--txt2);margin-bottom:16px">
+          Configure aqui o token e a instância da Zapster API para cada empresa. Os gestores enxergam apenas o status (conectado/desconectado) no PDV — a configuração fica centralizada neste painel.
+        </div>
+        <div id="wpp-empresas-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px">
+          <div style="color:var(--txt3);font-size:13px;padding:20px">Carregando...</div>
+        </div>
+      </div>
+
       <!-- ══ PAGE: UPDATES ══ -->
       <div class="page" id="page-updates">
         <div class="sec-hdr">
@@ -1022,7 +1042,7 @@ select option { background: var(--bg2); }
       </div>
       <div class="fg">
         <label class="lbl">CNPJ / CPF</label>
-        <input type="text" id="emp-doc" placeholder="00.000.000/0001-00">
+        <input type="text" id="emp-doc" placeholder="000.000.000-00 ou 00.000.000/0001-00" maxlength="18" oninput="mascararDocCnpjCpf(this)">
       </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -1258,6 +1278,55 @@ select option { background: var(--bg2); }
     <div class="modal-footer">
       <button class="btn btn-out" onclick="closeModal('modal-templates')">Cancelar</button>
       <button class="btn btn-pri" onclick="salvarTemplates()"><i class="ti ti-check"></i> Salvar templates</button>
+    </div>
+  </div>
+</div>
+
+<!-- Configuração WhatsApp por empresa (NOVO) -->
+<div class="modal-overlay" id="modal-wpp-config">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-title"><i class="ti ti-brand-whatsapp"></i> Integração WhatsApp — <span id="wpp-cfg-empresa-nome">Empresa</span></div>
+    <input type="hidden" id="wpp-cfg-empresa-id">
+    <div style="font-size:12.5px;color:var(--txt2);margin-bottom:14px">
+      Conecte a instância da Zapster API desta empresa. Crie a instância em <a href="https://zapsterapi.com" target="_blank" style="color:var(--pri)">zapsterapi.com</a> e copie o token e o ID abaixo.
+    </div>
+    <div class="g2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div class="fg"><label class="lbl">Token da API (Bearer)</label>
+        <input type="password" id="wpp-cfg-token" placeholder="seu-token-zapster">
+      </div>
+      <div class="fg"><label class="lbl">ID da instância</label>
+        <input type="text" id="wpp-cfg-instancia" placeholder="xy9rexnkwobmgg3tehgvs">
+      </div>
+    </div>
+    <div class="g2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div class="fg"><label class="lbl">URL base da API</label>
+        <input type="url" id="wpp-cfg-url" value="https://api.zapsterapi.com/v1" placeholder="https://api.zapsterapi.com/v1">
+      </div>
+      <div class="fg"><label class="lbl">Número do bot (com DDI)</label>
+        <input type="text" id="wpp-cfg-numero" placeholder="5571999999999">
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <label class="toggle">
+        <input type="checkbox" id="wpp-cfg-ativo">
+        <span class="tslider"></span>
+      </label>
+      <span style="font-size:13px;color:var(--txt2)">Integração ativa para esta empresa</span>
+    </div>
+    <div class="ms">Templates de mensagem (usados pelo chat de OS no PDV)</div>
+    <div class="fg"><label class="lbl">OS Recebida</label>
+      <textarea id="wpp-cfg-tpl-recebida" rows="2" placeholder="Olá {nome}! 📱 Recebemos seu *{aparelho}* na assistência. OS nº *{numero}* — Defeito: {defeito} ✅"></textarea>
+    </div>
+    <div class="fg"><label class="lbl">OS Pronta</label>
+      <textarea id="wpp-cfg-tpl-pronta" rows="2" placeholder="✅ Olá {nome}! Seu *{aparelho}* está pronto! Valor: *{total}* | OS nº {numero} 🎉"></textarea>
+    </div>
+    <div class="fg"><label class="lbl">Resposta automática de status</label>
+      <textarea id="wpp-cfg-tpl-status" rows="3" placeholder="Olá {nome}! 🔧 OS nº *{numero}* — {aparelho}. Status: *{status}*. {info_extra}. Dúvidas? Responda esta mensagem. 😊"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-out" onclick="closeModal('modal-wpp-config')">Cancelar</button>
+      <button class="btn btn-out" onclick="testarConexaoWppAdmin()"><i class="ti ti-wifi"></i> Testar conexão</button>
+      <button class="btn btn-pri" onclick="salvarConfigWppAdmin()"><i class="ti ti-check"></i> Salvar</button>
     </div>
   </div>
 </div>
@@ -1648,6 +1717,7 @@ const PAGE_TITLES = {
   empresas:  { title:'Empresas',     icon:'ti-building-store'   },
   cobrancas: { title:'Cobranças',    icon:'ti-receipt'          },
   planos:    { title:'Planos',       icon:'ti-credit-card'      },
+  whatsapp:  { title:'WhatsApp',     icon:'ti-brand-whatsapp'   },
   updates:   { title:'Updates',      icon:'ti-cloud-upload'     },
   logs:      { title:'Logs',         icon:'ti-activity'         },
   config:    { title:'Configurações',icon:'ti-settings'         },
@@ -1669,6 +1739,7 @@ function go(page) {
 
   if (page === 'logs') carregarLogs();
   if (page === 'cobrancas') renderCobrancas();
+  if (page === 'whatsapp') renderWhatsapp();
 }
 
 // ── BUSCA GLOBAL (Ctrl+K) (NOVO) ──
@@ -1808,7 +1879,7 @@ async function renderDashboard() {
   if (logs.length === 0) {
     feedEl.innerHTML = '<div style="color:var(--txt3);font-size:13px;text-align:center;padding:20px">Sem atividade</div>';
   } else {
-    const dotMap = { criada:'green', bloqueada:'red', desbloqueada:'green', update:'', excluida:'red', plano:'', pagamento:'green', webhook:'' };
+    const dotMap = { criada:'green', bloqueada:'red', desbloqueada:'green', update:'', excluida:'red', plano:'', pagamento:'green', webhook:'', whatsapp:'' };
     feedEl.innerHTML = logs.map(l => {
       const dot = dotMap[l.acao] || '';
       const ts = new Date(l.ts).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
@@ -2058,6 +2129,34 @@ function limparFiltros() {
   renderEmpresas();
 }
 
+/* ── MÁSCARA CPF/CNPJ (NOVO) ──────────────────────────── */
+// Aplica máscara dinamicamente: até 11 dígitos = CPF (000.000.000-00),
+// acima disso = CNPJ (00.000.000/0001-00)
+function mascararDocCnpjCpf(input) {
+  let v = input.value.replace(/\D/g, '').slice(0, 14);
+  if (v.length <= 11) {
+    // CPF: 000.000.000-00
+    v = v.replace(/(\d{3})(\d)/, '$1.$2');
+    v = v.replace(/(\d{3})(\d)/, '$1.$2');
+    v = v.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+  } else {
+    // CNPJ: 00.000.000/0001-00
+    v = v.replace(/(\d{2})(\d)/, '$1.$2');
+    v = v.replace(/(\d{3})(\d)/, '$1.$2');
+    v = v.replace(/(\d{3})(\d{1,4})$/, '$1/$2');
+    v = v.replace(/(\d{4})(\d{1,2})$/, '$1-$2');
+  }
+  input.value = v;
+}
+
+// Identifica se o documento é CPF (11 dígitos) ou CNPJ (14 dígitos)
+function tipoDocCnpjCpf(doc) {
+  const digitos = (doc || '').replace(/\D/g, '');
+  if (digitos.length === 11) return 'CPF';
+  if (digitos.length === 14) return 'CNPJ';
+  return null;
+}
+
 /* ── NOVA/EDITAR EMPRESA ── */
 function abrirNovaEmpresa() {
   document.getElementById('emp-id').value = '';
@@ -2085,6 +2184,7 @@ function editarEmpresa(id) {
   document.getElementById('emp-id').value = e.id;
   document.getElementById('emp-nome').value = e.nome || '';
   document.getElementById('emp-doc').value = e.doc || '';
+  mascararDocCnpjCpf(document.getElementById('emp-doc'));
   document.getElementById('emp-cidade').value = e.cidade || '';
   document.getElementById('emp-estado').value = e.estado || '';
   document.getElementById('emp-email').value = e.email || '';
@@ -2825,6 +2925,164 @@ function exportarCSV(tipo) {
   notify(`📁 ${filename} exportado!`, 'success');
 }
 
+/* ── WHATSAPP (NOVO) ── */
+// Mapeia linha de config_whatsapp (snake_case) -> objeto JS
+function mapWppCfgFromDb(r) {
+  if (!r) return null;
+  return {
+    empresaId: r.empresa_id,
+    apiUrl: r.api_url, apiToken: r.api_token, instanceId: r.instance_id,
+    numeroBot: r.numero_bot, ativo: r.ativo,
+    tplRecebida: r.tpl_recebida, tplPronta: r.tpl_pronta, tplStatus: r.tpl_status,
+  };
+}
+
+// Carrega configs de WhatsApp de todas as empresas de uma vez
+async function getConfigsWpp() {
+  const { data, error } = await db.from('config_whatsapp').select('*');
+  if (error) { console.error(error); return {}; }
+  const map = {};
+  (data || []).forEach(r => { map[r.empresa_id] = mapWppCfgFromDb(r); });
+  return map;
+}
+
+async function renderWhatsapp() {
+  const grid = document.getElementById('wpp-empresas-grid');
+  if (!grid) return;
+  grid.innerHTML = '<div style="color:var(--txt3);font-size:13px;padding:20px">Carregando...</div>';
+
+  const q = (document.getElementById('wpp-busca-empresa')?.value || '').toLowerCase();
+  const configs = await getConfigsWpp();
+
+  let empresas = G.empresas.filter(e => e.status !== 'cancelada');
+  if (q) empresas = empresas.filter(e => e.nome?.toLowerCase().includes(q));
+
+  if (empresas.length === 0) {
+    grid.innerHTML = '<div style="color:var(--txt3);font-size:13px;padding:30px;text-align:center;grid-column:1/-1">Nenhuma empresa encontrada.</div>';
+    return;
+  }
+
+  grid.innerHTML = empresas.map(e => {
+    const cfg = configs[e.id];
+    const conectado = !!(cfg?.ativo && cfg?.apiToken && cfg?.instanceId);
+    const cor = stringToColor(e.id || e.nome);
+    const ini = (e.nome || '?').slice(0,2).toUpperCase();
+
+    return `<div class="empresa-card">
+      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:14px">
+        <div class="empresa-avatar" style="background:${cor}">${ini}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:var(--txt);margin-bottom:3px">${e.nome}</div>
+          <div class="empresa-meta">${e.cidade||'—'}${e.estado?', '+e.estado:''}</div>
+        </div>
+        <span class="wpp-status-badge ${conectado?'wpp-on':'wpp-off'}">
+          <i class="ti ti-brand-whatsapp"></i> ${conectado ? 'Conectado' : 'Desconectado'}
+        </span>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--bg3);border-radius:8px;margin-bottom:12px">
+        <span style="font-size:12px;color:var(--txt3)">Instância</span>
+        <span style="font-size:12px;font-weight:600;color:var(--txt);font-family:'DM Mono',monospace">${cfg?.instanceId || '—'}</span>
+      </div>
+      <div class="empresa-actions">
+        <button class="btn btn-pri btn-xs" onclick="abrirConfigWppEmpresa('${e.id}')"><i class="ti ti-settings"></i> Configurar</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function abrirConfigWppEmpresa(empresaId) {
+  const e = G.empresas.find(x => x.id === empresaId);
+  if (!e) return;
+
+  document.getElementById('wpp-cfg-empresa-id').value = empresaId;
+  document.getElementById('wpp-cfg-empresa-nome').textContent = e.nome;
+
+  // Limpar campos
+  document.getElementById('wpp-cfg-token').value = '';
+  document.getElementById('wpp-cfg-instancia').value = '';
+  document.getElementById('wpp-cfg-url').value = 'https://api.zapsterapi.com/v1';
+  document.getElementById('wpp-cfg-numero').value = '';
+  document.getElementById('wpp-cfg-ativo').checked = false;
+  document.getElementById('wpp-cfg-tpl-recebida').value = '';
+  document.getElementById('wpp-cfg-tpl-pronta').value = '';
+  document.getElementById('wpp-cfg-tpl-status').value = '';
+
+  openModal('modal-wpp-config');
+
+  const { data, error } = await db.from('config_whatsapp').select('*').eq('empresa_id', empresaId).maybeSingle();
+  if (error) { notify('Erro ao carregar configuração: ' + error.message, 'error'); return; }
+  const cfg = mapWppCfgFromDb(data);
+  if (!cfg) return;
+
+  document.getElementById('wpp-cfg-token').value = cfg.apiToken || '';
+  document.getElementById('wpp-cfg-instancia').value = cfg.instanceId || '';
+  document.getElementById('wpp-cfg-url').value = cfg.apiUrl || 'https://api.zapsterapi.com/v1';
+  document.getElementById('wpp-cfg-numero').value = cfg.numeroBot || '';
+  document.getElementById('wpp-cfg-ativo').checked = !!cfg.ativo;
+  document.getElementById('wpp-cfg-tpl-recebida').value = cfg.tplRecebida || '';
+  document.getElementById('wpp-cfg-tpl-pronta').value = cfg.tplPronta || '';
+  document.getElementById('wpp-cfg-tpl-status').value = cfg.tplStatus || '';
+}
+
+async function salvarConfigWppAdmin() {
+  const empresaId = document.getElementById('wpp-cfg-empresa-id').value;
+  const e = G.empresas.find(x => x.id === empresaId);
+  if (!e) return;
+
+  const payload = {
+    empresa_id: empresaId,
+    provider: 'zapster',
+    api_url: (document.getElementById('wpp-cfg-url').value.trim() || 'https://api.zapsterapi.com/v1').replace(/\/$/, ''),
+    api_token: document.getElementById('wpp-cfg-token').value.trim() || null,
+    instance_id: document.getElementById('wpp-cfg-instancia').value.trim() || null,
+    numero_bot: document.getElementById('wpp-cfg-numero').value.trim() || null,
+    ativo: document.getElementById('wpp-cfg-ativo').checked,
+    tpl_recebida: document.getElementById('wpp-cfg-tpl-recebida').value.trim() || null,
+    tpl_pronta: document.getElementById('wpp-cfg-tpl-pronta').value.trim() || null,
+    tpl_status: document.getElementById('wpp-cfg-tpl-status').value.trim() || null,
+  };
+
+  setLoad(true);
+  try {
+    const { error } = await db.from('config_whatsapp').upsert(payload, { onConflict: 'empresa_id' });
+    if (error) throw error;
+    addLog('whatsapp', `Configuração WhatsApp atualizada para "${e.nome}"`, e.nome, e.id);
+    notify(`✅ Configuração WhatsApp salva para "${e.nome}"!`, 'success');
+    closeModal('modal-wpp-config');
+    renderWhatsapp();
+  } catch (err) {
+    notify('Erro ao salvar configuração: ' + (err.message || ''), 'error');
+  } finally {
+    setLoad(false);
+  }
+}
+
+async function testarConexaoWppAdmin() {
+  const apiUrl = (document.getElementById('wpp-cfg-url').value.trim() || 'https://api.zapsterapi.com/v1').replace(/\/$/, '');
+  const token = document.getElementById('wpp-cfg-token').value.trim();
+  const instancia = document.getElementById('wpp-cfg-instancia').value.trim();
+
+  if (!token || !instancia) {
+    notify('Preencha o Token e o ID da instância primeiro.', 'warn'); return;
+  }
+
+  try {
+    notify('Testando conexão...', 'info');
+    const res = await fetch(`${apiUrl}/wa/instances/${instancia}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const statusInst = data?.status || 'desconhecido';
+      notify(`✅ Conexão OK! Instância "${data?.name||instancia}" — status: ${statusInst}`, 'success');
+    } else {
+      notify('API respondeu com erro: ' + res.status, 'error');
+    }
+  } catch (e) {
+    notify('Não foi possível conectar à API. Verifique a URL e o token.', 'error');
+  }
+}
+
 /* ── LOGS ── */
 async function carregarLogs() {
   const el = document.getElementById('logs-list');
@@ -2835,7 +3093,7 @@ async function carregarLogs() {
     el.innerHTML = '<div style="color:var(--txt3);text-align:center;padding:20px">Sem logs</div>';
     return;
   }
-  const dotMap = { criada:'green', bloqueada:'red', desbloqueada:'green', update:'', excluida:'red', plano:'', editada:'', pagamento:'green', lembrete:'', boleto:'', webhook:'' };
+  const dotMap = { criada:'green', bloqueada:'red', desbloqueada:'green', update:'', excluida:'red', plano:'', editada:'', pagamento:'green', lembrete:'', boleto:'', webhook:'', whatsapp:'' };
   el.innerHTML = G.logs.map(l => {
     const dot = dotMap[l.acao] || '';
     const ts = new Date(l.ts).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
