@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 
@@ -514,6 +515,58 @@ select option { background: var(--bg2); }
   font-size: 16px; color: var(--txt);
 }
 
+/* ── FINANCEIRO (NOVO) ── */
+.fin-badge { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:6px; font-size:11px; font-weight:700; }
+.fin-emdia    { background: rgba(16,185,129,.12); color: var(--success); border: 1px solid rgba(16,185,129,.25); }
+.fin-atrasado { background: rgba(245,158,11,.12); color: var(--gold);    border: 1px solid rgba(245,158,11,.25); }
+.fin-tolerancia { background: rgba(245,158,11,.18); color: var(--gold); border: 1px solid rgba(245,158,11,.4); animation: pulseWarn 1.6s ease-in-out infinite; }
+.fin-bloqueado { background: rgba(239,68,68,.12); color: var(--danger); border: 1px solid rgba(239,68,68,.25); }
+@keyframes pulseWarn { 0%,100%{opacity:1} 50%{opacity:.55} }
+
+.kpi-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 14px; margin-bottom: 24px; }
+.kpi-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px;
+  position: relative; overflow: hidden;
+}
+.kpi-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, var(--pri2), var(--pri));
+}
+.kpi-val { font-family:'Syne',sans-serif; font-weight:800; font-size:22px; color:var(--txt); margin-bottom:2px; }
+.kpi-lbl { font-size:11px; color:var(--txt3); }
+.kpi-delta { font-size:11px; font-weight:700; margin-top:4px; display:flex; align-items:center; gap:3px; }
+.kpi-up { color: var(--success); }
+.kpi-down { color: var(--danger); }
+
+.chart-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
+.chart-wrap { position: relative; height: 220px; }
+
+/* ── FILTROS ── */
+.filters-bar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+.filters-bar select, .filters-bar input { width: auto; min-width: 130px; padding: 7px 12px; font-size: 12.5px; }
+
+/* ── BUSCA GLOBAL (Ctrl+K) ── */
+.gsearch-overlay {
+  position: fixed; inset: 0; z-index: 9500;
+  background: rgba(7,5,15,.75); backdrop-filter: blur(4px);
+  display:flex; align-items:flex-start; justify-content:center;
+  padding-top: 12vh; opacity:0; pointer-events:none; transition:opacity .15s;
+}
+.gsearch-overlay.show { opacity:1; pointer-events:all; }
+.gsearch-box { width:100%; max-width:560px; background:var(--bg2); border:1px solid var(--border2); border-radius:14px; box-shadow:0 24px 64px rgba(0,0,0,.6); overflow:hidden; }
+.gsearch-input { border:none; border-radius:0; padding:16px 18px; font-size:15px; border-bottom:1px solid var(--border); }
+.gsearch-input:focus { box-shadow:none; }
+.gsearch-results { max-height: 360px; overflow-y:auto; }
+.gsearch-item { padding:12px 18px; display:flex; align-items:center; gap:12px; cursor:pointer; border-bottom:1px solid var(--border); }
+.gsearch-item:hover, .gsearch-item.sel { background: var(--pri-light); }
+.gsearch-item i { color: var(--pri); font-size:16px; }
+.gsearch-empty { padding: 24px; text-align:center; color:var(--txt3); font-size:13px; }
+
+/* ── TOLERANCE / BLOQUEIO HISTORY ── */
+.hist-row { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); font-size:12.5px; }
+.hist-row:last-child { border-bottom:none; }
+
 /* ── ACTIVITY FEED ── */
 .feed-item {
   display: flex; align-items: flex-start; gap: 12px;
@@ -578,6 +631,7 @@ select option { background: var(--bg2); }
       <div class="sb-sec">Gestão</div>
       <div class="sb-item active" onclick="go('dashboard')"><i class="ti ti-layout-dashboard"></i> Dashboard</div>
       <div class="sb-item" onclick="go('empresas')"><i class="ti ti-building-store"></i> Empresas</div>
+      <div class="sb-item" onclick="go('cobrancas')"><i class="ti ti-receipt"></i> Cobranças</div>
       <div class="sb-item" onclick="go('planos')"><i class="ti ti-credit-card"></i> Planos</div>
       <div class="sb-sec">Operações</div>
       <div class="sb-item" onclick="go('updates')"><i class="ti ti-cloud-upload"></i> Updates</div>
@@ -606,6 +660,9 @@ select option { background: var(--bg2); }
       </div>
       <div class="topbar-right">
         <span id="topbar-date" style="font-size:12px;color:var(--txt3)"></span>
+        <button class="btn btn-out btn-sm" onclick="abrirBuscaGlobal()" title="Busca global (Ctrl+K)">
+          <i class="ti ti-search"></i> Buscar <span style="opacity:.5;font-size:11px">Ctrl+K</span>
+        </button>
         <button class="btn btn-pri btn-sm" onclick="abrirNovaEmpresa()">
           <i class="ti ti-plus"></i> Nova empresa
         </button>
@@ -616,27 +673,44 @@ select option { background: var(--bg2); }
 
       <!-- ══ PAGE: DASHBOARD ══ -->
       <div class="page active" id="page-dashboard">
-        <div class="stat-grid" id="stats-grid">
-          <div class="stat-card">
-            <div class="stat-icon"><i class="ti ti-building-store"></i></div>
-            <div class="stat-val" id="st-total">—</div>
-            <div class="stat-lbl">Empresas cadastradas</div>
+        <div class="kpi-grid" id="stats-grid">
+          <div class="kpi-card">
+            <div class="kpi-val" id="st-mrr">—</div>
+            <div class="kpi-lbl">MRR (Receita Recorrente Mensal)</div>
+            <div class="kpi-delta" id="st-mrr-delta"></div>
           </div>
-          <div class="stat-card">
-            <div class="stat-icon" style="background:rgba(16,185,129,.12);color:var(--success)"><i class="ti ti-check"></i></div>
-            <div class="stat-val" id="st-ativas" style="color:var(--success)">—</div>
-            <div class="stat-lbl">Empresas ativas</div>
+          <div class="kpi-card">
+            <div class="kpi-val" id="st-total">—</div>
+            <div class="kpi-lbl">Empresas cadastradas</div>
           </div>
-          <div class="stat-card">
-            <div class="stat-icon" style="background:rgba(239,68,68,.12);color:var(--danger)"><i class="ti ti-lock"></i></div>
-            <div class="stat-val" id="st-bloq" style="color:var(--danger)">—</div>
-            <div class="stat-lbl">Bloqueadas</div>
+          <div class="kpi-card">
+            <div class="kpi-val" id="st-ativas" style="color:var(--success)">—</div>
+            <div class="kpi-lbl">Empresas ativas</div>
           </div>
-          <div class="stat-card">
-            <div class="stat-icon" style="background:rgba(245,158,11,.12);color:var(--gold)"><i class="ti ti-currency-dollar"></i></div>
-            <div class="stat-val" id="st-mrr" style="color:var(--gold)">—</div>
-            <div class="stat-lbl">MRR estimado</div>
+          <div class="kpi-card">
+            <div class="kpi-val" id="st-bloq" style="color:var(--danger)">—</div>
+            <div class="kpi-lbl">Bloqueadas</div>
           </div>
+          <div class="kpi-card">
+            <div class="kpi-val" id="st-inadimplencia" style="color:var(--gold)">—</div>
+            <div class="kpi-lbl">Taxa de inadimplência</div>
+          </div>
+        </div>
+
+        <!-- Gráficos -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+          <div class="chart-card">
+            <div class="sec-title" style="margin-bottom:12px">Receita mensal (MRR)</div>
+            <div class="chart-wrap"><canvas id="chart-receita"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="sec-title" style="margin-bottom:12px">Evolução de inadimplência</div>
+            <div class="chart-wrap"><canvas id="chart-inadimplencia"></canvas></div>
+          </div>
+        </div>
+        <div class="chart-card" style="margin-bottom:16px">
+          <div class="sec-title" style="margin-bottom:12px">Empresas ativas vs bloqueadas</div>
+          <div class="chart-wrap" style="height:180px"><canvas id="chart-ativas-bloqueadas"></canvas></div>
         </div>
 
         <!-- Grid 2 colunas -->
@@ -668,15 +742,97 @@ select option { background: var(--bg2); }
       <div class="page" id="page-empresas">
         <div class="sec-hdr">
           <div class="sec-title">Todas as empresas</div>
-          <div style="display:flex;gap:8px">
-            <input type="text" id="empresa-search" placeholder="Buscar empresa..." style="max-width:220px;padding:7px 12px;font-size:13px" oninput="renderEmpresas()">
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <input type="text" id="empresa-search" placeholder="Buscar empresa..." style="max-width:200px;padding:7px 12px;font-size:13px" oninput="renderEmpresas()">
+            <button class="btn btn-out btn-sm" onclick="exportarCSV('empresas')"><i class="ti ti-download"></i> CSV</button>
             <button class="btn btn-pri btn-sm" onclick="abrirNovaEmpresa()">
               <i class="ti ti-plus"></i> Nova empresa
             </button>
           </div>
         </div>
+        <!-- Filtros avançados (NOVO) -->
+        <div class="filters-bar" style="margin-bottom:16px">
+          <select id="filtro-status-fin" onchange="renderEmpresas()">
+            <option value="">Status financeiro: Todos</option>
+            <option value="em_dia">Em dia</option>
+            <option value="atrasado">Atrasado</option>
+            <option value="tolerancia">Em Tolerância</option>
+            <option value="bloqueado">Bloqueado</option>
+          </select>
+          <select id="filtro-plano" onchange="renderEmpresas()">
+            <option value="">Plano: Todos</option>
+          </select>
+          <select id="filtro-atraso" onchange="renderEmpresas()">
+            <option value="">Dias de atraso: Todos</option>
+            <option value="1-5">1 a 5 dias</option>
+            <option value="6-15">6 a 15 dias</option>
+            <option value="16+">16+ dias</option>
+          </select>
+          <input type="text" id="filtro-cidade" placeholder="Filtrar por cidade..." oninput="renderEmpresas()">
+          <button class="btn btn-out btn-sm" onclick="limparFiltros()"><i class="ti ti-x"></i> Limpar</button>
+        </div>
         <div id="empresas-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px">
           <div style="color:var(--txt3);font-size:13px;padding:20px">Carregando...</div>
+        </div>
+      </div>
+
+      <!-- ══ PAGE: COBRANÇAS (NOVO) ══ -->
+      <div class="page" id="page-cobrancas">
+        <div class="sec-hdr">
+          <div class="sec-title">Financeiro &amp; Cobrança</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-out btn-sm" onclick="abrirTemplates()"><i class="ti ti-message-circle"></i> Templates</button>
+            <button class="btn btn-out btn-sm" onclick="exportarCSV('cobrancas')"><i class="ti ti-download"></i> CSV</button>
+            <button class="btn btn-pri btn-sm" onclick="abrirRegistrarPagamento()"><i class="ti ti-cash"></i> Registrar pagamento</button>
+          </div>
+        </div>
+
+        <!-- KPIs financeiros -->
+        <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)">
+          <div class="kpi-card">
+            <div class="kpi-val" id="cob-st-emdia" style="color:var(--success)">—</div>
+            <div class="kpi-lbl">Empresas em dia</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-val" id="cob-st-atrasadas" style="color:var(--gold)">—</div>
+            <div class="kpi-lbl">Empresas atrasadas</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-val" id="cob-st-tolerancia" style="color:var(--gold)">—</div>
+            <div class="kpi-lbl">Em tolerância</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-val" id="cob-st-bloqueadas" style="color:var(--danger)">—</div>
+            <div class="kpi-lbl">Bloqueadas (financeiro)</div>
+          </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="filters-bar" style="margin-bottom:16px">
+          <select id="cob-filtro-status" onchange="renderCobrancas()">
+            <option value="">Status: Todos</option>
+            <option value="em_dia">Em dia</option>
+            <option value="atrasado">Atrasado</option>
+            <option value="tolerancia">Em Tolerância</option>
+            <option value="bloqueado">Bloqueado</option>
+          </select>
+          <input type="text" id="cob-filtro-busca" placeholder="Buscar empresa..." oninput="renderCobrancas()">
+        </div>
+
+        <!-- Tabela de cobranças -->
+        <div class="card">
+          <div class="sec-title" style="margin-bottom:14px">Cobranças por empresa</div>
+          <div class="tw">
+            <table>
+              <thead>
+                <tr>
+                  <th>Empresa</th><th>Plano</th><th>Vencimento</th><th>Status</th>
+                  <th>Dias atraso/tolerância</th><th>Valor</th><th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="cobrancas-tbody"></tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -799,7 +955,10 @@ select option { background: var(--bg2); }
       <div class="page" id="page-logs">
         <div class="sec-hdr">
           <div class="sec-title">Log de atividade global</div>
-          <button class="btn btn-out btn-sm" onclick="carregarLogs()"><i class="ti ti-refresh"></i> Atualizar</button>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-out btn-sm" onclick="exportarCSV('logs')"><i class="ti ti-download"></i> CSV</button>
+            <button class="btn btn-out btn-sm" onclick="carregarLogs()"><i class="ti ti-refresh"></i> Atualizar</button>
+          </div>
         </div>
         <div class="card">
           <div id="logs-list">
@@ -920,6 +1079,21 @@ select option { background: var(--bg2); }
         </select>
       </div>
     </div>
+    <!-- NOVO: tolerância e integração de cobrança -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+      <div class="fg">
+        <label class="lbl">Dias de tolerância</label>
+        <input type="number" id="emp-tolerancia" min="0" max="30" value="5" placeholder="5">
+      </div>
+      <div class="fg">
+        <label class="lbl">ID cliente Asaas/PagSeguro</label>
+        <input type="text" id="emp-gateway-id" placeholder="(opcional)">
+      </div>
+      <div class="fg">
+        <label class="lbl">WhatsApp (cobrança)</label>
+        <input type="text" id="emp-whatsapp" placeholder="55 75 99999-9999">
+      </div>
+    </div>
     <div class="fg">
       <label class="lbl">Observações internas</label>
       <textarea id="emp-obs" rows="2" placeholder="Notas sobre a empresa (apenas você vê)..."></textarea>
@@ -937,6 +1111,7 @@ select option { background: var(--bg2); }
     <div class="modal-title"><i class="ti ti-building-store"></i><span id="det-titulo">Detalhes</span></div>
     <div class="tabs">
       <button class="tab-btn active" onclick="detTab('geral',this)">Geral</button>
+      <button class="tab-btn" onclick="detTab('financeiro',this)">Financeiro</button>
       <button class="tab-btn" onclick="detTab('acesso',this)">Acesso</button>
       <button class="tab-btn" onclick="detTab('updates',this)">Updates</button>
       <button class="tab-btn" onclick="detTab('bloqueio',this)">Bloqueio</button>
@@ -944,6 +1119,10 @@ select option { background: var(--bg2); }
     <!-- Aba Geral -->
     <div id="det-tab-geral">
       <div id="det-geral-content"></div>
+    </div>
+    <!-- Aba Financeiro (NOVO) -->
+    <div id="det-tab-financeiro" style="display:none">
+      <div id="det-financeiro-content"></div>
     </div>
     <!-- Aba Acesso -->
     <div id="det-tab-acesso" style="display:none">
@@ -1005,6 +1184,94 @@ select option { background: var(--bg2); }
   </div>
 </div>
 
+<!-- Registrar Pagamento (NOVO) -->
+<div class="modal-overlay" id="modal-pagamento">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-title"><i class="ti ti-cash"></i> Registrar pagamento</div>
+    <input type="hidden" id="pag-empresa-id">
+    <div class="fg">
+      <label class="lbl">Empresa</label>
+      <select id="pag-empresa-sel" onchange="document.getElementById('pag-empresa-id').value=this.value"></select>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="fg">
+        <label class="lbl">Valor pago (R$)</label>
+        <input type="number" id="pag-valor" min="0" step="0.01" placeholder="89.00">
+      </div>
+      <div class="fg">
+        <label class="lbl">Data do pagamento</label>
+        <input type="date" id="pag-data">
+      </div>
+    </div>
+    <div class="fg">
+      <label class="lbl">Comprovante (referência/observação)</label>
+      <input type="text" id="pag-comprovante" placeholder="Ex: PIX comprovante #1234, link do arquivo...">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-out" onclick="closeModal('modal-pagamento')">Cancelar</button>
+      <button class="btn btn-pri" onclick="salvarPagamento()"><i class="ti ti-check"></i> Registrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bloqueio com justificativa (NOVO) -->
+<div class="modal-overlay" id="modal-bloqueio">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-title"><i class="ti ti-lock"></i> Bloquear empresa</div>
+    <input type="hidden" id="bloq-empresa-id">
+    <div class="fg">
+      <label class="lbl">Justificativa do bloqueio *</label>
+      <textarea id="bloq-justificativa" rows="3" placeholder="Ex: Inadimplência superior a 7 dias..."></textarea>
+    </div>
+    <div style="font-size:11.5px;color:var(--txt3);margin-bottom:8px">
+      A data e o responsável serão registrados automaticamente no histórico.
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-out" onclick="closeModal('modal-bloqueio')">Cancelar</button>
+      <button class="btn btn-danger" onclick="confirmarBloqueio()"><i class="ti ti-lock"></i> Bloquear</button>
+    </div>
+  </div>
+</div>
+
+<!-- Templates de mensagem WhatsApp (NOVO) -->
+<div class="modal-overlay" id="modal-templates">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-title"><i class="ti ti-message-circle"></i> Templates de mensagem WhatsApp</div>
+    <div style="font-size:11.5px;color:var(--txt3);margin-bottom:12px">
+      Use as variáveis: <code style="background:var(--bg3);padding:1px 5px;border-radius:4px">{empresa}</code>,
+      <code style="background:var(--bg3);padding:1px 5px;border-radius:4px">{vencimento}</code>,
+      <code style="background:var(--bg3);padding:1px 5px;border-radius:4px">{valor}</code>,
+      <code style="background:var(--bg3);padding:1px 5px;border-radius:4px">{dias}</code>
+    </div>
+    <div class="fg">
+      <label class="lbl">5 dias antes do vencimento</label>
+      <textarea id="tpl-antes" rows="2"></textarea>
+    </div>
+    <div class="fg">
+      <label class="lbl">No dia do vencimento</label>
+      <textarea id="tpl-dia" rows="2"></textarea>
+    </div>
+    <div class="fg">
+      <label class="lbl">Após vencimento (aviso de bloqueio)</label>
+      <textarea id="tpl-apos" rows="2"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-out" onclick="closeModal('modal-templates')">Cancelar</button>
+      <button class="btn btn-pri" onclick="salvarTemplates()"><i class="ti ti-check"></i> Salvar templates</button>
+    </div>
+  </div>
+</div>
+
+<!-- Busca Global Ctrl+K (NOVO) -->
+<div class="gsearch-overlay" id="gsearch-overlay">
+  <div class="gsearch-box">
+    <input type="text" id="gsearch-input" class="gsearch-input" placeholder="Buscar empresas, cobranças, planos, logs..." oninput="executarBuscaGlobal()">
+    <div class="gsearch-results" id="gsearch-results">
+      <div class="gsearch-empty">Digite para buscar...</div>
+    </div>
+  </div>
+</div>
+
 <!-- Notificações -->
 <div class="notif-stack" id="notif-stack"></div>
 
@@ -1033,51 +1300,264 @@ let G = {
   planos: [],
   logs: [],
   updates: [],
+  faturas: [],
 };
+let _charts = {}; // instâncias Chart.js
 
 let _confirmFn = null;
 let _empresaAtual = null;
 
-/* ── DADOS LOCAIS (localStorage) ── */
-function getEmpresas() {
-  try { return JSON.parse(localStorage.getItem('master_empresas') || '[]'); } catch { return []; }
+/* ── DADOS (SUPABASE) ── */
+// Mapeia linha do banco (snake_case) -> objeto JS (camelCase) usado no painel
+function mapEmpresaFromDb(r) {
+  return {
+    id: r.id,
+    authUserId: r.auth_user_id,
+    nome: r.nome, doc: r.doc, cidade: r.cidade, estado: r.estado, email: r.email,
+    senha: r.senha_inicial,
+    plano: r.plano, venc: r.venc, status: r.status, obs: r.obs,
+    tolerancia: r.tolerancia, gatewayId: r.gateway_id, whatsapp: r.whatsapp,
+    motivoBloqueio: r.motivo_bloqueio, bloqueioMotivo: r.motivo_bloqueio,
+    bloqueadoEm: r.bloqueado_em, bloqueadoPor: r.bloqueado_por,
+    diasAtrasoNoBloqueio: r.dias_atraso_bloqueio,
+    createdAt: r.created_at, updatedAt: r.updated_at,
+  };
 }
-function saveEmpresas(arr) {
-  localStorage.setItem('master_empresas', JSON.stringify(arr));
+function mapEmpresaToDb(e) {
+  return {
+    nome: e.nome, doc: e.doc, cidade: e.cidade, estado: e.estado, email: e.email,
+    plano: e.plano, venc: parseInt(e.venc) || 10, status: e.status, obs: e.obs,
+    tolerancia: parseInt(e.tolerancia ?? 5), gateway_id: e.gatewayId || null, whatsapp: e.whatsapp || null,
+    motivo_bloqueio: e.motivoBloqueio || e.bloqueioMotivo || null,
+    bloqueado_em: e.bloqueadoEm || null, bloqueado_por: e.bloqueadoPor || null,
+    dias_atraso_bloqueio: e.diasAtrasoNoBloqueio ?? null,
+  };
 }
-function getPlanos() {
-  try {
-    const p = JSON.parse(localStorage.getItem('master_planos') || 'null');
-    return p || [
-      { id:'basic',      nome:'Básico',      preco:89,   usuarios:2,  features:'PDV, Estoque básico, 1 caixa' },
-      { id:'pro',        nome:'Pro',         preco:149,  usuarios:5,  features:'PDV, Estoque, OS, Crediário, Relatórios' },
-      { id:'enterprise', nome:'Enterprise',  preco:299,  usuarios:15, features:'Tudo + Multi-caixa, API, Suporte prioritário' },
-    ];
-  } catch { return []; }
+
+async function getEmpresas() {
+  const { data, error } = await db.from('empresas').select('*').order('created_at', { ascending:false });
+  if (error) { console.error(error); notify('Erro ao carregar empresas: ' + error.message, 'error'); return []; }
+  return (data || []).map(mapEmpresaFromDb);
 }
-function savePlanos(arr) {
-  localStorage.setItem('master_planos', JSON.stringify(arr));
+async function saveEmpresa(empresa) {
+  const payload = mapEmpresaToDb(empresa);
+  if (empresa.id && !empresa._isNew) {
+    const { error } = await db.from('empresas').update(payload).eq('id', empresa.id);
+    if (error) throw error;
+    return empresa.id;
+  } else {
+    const id = empresa.id || ('emp_' + Date.now());
+    const { error } = await db.from('empresas').insert({ id, ...payload, senha_inicial: empresa.senha || null });
+    if (error) throw error;
+    return id;
+  }
 }
-function getLogs() {
-  try { return JSON.parse(localStorage.getItem('master_logs') || '[]'); } catch { return []; }
+async function excluirEmpresaDb(id) {
+  const { error } = await db.from('empresas').delete().eq('id', id);
+  if (error) throw error;
 }
-function addLog(acao, detalhe, empresaNome = 'Global') {
-  const logs = getLogs();
-  logs.unshift({
-    ts: new Date().toISOString(),
-    acao, detalhe, empresa: empresaNome,
-    user: G.user?.email || 'master',
+
+function mapPlanoFromDb(r) {
+  return { id: r.id, nome: r.nome, preco: Number(r.preco), usuarios: r.usuarios, features: r.features };
+}
+async function getPlanos() {
+  const { data, error } = await db.from('planos').select('*').order('preco', { ascending:true });
+  if (error) { console.error(error); notify('Erro ao carregar planos: ' + error.message, 'error'); return []; }
+  return (data || []).map(mapPlanoFromDb);
+}
+async function salvarPlanoDb(plano) {
+  const payload = { nome: plano.nome, preco: plano.preco, usuarios: plano.usuarios, features: plano.features };
+  if (plano.id) {
+    const { error } = await db.from('planos').update(payload).eq('id', plano.id);
+    if (error) throw error;
+    return plano.id;
+  } else {
+    const id = 'plano_' + Date.now();
+    const { error } = await db.from('planos').insert({ id, ...payload });
+    if (error) throw error;
+    return id;
+  }
+}
+
+function mapLogFromDb(r) {
+  return { ts: r.created_at, acao: r.acao, detalhe: r.detalhe, empresa: r.empresa_nome || 'Global', user: r.usuario || 'master' };
+}
+async function getLogs() {
+  const { data, error } = await db.from('logs').select('*').order('created_at', { ascending:false }).limit(200);
+  if (error) { console.error(error); return []; }
+  return (data || []).map(mapLogFromDb);
+}
+async function addLog(acao, detalhe, empresaNome = 'Global', empresaId = null) {
+  const { error } = await db.from('logs').insert({
+    acao, detalhe, empresa_id: empresaId, empresa_nome: empresaNome,
+    usuario: G.perfil?.nome || G.user?.email || 'master',
   });
-  // Manter apenas 200 logs
-  localStorage.setItem('master_logs', JSON.stringify(logs.slice(0, 200)));
+  if (error) console.error('Erro ao gravar log:', error);
 }
-function getUpdates() {
-  try { return JSON.parse(localStorage.getItem('master_updates') || '[]'); } catch { return []; }
+
+function mapUpdateFromDb(r) {
+  return { ts: r.created_at, tipo: r.tipo, versao: r.versao, notas: r.notas, empresa: r.empresa_id || 'global', forcar: r.forcar_reload };
 }
-function addUpdate(entry) {
-  const arr = getUpdates();
-  arr.unshift({ ...entry, ts: new Date().toISOString() });
-  localStorage.setItem('master_updates', JSON.stringify(arr.slice(0, 100)));
+async function getUpdates() {
+  const { data, error } = await db.from('updates').select('*').order('created_at', { ascending:false }).limit(100);
+  if (error) { console.error(error); return []; }
+  return (data || []).map(mapUpdateFromDb);
+}
+async function addUpdate(entry) {
+  const { error } = await db.from('updates').insert({
+    tipo: entry.tipo, versao: entry.versao, notas: entry.notas,
+    empresa_id: (entry.empresa === 'global' ? null : entry.empresa),
+    forcar_reload: !!entry.forcar,
+  });
+  if (error) console.error('Erro ao gravar update:', error);
+}
+
+/* ── FINANCEIRO ── */
+async function getFaturas() {
+  const { data, error } = await db.from('faturas').select('*').order('vencimento', { ascending:false });
+  if (error) { console.error(error); return []; }
+  return data || [];
+}
+
+// Templates de mensagem WhatsApp
+async function getTemplates() {
+  const { data, error } = await db.from('templates_mensagem').select('*').eq('id','default').single();
+  if (error || !data) {
+    return {
+      antes: 'Olá {empresa}! Lembrando que sua mensalidade do EMETech PDV (R$ {valor}) vence em {dias} dias, no dia {vencimento}. Qualquer dúvida estamos à disposição!',
+      dia:   'Olá {empresa}! Hoje é o vencimento da sua mensalidade EMETech PDV no valor de R$ {valor}. Para evitar bloqueio, regularize o pagamento. Obrigado!',
+      apos:  'Olá {empresa}, identificamos que sua mensalidade (R$ {valor}, venc. {vencimento}) está em atraso há {dias} dia(s). Após o período de tolerância o acesso poderá ser bloqueado. Por favor regularize o quanto antes.',
+    };
+  }
+  return { antes: data.antes, dia: data.dia, apos: data.apos };
+}
+async function saveTemplates(t) {
+  const { error } = await db.from('templates_mensagem')
+    .upsert({ id:'default', antes:t.antes, dia:t.dia, apos:t.apos, updated_at: new Date().toISOString() });
+  if (error) throw error;
+}
+
+// Calcula a próxima data de vencimento (mês corrente ou próximo) a partir do dia configurado
+function calcularProximoVencimento(diaVenc) {
+  const hoje = new Date();
+  const dia = parseInt(diaVenc) || 10;
+  let venc = new Date(hoje.getFullYear(), hoje.getMonth(), dia);
+  // Se já passou muito (mais que tolerância máxima 30 dias), considera o vencimento do mês corrente mesmo (em atraso)
+  return venc;
+}
+
+// Retorna { status, diasInfo, venc } onde status ∈ em_dia | atrasado | tolerancia | bloqueado
+function statusFinanceiro(empresa) {
+  if (empresa.status === 'cancelada') {
+    return { status: 'cancelada', dias: 0, venc: null };
+  }
+  if (empresa.status === 'bloqueada' && empresa.bloqueioMotivo) {
+    // Bloqueio manual/financeiro
+    return { status: 'bloqueado', dias: empresa.diasAtrasoNoBloqueio || 0, venc: calcularProximoVencimento(empresa.venc) };
+  }
+
+  const hoje = new Date();
+  hoje.setHours(0,0,0,0);
+  const venc = calcularProximoVencimento(empresa.venc);
+  venc.setHours(0,0,0,0);
+
+  const diffMs = hoje - venc;
+  const diasAtraso = Math.floor(diffMs / 86400000);
+  const tolerancia = parseInt(empresa.tolerancia ?? 5);
+
+  if (diasAtraso <= 0) {
+    return { status: 'em_dia', dias: Math.abs(diasAtraso), venc };
+  } else if (diasAtraso <= tolerancia) {
+    return { status: 'tolerancia', dias: diasAtraso, venc, diasRestantes: tolerancia - diasAtraso };
+  } else {
+    return { status: 'atrasado', dias: diasAtraso, venc };
+  }
+}
+
+function finStatusLabel(status) {
+  return { em_dia:'Em dia', atrasado:'Atrasado', tolerancia:'Em Tolerância', bloqueado:'Bloqueado', cancelada:'Cancelada' }[status] || status;
+}
+function finStatusClass(status) {
+  return { em_dia:'fin-emdia', atrasado:'fin-atrasado', tolerancia:'fin-tolerancia', bloqueado:'fin-bloqueado', cancelada:'badge-gray' }[status] || 'badge-gray';
+}
+
+// Histórico de tolerâncias usadas
+async function getTolerancias(empresaId) {
+  let q = db.from('tolerancias_uso').select('*').order('created_at', { ascending:false });
+  if (empresaId) q = q.eq('empresa_id', empresaId);
+  const { data, error } = await q;
+  if (error) { console.error(error); return []; }
+  return (data || []).map(r => ({ empresaId: r.empresa_id, ts: r.created_at, dias: r.dias }));
+}
+async function addTolerancia(empresaId, dias) {
+  const { error } = await db.from('tolerancias_uso').insert({ empresa_id: empresaId, dias });
+  if (error) console.error('Erro ao gravar tolerância:', error);
+}
+
+// Histórico de bloqueios
+async function getBloqueios(empresaId) {
+  let q = db.from('bloqueios').select('*').order('created_at', { ascending:false });
+  if (empresaId) q = q.eq('empresa_id', empresaId);
+  const { data, error } = await q;
+  if (error) { console.error(error); return []; }
+  return (data || []).map(r => ({ empresaId: r.empresa_id, ts: r.created_at, motivo: r.motivo, responsavel: r.responsavel }));
+}
+async function addBloqueio(empresaId, motivo) {
+  const { error } = await db.from('bloqueios').insert({
+    empresa_id: empresaId, motivo,
+    responsavel: G.perfil?.nome || G.user?.email || 'master',
+  });
+  if (error) console.error('Erro ao gravar bloqueio:', error);
+}
+
+// Histórico de pagamentos
+async function getPagamentos(empresaId) {
+  let q = db.from('pagamentos').select('*').order('pago_em', { ascending:false });
+  if (empresaId) q = q.eq('empresa_id', empresaId);
+  const { data, error } = await q;
+  if (error) { console.error(error); return []; }
+  return (data || []).map(r => ({ empresaId: r.empresa_id, ts: r.pago_em, valor: Number(r.valor), comprovante: r.comprovante }));
+}
+async function addPagamento(empresaId, valor, comprovante, data) {
+  const { error } = await db.from('pagamentos').insert({
+    empresa_id: empresaId, valor, comprovante,
+    pago_em: data ? new Date(data).toISOString() : new Date().toISOString(),
+    registrado_por: G.perfil?.nome || G.user?.email || 'master',
+  });
+  if (error) console.error('Erro ao gravar pagamento:', error);
+}
+
+// Histórico de MRR (gráfico de receita)
+async function getMrrHistorico() {
+  const { data, error } = await db.from('mrr_historico').select('*').order('mes_ref', { ascending:true });
+  if (error) { console.error(error); return {}; }
+  const obj = {};
+  (data || []).forEach(r => obj[r.mes_ref] = Number(r.mrr));
+  return obj;
+}
+async function setMrrHistorico(mesRef, mrr) {
+  const { error } = await db.from('mrr_historico')
+    .upsert({ mes_ref: mesRef, mrr, updated_at: new Date().toISOString() });
+  if (error) console.error('Erro ao gravar MRR histórico:', error);
+}
+
+// Histórico de inadimplência (gráfico)
+async function getInadimplenciaHistorico() {
+  const { data, error } = await db.from('inad_historico').select('*').order('data_ref', { ascending:true }).limit(30);
+  if (error) { console.error(error); return {}; }
+  const obj = {};
+  (data || []).forEach(r => obj[r.data_ref] = Number(r.taxa));
+  return obj;
+}
+async function setInadimplenciaHistorico(dataRef, taxa) {
+  const { error } = await db.from('inad_historico')
+    .upsert({ data_ref: dataRef, taxa });
+  if (error) console.error('Erro ao gravar inadimplência histórico:', error);
+}
+
+// Webhook simulado (preparação para Asaas/PagSeguro)
+function simularWebhook(tipo, payload) {
+  addLog('webhook', `[Simulado] Webhook "${tipo}" recebido: ${JSON.stringify(payload)}`, payload.empresa || 'Global');
 }
 
 /* ── AUTH ── */
@@ -1124,7 +1604,7 @@ async function doLogout() {
 }
 
 /* ── INICIAR APP ── */
-function iniciarApp() {
+async function iniciarApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').classList.add('visible');
 
@@ -1135,24 +1615,38 @@ function iniciarApp() {
   document.getElementById('topbar-date').textContent =
     new Date().toLocaleDateString('pt-BR', { weekday:'short', day:'2-digit', month:'short', year:'numeric' });
 
-  // Carregar dados
-  G.empresas = getEmpresas();
-  G.planos = getPlanos();
-  G.logs = getLogs();
-  G.updates = getUpdates();
+  setLoad(true);
+  try {
+    await refreshDados();
+  } finally {
+    setLoad(false);
+  }
 
   renderDashboard();
   renderEmpresas();
   renderPlanos();
-  renderUpdates();
+  await renderUpdates();
   populateSelects();
   go('dashboard');
+}
+
+// Recarrega todos os dados do Supabase para o estado global G (NOVO)
+async function refreshDados() {
+  const [empresas, planos, logs, updates, faturas] = await Promise.all([
+    getEmpresas(), getPlanos(), getLogs(), getUpdates(), getFaturas(),
+  ]);
+  G.empresas = empresas;
+  G.planos = planos;
+  G.logs = logs;
+  G.updates = updates;
+  G.faturas = faturas;
 }
 
 /* ── NAVEGAÇÃO ── */
 const PAGE_TITLES = {
   dashboard: { title:'Dashboard',    icon:'ti-layout-dashboard' },
   empresas:  { title:'Empresas',     icon:'ti-building-store'   },
+  cobrancas: { title:'Cobranças',    icon:'ti-receipt'          },
   planos:    { title:'Planos',       icon:'ti-credit-card'      },
   updates:   { title:'Updates',      icon:'ti-cloud-upload'     },
   logs:      { title:'Logs',         icon:'ti-activity'         },
@@ -1174,10 +1668,79 @@ function go(page) {
   document.getElementById('topbar-icon').style.color = 'var(--pri)';
 
   if (page === 'logs') carregarLogs();
+  if (page === 'cobrancas') renderCobrancas();
+}
+
+// ── BUSCA GLOBAL (Ctrl+K) (NOVO) ──
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+    e.preventDefault();
+    abrirBuscaGlobal();
+  }
+  if (e.key === 'Escape') {
+    document.getElementById('gsearch-overlay')?.classList.remove('show');
+  }
+});
+
+function abrirBuscaGlobal() {
+  const ov = document.getElementById('gsearch-overlay');
+  ov.classList.add('show');
+  const inp = document.getElementById('gsearch-input');
+  inp.value = '';
+  document.getElementById('gsearch-results').innerHTML = '<div class="gsearch-empty">Digite para buscar...</div>';
+  setTimeout(() => inp.focus(), 50);
+}
+document.getElementById('gsearch-overlay')?.addEventListener('click', (e) => {
+  if (e.target.id === 'gsearch-overlay') e.target.classList.remove('show');
+});
+
+function executarBuscaGlobal() {
+  const q = document.getElementById('gsearch-input').value.trim().toLowerCase();
+  const resEl = document.getElementById('gsearch-results');
+  if (!q) { resEl.innerHTML = '<div class="gsearch-empty">Digite para buscar...</div>'; return; }
+
+  const results = [];
+
+  // Empresas
+  G.empresas.forEach(e => {
+    if (e.nome?.toLowerCase().includes(q) || e.email?.toLowerCase().includes(q) || e.cidade?.toLowerCase().includes(q)) {
+      results.push({ icon:'ti-building-store', label:`${e.nome} — ${e.cidade||'—'}`, action:() => { go('empresas'); setTimeout(()=>abrirDetalhes(e.id),100); } });
+    }
+  });
+
+  // Planos
+  G.planos.forEach(p => {
+    if (p.nome?.toLowerCase().includes(q)) {
+      results.push({ icon:'ti-credit-card', label:`Plano: ${p.nome}`, action:() => go('planos') });
+    }
+  });
+
+  // Logs
+  G.logs.forEach(l => {
+    if (l.detalhe?.toLowerCase().includes(q) || l.empresa?.toLowerCase().includes(q)) {
+      results.push({ icon:'ti-activity', label:l.detalhe, action:() => go('logs') });
+    }
+  });
+
+  if (results.length === 0) {
+    resEl.innerHTML = '<div class="gsearch-empty">Nenhum resultado encontrado.</div>';
+    return;
+  }
+
+  resEl.innerHTML = results.slice(0,30).map((r,i) =>
+    `<div class="gsearch-item" onclick="executarResultadoBusca(${i})"><i class="ti ${r.icon}"></i><span>${r.label}</span></div>`
+  ).join('');
+  window._gsearchResults = results;
+}
+function executarResultadoBusca(i) {
+  const r = window._gsearchResults?.[i];
+  if (!r) return;
+  document.getElementById('gsearch-overlay').classList.remove('show');
+  r.action();
 }
 
 /* ── DASHBOARD ── */
-function renderDashboard() {
+async function renderDashboard() {
   const empresas = G.empresas;
   const ativas   = empresas.filter(e => e.status === 'ativa').length;
   const bloq     = empresas.filter(e => e.status === 'bloqueada').length;
@@ -1188,75 +1751,247 @@ function renderDashboard() {
       return acc + (plano?.preco || 0);
     }, 0);
 
+  // ── Métricas financeiras (NOVO) ──
+  const finList = empresas.map(e => ({ e, fin: statusFinanceiro(e) }));
+  const inadimplentes = finList.filter(x => x.fin.status === 'atrasado' || x.fin.status === 'tolerancia').length;
+  const taxaInadimplencia = empresas.length ? (inadimplentes / empresas.length * 100) : 0;
+
   document.getElementById('st-total').textContent = empresas.length;
   document.getElementById('st-ativas').textContent = ativas;
   document.getElementById('st-bloq').textContent = bloq;
   document.getElementById('st-mrr').textContent = 'R$ ' + mrr.toLocaleString('pt-BR', { minimumFractionDigits:2 });
+  document.getElementById('st-inadimplencia').textContent = taxaInadimplencia.toFixed(1) + '%';
+
+  // MRR growth (compara com mês anterior salvo no histórico)
+  const mrrHist = await getMrrHistorico();
+  const mesAtualKey = new Date().toISOString().slice(0,7);
+  if (!mrrHist[mesAtualKey] || mrrHist[mesAtualKey] !== mrr) {
+    mrrHist[mesAtualKey] = mrr;
+    await setMrrHistorico(mesAtualKey, mrr);
+  }
+  const meses = Object.keys(mrrHist).sort();
+  const deltaEl = document.getElementById('st-mrr-delta');
+  if (meses.length >= 2) {
+    const atual = mrrHist[meses[meses.length-1]];
+    const anterior = mrrHist[meses[meses.length-2]];
+    const growth = anterior > 0 ? ((atual - anterior) / anterior * 100) : 0;
+    const up = growth >= 0;
+    deltaEl.className = 'kpi-delta ' + (up ? 'kpi-up' : 'kpi-down');
+    deltaEl.innerHTML = `<i class="ti ti-arrow-${up?'up':'down'}-right"></i> ${growth.toFixed(1)}% vs mês anterior`;
+  } else {
+    deltaEl.innerHTML = '';
+  }
 
   // Lista resumida
   const list = document.getElementById('dash-empresas-list');
   if (empresas.length === 0) {
     list.innerHTML = '<div style="color:var(--txt3);font-size:13px;text-align:center;padding:20px">Nenhuma empresa cadastrada ainda</div>';
-    return;
+  } else {
+    list.innerHTML = empresas.slice(0,5).map(e => {
+      const statusCor = { ativa:'green', bloqueada:'red', trial:'gold', cancelada:'gray' }[e.status] || 'gray';
+      const ini = (e.nome || '?').slice(0,2).toUpperCase();
+      const cor = stringToColor(e.id || e.nome);
+      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+        <div style="width:34px;height:34px;border-radius:9px;background:${cor};display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:#fff;flex-shrink:0">${ini}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:13px;color:var(--txt)">${e.nome}</div>
+          <div style="font-size:11px;color:var(--txt3)">${e.cidade||'—'} · ${e.email||'—'}</div>
+        </div>
+        <span class="badge badge-${statusCor}">${e.status}</span>
+      </div>`;
+    }).join('');
   }
-  list.innerHTML = empresas.slice(0,5).map(e => {
-    const statusCor = { ativa:'green', bloqueada:'red', trial:'gold', cancelada:'gray' }[e.status] || 'gray';
-    const ini = (e.nome || '?').slice(0,2).toUpperCase();
-    const cor = stringToColor(e.id || e.nome);
-    return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
-      <div style="width:34px;height:34px;border-radius:9px;background:${cor};display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:#fff;flex-shrink:0">${ini}</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:600;font-size:13px;color:var(--txt)">${e.nome}</div>
-        <div style="font-size:11px;color:var(--txt3)">${e.cidade||'—'} · ${e.email||'—'}</div>
-      </div>
-      <span class="badge badge-${statusCor}">${e.status}</span>
-    </div>`;
-  }).join('');
 
   // Feed
   const logs = G.logs.slice(0,8);
   const feedEl = document.getElementById('feed-list');
   if (logs.length === 0) {
     feedEl.innerHTML = '<div style="color:var(--txt3);font-size:13px;text-align:center;padding:20px">Sem atividade</div>';
-    return;
+  } else {
+    const dotMap = { criada:'green', bloqueada:'red', desbloqueada:'green', update:'', excluida:'red', plano:'', pagamento:'green', webhook:'' };
+    feedEl.innerHTML = logs.map(l => {
+      const dot = dotMap[l.acao] || '';
+      const ts = new Date(l.ts).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+      return `<div class="feed-item">
+        <div class="feed-dot ${dot}"></div>
+        <div style="flex:1">
+          <div style="font-size:13px;color:var(--txt);font-weight:500">${l.detalhe}</div>
+          <div class="feed-time">${ts} · ${l.empresa}</div>
+        </div>
+      </div>`;
+    }).join('');
   }
-  const dotMap = { criada:'green', bloqueada:'red', desbloqueada:'green', update:'', excluida:'red', plano:'' };
-  feedEl.innerHTML = logs.map(l => {
-    const dot = dotMap[l.acao] || '';
-    const ts = new Date(l.ts).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
-    return `<div class="feed-item">
-      <div class="feed-dot ${dot}"></div>
-      <div style="flex:1">
-        <div style="font-size:13px;color:var(--txt);font-weight:500">${l.detalhe}</div>
-        <div class="feed-time">${ts} · ${l.empresa}</div>
-      </div>
-    </div>`;
-  }).join('');
+
+  await renderCharts(mrrHist, finList);
+}
+
+// ── Gráficos (Chart.js) (NOVO) ──
+async function renderCharts(mrrHist, finList) {
+  const css = getComputedStyle(document.documentElement);
+  const cPri = css.getPropertyValue('--pri').trim();
+  const cSuccess = css.getPropertyValue('--success').trim();
+  const cDanger = css.getPropertyValue('--danger').trim();
+  const cGold = css.getPropertyValue('--gold').trim();
+  const cTxt2 = css.getPropertyValue('--txt2').trim();
+  const cBorder = css.getPropertyValue('--border').trim();
+
+  Chart.defaults.color = cTxt2;
+  Chart.defaults.font.family = "'DM Sans', sans-serif";
+  Chart.defaults.borderColor = cBorder;
+
+  // 1) Receita mensal (MRR histórico)
+  const meses = Object.keys(mrrHist).sort().slice(-6);
+  const labelsMes = meses.map(m => {
+    const [y,mo] = m.split('-');
+    return new Date(y, mo-1, 1).toLocaleDateString('pt-BR', { month:'short', year:'2-digit' });
+  });
+  const dataMrr = meses.map(m => mrrHist[m]);
+
+  if (_charts.receita) _charts.receita.destroy();
+  const ctxReceita = document.getElementById('chart-receita');
+  if (ctxReceita) {
+    _charts.receita = new Chart(ctxReceita, {
+      type: 'line',
+      data: {
+        labels: labelsMes,
+        datasets: [{
+          label: 'MRR (R$)',
+          data: dataMrr,
+          borderColor: cPri,
+          backgroundColor: 'rgba(124,58,237,.15)',
+          fill: true, tension: .35, pointRadius: 3,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display:false } },
+        scales: { y: { beginAtZero:true, ticks:{ callback:v=>'R$ '+v } } }
+      }
+    });
+  }
+
+  // 2) Evolução de inadimplência (histórico salvo a cada render)
+  const inadHist = await getInadimplenciaHistorico();
+  const taxaAtual = G.empresas.length
+    ? (finList.filter(x=>x.fin.status==='atrasado'||x.fin.status==='tolerancia').length / G.empresas.length * 100)
+    : 0;
+  const hojeKey = new Date().toISOString().slice(0,10);
+  if (inadHist[hojeKey] !== taxaAtual) {
+    inadHist[hojeKey] = taxaAtual;
+    await setInadimplenciaHistorico(hojeKey, taxaAtual);
+  }
+  const inadKeys = Object.keys(inadHist).sort().slice(-14);
+
+  if (_charts.inad) _charts.inad.destroy();
+  const ctxInad = document.getElementById('chart-inadimplencia');
+  if (ctxInad) {
+    _charts.inad = new Chart(ctxInad, {
+      type: 'line',
+      data: {
+        labels: inadKeys.map(k => new Date(k).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})),
+        datasets: [{
+          label: 'Inadimplência (%)',
+          data: inadKeys.map(k => inadHist[k]),
+          borderColor: cGold,
+          backgroundColor: 'rgba(245,158,11,.15)',
+          fill: true, tension:.35, pointRadius:2,
+        }]
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        plugins: { legend: { display:false } },
+        scales: { y: { beginAtZero:true, ticks:{ callback:v=>v+'%' } } }
+      }
+    });
+  }
+
+  // 3) Empresas ativas vs bloqueadas (doughnut)
+  const ativas = G.empresas.filter(e=>e.status==='ativa').length;
+  const bloqueadas = G.empresas.filter(e=>e.status==='bloqueada').length;
+  const trial = G.empresas.filter(e=>e.status==='trial').length;
+  const cancel = G.empresas.filter(e=>e.status==='cancelada').length;
+
+  if (_charts.ativasBloq) _charts.ativasBloq.destroy();
+  const ctxAB = document.getElementById('chart-ativas-bloqueadas');
+  if (ctxAB) {
+    _charts.ativasBloq = new Chart(ctxAB, {
+      type: 'bar',
+      data: {
+        labels: ['Ativas','Bloqueadas','Trial','Canceladas'],
+        datasets: [{
+          data: [ativas, bloqueadas, trial, cancel],
+          backgroundColor: [cSuccess, cDanger, cGold, cTxt2],
+          borderRadius: 6,
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive:true, maintainAspectRatio:false,
+        plugins: { legend: { display:false } },
+        scales: { x: { beginAtZero:true, ticks:{ stepSize:1 } } }
+      }
+    });
+  }
 }
 
 /* ── EMPRESAS ── */
 function renderEmpresas() {
   const q = (document.getElementById('empresa-search')?.value || '').toLowerCase();
-  const empresas = G.empresas.filter(e =>
+  const filtroFin = document.getElementById('filtro-status-fin')?.value || '';
+  const filtroPlano = document.getElementById('filtro-plano')?.value || '';
+  const filtroAtraso = document.getElementById('filtro-atraso')?.value || '';
+  const filtroCidade = (document.getElementById('filtro-cidade')?.value || '').toLowerCase();
+
+  // popular filtro de planos uma vez
+  const filtroPlanoSel = document.getElementById('filtro-plano');
+  if (filtroPlanoSel && filtroPlanoSel.options.length <= 1) {
+    filtroPlanoSel.innerHTML = '<option value="">Plano: Todos</option>' +
+      G.planos.map(p => `<option value="${p.id}">${p.nome}</option>`).join('');
+  }
+
+  let empresas = G.empresas.filter(e =>
     !q || e.nome?.toLowerCase().includes(q) || e.email?.toLowerCase().includes(q) || e.cidade?.toLowerCase().includes(q)
   );
+
+  if (filtroPlano) empresas = empresas.filter(e => e.plano === filtroPlano);
+  if (filtroCidade) empresas = empresas.filter(e => (e.cidade||'').toLowerCase().includes(filtroCidade));
+
+  // Pré-computar status financeiro
+  empresas = empresas.map(e => ({ e, fin: statusFinanceiro(e) }));
+
+  if (filtroFin) empresas = empresas.filter(x => x.fin.status === filtroFin);
+  if (filtroAtraso) {
+    empresas = empresas.filter(x => {
+      const d = x.fin.dias;
+      if (filtroAtraso === '1-5') return d >= 1 && d <= 5;
+      if (filtroAtraso === '6-15') return d >= 6 && d <= 15;
+      if (filtroAtraso === '16+') return d >= 16;
+      return true;
+    });
+  }
 
   const grid = document.getElementById('empresas-grid');
   if (!grid) return;
 
   if (empresas.length === 0) {
     grid.innerHTML = `<div style="color:var(--txt3);font-size:13px;padding:30px;text-align:center;grid-column:1/-1">
-      ${G.empresas.length === 0 ? 'Nenhuma empresa cadastrada. Clique em "+ Nova empresa" para começar.' : 'Nenhuma empresa encontrada.'}
+      ${G.empresas.length === 0 ? 'Nenhuma empresa cadastrada. Clique em "+ Nova empresa" para começar.' : 'Nenhuma empresa encontrada com os filtros aplicados.'}
     </div>`;
     return;
   }
 
-  grid.innerHTML = empresas.map(e => {
+  grid.innerHTML = empresas.map(({e, fin}) => {
     const bloqueada = e.status === 'bloqueada';
     const plano = G.planos.find(p => p.id === e.plano);
     const statusCor = { ativa:'green', bloqueada:'red', trial:'gold', cancelada:'gray' }[e.status] || 'gray';
     const cor = stringToColor(e.id || e.nome);
     const ini = (e.nome || '?').slice(0,2).toUpperCase();
+
+    // Badge de próximo vencimento (NOVO)
+    const vencStr = fin.venc ? fin.venc.toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit'}) : '—';
+    let vencBadgeColor = 'var(--success)';
+    if (fin.status === 'tolerancia') vencBadgeColor = 'var(--gold)';
+    else if (fin.status === 'atrasado' || fin.status === 'bloqueado') vencBadgeColor = 'var(--danger)';
 
     return `<div class="empresa-card ${bloqueada ? 'bloqueada' : ''}">
       <!-- Header -->
@@ -1268,6 +2003,17 @@ function renderEmpresas() {
           <div class="empresa-meta" style="font-family:'DM Mono',monospace">${e.email||'—'}</div>
         </div>
         <span class="badge badge-${statusCor}" style="flex-shrink:0">${e.status}</span>
+      </div>
+
+      <!-- Financeiro (NOVO) -->
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px">
+        <span class="fin-badge ${finStatusClass(fin.status)}">
+          <i class="ti ti-${fin.status==='bloqueado'?'lock':fin.status==='em_dia'?'check':'alert-triangle'}"></i>
+          ${finStatusLabel(fin.status)}
+        </span>
+        <span class="badge" style="background:${vencBadgeColor}22;color:${vencBadgeColor};border:1px solid ${vencBadgeColor}55">
+          <i class="ti ti-calendar-due"></i> Vence ${vencStr}
+        </span>
       </div>
 
       <!-- Plano -->
@@ -1295,11 +2041,21 @@ function renderEmpresas() {
       <div class="empresa-actions">
         <button class="btn btn-out btn-xs" onclick="abrirDetalhes('${e.id}')"><i class="ti ti-eye"></i> Detalhes</button>
         <button class="btn btn-out btn-xs" onclick="editarEmpresa('${e.id}')"><i class="ti ti-edit"></i> Editar</button>
+        <button class="btn btn-out btn-xs" onclick="enviarLembreteWhatsApp('${e.id}')"><i class="ti ti-brand-whatsapp"></i> Lembrete</button>
         <button class="btn btn-out btn-xs" onclick="enviarUpdateParaEmpresa('${e.id}')"><i class="ti ti-cloud-upload"></i> Update</button>
         <button class="btn btn-danger btn-xs" onclick="excluirEmpresa('${e.id}')"><i class="ti ti-trash"></i></button>
       </div>
     </div>`;
   }).join('');
+}
+
+function limparFiltros() {
+  document.getElementById('empresa-search').value = '';
+  document.getElementById('filtro-status-fin').value = '';
+  document.getElementById('filtro-plano').value = '';
+  document.getElementById('filtro-atraso').value = '';
+  document.getElementById('filtro-cidade').value = '';
+  renderEmpresas();
 }
 
 /* ── NOVA/EDITAR EMPRESA ── */
@@ -1314,6 +2070,9 @@ function abrirNovaEmpresa() {
   document.getElementById('emp-venc').value = '10';
   document.getElementById('emp-status').value = 'ativa';
   document.getElementById('emp-obs').value = '';
+  document.getElementById('emp-tolerancia').value = '5';
+  document.getElementById('emp-gateway-id').value = '';
+  document.getElementById('emp-whatsapp').value = '';
   // Gerar senha sugerida
   document.getElementById('emp-senha').value = gerarSenha();
   document.getElementById('modal-empresa-title').textContent = 'Nova Empresa';
@@ -1334,73 +2093,78 @@ function editarEmpresa(id) {
   document.getElementById('emp-venc').value = e.venc || 10;
   document.getElementById('emp-status').value = e.status || 'ativa';
   document.getElementById('emp-obs').value = e.obs || '';
+  document.getElementById('emp-tolerancia').value = e.tolerancia ?? 5;
+  document.getElementById('emp-gateway-id').value = e.gatewayId || '';
+  document.getElementById('emp-whatsapp').value = e.whatsapp || '';
   document.getElementById('modal-empresa-title').textContent = 'Editar — ' + e.nome;
   openModal('modal-empresa');
 }
 
-function salvarEmpresa() {
+async function salvarEmpresa() {
   const id    = document.getElementById('emp-id').value;
   const nome  = document.getElementById('emp-nome').value.trim();
   const email = document.getElementById('emp-email').value.trim();
   if (!nome || !email) { notify('Preencha nome e e-mail.', 'error'); return; }
 
-  if (id) {
-    // Editar
-    const idx = G.empresas.findIndex(e => e.id === id);
-    if (idx >= 0) {
-      G.empresas[idx] = {
-        ...G.empresas[idx],
-        nome, doc: document.getElementById('emp-doc').value,
-        cidade: document.getElementById('emp-cidade').value,
-        estado: document.getElementById('emp-estado').value,
-        email,
-        plano: document.getElementById('emp-plano').value,
-        venc: document.getElementById('emp-venc').value,
-        status: document.getElementById('emp-status').value,
-        obs: document.getElementById('emp-obs').value,
-        updatedAt: new Date().toISOString(),
-      };
-      addLog('editada', `Empresa "${nome}" atualizada`, nome);
-      notify(`✅ ${nome} atualizada!`, 'success');
-    }
-  } else {
-    // Nova
-    const novaEmpresa = {
-      id: 'emp_' + Date.now(),
-      nome, doc: document.getElementById('emp-doc').value,
-      cidade: document.getElementById('emp-cidade').value,
-      estado: document.getElementById('emp-estado').value,
-      email,
-      senha: document.getElementById('emp-senha').value,
-      plano: document.getElementById('emp-plano').value,
-      venc: document.getElementById('emp-venc').value,
-      status: document.getElementById('emp-status').value,
-      obs: document.getElementById('emp-obs').value,
-      createdAt: new Date().toISOString(),
-    };
-    G.empresas.unshift(novaEmpresa);
-    addLog('criada', `Nova empresa "${nome}" cadastrada`, nome);
-    notify(`✅ Empresa "${nome}" criada com sucesso!`, 'success');
-  }
+  const dadosForm = {
+    id: id || null,
+    nome, doc: document.getElementById('emp-doc').value,
+    cidade: document.getElementById('emp-cidade').value,
+    estado: document.getElementById('emp-estado').value,
+    email,
+    senha: document.getElementById('emp-senha').value,
+    plano: document.getElementById('emp-plano').value,
+    venc: document.getElementById('emp-venc').value,
+    status: document.getElementById('emp-status').value,
+    obs: document.getElementById('emp-obs').value,
+    tolerancia: document.getElementById('emp-tolerancia').value,
+    gatewayId: document.getElementById('emp-gateway-id').value,
+    whatsapp: document.getElementById('emp-whatsapp').value,
+  };
 
-  saveEmpresas(G.empresas);
-  closeModal('modal-empresa');
-  renderEmpresas();
-  renderDashboard();
-  populateSelects();
+  setLoad(true);
+  try {
+    if (id) {
+      await saveEmpresa(dadosForm);
+      addLog('editada', `Empresa "${nome}" atualizada`, nome, id);
+      notify(`✅ ${nome} atualizada!`, 'success');
+    } else {
+      dadosForm._isNew = true;
+      const newId = await saveEmpresa(dadosForm);
+      addLog('criada', `Nova empresa "${nome}" cadastrada`, nome, newId);
+      notify(`✅ Empresa "${nome}" criada com sucesso!`, 'success');
+    }
+
+    await refreshDados();
+    closeModal('modal-empresa');
+    renderEmpresas();
+    await renderDashboard();
+    populateSelects();
+  } catch (e) {
+    notify('Erro ao salvar empresa: ' + (e.message || ''), 'error');
+  } finally {
+    setLoad(false);
+  }
 }
 
 function excluirEmpresa(id) {
   const e = G.empresas.find(x => x.id === id);
   if (!e) return;
-  confirmAct('Excluir empresa', `Excluir "${e.nome}" permanentemente? Esta ação não pode ser desfeita.`, () => {
-    G.empresas = G.empresas.filter(x => x.id !== id);
-    saveEmpresas(G.empresas);
-    addLog('excluida', `Empresa "${e.nome}" excluída`, e.nome);
-    notify(`Empresa "${e.nome}" excluída.`, 'info');
-    renderEmpresas();
-    renderDashboard();
-    populateSelects();
+  confirmAct('Excluir empresa', `Excluir "${e.nome}" permanentemente? Esta ação não pode ser desfeita.`, async () => {
+    setLoad(true);
+    try {
+      await excluirEmpresaDb(id);
+      addLog('excluida', `Empresa "${e.nome}" excluída`, e.nome);
+      notify(`Empresa "${e.nome}" excluída.`, 'info');
+      await refreshDados();
+      renderEmpresas();
+      await renderDashboard();
+      populateSelects();
+    } catch (err) {
+      notify('Erro ao excluir empresa: ' + (err.message || ''), 'error');
+    } finally {
+      setLoad(false);
+    }
   }, 'Excluir');
 }
 
@@ -1410,26 +2174,67 @@ function toggleBloqueio(id, ativar) {
   if (!e) return;
 
   if (!ativar) {
-    // Bloquear — pedir motivo
-    const motivo = prompt(`Motivo do bloqueio de "${e.nome}":\n(ex: Inadimplência, Cancelamento, etc.)`);
-    if (motivo === null) {
-      renderEmpresas(); return; // Cancelou
-    }
-    e.status = 'bloqueada';
-    e.motivoBloqueio = motivo || 'Bloqueado pelo administrador';
-    addLog('bloqueada', `Empresa "${e.nome}" bloqueada: ${e.motivoBloqueio}`, e.nome);
-    notify(`🔒 "${e.nome}" bloqueada.`, 'warn');
+    // Bloquear — abrir modal de justificativa (NOVO)
+    document.getElementById('bloq-empresa-id').value = id;
+    document.getElementById('bloq-justificativa').value = '';
+    openModal('modal-bloqueio');
+    renderEmpresas(); // mantém o toggle visualmente coerente caso cancele
   } else {
     // Desbloquear
-    e.status = 'ativa';
-    e.motivoBloqueio = '';
-    addLog('desbloqueada', `Empresa "${e.nome}" desbloqueada`, e.nome);
-    notify(`✅ "${e.nome}" desbloqueada.`, 'success');
+    (async () => {
+      setLoad(true);
+      try {
+        e.status = 'ativa';
+        e.motivoBloqueio = '';
+        e.bloqueioMotivo = '';
+        await saveEmpresa(e);
+        addLog('desbloqueada', `Empresa "${e.nome}" desbloqueada`, e.nome, e.id);
+        notify(`✅ "${e.nome}" desbloqueada.`, 'success');
+        await refreshDados();
+        renderEmpresas();
+        await renderDashboard();
+      } catch (err) {
+        notify('Erro ao desbloquear: ' + (err.message || ''), 'error');
+      } finally {
+        setLoad(false);
+      }
+    })();
   }
+}
 
-  saveEmpresas(G.empresas);
-  renderEmpresas();
-  renderDashboard();
+// Confirma bloqueio com justificativa obrigatória + registra histórico (NOVO)
+async function confirmarBloqueio() {
+  const id = document.getElementById('bloq-empresa-id').value;
+  const motivo = document.getElementById('bloq-justificativa').value.trim();
+  const e = G.empresas.find(x => x.id === id);
+  if (!e) return;
+  if (!motivo) { notify('Informe a justificativa do bloqueio.', 'error'); return; }
+
+  setLoad(true);
+  try {
+    const fin = statusFinanceiro(e);
+    e.status = 'bloqueada';
+    e.motivoBloqueio = motivo;
+    e.bloqueioMotivo = motivo;
+    e.diasAtrasoNoBloqueio = fin.dias || 0;
+    e.bloqueadoEm = new Date().toISOString();
+    e.bloqueadoPor = G.perfil?.nome || G.user?.email || 'master';
+
+    await saveEmpresa(e);
+    await addBloqueio(id, motivo);
+    addLog('bloqueada', `Empresa "${e.nome}" bloqueada: ${motivo}`, e.nome, id);
+    notify(`🔒 "${e.nome}" bloqueada.`, 'warn');
+
+    await refreshDados();
+    closeModal('modal-bloqueio');
+    renderEmpresas();
+    await renderDashboard();
+    if (document.getElementById('page-cobrancas')?.classList.contains('active')) renderCobrancas();
+  } catch (err) {
+    notify('Erro ao bloquear empresa: ' + (err.message || ''), 'error');
+  } finally {
+    setLoad(false);
+  }
 }
 
 /* ── DETALHES DA EMPRESA ── */
@@ -1443,8 +2248,8 @@ function abrirDetalhes(id) {
   openModal('modal-detalhes');
 }
 
-function detTab(tab, btn) {
-  ['geral','acesso','updates','bloqueio'].forEach(t => {
+async function detTab(tab, btn) {
+  ['geral','financeiro','acesso','updates','bloqueio'].forEach(t => {
     document.getElementById('det-tab-' + t).style.display = t === tab ? '' : 'none';
   });
   document.querySelectorAll('#modal-detalhes .tab-btn').forEach(b => b.classList.remove('active'));
@@ -1471,6 +2276,58 @@ function detTab(tab, btn) {
         ${campo('Cadastrada em', e.createdAt ? new Date(e.createdAt).toLocaleDateString('pt-BR') : '—')}
       </div>
       ${e.obs ? `<div style="margin-top:14px;padding:12px;background:var(--bg3);border-radius:9px;font-size:13px;color:var(--txt2)"><strong style="color:var(--txt3);font-size:11px;text-transform:uppercase;letter-spacing:.8px">Observações</strong><br>${e.obs}</div>` : ''}
+    `;
+  } else if (tab === 'financeiro') {
+    // Aba Financeiro (NOVO)
+    const fin = statusFinanceiro(e);
+    document.getElementById('det-financeiro-content').innerHTML = '<div style="color:var(--txt3);text-align:center;padding:20px">Carregando...</div>';
+    const [pagamentos, tolerancias, bloqueios] = await Promise.all([
+      getPagamentos(e.id), getTolerancias(e.id), getBloqueios(e.id),
+    ]);
+    const vencStr = fin.venc ? fin.venc.toLocaleDateString('pt-BR') : '—';
+
+    document.getElementById('det-financeiro-content').innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+        ${campo('Status financeiro', `<span class="fin-badge ${finStatusClass(fin.status)}">${finStatusLabel(fin.status)}</span>`)}
+        ${campo('Próximo vencimento', vencStr)}
+        ${campo('Dias de tolerância', e.tolerancia ?? 5)}
+        ${campo('Dias em atraso', fin.dias || 0)}
+        ${campo('Plano / valor', plano ? plano.nome + ' · R$ ' + plano.preco : '—')}
+        ${campo('ID gateway (Asaas/PagSeguro)', e.gatewayId || '—')}
+      </div>
+
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+        <button class="btn btn-pri btn-sm" onclick="abrirRegistrarPagamento('${e.id}')"><i class="ti ti-cash"></i> Registrar pagamento</button>
+        <button class="btn btn-out btn-sm" onclick="enviarLembreteWhatsApp('${e.id}')"><i class="ti ti-brand-whatsapp"></i> Enviar lembrete</button>
+        <button class="btn btn-out btn-sm" onclick="gerarBoletoSimulado('${e.id}')"><i class="ti ti-file-invoice"></i> Gerar boleto (simulado)</button>
+      </div>
+
+      <div class="ms" style="margin-top:0">Histórico de pagamentos</div>
+      ${pagamentos.length === 0
+        ? '<div style="color:var(--txt3);font-size:12.5px;padding:10px 0">Nenhum pagamento registrado.</div>'
+        : pagamentos.map(p => `<div class="hist-row">
+            <span>${new Date(p.ts).toLocaleDateString('pt-BR')} — R$ ${(p.valor||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
+            <span style="color:var(--txt3)">${p.comprovante || '—'}</span>
+          </div>`).join('')
+      }
+
+      <div class="ms">Histórico de tolerâncias usadas</div>
+      ${tolerancias.length === 0
+        ? '<div style="color:var(--txt3);font-size:12.5px;padding:10px 0">Nenhuma tolerância registrada.</div>'
+        : tolerancias.map(t => `<div class="hist-row">
+            <span>${new Date(t.ts).toLocaleDateString('pt-BR')}</span>
+            <span style="color:var(--txt3)">${t.dias} dia(s) de tolerância</span>
+          </div>`).join('')
+      }
+
+      <div class="ms">Histórico de bloqueios</div>
+      ${bloqueios.length === 0
+        ? '<div style="color:var(--txt3);font-size:12.5px;padding:10px 0">Nenhum bloqueio registrado.</div>'
+        : bloqueios.map(b => `<div class="hist-row">
+            <span>${new Date(b.ts).toLocaleDateString('pt-BR')} — ${b.motivo}</span>
+            <span style="color:var(--txt3)">por ${b.responsavel}</span>
+          </div>`).join('')
+      }
     `;
   } else if (tab === 'acesso') {
     document.getElementById('det-acesso-content').innerHTML = `
@@ -1590,7 +2447,7 @@ function editarPlano(id) {
   openModal('modal-plano');
 }
 
-function salvarPlano() {
+async function salvarPlano() {
   const id       = document.getElementById('plano-id').value;
   const nome     = document.getElementById('plano-nome').value.trim();
   const preco    = parseFloat(document.getElementById('plano-preco').value) || 0;
@@ -1599,34 +2456,44 @@ function salvarPlano() {
 
   if (!nome) { notify('Nome obrigatório.', 'error'); return; }
 
-  if (id) {
-    const idx = G.planos.findIndex(p => p.id === id);
-    if (idx >= 0) G.planos[idx] = { ...G.planos[idx], nome, preco, usuarios, features };
-  } else {
-    G.planos.push({ id: 'plano_' + Date.now(), nome, preco, usuarios, features });
+  setLoad(true);
+  try {
+    await salvarPlanoDb({ id: id || null, nome, preco, usuarios, features });
+    G.planos = await getPlanos();
+    document.getElementById('plano-id').value = '';
+    closeModal('modal-plano');
+    renderPlanos();
+    addLog('plano', `Plano "${nome}" salvo`);
+    notify('✅ Plano salvo!', 'success');
+  } catch (e) {
+    notify('Erro ao salvar plano: ' + (e.message || ''), 'error');
+  } finally {
+    setLoad(false);
   }
-
-  savePlanos(G.planos);
-  document.getElementById('plano-id').value = '';
-  closeModal('modal-plano');
-  renderPlanos();
-  addLog('plano', `Plano "${nome}" salvo`);
-  notify('✅ Plano salvo!', 'success');
 }
 
-function associarPlano() {
+async function associarPlano() {
   const empId   = document.getElementById('assoc-empresa-sel').value;
   const planoId = document.getElementById('assoc-plano-sel').value;
   const e = G.empresas.find(x => x.id === empId);
   const p = G.planos.find(x => x.id === planoId);
   if (!e || !p) return;
-  e.plano = planoId;
-  saveEmpresas(G.empresas);
-  addLog('plano', `Plano "${p.nome}" aplicado a "${e.nome}"`, e.nome);
-  notify(`✅ Plano "${p.nome}" aplicado a "${e.nome}"!`, 'success');
-  renderEmpresas();
-  renderDashboard();
-  renderPlanos();
+
+  setLoad(true);
+  try {
+    e.plano = planoId;
+    await saveEmpresa(e);
+    addLog('plano', `Plano "${p.nome}" aplicado a "${e.nome}"`, e.nome, e.id);
+    notify(`✅ Plano "${p.nome}" aplicado a "${e.nome}"!`, 'success');
+    await refreshDados();
+    renderEmpresas();
+    await renderDashboard();
+    renderPlanos();
+  } catch (err) {
+    notify('Erro ao associar plano: ' + (err.message || ''), 'error');
+  } finally {
+    setLoad(false);
+  }
 }
 
 /* ── UPDATES ── */
@@ -1659,37 +2526,52 @@ function renderUpdates() {
 function enviarUpdateGlobal() {
   const versao = document.getElementById('upd-versao-global').value.trim();
   const notas  = document.getElementById('upd-notas-global').value.trim();
+  const forcar = document.getElementById('upd-forcar')?.checked || false;
   if (!versao) { notify('Informe a versão.', 'error'); return; }
 
   confirmAct(
     'Publicar update global',
     `Isso marcará todas as ${G.empresas.length} empresa(s) com o update "${versao}". Continuar?`,
-    () => {
-      addUpdate({ tipo:'global', versao, notas, empresa:'global' });
-      addLog('update', `Update global "${versao}" publicado`, 'Global');
-      G.updates = getUpdates();
-      renderUpdates();
-      renderDashboard();
-      notify(`✅ Update "${versao}" publicado para todas as empresas!`, 'success');
+    async () => {
+      setLoad(true);
+      try {
+        await addUpdate({ tipo:'global', versao, notas, empresa:'global', forcar });
+        addLog('update', `Update global "${versao}" publicado`, 'Global');
+        G.updates = await getUpdates();
+        renderUpdates();
+        await renderDashboard();
+        notify(`✅ Update "${versao}" publicado para todas as empresas!`, 'success');
+      } catch (e) {
+        notify('Erro ao publicar update: ' + (e.message || ''), 'error');
+      } finally {
+        setLoad(false);
+      }
     },
     'Publicar'
   );
 }
 
-function enviarUpdateSeletivo() {
+async function enviarUpdateSeletivo() {
   const empId = document.getElementById('upd-empresa-sel').value;
   const tipo  = document.getElementById('upd-tipo').value;
   const notas = document.getElementById('upd-notas-sel').value.trim();
   const e = G.empresas.find(x => x.id === empId);
   if (!e) { notify('Selecione uma empresa.', 'error'); return; }
 
-  addUpdate({ tipo, versao:'patch', notas, empresa: empId });
-  addLog('update', `Update "${tipo}" enviado para "${e.nome}": ${notas}`, e.nome);
-  G.updates = getUpdates();
-  renderUpdates();
-  renderDashboard();
-  notify(`✅ Update enviado para "${e.nome}"!`, 'success');
-  document.getElementById('upd-notas-sel').value = '';
+  setLoad(true);
+  try {
+    await addUpdate({ tipo, versao:'patch', notas, empresa: empId });
+    addLog('update', `Update "${tipo}" enviado para "${e.nome}": ${notas}`, e.nome, e.id);
+    G.updates = await getUpdates();
+    renderUpdates();
+    await renderDashboard();
+    notify(`✅ Update enviado para "${e.nome}"!`, 'success');
+    document.getElementById('upd-notas-sel').value = '';
+  } catch (err) {
+    notify('Erro ao enviar update: ' + (err.message || ''), 'error');
+  } finally {
+    setLoad(false);
+  }
 }
 
 function enviarUpdateParaEmpresa(id) {
@@ -1704,16 +2586,256 @@ function enviarUpdateParaEmpresa(id) {
   }, 100);
 }
 
+/* ── COBRANÇA ── */
+function renderCobrancas() {
+  const tbody = document.getElementById('cobrancas-tbody');
+  if (!tbody) return;
+
+  const filtroStatus = document.getElementById('cob-filtro-status')?.value || '';
+  const busca = (document.getElementById('cob-filtro-busca')?.value || '').toLowerCase();
+
+  let lista = G.empresas
+    .filter(e => e.status !== 'cancelada')
+    .map(e => ({ e, fin: statusFinanceiro(e), plano: G.planos.find(p => p.id === e.plano) }));
+
+  if (filtroStatus) lista = lista.filter(x => x.fin.status === filtroStatus);
+  if (busca) lista = lista.filter(x => x.e.nome?.toLowerCase().includes(busca));
+
+  // KPIs
+  const all = G.empresas.filter(e => e.status !== 'cancelada').map(e => statusFinanceiro(e));
+  document.getElementById('cob-st-emdia').textContent      = all.filter(f=>f.status==='em_dia').length;
+  document.getElementById('cob-st-atrasadas').textContent  = all.filter(f=>f.status==='atrasado').length;
+  document.getElementById('cob-st-tolerancia').textContent = all.filter(f=>f.status==='tolerancia').length;
+  document.getElementById('cob-st-bloqueadas').textContent = all.filter(f=>f.status==='bloqueado').length;
+
+  if (lista.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--txt3);padding:20px">Nenhuma cobrança encontrada</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = lista.map(({e, fin, plano}) => {
+    const vencStr = fin.venc ? fin.venc.toLocaleDateString('pt-BR') : '—';
+    let diasTxt = '—';
+    if (fin.status === 'tolerancia') diasTxt = `${fin.dias}d (resta ${fin.diasRestantes}d tolerância)`;
+    else if (fin.status === 'atrasado' || fin.status === 'bloqueado') diasTxt = `${fin.dias}d em atraso`;
+    else if (fin.status === 'em_dia' && fin.dias > 0) diasTxt = `vence em ${fin.dias}d`;
+
+    return `<tr>
+      <td>
+        <div style="font-weight:600">${e.nome}</div>
+        <div style="font-size:11px;color:var(--txt3)">${e.cidade||'—'}</div>
+      </td>
+      <td>${plano ? plano.nome : e.plano || '—'}</td>
+      <td>${vencStr}</td>
+      <td><span class="fin-badge ${finStatusClass(fin.status)}">${finStatusLabel(fin.status)}</span></td>
+      <td style="font-size:12px;color:var(--txt2)">${diasTxt}</td>
+      <td>R$ ${(plano?.preco||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+      <td>
+        <div style="display:flex;gap:4px;flex-wrap:wrap">
+          <button class="btn btn-out btn-xs" onclick="enviarLembreteWhatsApp('${e.id}')" title="Enviar lembrete"><i class="ti ti-brand-whatsapp"></i></button>
+          <button class="btn btn-out btn-xs" onclick="gerarBoletoSimulado('${e.id}')" title="Gerar boleto"><i class="ti ti-file-invoice"></i></button>
+          <button class="btn btn-pri btn-xs" onclick="abrirRegistrarPagamento('${e.id}')" title="Registrar pagamento"><i class="ti ti-cash"></i></button>
+          <button class="btn btn-out btn-xs" onclick="abrirDetalhes('${e.id}')" title="Detalhes"><i class="ti ti-eye"></i></button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// Substitui variáveis do template pela mensagem final
+function montarMensagem(template, e, fin, plano) {
+  const vencStr = fin.venc ? fin.venc.toLocaleDateString('pt-BR') : '—';
+  return template
+    .replace(/{empresa}/g, e.nome || '')
+    .replace(/{vencimento}/g, vencStr)
+    .replace(/{valor}/g, (plano?.preco||0).toLocaleString('pt-BR',{minimumFractionDigits:2}))
+    .replace(/{dias}/g, fin.dias ?? 0);
+}
+
+// Botão "Enviar Lembrete WhatsApp" — gera link wa.me com mensagem personalizada (NOVO)
+async function enviarLembreteWhatsApp(id) {
+  const e = G.empresas.find(x => x.id === id);
+  if (!e) return;
+  const fin = statusFinanceiro(e);
+  const plano = G.planos.find(p => p.id === e.plano);
+  const templates = await getTemplates();
+
+  let template;
+  if (fin.status === 'atrasado' || fin.status === 'bloqueado') template = templates.apos;
+  else if (fin.status === 'tolerancia') template = templates.apos;
+  else if (fin.dias <= 5 && fin.status === 'em_dia') template = templates.antes;
+  else template = templates.dia;
+
+  const msg = montarMensagem(template, e, fin, plano);
+  const phone = (e.whatsapp || '').replace(/\D/g, '');
+  if (!phone) {
+    notify('Empresa sem WhatsApp cadastrado. Edite a empresa para adicionar.', 'error');
+    return;
+  }
+  const url = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
+  addLog('lembrete', `Lembrete WhatsApp enviado para "${e.nome}" (status: ${finStatusLabel(fin.status)})`, e.nome);
+  notify(`📲 Link de WhatsApp aberto para "${e.nome}".`, 'success');
+}
+
+// Geração simulada de boleto (visual + botão "enviar boleto") (NOVO)
+function gerarBoletoSimulado(id) {
+  const e = G.empresas.find(x => x.id === id);
+  if (!e) return;
+  const fin = statusFinanceiro(e);
+  const plano = G.planos.find(p => p.id === e.plano);
+  const vencStr = fin.venc ? fin.venc.toLocaleDateString('pt-BR') : '—';
+  const linhaDigitavel = '34191.79001 01043.510047 91020.150008 ' + Math.floor(Math.random()*9) + ' ' + (90000000000 + Math.floor(Math.random()*9999999999));
+
+  confirmAct(
+    'Boleto gerado (simulado)',
+    `Boleto para "${e.nome}" — R$ ${(plano?.preco||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}, vencimento ${vencStr}.\n\nLinha digitável: ${linhaDigitavel}\n\nDeseja registrar o envio deste boleto?`,
+    () => {
+      addLog('boleto', `Boleto simulado gerado e enviado para "${e.nome}" (venc. ${vencStr})`, e.nome);
+      simularWebhook('boleto.gerado', { empresa: e.nome, valor: plano?.preco||0, vencimento: vencStr });
+      notify(`🧾 Boleto registrado para "${e.nome}".`, 'success');
+    },
+    'Registrar envio'
+  );
+}
+
+// Registrar pagamento manual (com data e comprovante) (NOVO)
+function abrirRegistrarPagamento(empresaId) {
+  const sel = document.getElementById('pag-empresa-sel');
+  sel.innerHTML = G.empresas.filter(e=>e.status!=='cancelada').map(e => `<option value="${e.id}">${e.nome}</option>`).join('');
+  if (empresaId) sel.value = empresaId;
+  document.getElementById('pag-empresa-id').value = sel.value;
+
+  const e = G.empresas.find(x => x.id === sel.value);
+  const plano = G.planos.find(p => p.id === e?.plano);
+  document.getElementById('pag-valor').value = plano?.preco || '';
+  document.getElementById('pag-data').value = new Date().toISOString().slice(0,10);
+  document.getElementById('pag-comprovante').value = '';
+  openModal('modal-pagamento');
+}
+
+async function salvarPagamento() {
+  const id = document.getElementById('pag-empresa-id').value || document.getElementById('pag-empresa-sel').value;
+  const valor = parseFloat(document.getElementById('pag-valor').value) || 0;
+  const data = document.getElementById('pag-data').value;
+  const comprovante = document.getElementById('pag-comprovante').value.trim();
+  const e = G.empresas.find(x => x.id === id);
+  if (!e) { notify('Selecione uma empresa.', 'error'); return; }
+  if (valor <= 0) { notify('Informe um valor válido.', 'error'); return; }
+
+  setLoad(true);
+  try {
+    await addPagamento(id, valor, comprovante, data);
+
+    // Se a empresa estava bloqueada/em tolerância e o pagamento regulariza, registra tolerância usada e desbloqueia
+    const fin = statusFinanceiro(e);
+    if (fin.status === 'tolerancia') {
+      await addTolerancia(id, fin.dias);
+    }
+    if (e.status === 'bloqueada' && e.bloqueioMotivo) {
+      e.status = 'ativa';
+      e.motivoBloqueio = '';
+      e.bloqueioMotivo = '';
+      await saveEmpresa(e);
+      addLog('desbloqueada', `Empresa "${e.nome}" desbloqueada após pagamento`, e.nome, e.id);
+    }
+
+    addLog('pagamento', `Pagamento de R$ ${valor.toLocaleString('pt-BR',{minimumFractionDigits:2})} registrado para "${e.nome}"`, e.nome, e.id);
+    simularWebhook('pagamento.recebido', { empresa: e.nome, valor, data });
+    notify(`💰 Pagamento registrado para "${e.nome}"!`, 'success');
+
+    await refreshDados();
+    closeModal('modal-pagamento');
+    renderEmpresas();
+    await renderDashboard();
+    renderCobrancas();
+  } catch (err) {
+    notify('Erro ao registrar pagamento: ' + (err.message || ''), 'error');
+  } finally {
+    setLoad(false);
+  }
+}
+
+// Templates editáveis de mensagens WhatsApp (NOVO)
+async function abrirTemplates() {
+  const t = await getTemplates();
+  document.getElementById('tpl-antes').value = t.antes;
+  document.getElementById('tpl-dia').value = t.dia;
+  document.getElementById('tpl-apos').value = t.apos;
+  openModal('modal-templates');
+}
+async function salvarTemplates() {
+  const t = {
+    antes: document.getElementById('tpl-antes').value.trim(),
+    dia: document.getElementById('tpl-dia').value.trim(),
+    apos: document.getElementById('tpl-apos').value.trim(),
+  };
+  setLoad(true);
+  try {
+    await saveTemplates(t);
+    closeModal('modal-templates');
+    notify('✅ Templates salvos!', 'success');
+  } catch (e) {
+    notify('Erro ao salvar templates: ' + (e.message || ''), 'error');
+  } finally {
+    setLoad(false);
+  }
+}
+
+// Exportar CSV (empresas, cobranças, logs) (NOVO)
+function exportarCSV(tipo) {
+  let rows = [];
+  let filename = 'export.csv';
+
+  if (tipo === 'empresas') {
+    filename = 'empresas.csv';
+    rows.push(['Nome','CNPJ/CPF','Cidade','Estado','E-mail','Plano','Vencimento','Status','Status Financeiro','Tolerância','WhatsApp']);
+    G.empresas.forEach(e => {
+      const fin = statusFinanceiro(e);
+      const plano = G.planos.find(p => p.id === e.plano);
+      rows.push([e.nome, e.doc||'', e.cidade||'', e.estado||'', e.email||'', plano?.nome||e.plano||'', e.venc||'', e.status, finStatusLabel(fin.status), e.tolerancia??5, e.whatsapp||'']);
+    });
+  } else if (tipo === 'cobrancas') {
+    filename = 'cobrancas.csv';
+    rows.push(['Empresa','Plano','Vencimento','Status Financeiro','Dias','Valor']);
+    G.empresas.filter(e=>e.status!=='cancelada').forEach(e => {
+      const fin = statusFinanceiro(e);
+      const plano = G.planos.find(p => p.id === e.plano);
+      rows.push([e.nome, plano?.nome||e.plano||'', fin.venc?fin.venc.toLocaleDateString('pt-BR'):'', finStatusLabel(fin.status), fin.dias||0, plano?.preco||0]);
+    });
+  } else if (tipo === 'logs') {
+    filename = 'logs.csv';
+    rows.push(['Data','Ação','Empresa','Detalhe','Usuário']);
+    G.logs.forEach(l => {
+      rows.push([new Date(l.ts).toLocaleString('pt-BR'), l.acao, l.empresa, l.detalhe, l.user]);
+    });
+  }
+
+  const csv = rows.map(r => r.map(v => {
+    const s = String(v ?? '');
+    return /[",;\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+  }).join(';')).join('\n');
+
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  notify(`📁 ${filename} exportado!`, 'success');
+}
+
 /* ── LOGS ── */
-function carregarLogs() {
-  G.logs = getLogs();
+async function carregarLogs() {
   const el = document.getElementById('logs-list');
+  if (el) el.innerHTML = '<div style="color:var(--txt3);text-align:center;padding:20px">Carregando...</div>';
+  G.logs = await getLogs();
   if (!el) return;
   if (G.logs.length === 0) {
     el.innerHTML = '<div style="color:var(--txt3);text-align:center;padding:20px">Sem logs</div>';
     return;
   }
-  const dotMap = { criada:'green', bloqueada:'red', desbloqueada:'green', update:'', excluida:'red', plano:'', editada:'' };
+  const dotMap = { criada:'green', bloqueada:'red', desbloqueada:'green', update:'', excluida:'red', plano:'', editada:'', pagamento:'green', lembrete:'', boleto:'', webhook:'' };
   el.innerHTML = G.logs.map(l => {
     const dot = dotMap[l.acao] || '';
     const ts = new Date(l.ts).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
