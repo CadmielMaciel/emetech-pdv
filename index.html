@@ -39,6 +39,22 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);min-
 .l-btn{width:100%;padding:13px;background:linear-gradient(135deg,#5B47E0,#7C3AED);color:#fff;border:none;border-radius:11px;font-size:15px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
 .l-btn:hover{opacity:.92;transform:translateY(-1px)}.l-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
 
+/* ── BLOQUEIO / ACESSO SUSPENSO (NOVO) ── */
+.bq-screen{position:fixed;inset:0;background:linear-gradient(135deg,#1A0F3C,#2A1D50 60%,#0F0A1E);display:flex;align-items:center;justify-content:center;z-index:10000;padding:20px}
+.bq-box{background:#1A1030;border:1px solid #3A2A6A;border-radius:24px;padding:44px 36px;width:100%;max-width:440px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.bq-icon{width:72px;height:72px;border-radius:50%;background:rgba(239,68,68,.12);border:2px solid rgba(239,68,68,.3);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:32px;color:#EF4444}
+.bq-title{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:#F0EEFF;margin-bottom:10px}
+.bq-msg{font-size:14px;color:#B8AADC;line-height:1.6;margin-bottom:24px}
+.bq-motivo{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:12px;padding:14px 16px;font-size:13px;color:#F0EEFF;margin-bottom:24px;text-align:left}
+.bq-motivo b{color:#EF4444;display:block;font-size:11px;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px}
+.bq-actions{display:flex;flex-direction:column;gap:10px}
+.bq-btn{padding:12px;border-radius:11px;font-size:14px;font-weight:700;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s}
+.bq-btn-pri{background:linear-gradient(135deg,#5B47E0,#7C3AED);color:#fff}
+.bq-btn-pri:hover{opacity:.92}
+.bq-btn-out{background:transparent;border:1.5px solid #3A2A6A;color:#B8AADC}
+.bq-btn-out:hover{border-color:#5B47E0;color:#fff}
+.bq-foot{font-size:11px;color:#7A6FAA;margin-top:20px}
+
 /* APP */
 .app{display:flex;height:100vh;opacity:0;transition:opacity .4s}
 .app.visible{opacity:1}
@@ -418,6 +434,24 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
     <input class="l-inp" type="password" id="l-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
     <button class="l-btn" id="l-btn" onclick="doLogin()"><i class="ti ti-lock" style="font-size:17px"></i>Entrar</button>
     <p style="text-align:center;font-size:11.5px;color:#9D8FC5;margin-top:16px">EMETech © 2025 — Todos os direitos reservados</p>
+  </div>
+</div>
+
+<!-- TELA DE BLOQUEIO / ACESSO SUSPENSO (NOVO) -->
+<div class="bq-screen" id="bq-screen" style="display:none">
+  <div class="bq-box">
+    <div class="bq-icon"><i class="ti ti-lock"></i></div>
+    <div class="bq-title">Acesso suspenso</div>
+    <div class="bq-msg">O acesso ao sistema da sua empresa está temporariamente bloqueado.</div>
+    <div class="bq-motivo" id="bq-motivo" style="display:none">
+      <b>Motivo</b>
+      <span id="bq-motivo-texto">—</span>
+    </div>
+    <div class="bq-actions">
+      <button class="bq-btn bq-btn-pri" onclick="abrirWhatsAppSuporte()"><i class="ti ti-brand-whatsapp"></i> Falar com o suporte</button>
+      <button class="bq-btn bq-btn-out" onclick="doLogout()"><i class="ti ti-logout"></i> Sair</button>
+    </div>
+    <div class="bq-foot">EMETech © 2025 — Regularize sua situação para continuar usando o sistema.</div>
   </div>
 </div>
 
@@ -2947,7 +2981,7 @@ function toggleSomPDV(){
 
 /* ── ESTADO GLOBAL ───────────────────────────────────── */
 let G = {
-  user:null, profile:null, role:null,
+  user:null, profile:null, role:null, empresa:null,
   produtos:[], clientes:[], os:[], vendas:[], usuarios:[],
   movs:[], fornecedores:[], orcamentos:[], devolucoes:[],
   receber:[], pagar:[], caixas:[], caixaAtual:null,
@@ -3036,11 +3070,57 @@ async function loadProfile(user){
   const {data:p}=await db.from('usuarios').select('*').eq('email',user.email).single();
   if(!p||!p.ativo){await db.auth.signOut();document.getElementById('l-err').textContent='Usuário inativo.';document.getElementById('l-err').style.display='block';document.getElementById('l-btn').disabled=false;document.getElementById('l-btn').innerHTML='<i class="ti ti-lock" style="font-size:17px"></i>Entrar';return;}
   G.profile=p;G.role=p.role;
+
+  // ── Verificação de status financeiro/bloqueio da empresa (NOVO) ──
+  const ok = await carregarEmpresaELoginCheck(user.email);
+  if(!ok) return; // tela de bloqueio já foi exibida, interrompe o login
+
   document.getElementById('ls').classList.add('hidden');
   await loadAll();
   initPlanos(); // inicializar planos após carregar dados
+  iniciarVerificacaoBloqueio(); // verificação periódica de bloqueio (NOVO)
   // Mostra tela Netflix de seleção de perfil
   mostrarTelaNetflix();
+}
+
+// Busca a empresa (pelo e-mail do admin cadastrado no painel master) e verifica bloqueio (NOVO)
+async function carregarEmpresaELoginCheck(email){
+  try{
+    const {data:emp,error}=await db.from('empresas').select('*').eq('email',email).maybeSingle();
+    if(error){ console.error('Erro ao buscar empresa:',error); return true; } // não bloqueia em caso de erro de rede
+    G.empresa = emp || null;
+
+    if(emp && emp.status==='bloqueada'){
+      mostrarTelaBloqueio(emp);
+      return false;
+    }
+    return true;
+  }catch(e){
+    console.error('Erro ao verificar empresa:',e);
+    return true; // não bloqueia o sistema em caso de falha de conexão
+  }
+}
+
+// Exibe a tela de "Acesso suspenso" com o motivo do bloqueio (NOVO)
+function mostrarTelaBloqueio(emp){
+  document.getElementById('ls').classList.add('hidden');
+  const bq = document.getElementById('bq-screen');
+  const motivoBox = document.getElementById('bq-motivo');
+  const motivoTxt = document.getElementById('bq-motivo-texto');
+  if(emp.motivo_bloqueio){
+    motivoTxt.textContent = emp.motivo_bloqueio;
+    motivoBox.style.display = '';
+  } else {
+    motivoBox.style.display = 'none';
+  }
+  bq.style.display = 'flex';
+}
+
+// Abre o WhatsApp de suporte (NOVO) — número configurável
+function abrirWhatsAppSuporte(){
+  const numeroSuporte = '5575999999999'; // TODO: ajustar para o número real de suporte EMETech
+  const msg = `Olá! Sou da empresa "${G.empresa?.nome||'—'}" e meu acesso ao EMETech PDV está bloqueado. Gostaria de regularizar minha situação.`;
+  window.open(`https://wa.me/${numeroSuporte}?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
 async function doLogout(){
@@ -3079,6 +3159,25 @@ async function loadAll(){
     offCacheClientes(G.clientes).catch(()=>{});
   }catch(e){notify('Erro ao carregar dados.','error');}
   finally{setLoad(false);}
+}
+
+/* ── VERIFICAÇÃO PERIÓDICA DE BLOQUEIO (NOVO) ── */
+// Checa a cada 5 minutos se a empresa foi bloqueada pelo painel master
+let _bqCheckInterval = null;
+function iniciarVerificacaoBloqueio(){
+  if(_bqCheckInterval) clearInterval(_bqCheckInterval);
+  _bqCheckInterval = setInterval(async () => {
+    if(!G.user?.email) return;
+    try{
+      const {data:emp,error} = await db.from('empresas').select('*').eq('email',G.user.email).maybeSingle();
+      if(error||!emp) return;
+      G.empresa = emp;
+      if(emp.status==='bloqueada'){
+        clearInterval(_bqCheckInterval);
+        mostrarTelaBloqueio(emp);
+      }
+    }catch(e){ /* silencioso — não interrompe o uso offline */ }
+  }, 5*60*1000); // 5 minutos
 }
 
 /* ── NAVEGAÇÃO ───────────────────────────────────────── */
@@ -10776,15 +10875,22 @@ const PLANOS = {
   }
 };
 
-/* ── GET/SET PLANO ATUAL ───────────────────────────────── */
+/* ── GET/SET PLANO ATUAL (NOVO: lido do Supabase via G.empresa) ── */
 function getPlanoAtual() {
+  // 1) Plano definido pela empresa no painel master (Supabase) — fonte de verdade
+  const planoEmpresa = G.empresa?.plano;
+  if (planoEmpresa && PLANOS[planoEmpresa]) return PLANOS[planoEmpresa];
+
+  // 2) Fallback: valor salvo localmente (uso offline / desenvolvimento)
   try {
     const salvo = localStorage.getItem('emetech_plano');
     if (salvo && PLANOS[salvo]) return PLANOS[salvo];
   } catch(e) {}
+
   return PLANOS.pro; // padrão: Pro (para não travar o sistema durante desenvolvimento)
 }
 
+// Mantido para uso offline/dev — não altera o plano oficial da empresa (esse é definido no painel master)
 function setPlanoAtual(planoId) {
   if (!PLANOS[planoId]) return;
   localStorage.setItem('emetech_plano', planoId);
