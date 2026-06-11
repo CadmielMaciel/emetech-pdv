@@ -6970,17 +6970,7 @@ function abrirGerenciarPinSlot(userId) {
   _pinSlotUserId = userId;
   const pinAtivo = hasPin(userId);
 
-  // Usar o modal de PIN existente no sistema
-  const modalPin = document.getElementById('modal-pin-edit');
-  if (modalPin) {
-    // Preencher dados do modal existente
-    const nomeEl = modalPin.querySelector('[data-pin-nome]') || modalPin.querySelector('.pin-user-nome');
-    if (nomeEl) nomeEl.textContent = u.nome;
-    openModal('modal-pin-edit');
-    return;
-  }
-
-  // Fallback: modal inline simples criado dinamicamente
+  // Cria o modal de PIN dinamicamente
   const existing = document.getElementById('modal-pin-slot-inline');
   if (existing) existing.remove();
 
@@ -7002,7 +6992,7 @@ function abrirGerenciarPinSlot(userId) {
         ).join('')}
       </div>
       <div class="modal-footer" style="justify-content:center">
-        <button class="btn btn-out" onclick="closeModal('modal-pin-slot-inline')">Cancelar</button>
+        <button class="btn btn-out" onclick="fecharPinSlotInline()">Cancelar</button>
         <button class="btn btn-pri" onclick="confirmarPinSlot()"><i class="ti ti-check"></i> Salvar PIN</button>
       </div>
     </div>
@@ -7010,15 +7000,29 @@ function abrirGerenciarPinSlot(userId) {
   document.body.insertAdjacentHTML('beforeend', modalHtml);
   _pinSlotDigitos = '';
   atualizarDisplayPinSlot();
-  document.getElementById('modal-pin-slot-inline').style.display = 'flex';
+  const _pinModalEl = document.getElementById('modal-pin-slot-inline');
+  openModal('modal-pin-slot-inline');
+  // Fechar ao clicar fora (modal criado dinamicamente não tem o handler global)
+  _pinModalEl.addEventListener('click', e => { if (e.target === _pinModalEl) fecharPinSlotInline(); });
   // Teclado físico
   document.getElementById('modal-pin-slot-inline')._keyHandler = (e) => {
     if (e.key >= '0' && e.key <= '9') pinSlotKey(e.key);
     if (e.key === 'Backspace') pinSlotKey('⌫');
     if (e.key === 'Enter') confirmarPinSlot();
-    if (e.key === 'Escape') closeModal('modal-pin-slot-inline');
+    if (e.key === 'Escape') fecharPinSlotInline();
   };
   document.addEventListener('keydown', document.getElementById('modal-pin-slot-inline')._keyHandler);
+}
+
+// Fecha e remove o modal inline de PIN (NOVO — corrige modal que não fechava/abria)
+function fecharPinSlotInline() {
+  const modal = document.getElementById('modal-pin-slot-inline');
+  if (modal) {
+    if (modal._keyHandler) document.removeEventListener('keydown', modal._keyHandler);
+    modal.remove();
+  }
+  _pinSlotDigitos = '';
+  _pinSlotUserId = null;
 }
 
 let _pinSlotDigitos = '';
@@ -7043,16 +7047,11 @@ function atualizarDisplayPinSlot() {
 function confirmarPinSlot() {
   if (_pinSlotDigitos.length !== 4) { notify('Digite 4 dígitos.', 'warn'); return; }
   if (!_pinSlotUserId) return;
-  setPin(_pinSlotUserId, _pinSlotDigitos);
-  const modal = document.getElementById('modal-pin-slot-inline');
-  if (modal) {
-    if (modal._keyHandler) document.removeEventListener('keydown', modal._keyHandler);
-    modal.remove();
-  }
-  _pinSlotDigitos = '';
-  const u = G.usuarios.find(x => x.id === _pinSlotUserId);
-  notify(`✅ PIN de ${u?.nome} ${hasPin(_pinSlotUserId) ? 'atualizado' : 'criado'} com sucesso!`, 'success');
-  _pinSlotUserId = null;
+  const userId = _pinSlotUserId;
+  setPin(userId, _pinSlotDigitos);
+  fecharPinSlotInline();
+  const u = G.usuarios.find(x => x.id === userId);
+  notify(`✅ PIN de ${u?.nome} ${hasPin(userId) ? 'atualizado' : 'criado'} com sucesso!`, 'success');
   renderSlotsPreview();
   mostrarTelaNetflix();
 }
@@ -7325,11 +7324,14 @@ function pdfBase({ titulo, numero, tipo, conteudo, assinatura, wmSrc, wmOp }) {
 }
 .slot-user-item:hover { background:var(--pri-light,rgba(91,71,224,.08));border-color:var(--pri);transform:translateX(2px); }
 .slot-user-item.selected {
-  background:var(--pri-light,rgba(91,71,224,.12));
-  border-color:var(--pri);
-  border-width:2px;
-  box-shadow:0 0 0 3px rgba(91,71,224,.15), inset 3px 0 0 var(--pri);
-  transform:translateX(3px);
+  background: rgba(91,71,224,.22);
+  border-color: var(--pri);
+  border-width: 2px;
+  box-shadow: 0 0 0 3px rgba(91,71,224,.18), inset 4px 0 0 var(--pri);
+  transform: translateX(3px);
+}
+[data-theme="dark"] .slot-user-item.selected {
+  background: rgba(124,58,237,.28);
 }
 .slot-user-item.selected .slot-user-nome::after {
   content: ' ✓';
@@ -9134,7 +9136,7 @@ function abrirSlotModal(slotNum) {
           <!-- Direita -->
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0">
             ${selecionado
-              ? `<span style="font-size:10px;font-weight:700;color:var(--pri);background:var(--pri-light,rgba(91,71,224,.1));padding:2px 8px;border-radius:6px;border:1px solid var(--pri)">Selecionado</span>`
+              ? `<span style="font-size:10px;font-weight:700;color:#fff;background:var(--pri);padding:2px 8px;border-radius:6px;border:1px solid var(--pri)">✓ Selecionado</span>`
               : `<span class="role-badge ${NFRoleTag[u.role] || ''}" style="font-size:10px">${NFRoleLbl[u.role] || u.role}</span>`
             }
             <span style="font-size:9.5px;color:var(--txt3)">${pinOk ? '🔒 PIN' : '⚪ Sem PIN'}</span>
