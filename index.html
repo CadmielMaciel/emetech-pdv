@@ -1356,7 +1356,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
             <button class="btn btn-pri btn-sm" onclick="salvarAparencia()"><i class="ti ti-device-floppy"></i>Salvar Tudo</button>
           </div>
         
-        <!-- Configuração WhatsApp -->
+        <!-- Status WhatsApp (somente leitura — configurado pelo Painel Master) -->
         <div class="card" style="margin-top:20px">
           <div class="card-hdr">
             <div class="card-title" style="display:flex;align-items:center;gap:8px">
@@ -1365,45 +1365,8 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
             </div>
             <span class="wpp-api-status wpp-api-off" id="wpp-api-badge">⚪ Desconectado</span>
           </div>
-          <div style="font-size:12.5px;color:var(--txt2);margin-bottom:14px">
-            Configure a Evolution API para enviar notificações automáticas de OS via WhatsApp.
-          </div>
-          <div class="g2" style="gap:12px;margin-bottom:12px">
-            <div class="fg"><label class="lbl">URL da Evolution API</label>
-              <input type="url" id="wpp-api-url" placeholder="https://evo.seusite.com.br">
-              <div style="font-size:11px;color:var(--txt3);margin-top:3px">Endereço do seu servidor</div>
-            </div>
-            <div class="fg"><label class="lbl">API Key</label>
-              <input type="password" id="wpp-api-key" placeholder="sua-api-key-aqui">
-            </div>
-          </div>
-          <div class="g2" style="gap:12px;margin-bottom:12px">
-            <div class="fg"><label class="lbl">Nome da instância</label>
-              <input type="text" id="wpp-instancia" placeholder="emetech-pdv">
-            </div>
-            <div class="fg"><label class="lbl">Número do bot (com DDI)</label>
-              <input type="text" id="wpp-numero" placeholder="5571999999999">
-            </div>
-          </div>
-          <div class="ms">Templates de mensagem</div>
-          <div class="fg"><label class="lbl">OS Recebida</label>
-            <textarea id="wpp-tpl-recebida" rows="2">Olá {nome}! 📱 Recebemos seu *{aparelho}* na assistência.
-OS nº *{numero}* — Defeito: {defeito} ✅</textarea>
-          </div>
-          <div class="fg"><label class="lbl">OS Pronta</label>
-            <textarea id="wpp-tpl-pronta" rows="2">✅ Olá {nome}! Seu *{aparelho}* está pronto!
-Valor: *{total}* | OS nº {numero} 🎉</textarea>
-          </div>
-          <div class="fg"><label class="lbl">Resposta automática de status</label>
-            <textarea id="wpp-tpl-status" rows="3">Olá {nome}! 🔧 OS nº *{numero}* — {aparelho}
-Status: *{status}*
-{info_extra}
-Dúvidas? Responda esta mensagem. 😊</textarea>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
-            <button class="btn btn-pri btn-sm" onclick="salvarConfigWpp()"><i class="ti ti-check"></i> Salvar WhatsApp</button>
-            <button class="btn btn-out btn-sm" onclick="testarConexaoWpp()"><i class="ti ti-wifi"></i> Testar conexão</button>
-            <button class="btn btn-out btn-sm" onclick="abrirWebhookGuia()"><i class="ti ti-info-circle"></i> Como configurar</button>
+          <div style="font-size:12.5px;color:var(--txt2)">
+            A integração com o WhatsApp é configurada pelo suporte EMETech (Painel Master). Caso o status esteja "Desconectado" e você precise enviar mensagens pelo chat de OS, entre em contato com o suporte para ativar.
           </div>
         </div>
           <div class="g2" style="gap:20px">
@@ -2514,49 +2477,7 @@ Dúvidas? Responda esta mensagem. 😊</textarea>
   </div>
 </div>
 
-<!-- Modal guia do webhook -->
-<div class="modal-overlay" id="modal-webhook-guia">
-  <div class="modal lg">
-    <div class="modal-title"><i class="ti ti-webhook"></i> Configurando o Webhook — Evolution API</div>
-    <div style="display:flex;flex-direction:column;gap:14px">
-      <div class="alert-box alert-info">
-        <i class="ti ti-info-circle" style="font-size:15px;flex-shrink:0"></i>
-        <div style="font-size:13px">O webhook recebe mensagens do cliente no WhatsApp e responde automaticamente com o status da OS. Funciona 24h, sem precisar que alguém esteja online.</div>
-      </div>
 
-      <div style="font-size:13px;font-weight:700;color:var(--txt);margin-bottom:-6px">1. Configuração no Evolution API</div>
-      <div style="font-size:12.5px;color:var(--txt2)">No painel da sua Evolution API, crie uma instância e configure o webhook:</div>
-      <div class="code-block" style="background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:12px;font-family:'DM Mono',monospace;font-size:12px;color:var(--txt2);overflow-x:auto">Webhook URL: https://emetech-pdv.vercel.app/api/whatsapp
-Eventos: MESSAGES_UPSERT</div>
-
-      <div style="font-size:13px;font-weight:700;color:var(--txt);margin-bottom:-6px">2. Arquivo do webhook (já criado)</div>
-      <div style="font-size:12.5px;color:var(--txt2)">O arquivo <code style="background:var(--surface);padding:1px 5px;border-radius:4px">api/whatsapp.js</code> já está no repositório GitHub. O Vercel detecta automaticamente e cria o endpoint.</div>
-
-      <div style="font-size:13px;font-weight:700;color:var(--txt);margin-bottom:-6px">3. Fluxo de funcionamento</div>
-      <div style="font-size:12.5px;color:var(--txt2);line-height:1.6">
-        📱 Cliente envia "status" no WhatsApp →<br>
-        🔗 Evolution API encaminha para o webhook →<br>
-        💾 Webhook busca a OS no Supabase pelo número →<br>
-        📤 Webhook responde automaticamente com o status →<br>
-        💬 Chat aparece registrado aqui na OS
-      </div>
-
-      <div style="font-size:13px;font-weight:700;color:var(--txt);margin-bottom:-6px">4. Palavras-chave reconhecidas</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12.5px">
-        <div style="padding:8px 10px;background:var(--surface);border-radius:8px"><strong>status, andamento, pronto</strong><br><span style="color:var(--txt3)">→ Responde com status da OS</span></div>
-        <div style="padding:8px 10px;background:var(--surface);border-radius:8px"><strong>cancelar, cancelamento</strong><br><span style="color:var(--txt3)">→ Alerta o técnico responsável</span></div>
-        <div style="padding:8px 10px;background:var(--surface);border-radius:8px"><strong>oi, olá, bom dia, boa tarde</strong><br><span style="color:var(--txt3)">→ Mensagem de boas-vindas</span></div>
-        <div style="padding:8px 10px;background:var(--surface);border-radius:8px"><strong>Qualquer outra mensagem</strong><br><span style="color:var(--txt3)">→ Resposta padrão + status</span></div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-out" onclick="closeModal('modal-webhook-guia')">Fechar</button>
-      <a href="https://github.com/CadmielMaciel/emetech-pdv" target="_blank" class="btn btn-pri">
-        <i class="ti ti-brand-github"></i> Ver no GitHub
-      </a>
-    </div>
-  </div>
-</div>
 
 
 <!-- MODAL PLANOS -->
@@ -6823,6 +6744,7 @@ function renderAparencia() {
   ['nome','cnpj','tel','email','end','cid','site','rodape'].forEach(k => { const el = document.getElementById('emp-' + k); if (el && emp[k]) el.value = emp[k]; });
   document.getElementById('ap-count-logos').textContent = ((MARCA.logoLogin?1:0)+(MARCA.logoSidebar?1:0)) + '/2';
   document.getElementById('ap-count-wm').textContent = ((MARCA.wmOS?1:0)+(MARCA.wmRel?1:0)) + '/2';
+  carregarConfigWpp(); // carrega config WhatsApp (Zapster) do Supabase (NOVO)
 }
 
 /* ══════════════════════════════════════════════════════
@@ -10171,29 +10093,64 @@ const _origGoFn = typeof go === 'function' ? go : null;
 let _wppOsAtual   = null; // OS sendo exibida no chat
 let _wppMensagens = {};   // Cache: { os_id: [msgs] }
 
-/* ── CONFIG ───────────────────────────────────────────────────── */
-function getWppConfig() {
-  try { return JSON.parse(localStorage.getItem('emetech_wpp_cfg') || 'null') || {}; } catch { return {}; }
+/* ── CONFIG (SUPABASE) ── */
+let _wppCfgCache = null; // cache em memória durante a sessão
+
+function mapWppCfgFromDb(r) {
+  if (!r) return {};
+  return {
+    id: r.id, provider: r.provider,
+    apiUrl: r.api_url, apiKey: r.api_token, instancia: r.instance_id,
+    numero: r.numero_bot, ativo: r.ativo,
+    tplRecebida: r.tpl_recebida, tplPronta: r.tpl_pronta, tplStatus: r.tpl_status,
+  };
 }
-function saveWppConfig(cfg) {
-  localStorage.setItem('emetech_wpp_cfg', JSON.stringify(cfg));
+
+async function getWppConfig() {
+  if (_wppCfgCache) return _wppCfgCache;
+  if (!G.empresa?.id) return {};
+  const { data, error } = await db.from('config_whatsapp').select('*').eq('empresa_id', G.empresa.id).maybeSingle();
+  if (error) { console.error('Erro ao carregar config WhatsApp:', error); return {}; }
+  _wppCfgCache = mapWppCfgFromDb(data) || {};
+  return _wppCfgCache;
 }
-function getMsgsOS(osId) {
-  try {
-    const all = JSON.parse(localStorage.getItem('emetech_wpp_msgs') || '{}');
-    return all[osId] || [];
-  } catch { return []; }
+
+/* ── MENSAGENS (SUPABASE) ── */
+function mapMsgFromDb(r) {
+  return {
+    id: r.id, os_id: r.os_id, numero: r.numero,
+    direcao: r.direcao, texto: r.conteudo, tipo: r.tipo,
+    statusMsg: r.status_msg, externalId: r.external_id,
+    lida: r.lida, ts: r.created_at,
+  };
 }
-function saveMsgOS(osId, msgs) {
-  try {
-    const all = JSON.parse(localStorage.getItem('emetech_wpp_msgs') || '{}');
-    all[osId] = msgs.slice(-100); // manter últimas 100 por OS
-    localStorage.setItem('emetech_wpp_msgs', JSON.stringify(all));
-  } catch {}
+
+async function getMsgsOS(osId) {
+  const { data, error } = await db.from('mensagens_whatsapp')
+    .select('*').eq('os_id', String(osId)).order('created_at', { ascending: true }).limit(100);
+  if (error) { console.error('Erro ao carregar mensagens:', error); return []; }
+  return (data || []).map(mapMsgFromDb);
+}
+
+async function addMsgOS(osId, msg) {
+  if (!G.empresa?.id) return null;
+  const payload = {
+    empresa_id: G.empresa.id,
+    os_id: String(osId),
+    numero: msg.numero,
+    direcao: msg.direcao,
+    conteudo: msg.texto,
+    tipo: msg.tipo || 'text',
+    external_id: msg.externalId || null,
+    lida: !!msg.lida,
+  };
+  const { data, error } = await db.from('mensagens_whatsapp').insert(payload).select().single();
+  if (error) { console.error('Erro ao gravar mensagem:', error); return null; }
+  return mapMsgFromDb(data);
 }
 
 /* ── ABRIR CHAT DA OS ──────────────────────────────────────────── */
-function abrirWppOS(osId) {
+async function abrirWppOS(osId) {
   const os = G.os.find(x => x.id === osId);
   if (!os) return;
   _wppOsAtual = os;
@@ -10221,11 +10178,13 @@ function abrirWppOS(osId) {
     if (sendBtn) sendBtn.disabled = true;
   }
 
+  openModal('modal-wpp-os');
+
   // Atualizar status da API
-  const cfg = getWppConfig();
+  const cfg = await getWppConfig();
   const statusBadge = document.getElementById('wpp-modal-status');
   const dot = document.getElementById('wpp-dot');
-  if (cfg.apiUrl && cfg.apiKey) {
+  if (cfg.apiKey && cfg.instancia) {
     if (statusBadge) { statusBadge.className = 'wpp-api-status wpp-api-ok'; statusBadge.textContent = '🟢 API conectada'; }
     if (dot) dot.classList.add('online');
   } else {
@@ -10233,8 +10192,7 @@ function abrirWppOS(osId) {
     if (dot) dot.classList.remove('online');
   }
 
-  renderChatWpp(osId);
-  openModal('modal-wpp-os');
+  await renderChatWpp(osId);
 
   // Scroll para o final
   setTimeout(() => {
@@ -10244,15 +10202,18 @@ function abrirWppOS(osId) {
 }
 
 /* ── RENDERIZAR CHAT ──────────────────────────────────────────── */
-function renderChatWpp(osId) {
+async function renderChatWpp(osId) {
   const chat = document.getElementById('wpp-chat-msgs');
   if (!chat) return;
 
-  const msgs = getMsgsOS(osId);
   const empty = document.getElementById('wpp-empty-state');
+  chat.innerHTML = '<div style="text-align:center;color:var(--txt3);font-size:12px;padding:16px">Carregando mensagens...</div>';
+
+  const msgs = await getMsgsOS(osId);
 
   if (msgs.length === 0) {
-    if (empty) empty.style.display = '';
+    chat.innerHTML = '';
+    if (empty) { chat.appendChild(empty); empty.style.display = ''; }
     return;
   }
   if (empty) empty.style.display = 'none';
@@ -10310,58 +10271,65 @@ async function enviarMsgWpp(textoCustom) {
     return;
   }
 
-  const cfg = getWppConfig();
+  const cfg = await getWppConfig();
 
-  // Salvar mensagem localmente (otimista)
-  const msg = {
-    id: 'msg_' + Date.now(),
-    os_id: os.id,
+  // Salvar mensagem no Supabase (otimista)
+  const msg = await addMsgOS(os.id, {
+    numero: telefone,
     direcao: 'saida',
     texto,
-    ts: new Date().toISOString(),
+    tipo: 'text',
     lida: false,
-  };
+  });
 
-  const msgs = getMsgsOS(os.id);
-  msgs.push(msg);
-  saveMsgOS(os.id, msgs);
-  renderChatWpp(os.id);
+  await renderChatWpp(os.id);
   if (input) { input.value = ''; input.style.height = 'auto'; }
 
-  // Tentar enviar via Evolution API
+  if (!msg) {
+    notify('Mensagem não pôde ser salva. Verifique sua conexão.', 'error');
+    return;
+  }
+
+  // Enviar via Zapster API
   if (cfg.apiUrl && cfg.apiKey && cfg.instancia) {
     try {
-      const res = await fetch(`${cfg.apiUrl}/message/sendText/${cfg.instancia}`, {
+      const res = await fetch(`${cfg.apiUrl}/wa/instances/${cfg.instancia}/messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'apikey': cfg.apiKey,
+          'Authorization': `Bearer ${cfg.apiKey}`,
         },
         body: JSON.stringify({
-          number: telefone,
+          to: telefone,
+          type: 'text',
           text: texto,
         }),
       });
       if (res.ok) {
-        msg.lida = false;
-        saveMsgOS(os.id, msgs);
+        const data = await res.json().catch(()=>({}));
+        // Atualiza external_id da mensagem (correlação com webhooks de status)
+        if (data?.id) {
+          await db.from('mensagens_whatsapp').update({ external_id: data.id, status_msg: 'sent' }).eq('id', msg.id);
+        }
         notify('✅ Mensagem enviada!', 'success');
       } else {
-        notify('⚠️ API retornou erro. Mensagem salva localmente.', 'warn');
+        await db.from('mensagens_whatsapp').update({ status_msg: 'failed' }).eq('id', msg.id);
+        notify('⚠️ API retornou erro. Mensagem salva no histórico.', 'warn');
       }
     } catch(e) {
-      notify('Não foi possível enviar. API offline? Mensagem salva localmente.', 'warn');
+      await db.from('mensagens_whatsapp').update({ status_msg: 'failed' }).eq('id', msg.id);
+      notify('Não foi possível enviar. API offline? Mensagem salva no histórico.', 'warn');
     }
   } else {
-    notify('Configure a Evolution API em Aparência & Marca para enviar mensagens reais.', 'info');
+    notify('Configure a Zapster API em Aparência & Marca para enviar mensagens reais.', 'info');
   }
 }
 
 /* ── TEMPLATES ────────────────────────────────────────────────── */
 const WPP_TEMPLATES = {
-  recebida: () => {
+  recebida: async () => {
     const os = _wppOsAtual; if (!os) return '';
-    const cfg = getWppConfig();
+    const cfg = await getWppConfig();
     return (cfg.tplRecebida || `Olá {nome}! 📱 Recebemos seu *{aparelho}* aqui na assistência.
 OS nº *{numero}* — Defeito: {defeito}
 Entraremos em contato assim que analisarmos. ✅`)
@@ -10369,21 +10337,21 @@ Entraremos em contato assim que analisarmos. ✅`)
       .replace(/{aparelho}/g, os.aparelho || '')
       .replace(/{numero}/g,   os.numero || '')
       .replace(/{defeito}/g,  os.defeito || '')
-      .replace(/{empresa}/g,  getWppConfig().empresa || 'nossa assistência');
+      .replace(/{empresa}/g,  G.empresa?.nome || 'nossa assistência');
   },
-  analise: () => {
+  analise: async () => {
     const os = _wppOsAtual; if (!os) return '';
     return `Olá ${os.cliente_nome}! 🔍 Seu *${os.aparelho}* está sendo analisado.
 OS nº *${os.numero}* — Em breve traremos o diagnóstico completo.`;
   },
-  reparo: () => {
+  reparo: async () => {
     const os = _wppOsAtual; if (!os) return '';
     return `Olá ${os.cliente_nome}! 🔧 Seu *${os.aparelho}* está em reparo.
 OS nº *${os.numero}* — Nossos técnicos estão trabalhando nele agora!`;
   },
-  pronta: () => {
+  pronta: async () => {
     const os = _wppOsAtual; if (!os) return '';
-    const cfg = getWppConfig();
+    const cfg = await getWppConfig();
     return (cfg.tplPronta || `✅ Olá {nome}! Seu *{aparelho}* está pronto!
 Valor: *{total}* | OS nº {numero}
 Pode passar para retirar! 🎉`)
@@ -10392,14 +10360,14 @@ Pode passar para retirar! 🎉`)
       .replace(/{numero}/g,   os.numero || '')
       .replace(/{total}/g,    fmt(os.total || 0));
   },
-  peca: () => {
+  peca: async () => {
     const os = _wppOsAtual; if (!os) return '';
     return `Olá ${os.cliente_nome}! ⏳ Seu *${os.aparelho}* aguarda chegada de peça.
 OS nº *${os.numero}* — Avisaremos assim que chegar!`;
   },
-  status: () => {
+  status: async () => {
     const os = _wppOsAtual; if (!os) return '';
-    const cfg = getWppConfig();
+    const cfg = await getWppConfig();
     const statusPt = { 'Aguardando':'⏳ Aguardando análise','Em Análise':'🔍 Em análise','Em Reparo':'🔧 Em reparo','Pronto':'✅ Pronto para retirada','Entregue':'📦 Entregue' };
     const infoExtra = os.tecnico_nome ? `Técnico: ${os.tecnico_nome}` : '';
     return (cfg.tplStatus || `Olá {nome}! 🔧 Status da sua OS:
@@ -10417,10 +10385,10 @@ Dúvidas? Responda esta mensagem. 😊`)
   },
 };
 
-function usarTemplateWpp(tipo) {
+async function usarTemplateWpp(tipo) {
   const fn = WPP_TEMPLATES[tipo];
   if (!fn) return;
-  const texto = fn();
+  const texto = await fn();
   if (!texto) return;
   const input = document.getElementById('wpp-input-msg');
   if (input) {
@@ -10437,8 +10405,8 @@ function abrirTemplatesWpp() {
   if (bar) bar.style.display = bar.style.display === 'none' ? '' : 'none';
 }
 
-function atualizarChatWpp() {
-  if (_wppOsAtual) renderChatWpp(_wppOsAtual.id);
+async function atualizarChatWpp() {
+  if (_wppOsAtual) await renderChatWpp(_wppOsAtual.id);
 }
 
 function formatarTelefone(tel) {
@@ -10449,73 +10417,23 @@ function formatarTelefone(tel) {
   return tel;
 }
 
-/* ── CONFIGURAÇÃO WPP ─────────────────────────────────────────── */
-function salvarConfigWpp() {
-  const cfg = {
-    apiUrl:      document.getElementById('wpp-api-url')?.value?.trim()?.replace(/\/$/, ''),
-    apiKey:      document.getElementById('wpp-api-key')?.value?.trim(),
-    instancia:   document.getElementById('wpp-instancia')?.value?.trim(),
-    numero:      document.getElementById('wpp-numero')?.value?.trim(),
-    tplRecebida: document.getElementById('wpp-tpl-recebida')?.value,
-    tplPronta:   document.getElementById('wpp-tpl-pronta')?.value,
-    tplStatus:   document.getElementById('wpp-tpl-status')?.value,
-  };
-  saveWppConfig(cfg);
-  notify('✅ Configuração WhatsApp salva!', 'success');
-  atualizarBadgeWpp();
+/* ── CONFIGURAÇÃO WPP (SUPABASE + ZAPSTER) ─────────────────────── */
+// Carrega o status da config WhatsApp (somente leitura — configurada no Painel Master)
+async function carregarConfigWpp() {
+  const cfg = await getWppConfig();
+  atualizarBadgeWpp(cfg);
 }
 
-function carregarConfigWpp() {
-  const cfg = getWppConfig();
-  const set = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined) el.value = val; };
-  set('wpp-api-url', cfg.apiUrl);
-  set('wpp-api-key', cfg.apiKey);
-  set('wpp-instancia', cfg.instancia);
-  set('wpp-numero', cfg.numero);
-  if (cfg.tplRecebida) set('wpp-tpl-recebida', cfg.tplRecebida);
-  if (cfg.tplPronta)   set('wpp-tpl-pronta', cfg.tplPronta);
-  if (cfg.tplStatus)   set('wpp-tpl-status', cfg.tplStatus);
-  atualizarBadgeWpp();
-}
-
-function atualizarBadgeWpp() {
-  const cfg = getWppConfig();
+function atualizarBadgeWpp(cfg) {
   const badge = document.getElementById('wpp-api-badge');
   if (!badge) return;
-  if (cfg.apiUrl && cfg.apiKey) {
+  if (cfg?.apiKey && cfg?.instancia && cfg?.ativo !== false) {
     badge.className = 'wpp-api-status wpp-api-ok';
-    badge.textContent = '🟢 Configurado';
+    badge.textContent = '🟢 Conectado';
   } else {
     badge.className = 'wpp-api-status wpp-api-off';
     badge.textContent = '⚪ Desconectado';
   }
-}
-
-async function testarConexaoWpp() {
-  const cfg = getWppConfig();
-  if (!cfg.apiUrl || !cfg.apiKey) {
-    notify('Configure a URL e a API Key primeiro.', 'warn'); return;
-  }
-  try {
-    notify('Testando conexão...', 'info');
-    const res = await fetch(`${cfg.apiUrl}/instance/fetchInstances`, {
-      headers: { 'apikey': cfg.apiKey }
-    });
-    if (res.ok) {
-      const data = await res.json();
-      notify(`✅ Conexão OK! ${Array.isArray(data) ? data.length + ' instância(s) encontrada(s)' : ''}`, 'success');
-      const badge = document.getElementById('wpp-api-badge');
-      if (badge) { badge.className = 'wpp-api-status wpp-api-ok'; badge.textContent = '🟢 Conectado'; }
-    } else {
-      notify('API respondeu com erro: ' + res.status, 'error');
-    }
-  } catch(e) {
-    notify('Não foi possível conectar à API. Verifique a URL.', 'error');
-  }
-}
-
-function abrirWebhookGuia() {
-  openModal('modal-webhook-guia');
 }
 
 /* ── RECEBER MENSAGEM (chamado pelo webhook via Supabase Realtime) ── */
