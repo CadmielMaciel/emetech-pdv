@@ -156,6 +156,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);min-
 .agenda-item{display:block;border-radius:5px;padding:2px 5px;margin-bottom:2px;font-size:10px;font-weight:600;color:#fff;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .agenda-item.os{background:var(--pri)}
 .agenda-item.prod{background:var(--success)}
+.agenda-item.avulsa{background:#3B82F6}
 .agenda-item.atrasado{background:var(--danger)}
 @media(max-width:768px){.agenda-day{min-height:54px;font-size:9px}.agenda-item{font-size:9px}.agenda-dow{font-size:9px}}
 .caixa-aberto{background:#ECFDF5;color:#059669;border:1.5px solid #A7F3D0}
@@ -921,15 +922,17 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
           <div style="display:flex;align-items:center;gap:14px;font-size:11.5px;color:var(--txt2)">
             <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--pri);margin-right:4px"></span>OS</span>
             <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--success);margin-right:4px"></span>Produto</span>
+            <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#3B82F6;margin-right:4px"></span>Compromisso</span>
             <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--danger);margin-right:4px"></span>Atrasado</span>
           </div>
+          <button class="btn btn-pri btn-sm" onclick="abrirEntregaAvulsa()"><i class="ti ti-plus"></i> Nova Entrega</button>
         </div>
         <div class="card" style="padding:14px">
           <div id="agenda-grid" class="agenda-grid"></div>
         </div>
         <div class="ms" style="margin-top:16px">Próximas entregas</div>
         <div class="card" style="padding:0"><div class="tw"><table>
-          <thead><tr><th>Data</th><th>Tipo</th><th>Cliente</th><th>Detalhe</th><th>Status</th></tr></thead>
+          <thead><tr><th>Data</th><th>Tipo</th><th>Cliente</th><th>Detalhe</th><th>Status</th><th></th></tr></thead>
           <tbody id="agenda-lista"></tbody>
         </table></div></div>
       </div>
@@ -1021,6 +1024,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
           <button class="fin-tab active" onclick="finTab('receber',this)"><i class="ti ti-arrow-down-left" style="font-size:14px"></i> Contas a Receber</button>
           <button class="fin-tab" onclick="finTab('pagar',this)"><i class="ti ti-arrow-up-right" style="font-size:14px"></i> Contas a Pagar</button>
           <button class="fin-tab" onclick="finTab('fluxo',this)"><i class="ti ti-chart-line" style="font-size:14px"></i> Fluxo de Caixa</button>
+          <button class="fin-tab" onclick="finTab('boletos',this)"><i class="ti ti-receipt-2" style="font-size:14px"></i> Boletos da Empresa</button>
         </div>
         <div id="fin-receber">
           <div style="display:flex;gap:8px;margin-bottom:10px">
@@ -1054,6 +1058,23 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
             <div class="card"><div class="card-title" style="margin-bottom:10px">Entradas Previstas</div><div id="fluxo-ent"></div></div>
             <div class="card"><div class="card-title" style="margin-bottom:10px">Saídas Previstas</div><div id="fluxo-sai"></div></div>
           </div>
+        </div>
+        <div id="fin-boletos" style="display:none">
+          <div style="font-size:12.5px;color:var(--txt2);margin-bottom:10px">
+            Boletos e cobranças recebidas pela empresa (impostos, mensalidades, financiamentos), vinculados ao CNPJ/CPF cadastrado em <strong>Aparência & Marca</strong>: <span id="bol-doc-empresa" style="font-family:'DM Mono',monospace;color:var(--pri)">—</span>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:10px">
+            <select id="bol-filter" onchange="renderBoletosEmpresa()" style="padding:7px 10px;font-size:12.5px;border-radius:8px;width:auto">
+              <option value="">Todos</option><option value="pendente">Pendente</option><option value="vencido">Vencido</option><option value="pago">Pago</option>
+            </select>
+            <div style="flex:1"></div>
+            <button class="btn btn-out btn-sm" onclick="gerarPdfBoletosPendentes()"><i class="ti ti-file-text"></i> Imprimir pendentes</button>
+            <button class="btn btn-pri" onclick="abrirBoletoEmpresa()"><i class="ti ti-plus"></i> Novo Boleto</button>
+          </div>
+          <div class="card" style="padding:0"><div class="tw"><table>
+            <thead><tr><th>Descrição</th><th>Emissor</th><th>Valor</th><th>Vencimento</th><th>Status</th><th>Ações</th></tr></thead>
+            <tbody id="bol-table"></tbody>
+          </table></div></div>
         </div>
       </div>
 
@@ -1114,7 +1135,10 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
           <div class="card" style="padding:0">
             <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
               <div class="card-title">Histórico de Vendas</div>
-              <span id="r-vendas-count" style="font-size:12px;color:var(--txt3)"></span>
+              <div style="display:flex;align-items:center;gap:10px">
+                <span id="r-vendas-count" style="font-size:12px;color:var(--txt3)"></span>
+                <button class="btn btn-pri btn-sm" onclick="gerarPdfRelVendas()"><i class="ti ti-file-text"></i>Exportar PDF</button>
+              </div>
             </div>
             <div class="tw"><table>
               <thead><tr><th>Data/Hora</th><th>Cliente</th><th>Operador</th><th>Total</th><th>Custo</th><th>Lucro</th><th>Margem</th><th>Pagamento</th></tr></thead>
@@ -1516,7 +1540,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
           <div class="g2">
             <div>
               <div class="fg"><label class="lbl">Nome / Razão Social</label><input type="text" id="emp-nome" placeholder="EMETech Assistência Técnica"></div>
-              <div class="fg"><label class="lbl">CNPJ / CPF</label><input type="text" id="emp-cnpj" placeholder="00.000.000/0000-00"></div>
+              <div class="fg"><label class="lbl">CNPJ / CPF</label><input type="text" id="emp-cnpj" placeholder="000.000.000-00 ou 00.000.000/0001-00" maxlength="18" oninput="mascararDocCnpjCpf(this)"></div>
               <div class="fg"><label class="lbl">Telefone</label><input type="text" id="emp-tel" placeholder="(71) 99999-0000"></div>
               <div class="fg"><label class="lbl">E-mail</label><input type="email" id="emp-email" placeholder="contato@emetech.com"></div>
             </div>
@@ -1910,6 +1934,22 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
   </div>
 </div></div>
 
+<!-- Boleto da Empresa (NOVO) -->
+<div class="modal-overlay" id="modal-boleto-empresa"><div class="modal">
+  <div class="modal-title"><i class="ti ti-receipt-2"></i><span id="boleto-empresa-title">Novo Boleto</span></div>
+  <input type="hidden" id="bol-id">
+  <div class="fg"><label class="lbl">Descrição *</label><input type="text" id="bol-desc" placeholder="Ex: DAS Simples Nacional, mensalidade sistema..."></div>
+  <div class="g2"><div class="fg"><label class="lbl">Emissor</label><input type="text" id="bol-emissor" placeholder="Ex: Receita Federal, Fornecedor X"></div><div class="fg"><label class="lbl">Valor R$ *</label><input type="number" id="bol-val" step="0.01" min="0.01"></div></div>
+  <div class="g2"><div class="fg"><label class="lbl">Vencimento *</label><input type="date" id="bol-venc"></div><div class="fg"><label class="lbl">Status</label><select id="bol-status"><option value="pendente">Pendente</option><option value="pago">Pago</option><option value="cancelado">Cancelado</option></select></div></div>
+  <div class="fg"><label class="lbl">Código de barras / linha digitável</label><input type="text" id="bol-cb" placeholder="00190.00009 01234.567890..."></div>
+  <div class="fg"><label class="lbl">Observações</label><textarea id="bol-obs" rows="2"></textarea></div>
+  <div class="modal-footer">
+    <button class="btn btn-out" onclick="closeModal('modal-boleto-empresa')">Cancelar</button>
+    <button class="btn btn-danger" id="bol-btn-excluir" style="display:none" onclick="excluirBoletoEmpresa()"><i class="ti ti-trash"></i> Excluir</button>
+    <button class="btn btn-pri" onclick="salvarBoletoEmpresa()"><i class="ti ti-check"></i>Salvar</button>
+  </div>
+</div></div>
+
 <!-- Ajuste de Estoque -->
 <div class="modal-overlay" id="modal-ajuste"><div class="modal sm">
   <div class="modal-title"><i class="ti ti-adjustments"></i>Ajuste Manual de Estoque</div>
@@ -2266,6 +2306,47 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
   </div>
 </div></div>
 
+
+<!-- Modal Nova Entrega Avulsa (NOVO) -->
+<div class="modal-overlay" id="modal-entrega-avulsa"><div class="modal" style="max-width:460px">
+  <div class="modal-title">
+    <i class="ti ti-calendar-plus"></i>
+    <span id="entrega-avulsa-title">Nova Entrega</span>
+  </div>
+  <input type="hidden" id="ea-id">
+  <div class="fg"><label class="lbl">Título / Descrição *</label>
+    <input type="text" id="ea-titulo" placeholder="Ex: Entrega de acessório, visita técnica...">
+  </div>
+  <div class="fg"><label class="lbl">Cliente</label>
+    <input type="text" id="ea-cliente" placeholder="Nome do cliente (opcional)">
+  </div>
+  <div class="g2" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <div class="fg"><label class="lbl">Data *</label>
+      <input type="date" id="ea-data">
+    </div>
+    <div class="fg"><label class="lbl">Hora</label>
+      <input type="time" id="ea-hora">
+    </div>
+  </div>
+  <div class="fg"><label class="lbl">Observações</label>
+    <textarea id="ea-obs" rows="2" placeholder="Detalhes adicionais (opcional)"></textarea>
+  </div>
+  <div class="fg"><label class="lbl">Status</label>
+    <select id="ea-status">
+      <option value="pendente">Pendente</option>
+      <option value="concluido">Concluído</option>
+    </select>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-out" onclick="closeModal('modal-entrega-avulsa')">Cancelar</button>
+    <button class="btn btn-danger" id="ea-btn-excluir" style="display:none" onclick="excluirEntregaAvulsa()">
+      <i class="ti ti-trash"></i> Excluir
+    </button>
+    <button class="btn btn-pri" onclick="salvarEntregaAvulsa()">
+      <i class="ti ti-check"></i> Salvar
+    </button>
+  </div>
+</div></div>
 
 <!-- Modal Configurar Slots Netflix -->
 <div class="modal-overlay" id="modal-slot-config"><div class="modal" style="max-width:480px">
@@ -2683,6 +2764,10 @@ const SKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 const { createClient } = supabase;
 const db = createClient(SURL, SKEY);
 
+// Retorna o empresa_id do usuário logado — usar em todo payload de insert
+// (RLS exige empresa_id correto em WITH CHECK)
+function EID(){ return G.profile?.empresa_id || G.empresaId || null; }
+
 /* ── PWA OFFLINE: IndexedDB + FILA DE VENDAS ──────────── */
 const OFFDB_NAME='emetech_offline';
 const OFFDB_VERSION=1;
@@ -2959,6 +3044,7 @@ const RC = {admin:'r-admin',gerente:'r-gerente',operador:'r-operador',tecnico:'r
 const RH = {admin:'dashboard',gerente:'dashboard',operador:'pdv',tecnico:'os'};
 
 function canAccess(role,page){
+  if(role==='admin_master') return true; // acesso master irrestrito (uso normal é via admin.html)
   const P={dashboard:['admin','gerente'],pdv:['admin','gerente','operador'],caixas:['admin','gerente'],crediario:['admin','gerente','operador'],orcamentos:['admin','gerente','operador'],'os-hist':['admin','gerente','tecnico'],devolucoes:['admin','gerente'],os:['admin','gerente','tecnico'],agenda:['admin','gerente','tecnico','operador'],comissoes:['admin','gerente'],produtos:['admin','gerente'],estoque:['admin','gerente'],fornecedores:['admin','gerente'],financeiro:['admin','gerente'],clientes:['admin','gerente','operador','tecnico'],relatorios:['admin','gerente'],inteligencia:['admin','gerente'],usuarios:['admin'],aparencia:['admin']};
   return (P[page]||[]).includes(role);
 }
@@ -2991,9 +3077,11 @@ async function loadProfile(user){
   const {data:p}=await db.from('usuarios').select('*').eq('email',user.email).single();
   if(!p||!p.ativo){await db.auth.signOut();document.getElementById('l-err').textContent='Usuário inativo.';document.getElementById('l-err').style.display='block';document.getElementById('l-btn').disabled=false;document.getElementById('l-btn').innerHTML='<i class="ti ti-lock" style="font-size:17px"></i>Entrar';return;}
   G.profile=p;G.role=p.role;
+  // empresa_id do usuário logado — usado em todos os inserts (RLS exige)
+  G.empresaId = p.empresa_id;
 
   // ── Verificação de status financeiro/bloqueio da empresa (NOVO) ──
-  const ok = await carregarEmpresaELoginCheck(user.email);
+  const ok = await carregarEmpresaELoginCheck();
   if(!ok) return; // tela de bloqueio já foi exibida, interrompe o login
 
   document.getElementById('ls').classList.add('hidden');
@@ -3004,10 +3092,12 @@ async function loadProfile(user){
   mostrarTelaNetflix();
 }
 
-// Busca a empresa (pelo e-mail do admin cadastrado no painel master) e verifica bloqueio (NOVO)
-async function carregarEmpresaELoginCheck(email){
+// Busca a empresa do usuário logado (via usuarios.empresa_id) e verifica bloqueio (NOVO)
+async function carregarEmpresaELoginCheck(){
   try{
-    const {data:emp,error}=await db.from('empresas').select('*').eq('email',email).maybeSingle();
+    const empId = EID();
+    if(!empId){ G.empresa = null; return true; }
+    const {data:emp,error}=await db.from('empresas').select('*').eq('id',empId).maybeSingle();
     if(error){ console.error('Erro ao buscar empresa:',error); return true; } // não bloqueia em caso de erro de rede
     G.empresa = emp || null;
 
@@ -3053,7 +3143,7 @@ async function doLogout(){
 async function loadAll(){
   setLoad(true);
   try{
-    const [pr,cl,os,ve,us,mv,fo,oc,dv,re,pa,cx]= await Promise.all([
+    const [pr,cl,os,ve,us,mv,fo,oc,dv,re,pa,cx,en]= await Promise.all([
       db.from('produtos').select('*').order('nome'),
       db.from('clientes').select('*').order('nome'),
       db.from('ordens_servico').select('*').neq('status','Entregue').order('criado_em',{ascending:false}),
@@ -3065,12 +3155,14 @@ async function loadAll(){
       db.from('devolucoes').select('*').order('criado_em',{ascending:false}),
       db.from('contas_receber').select('*').order('data_vencimento'),
       db.from('contas_pagar').select('*').order('data_vencimento'),
-      db.from('caixas').select('*').order('criado_em',{ascending:false}).limit(10)
+      db.from('caixas').select('*').order('criado_em',{ascending:false}).limit(10),
+      db.from('entregas_avulsas').select('*').neq('status','cancelado').order('data')
     ]);
     G.produtos=pr.data||[];G.clientes=cl.data||[];G.os=os.data||[];
     G.vendas=ve.data||[];G.usuarios=us.data||[];G.movs=mv.data||[];
     G.fornecedores=fo.data||[];G.orcamentos=oc.data||[];G.devolucoes=dv.data||[];
     G.receber=re.data||[];G.pagar=pa.data||[];G.caixas=cx.data||[];
+    G.entregasAvulsas=en.data||[];
     G.caixaAtual=G.caixas.find(c=>c.status==='aberto'&&c.operador_id===G.profile?.id)||null;
     const {count}=await db.from('ordens_servico').select('*',{count:'exact',head:true});
     G.osCounter=(count||0)+1;
@@ -3088,9 +3180,10 @@ let _bqCheckInterval = null;
 function iniciarVerificacaoBloqueio(){
   if(_bqCheckInterval) clearInterval(_bqCheckInterval);
   _bqCheckInterval = setInterval(async () => {
-    if(!G.user?.email) return;
+    const empId = EID();
+    if(!empId) return;
     try{
-      const {data:emp,error} = await db.from('empresas').select('*').eq('email',G.user.email).maybeSingle();
+      const {data:emp,error} = await db.from('empresas').select('*').eq('id',empId).maybeSingle();
       if(error||!emp) return;
       G.empresa = emp;
       if(emp.status==='bloqueada'){
@@ -3182,9 +3275,9 @@ async function confirmarAbertura(){
   const val=parseFloat(document.getElementById('caixa-ab-val').value)||0;
   const obs=document.getElementById('caixa-ab-obs').value;
   setLoad(true);
-  const {data,error}=await db.from('caixas').insert({operador_id:G.profile.id,operador_nome:G.profile.nome,valor_abertura:val,observacoes:obs}).select().single();
+  const {data,error}=await db.from('caixas').insert({empresa_id:EID(),operador_id:G.profile.id,operador_nome:G.profile.nome,valor_abertura:val,observacoes:obs}).select().single();
   if(error){notify('Erro ao abrir caixa: '+error.message,'error');setLoad(false);return;}
-  await db.from('movimentacoes_caixa').insert({caixa_id:data.id,tipo:'abertura',valor:val,descricao:'Abertura de caixa',usuario_id:G.profile.id,usuario_nome:G.profile.nome});
+  await db.from('movimentacoes_caixa').insert({empresa_id:EID(),caixa_id:data.id,tipo:'abertura',valor:val,descricao:'Abertura de caixa',usuario_id:G.profile.id,usuario_nome:G.profile.nome});
   G.caixaAtual=data;G.caixas.unshift(data);
   setLoad(false);closeModal('modal-abre-caixa');checkCaixaStatus();updateCaixaPill();
   notify('Caixa aberto com sucesso!');
@@ -3211,7 +3304,7 @@ async function confirmarSangria(){
   const desc=document.getElementById('sang-desc').value;
   if(val<=0){notify('Valor inválido.','error');return;}
   setLoad(true);
-  await db.from('movimentacoes_caixa').insert({caixa_id:G.caixaAtual.id,tipo:'sangria',valor:-val,descricao:desc||'Sangria',usuario_id:G.profile.id,usuario_nome:G.profile.nome});
+  await db.from('movimentacoes_caixa').insert({empresa_id:EID(),caixa_id:G.caixaAtual.id,tipo:'sangria',valor:-val,descricao:desc||'Sangria',usuario_id:G.profile.id,usuario_nome:G.profile.nome});
   setLoad(false);closeModal('modal-sangria');
   document.getElementById('sang-val').value='';document.getElementById('sang-desc').value='';
   notify(`Sangria de ${fmt(val)} registrada.`,'warn');
@@ -3223,7 +3316,7 @@ async function confirmarReforco(){
   const desc=document.getElementById('ref-desc').value;
   if(val<=0){notify('Valor inválido.','error');return;}
   setLoad(true);
-  await db.from('movimentacoes_caixa').insert({caixa_id:G.caixaAtual.id,tipo:'reforco',valor:val,descricao:desc||'Reforço',usuario_id:G.profile.id,usuario_nome:G.profile.nome});
+  await db.from('movimentacoes_caixa').insert({empresa_id:EID(),caixa_id:G.caixaAtual.id,tipo:'reforco',valor:val,descricao:desc||'Reforço',usuario_id:G.profile.id,usuario_nome:G.profile.nome});
   setLoad(false);closeModal('modal-reforco');
   document.getElementById('ref-val').value='';document.getElementById('ref-desc').value='';
   notify(`Reforço de ${fmt(val)} registrado.`,'success');
@@ -3273,14 +3366,14 @@ async function saveProd(){
     }
   }
   if(id){({error:err,data}=await db.from('produtos').update(payload).eq('id',id).select().single());}
-  else{({error:err,data}=await db.from('produtos').insert(payload).select().single());}
+  else{({error:err,data}=await db.from('produtos').insert({...payload,empresa_id:EID()}).select().single());}
   setLoad(false);
   if(err){notify('Erro: '+err.message,'error');return;}
   if(id){const i=G.produtos.findIndex(x=>x.id===id);if(i>=0)G.produtos[i]={...G.produtos[i],...payload};}
   else if(data)G.produtos.push(data);
   // Registra histórico de preço (não bloqueia o fluxo se falhar)
   if(regHist){
-    db.from('historico_precos').insert(regHist).then(({error})=>{if(error)console.warn('Erro ao registrar histórico de preço:',error);});
+    db.from('historico_precos').insert({...regHist,empresa_id:EID()}).then(({error})=>{if(error)console.warn('Erro ao registrar histórico de preço:',error);});
   }
   notify(id?'Produto atualizado!':'Produto cadastrado!');
   closeModal('modal-prod');clearProdForm();renderProdTable();renderPDVGrid();
@@ -3491,7 +3584,7 @@ async function finalizeSale(){
     const continuar = window.confirm('Este cliente possui parcelas em atraso no crediário. Deseja continuar com a venda assim mesmo?');
     if (!continuar) return;
   }
-  const venda={caixa_id:G.caixaAtual.id,cliente_id:cliId||null,cliente_nome:cliNome,operador_id:G.profile.id,operador_nome:G.profile.nome,itens:G.cart,subtotal:sub,desconto_pct:desc,desconto_valor:sub*desc/100,acrescimo_valor:acr,total,custo_total:custo,lucro:total-custo,pagamentos,pagamento:G.payMethod==='misto'?'misto':G.payMethod,troco};
+  const venda={empresa_id:EID(),caixa_id:G.caixaAtual.id,cliente_id:cliId||null,cliente_nome:cliNome,operador_id:G.profile.id,operador_nome:G.profile.nome,itens:G.cart,subtotal:sub,desconto_pct:desc,desconto_valor:sub*desc/100,acrescimo_valor:acr,total,custo_total:custo,lucro:total-custo,pagamentos,pagamento:G.payMethod==='misto'?'misto':G.payMethod,troco};
 
   if(!navigator.onLine){
     // ── MODO OFFLINE: guarda venda na fila local, baixa estoque só na memória local ──
@@ -3592,7 +3685,7 @@ async function saveOrcamento(status='aberto'){
   const sub=G.orcItems.reduce((s,i)=>s+i.preco*i.qty,0);
   const desc=parseFloat(document.getElementById('orc-desc').value)||0;
   const total=sub*(1-desc/100);
-  const payload={cliente_id:cliSel?.value||null,cliente_nome:cliSel?.options[cliSel.selectedIndex]?.text||'Consumidor Final',operador_id:G.profile.id,operador_nome:G.profile.nome,itens:G.orcItems,subtotal:sub,desconto_pct:desc,total,validade:document.getElementById('orc-val').value||null,data_entrega_prevista:document.getElementById('orc-entrega').value||null,observacoes:document.getElementById('orc-obs').value,status};
+  const payload={empresa_id:EID(),cliente_id:cliSel?.value||null,cliente_nome:cliSel?.options[cliSel.selectedIndex]?.text||'Consumidor Final',operador_id:G.profile.id,operador_nome:G.profile.nome,itens:G.orcItems,subtotal:sub,desconto_pct:desc,total,validade:document.getElementById('orc-val').value||null,data_entrega_prevista:document.getElementById('orc-entrega').value||null,observacoes:document.getElementById('orc-obs').value,status};
   setLoad(true);
   const {data,error}=await db.from('orcamentos').insert(payload).select().single();
   setLoad(false);
@@ -3663,7 +3756,7 @@ async function saveDevolucao(){
   const selecionados=itens.filter((_,i)=>document.getElementById(`dev-it-${i}`)?.checked);
   if(!selecionados.length){notify('Selecione ao menos um item!','error');return;}
   const total=selecionados.reduce((s,i)=>s+i.preco*i.qty,0);
-  const payload={venda_id:devVendaAtual.id,venda_numero:devVendaAtual.numero,cliente_id:devVendaAtual.cliente_id,cliente_nome:devVendaAtual.cliente_nome,operador_id:G.profile.id,operador_nome:G.profile.nome,itens:selecionados,tipo:document.getElementById('dev-tipo').value,motivo:document.getElementById('dev-motivo').value,valor_total:total,forma_estorno:document.getElementById('dev-estorno').value};
+  const payload={empresa_id:EID(),venda_id:devVendaAtual.id,venda_numero:devVendaAtual.numero,cliente_id:devVendaAtual.cliente_id,cliente_nome:devVendaAtual.cliente_nome,operador_id:G.profile.id,operador_nome:G.profile.nome,itens:selecionados,tipo:document.getElementById('dev-tipo').value,motivo:document.getElementById('dev-motivo').value,valor_total:total,forma_estorno:document.getElementById('dev-estorno').value};
   setLoad(true);
   const {data,error}=await db.from('devolucoes').insert(payload).select().single();
   if(!error){
@@ -3710,11 +3803,11 @@ async function saveCliente(){
   const tel=document.getElementById('c-tel').value.trim();
   if(!nome||!tel){notify('Nome e telefone obrigatórios!','error');return;}
   const id=document.getElementById('c-id').value;
-  const payload={nome,cpf_cnpj:document.getElementById('c-cpf').value,telefone:tel,email:document.getElementById('c-email').value,endereco:document.getElementById('c-end').value,numero:document.getElementById('c-num').value,bairro:document.getElementById('c-bai').value,cidade:document.getElementById('c-cid').value,estado:document.getElementById('c-est').value,cep:document.getElementById('c-cep').value,limite_credito:parseFloat(document.getElementById('c-lim').value)||0,observacoes:document.getElementById('c-obs').value};
+  const payload={nome,cpf:document.getElementById('c-cpf').value,telefone:tel,email:document.getElementById('c-email').value,endereco:document.getElementById('c-end').value,numero:document.getElementById('c-num').value,bairro:document.getElementById('c-bai').value,cidade:document.getElementById('c-cid').value,estado:document.getElementById('c-est').value,cep:document.getElementById('c-cep').value,limite_credito:parseFloat(document.getElementById('c-lim').value)||0,observacoes:document.getElementById('c-obs').value};
   setLoad(true);
   let err;
   if(id){({error:err}=await db.from('clientes').update(payload).eq('id',id));}
-  else{({error:err}=await db.from('clientes').insert(payload));}
+  else{({error:err}=await db.from('clientes').insert({...payload,empresa_id:EID()}));}
   setLoad(false);
   if(err){notify('Erro: '+err.message,'error');return;}
   notify(id?'Cliente atualizado!':'Cliente cadastrado!');
@@ -3730,7 +3823,7 @@ function renderClientes(q=''){
   const list=G.clientes.filter(c=>!f||c.nome.toLowerCase().includes(f)||(c.telefone||'').includes(f));
   document.getElementById('cli-table').innerHTML=list.length===0?'<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--txt3)">Nenhum cliente</td></tr>':list.map(c=>`<tr>
     <td style="font-weight:600">${c.nome}</td>
-    <td>${c.cpf_cnpj||'—'}</td>
+    <td>${c.cpf||'—'}</td>
     <td>${c.telefone||'—'}</td>
     <td style="color:var(--txt2)">${c.cidade||'—'}</td>
     <td>${c.limite_credito>0?fmt(c.limite_credito):'—'}</td>
@@ -3744,7 +3837,7 @@ function renderClientes(q=''){
 function editCli(id){
   const c=G.clientes.find(x=>x.id===id);if(!c)return;
   document.getElementById('c-id').value=c.id;
-  ['nome','cpf_cnpj','telefone','email','endereco','numero','bairro','cidade','estado','cep','observacoes'].forEach(f=>{const el=document.getElementById('c-'+f.replace('_cnpj','pf').replace('endereco','end').replace('numero','num').replace('bairro','bai').replace('cidade','cid').replace('estado','est').replace('observacoes','obs'));if(el)el.value=c[f]||'';});
+  ['nome','cpf','telefone','email','endereco','numero','bairro','cidade','estado','cep','observacoes'].forEach(f=>{const el=document.getElementById('c-'+f.replace('endereco','end').replace('numero','num').replace('bairro','bai').replace('cidade','cid').replace('estado','est').replace('observacoes','obs'));if(el)el.value=c[f]||'';});
   document.getElementById('c-lim').value=c.limite_credito||0;
   openModal('modal-cli');
 }
@@ -3766,7 +3859,7 @@ async function saveForn(){
   setLoad(true);
   let err;
   if(id){({error:err}=await db.from('fornecedores').update(payload).eq('id',id));}
-  else{({error:err}=await db.from('fornecedores').insert(payload));}
+  else{({error:err}=await db.from('fornecedores').insert({...payload,empresa_id:EID()}));}
   setLoad(false);
   if(err){notify('Erro: '+err.message,'error');return;}
   notify(id?'Fornecedor atualizado!':'Fornecedor cadastrado!');
@@ -3810,10 +3903,11 @@ function finTab(tab,btn){
   const parent = btn.closest('.fin-tabs') || document.getElementById('page-financeiro');
   if(parent) parent.querySelectorAll('.fin-tab').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  ['fin-receber','fin-pagar','fin-fluxo'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+  ['fin-receber','fin-pagar','fin-fluxo','fin-boletos'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
   const target=document.getElementById('fin-'+tab);if(target)target.style.display='';
   if(tab==='receber')renderReceber();
   else if(tab==='pagar')renderPagar();
+  else if(tab==='boletos')renderBoletosEmpresa();
   else renderFluxo();
 }
 
@@ -3832,7 +3926,7 @@ async function saveLancRec(){
   const venc=document.getElementById('lr-venc').value;
   if(!desc||!val||!venc){notify('Preencha descrição, valor e vencimento!','error');return;}
   const cli=document.getElementById('lr-cli');
-  const payload={descricao:desc,cliente_id:cli?.value||null,cliente_nome:cli?.options[cli.selectedIndex]?.text||'',valor_original:val,data_vencimento:venc,forma_pagamento:document.getElementById('lr-forma').value,parcela_numero:parseInt(document.getElementById('lr-parc-n').value)||1,parcela_total:parseInt(document.getElementById('lr-parc-t').value)||1,observacoes:document.getElementById('lr-obs').value,status:'aberto'};
+  const payload={empresa_id:EID(),descricao:desc,cliente_id:cli?.value||null,cliente_nome:cli?.options[cli.selectedIndex]?.text||'',valor_original:val,data_vencimento:venc,forma_pagamento:document.getElementById('lr-forma').value,parcela_numero:parseInt(document.getElementById('lr-parc-n').value)||1,parcela_total:parseInt(document.getElementById('lr-parc-t').value)||1,observacoes:document.getElementById('lr-obs').value,status:'aberto'};
   setLoad(true);
   const {data,error}=await db.from('contas_receber').insert(payload).select().single();
   setLoad(false);
@@ -3846,7 +3940,7 @@ async function saveLancPag(){
   const val=parseFloat(document.getElementById('lp-val').value)||0;
   const venc=document.getElementById('lp-venc').value;
   if(!desc||!val||!venc){notify('Preencha descrição, valor e vencimento!','error');return;}
-  const payload={descricao:desc,fornecedor_nome:document.getElementById('lp-forn').value,valor_original:val,data_vencimento:venc,categoria_despesa:document.getElementById('lp-cat').value,status:'aberto'};
+  const payload={empresa_id:EID(),descricao:desc,fornecedor_nome:document.getElementById('lp-forn').value,valor_original:val,data_vencimento:venc,categoria_despesa:document.getElementById('lp-cat').value,status:'aberto'};
   setLoad(true);
   const {data,error}=await db.from('contas_pagar').insert(payload).select().single();
   setLoad(false);
@@ -3942,9 +4036,182 @@ function renderFluxo(){
   document.getElementById('fluxo-sai').innerHTML=proxPag.length===0?'<div class="empty-st" style="padding:20px"><p>Nenhuma saída prevista</p></div>':proxPag.map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)"><div><div style="font-size:13px;font-weight:600">${p.descricao}</div><div style="font-size:11px;color:var(--txt3)">${fmtD(p.data_vencimento+'T12:00')}</div></div><div style="font-weight:700;color:var(--danger)">${fmt(p.valor_original)}</div></div>`).join('');
 }
 
+/* ── BOLETOS DA EMPRESA (NOVO) ───────────────────────── */
+async function renderBoletosEmpresa(){
+  const e = getEmpDados();
+  const docEl = document.getElementById('bol-doc-empresa');
+  if(docEl) docEl.textContent = e.cnpj || 'CNPJ/CPF não cadastrado em Aparência & Marca';
+
+  if(!G.boletosEmpresa){
+    const { data, error } = await db.from('boletos_empresa').select('*').order('data_vencimento');
+    if(error){ console.error(error); G.boletosEmpresa=[]; }
+    else G.boletosEmpresa = data || [];
+  }
+
+  // Atualiza status "vencido" automaticamente para itens pendentes com data passada
+  const hojeStr = new Date().toISOString().split('T')[0];
+  let lista = G.boletosEmpresa.map(b => {
+    if(b.status==='pendente' && b.data_vencimento < hojeStr) return {...b, _statusEfetivo:'vencido'};
+    return {...b, _statusEfetivo:b.status};
+  });
+
+  const filtro = document.getElementById('bol-filter')?.value;
+  if(filtro) lista = lista.filter(b => b._statusEfetivo === filtro);
+
+  lista.sort((a,b)=>a.data_vencimento.localeCompare(b.data_vencimento));
+
+  const statusLbl = {pendente:'Pendente', vencido:'Vencido', pago:'Pago', cancelado:'Cancelado'};
+  const statusCls = {pendente:'tag-amb', vencido:'tag-red', pago:'tag-grn', cancelado:'tag-gry'};
+
+  document.getElementById('bol-table').innerHTML = lista.length===0
+    ? '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--txt3)">Nenhum boleto cadastrado</td></tr>'
+    : lista.map(b => `<tr>
+        <td style="font-weight:600">${b.descricao}</td>
+        <td style="color:var(--txt2)">${b.emissor||'—'}</td>
+        <td style="font-weight:700">${fmt(b.valor)}</td>
+        <td style="${b._statusEfetivo==='vencido'?'color:var(--danger);font-weight:700':''}">${fmtD(b.data_vencimento+'T12:00')}</td>
+        <td><span class="tag ${statusCls[b._statusEfetivo]||'tag-gry'}" style="font-size:10px">${statusLbl[b._statusEfetivo]||b._statusEfetivo}</span></td>
+        <td style="display:flex;gap:6px">
+          <button class="btn btn-out btn-xs" onclick="abrirBoletoEmpresa('${b.id}')"><i class="ti ti-edit"></i></button>
+          ${b.status!=='pago'?`<button class="btn btn-xs" style="background:#dcfce7;color:#15803d;border:1px solid #86efac" onclick="marcarBoletoPago('${b.id}')" title="Marcar como pago"><i class="ti ti-check"></i></button>`:''}
+        </td>
+      </tr>`).join('');
+}
+
+function abrirBoletoEmpresa(id){
+  const b = id ? (G.boletosEmpresa||[]).find(x=>x.id===id) : null;
+  document.getElementById('boleto-empresa-title').textContent = b ? 'Editar Boleto' : 'Novo Boleto';
+  document.getElementById('bol-id').value = b?.id || '';
+  document.getElementById('bol-desc').value = b?.descricao || '';
+  document.getElementById('bol-emissor').value = b?.emissor || '';
+  document.getElementById('bol-val').value = b?.valor || '';
+  document.getElementById('bol-venc').value = b?.data_vencimento || '';
+  document.getElementById('bol-status').value = b?.status || 'pendente';
+  document.getElementById('bol-cb').value = b?.codigo_barras || '';
+  document.getElementById('bol-obs').value = b?.observacoes || '';
+  document.getElementById('bol-btn-excluir').style.display = b ? '' : 'none';
+  openModal('modal-boleto-empresa');
+}
+
+async function salvarBoletoEmpresa(){
+  const id = document.getElementById('bol-id').value;
+  const descricao = document.getElementById('bol-desc').value.trim();
+  const valor = parseFloat(document.getElementById('bol-val').value)||0;
+  const data_vencimento = document.getElementById('bol-venc').value;
+  if(!descricao||!valor||!data_vencimento){ notify('Preencha descrição, valor e vencimento!','error'); return; }
+
+  const e = getEmpDados();
+  const payload = {
+    descricao,
+    emissor: document.getElementById('bol-emissor').value.trim() || null,
+    documento: e.cnpj || null,
+    valor,
+    data_vencimento,
+    status: document.getElementById('bol-status').value,
+    codigo_barras: document.getElementById('bol-cb').value.trim() || null,
+    observacoes: document.getElementById('bol-obs').value.trim() || null,
+    data_pagamento: document.getElementById('bol-status').value==='pago' ? new Date().toISOString().split('T')[0] : null,
+  };
+
+  setLoad(true);
+  try{
+    if(id){
+      const {error} = await db.from('boletos_empresa').update(payload).eq('id',id);
+      if(error) throw error;
+    } else {
+      payload.criado_por = G.profile?.id || null;
+      payload.empresa_id = EID();
+      const {error} = await db.from('boletos_empresa').insert(payload);
+      if(error) throw error;
+    }
+    closeModal('modal-boleto-empresa');
+    notify('✅ Boleto salvo!','success');
+    G.boletosEmpresa = null; // força recarregar
+    await renderBoletosEmpresa();
+  }catch(err){
+    notify('Erro ao salvar: '+(err.message||''),'error');
+  }finally{
+    setLoad(false);
+  }
+}
+
+async function marcarBoletoPago(id){
+  setLoad(true);
+  try{
+    const {error} = await db.from('boletos_empresa').update({status:'pago', data_pagamento:new Date().toISOString().split('T')[0]}).eq('id',id);
+    if(error) throw error;
+    notify('✅ Boleto marcado como pago!','success');
+    G.boletosEmpresa = null;
+    await renderBoletosEmpresa();
+  }catch(err){
+    notify('Erro: '+(err.message||''),'error');
+  }finally{
+    setLoad(false);
+  }
+}
+
+async function excluirBoletoEmpresa(){
+  const id = document.getElementById('bol-id').value;
+  if(!id) return;
+  confirmAct('Excluir boleto','Tem certeza que deseja excluir este boleto?', async ()=>{
+    setLoad(true);
+    try{
+      const {error} = await db.from('boletos_empresa').delete().eq('id',id);
+      if(error) throw error;
+      closeModal('modal-boleto-empresa');
+      notify('Boleto removido.','info');
+      G.boletosEmpresa = null;
+      await renderBoletosEmpresa();
+    }catch(err){
+      notify('Erro ao excluir: '+(err.message||''),'error');
+    }finally{
+      setLoad(false);
+    }
+  });
+}
+
+// PDF — Boletos pendentes (imprimível)
+function gerarPdfBoletosPendentes(){
+  const e = getEmpDados();
+  const hojeStr = new Date().toISOString().split('T')[0];
+  const lista = (G.boletosEmpresa||[]).filter(b=>b.status==='pendente').map(b=>({...b, _venc: b.data_vencimento<hojeStr}));
+  lista.sort((a,b)=>a.data_vencimento.localeCompare(b.data_vencimento));
+  const total = lista.reduce((s,b)=>s+b.valor,0);
+
+  const conteudo = `
+    <div class="sec">
+      <div class="sec-title">📋 Dados da Empresa</div>
+      <div class="info-grid">
+        <div class="info-row"><span class="info-lbl">Empresa</span><span class="info-val bold">${e.nome}</span></div>
+        <div class="info-row"><span class="info-lbl">CNPJ/CPF</span><span class="info-val bold">${e.cnpj||'—'}</span></div>
+        <div class="info-row"><span class="info-lbl">Gerado em</span><span class="info-val">${fmtD(new Date().toISOString())}</span></div>
+        <div class="info-row"><span class="info-lbl">Total de boletos</span><span class="info-val bold">${lista.length}</span></div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">🧾 Boletos Pendentes</div>
+      <table class="pdf-table">
+        <thead><tr><th>Descrição</th><th>Emissor</th><th>Vencimento</th><th style="text-align:right">Valor</th></tr></thead>
+        <tbody>${lista.length===0?'<tr><td colspan="4" style="text-align:center;padding:14px;color:#9D8FC5">Nenhum boleto pendente 🎉</td></tr>':lista.map(b=>`<tr>
+          <td style="font-weight:600">${b.descricao}</td>
+          <td style="font-size:10.5px;color:#5C4F8A">${b.emissor||'—'}</td>
+          <td style="${b._venc?'color:#EF4444;font-weight:700':''}">${fmtD(b.data_vencimento+'T12:00')}${b._venc?' (vencido)':''}</td>
+          <td style="text-align:right;font-weight:700">${fmt(b.valor)}</td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>
+    <div class="total-box">
+      <div><div class="total-label">Total Pendente</div></div>
+      <div class="total-val">${fmt(total)}</div>
+    </div>`;
+
+  const html = pdfBase({ titulo: 'Boletos Pendentes', numero: 'BOL-'+new Date().toISOString().slice(0,10), tipo: 'BOLETOS PENDENTES', conteudo, assinatura: pdfAssinatura(G.profile?.nome||'Responsável','Financeiro','',''), wmSrc: e.wmRel, wmOp: e.wmRelOp });
+  abrirPDFModal(html, 'Boletos-Pendentes-'+new Date().toISOString().slice(0,10));
+}
+
 /* ── ESTOQUE ─────────────────────────────────────────── */
 async function regMov(prodId,prodNome,tipo,qty,estoqueApos,motivo=''){
-  const m={produto_id:prodId,produto_nome:prodNome,tipo,quantidade:qty,estoque_apos:estoqueApos,usuario_id:G.profile?.id,usuario_nome:G.profile?.nome||'Sistema',motivo};
+  const m={empresa_id:EID(),produto_id:prodId,produto_nome:prodNome,tipo,quantidade:qty,estoque_apos:estoqueApos,usuario_id:G.profile?.id,usuario_nome:G.profile?.nome||'Sistema',motivo};
   const {data}=await db.from('movimentacoes_estoque').insert(m).select().single();
   if(data)G.movs.unshift(data);
 }
@@ -4072,7 +4339,7 @@ async function createOS(){
   const tecSel=document.getElementById('os-tec');
   const num='OS-'+pad(G.osCounter++);
   const tl=[{status:'Aguardando',data:new Date().toISOString()}];
-  const payload={numero:num,cliente_id:cliSel?.value||null,cliente_nome:cliSel?.options[cliSel.selectedIndex]?.text||'Consumidor Final',tecnico_id:tecSel?.value||null,tecnico_nome:tecSel?.value?tecSel.options[tecSel.selectedIndex].text:null,aparelho:ap,imei:document.getElementById('os-imei').value,defeito:def,diagnostico:document.getElementById('os-diag').value,valor_servico:parseFloat(document.getElementById('os-val').value)||0,total:parseFloat(document.getElementById('os-val').value)||0,garantia_dias:parseInt(document.getElementById('os-gar').value)||90,prazo:document.getElementById('os-prazo').value||null,observacoes:document.getElementById('os-obs').value,status:'Aguardando',progresso:8,timeline:tl};
+  const payload={empresa_id:EID(),numero:num,cliente_id:cliSel?.value||null,cliente_nome:cliSel?.options[cliSel.selectedIndex]?.text||'Consumidor Final',tecnico_id:tecSel?.value||null,tecnico_nome:tecSel?.value?tecSel.options[tecSel.selectedIndex].text:null,aparelho:ap,imei:document.getElementById('os-imei').value,defeito:def,diagnostico:document.getElementById('os-diag').value,valor_servico:parseFloat(document.getElementById('os-val').value)||0,total:parseFloat(document.getElementById('os-val').value)||0,garantia_dias:parseInt(document.getElementById('os-gar').value)||90,prazo:document.getElementById('os-prazo').value||null,observacoes:document.getElementById('os-obs').value,status:'Aguardando',progresso:8,timeline:tl};
   setLoad(true);
   const {data,error}=await db.from('ordens_servico').insert(payload).select().single();
   setLoad(false);
@@ -4306,45 +4573,164 @@ async function renderOSHist(){
 function limparFiltrosOS(){['hf-de','hf-ate'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});document.getElementById('hf-tec').value='';document.getElementById('hf-cli').value='';renderOSHist();}
 
 /* ── RELATÓRIOS ──────────────────────────────────────── */
-function renderRelatorios(){
-  const fat=G.vendas.filter(v=>v.status!=='cancelada').reduce((s,v)=>s+v.total,0);
-  const lucro=G.vendas.filter(v=>v.status!=='cancelada').reduce((s,v)=>s+(v.lucro||0),0);
-  const ticket=G.vendas.length?fat/G.vendas.length:0;
-  document.getElementById('r-fat-total').textContent=fmt(fat);
-  document.getElementById('r-lucro-total').textContent=fmt(lucro);
-  document.getElementById('r-qtd-vendas').textContent=G.vendas.filter(v=>v.status!=='cancelada').length;
-  document.getElementById('r-ticket').textContent=fmt(ticket);
-  // Top produtos
-  const contagem={};
-  G.vendas.forEach(v=>(v.itens||[]).forEach(i=>{contagem[i.nome]=(contagem[i.nome]||0)+i.qty;}));
-  const top=Object.entries(contagem).sort((a,b)=>b[1]-a[1]).slice(0,8);
-  document.getElementById('r-top-prod').innerHTML=top.length===0?'<div class="empty-st" style="padding:16px"><p>Nenhuma venda</p></div>':top.map(([nome,qty])=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)"><span style="font-size:13px;font-weight:500;color:var(--txt)">${nome}</span><span style="font-size:12px;font-weight:700;color:var(--pri)">${qty} un.</span></div>`).join('');
-  // Gráfico pagamentos
-  const pagCont={};
-  G.vendas.filter(v=>v.status!=='cancelada').forEach(v=>{const p=v.pagamento||'outro';pagCont[p]=(pagCont[p]||0)+1;});
-  const pL={dinheiro:'Dinheiro',pix:'Pix',cartao:'Cartão',misto:'Misto',fiado:'Fiado'};
-  if(G.charts.pag)G.charts.pag.destroy();
-  const ctx=document.getElementById('chart-pagamentos');if(ctx){
-    G.charts.pag=new Chart(ctx,{type:'doughnut',data:{labels:Object.keys(pagCont).map(k=>pL[k]||k),datasets:[{data:Object.values(pagCont),backgroundColor:['#5B47E0','#10B981','#3B82F6','#F59E0B','#EF4444'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right'}}}});
+// Aplica filtro de período (de/ate) às vendas (exclui canceladas)
+function getRelVendas(){
+  const de=document.getElementById('r-de')?.value;
+  const ate=document.getElementById('r-ate')?.value;
+  let list=G.vendas.filter(v=>v.status!=='cancelada');
+  if(de)list=list.filter(v=>v.criado_em>=de+'T00:00:00');
+  if(ate)list=list.filter(v=>v.criado_em<=(ate+'T23:59:59'));
+  return list.sort((a,b)=>b.criado_em.localeCompare(a.criado_em));
+}
+
+// Define atalhos de período (hoje/7 dias/mês/ano/tudo)
+function setRelPeriodo(p){
+  const hoje=new Date();
+  let de=null, ate=null;
+  if(p==='hoje'){
+    de=ate=hoje;
+  }else if(p==='semana'){
+    de=new Date(hoje); de.setDate(de.getDate()-6); ate=hoje;
+  }else if(p==='mes'){
+    de=new Date(hoje.getFullYear(),hoje.getMonth(),1); ate=new Date(hoje.getFullYear(),hoje.getMonth()+1,0);
+  }else if(p==='ano'){
+    de=new Date(hoje.getFullYear(),0,1); ate=new Date(hoje.getFullYear(),11,31);
+  }else{ // tudo
+    document.getElementById('r-de').value='';
+    document.getElementById('r-ate').value='';
+    renderRelatorios();return;
   }
-  renderRelVendas();
+  document.getElementById('r-de').value=de.toISOString().split('T')[0];
+  document.getElementById('r-ate').value=ate.toISOString().split('T')[0];
+  renderRelatorios();
+}
+
+// Troca de aba dentro de Relatórios
+function relTab(tab,btnEl){
+  document.querySelectorAll('#page-relatorios .fin-tabs .fin-tab').forEach(b=>b.classList.remove('active'));
+  if(btnEl)btnEl.classList.add('active');
+  ['vendas','operadores','produtos','os','clientes','estoque','pagamentos'].forEach(t=>{
+    const el=document.getElementById('rel-'+t);
+    if(el)el.style.display=(t===tab)?'':'none';
+  });
+  if(tab==='vendas')renderRelVendas();
+  if(tab==='estoque')renderRelEstoque();
+  // Demais abas (operadores/produtos/os/clientes/pagamentos): em desenvolvimento
+}
+
+function renderRelatorios(){
+  const vendas=getRelVendas();
+  const fat=vendas.reduce((s,v)=>s+v.total,0);
+  const lucro=vendas.reduce((s,v)=>s+(v.lucro||0),0);
+  const ticket=vendas.length?fat/vendas.length:0;
+  const margem=fat>0?(lucro/fat*100):0;
+  const elFat=document.getElementById('r-fat');if(elFat)elFat.textContent=fmt(fat);
+  const elLucro=document.getElementById('r-lucro');if(elLucro)elLucro.textContent=fmt(lucro);
+  const elTicket=document.getElementById('r-ticket');if(elTicket)elTicket.textContent=fmt(ticket);
+  const elMargem=document.getElementById('r-margem');if(elMargem)elMargem.textContent=margem.toFixed(1)+'%';
+
+  // Renderiza a aba ativa no momento (padrão: vendas)
+  const abaAtiva=document.querySelector('#page-relatorios .fin-tabs .fin-tab.active');
+  const tab=abaAtiva ? abaAtiva.textContent.trim().toLowerCase() : 'vendas';
+  if(!abaAtiva || tab.includes('vendas')){renderRelVendas();}
+  // Estoque não depende do filtro de data, mas atualiza junto se já visível
+  if(document.getElementById('rel-estoque')&&document.getElementById('rel-estoque').style.display!=='none'){
+    renderRelEstoque();
+  }
 }
 
 function renderRelVendas(){
-  const de=document.getElementById('r-de')?.value;
-  const ate=document.getElementById('r-ate')?.value;
+  const vendas=getRelVendas();
   const pL={dinheiro:'Dinheiro',pix:'Pix',cartao:'Cartão',misto:'Misto',fiado:'Fiado'};
-  let list=G.vendas.filter(v=>v.status!=='cancelada');
-  if(de)list=list.filter(v=>v.criado_em>=de);
-  if(ate)list=list.filter(v=>v.criado_em<=(ate+'T23:59:59'));
-  document.getElementById('rel-v-table').innerHTML=list.length===0?'<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--txt3)">Nenhuma venda</td></tr>':list.map(v=>`<tr>
+  const tbody=document.getElementById('rel-v-table');
+  if(!tbody)return;
+  document.getElementById('r-vendas-count')&&(document.getElementById('r-vendas-count').textContent=vendas.length+' venda(s)');
+  tbody.innerHTML=vendas.length===0?'<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--txt3)">Nenhuma venda no período</td></tr>':vendas.map(v=>{
+    const margem=v.total>0?((v.lucro||0)/v.total*100):0;
+    return `<tr>
     <td style="font-size:11.5px;color:var(--txt3)">${fmtDT(v.criado_em)}</td>
     <td>${v.cliente_nome}</td>
     <td style="color:var(--txt2)">${v.operador_nome||'—'}</td>
     <td style="font-weight:700">${fmt(v.total)}</td>
     <td style="color:var(--txt2)">${fmt(v.custo_total||0)}</td>
     <td style="font-weight:700;color:var(--success)">${fmt(v.lucro||0)}</td>
+    <td style="color:var(--txt2)">${margem.toFixed(1)}%</td>
     <td><span class="tag tag-pur" style="font-size:10.5px">${pL[v.pagamento]||v.pagamento}</span></td>
+  </tr>`;
+  }).join('');
+
+  // Gráficos: vendas por dia (últimos 14 dias) e por hora
+  const porDia={};
+  for(let i=13;i>=0;i--){
+    const d=new Date();d.setDate(d.getDate()-i);
+    porDia[d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})]=0;
+  }
+  const porHora=Array(24).fill(0);
+  vendas.forEach(v=>{
+    const d=new Date(v.criado_em);
+    const lbl=d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+    if(lbl in porDia)porDia[lbl]+=v.total;
+    porHora[d.getHours()]+=v.total;
+  });
+  if(G.charts.vDia)G.charts.vDia.destroy();
+  const ctxDia=document.getElementById('chart-v-dia');
+  if(ctxDia){G.charts.vDia=new Chart(ctxDia,{type:'bar',data:{labels:Object.keys(porDia),datasets:[{data:Object.values(porDia),backgroundColor:'rgba(91,71,224,.75)',borderRadius:4,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:9}}},y:{ticks:{font:{size:9},callback:v=>'R$'+v}}}}});}
+  if(G.charts.vHora)G.charts.vHora.destroy();
+  const ctxHora=document.getElementById('chart-v-hora');
+  if(ctxHora){G.charts.vHora=new Chart(ctxHora,{type:'bar',data:{labels:porHora.map((_,i)=>i+'h'),datasets:[{data:porHora,backgroundColor:'rgba(16,185,129,.75)',borderRadius:4,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:8}}},y:{ticks:{font:{size:9},callback:v=>'R$'+v}}}}});}
+}
+
+// ── ABA ESTOQUE ─────────────────────────────────────────
+function renderRelEstoque(){
+  const ativos=G.produtos.filter(p=>p.status==='ativo');
+  const zero=ativos.filter(p=>!p.estoque_infinito&&p.estoque===0);
+  const baixo=ativos.filter(p=>!p.estoque_infinito&&p.estoque>0&&p.estoque<=(p.estoque_minimo||3));
+  const valorCusto=ativos.filter(p=>!p.estoque_infinito).reduce((s,p)=>s+(p.custo||0)*p.estoque,0);
+  const valorVenda=ativos.filter(p=>!p.estoque_infinito).reduce((s,p)=>s+p.preco*p.estoque,0);
+
+  const set=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val;};
+  set('r-est-total',ativos.length);
+  set('r-est-zero',zero.length);
+  set('r-est-baixo',baixo.length);
+  set('r-est-valor',fmt(valorCusto));
+
+  const tZero=document.getElementById('rel-est-zero-table');
+  if(tZero)tZero.innerHTML=zero.length===0?'<tr><td colspan="5" style="text-align:center;padding:16px;color:var(--txt3)">Nenhum produto sem estoque 🎉</td></tr>':zero.map(p=>`<tr>
+    <td style="font-weight:600">${p.nome}</td>
+    <td style="font-size:11px;color:var(--txt3)">${p.sku||'—'}</td>
+    <td style="text-align:center">${p.estoque_minimo||3}</td>
+    <td>${p.fornecedor||'—'}</td>
+    <td style="text-align:right;font-weight:700">${fmt(p.custo||0)}</td>
+  </tr>`).join('');
+
+  const tBaixo=document.getElementById('rel-est-baixo-table');
+  if(tBaixo)tBaixo.innerHTML=baixo.length===0?'<tr><td colspan="4" style="text-align:center;padding:16px;color:var(--txt3)">Nenhum produto com estoque baixo 🎉</td></tr>':baixo.map(p=>`<tr>
+    <td style="font-weight:600">${p.nome}</td>
+    <td style="text-align:center;font-weight:700;color:var(--warn)">${p.estoque}</td>
+    <td style="text-align:center">${p.estoque_minimo||3}</td>
+    <td style="text-align:center;font-weight:700;color:var(--danger)">${(p.estoque_minimo||3)-p.estoque}</td>
+  </tr>`).join('');
+
+  // Valor de estoque por categoria
+  const porCategoria={};
+  ativos.forEach(p=>{
+    const cat=p.categoria||'Sem categoria';
+    if(!porCategoria[cat])porCategoria[cat]={qtdProdutos:0,totalUn:0,custo:0,venda:0};
+    porCategoria[cat].qtdProdutos++;
+    if(!p.estoque_infinito){
+      porCategoria[cat].totalUn+=p.estoque;
+      porCategoria[cat].custo+=(p.custo||0)*p.estoque;
+      porCategoria[cat].venda+=p.preco*p.estoque;
+    }
+  });
+  const tCat=document.getElementById('rel-est-cat-table');
+  const catEntries=Object.entries(porCategoria).sort((a,b)=>b[1].custo-a[1].custo);
+  if(tCat)tCat.innerHTML=catEntries.length===0?'<tr><td colspan="5" style="text-align:center;padding:16px;color:var(--txt3)">Nenhum produto cadastrado</td></tr>':catEntries.map(([cat,d])=>`<tr>
+    <td style="font-weight:600">${cat}</td>
+    <td style="text-align:center">${d.qtdProdutos}</td>
+    <td style="text-align:center">${d.totalUn}</td>
+    <td style="text-align:right">${fmt(d.custo)}</td>
+    <td style="text-align:right;font-weight:700;color:var(--success)">${fmt(d.venda)}</td>
   </tr>`).join('');
 }
 
@@ -4426,7 +4812,7 @@ function agendaIrHoje(){
   renderAgenda();
 }
 
-// Coleta todos os "eventos de entrega": OS (prazo) + Orçamentos (data_entrega_prevista)
+// Coleta todos os "eventos de entrega": OS (prazo) + Orçamentos (data_entrega_prevista) + Entregas avulsas
 function agendaColetarEventos(){
   const eventos=[];
   G.os.forEach(o=>{
@@ -4438,6 +4824,12 @@ function agendaColetarEventos(){
     if(o.data_entrega_prevista&&o.status!=='convertido'&&o.status!=='cancelado'){
       const itens=(o.itens||[]).map(i=>i.nome).join(', ');
       eventos.push({data:o.data_entrega_prevista,tipo:'prod',cliente:o.cliente_nome||'—',detalhe:itens||'Produto(s)',status:o.status,ref:o.id});
+    }
+  });
+  (G.entregasAvulsas||[]).forEach(e=>{
+    if(e.status!=='cancelado'){
+      const horaStr=e.hora?` às ${e.hora.slice(0,5)}`:'';
+      eventos.push({data:e.data,tipo:'avulsa',cliente:e.cliente_nome||'—',detalhe:`${e.titulo}${horaStr}${e.observacoes?' · '+e.observacoes:''}`,status:e.status==='concluido'?'Pronto':'Aguardando',ref:e.id});
     }
   });
   return eventos;
@@ -4467,8 +4859,9 @@ function renderAgenda(){
     const isToday=dataStr===hojeStr;
     let itemsHtml=evs.slice(0,3).map(e=>{
       const atrasado=dataStr<hojeStr&&e.status!=='Pronto'&&e.status!=='Entregue';
-      const cls=atrasado?'atrasado':(e.tipo==='os'?'os':'prod');
-      return `<span class="agenda-item ${cls}" title="${e.cliente} — ${e.detalhe}" onclick="${e.tipo==='os'?`go('os')`:`go('orcamentos')`}">${e.cliente}</span>`;
+      const cls=atrasado?'atrasado':(e.tipo==='os'?'os':e.tipo==='avulsa'?'avulsa':'prod');
+      const click=e.tipo==='os'?`go('os')`:e.tipo==='avulsa'?`abrirEntregaAvulsa('${e.ref}')`:`go('orcamentos')`;
+      return `<span class="agenda-item ${cls}" title="${e.cliente} — ${e.detalhe}" onclick="${click}">${e.cliente}</span>`;
     }).join('');
     if(evs.length>3) itemsHtml+=`<span style="font-size:9px;color:var(--txt3)">+${evs.length-3} mais</span>`;
     html+=`<div class="agenda-day${isToday?' today':''}"><div class="agenda-day-num">${dia}</div>${itemsHtml}</div>`;
@@ -4477,16 +4870,98 @@ function renderAgenda(){
 
   // Lista de próximas entregas (a partir de hoje, ordenadas)
   const proximas=eventos.filter(e=>e.status!=='Pronto'&&e.status!=='Entregue').sort((a,b)=>a.data.localeCompare(b.data));
-  document.getElementById('agenda-lista').innerHTML=proximas.length===0?'<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--txt3)">Nenhuma entrega agendada</td></tr>':proximas.map(e=>{
+  const tipoLbl={os:'Ordem de Serviço',prod:'Produto',avulsa:'Compromisso'};
+  const tipoTag={os:'tag-pur',prod:'tag-grn',avulsa:'tag-blu'};
+  document.getElementById('agenda-lista').innerHTML=proximas.length===0?'<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--txt3)">Nenhuma entrega agendada</td></tr>':proximas.map(e=>{
     const atrasado=e.data<hojeStr;
     return `<tr>
       <td style="font-weight:700;${atrasado?'color:var(--danger)':''}">${fmtD(e.data+'T12:00')}${atrasado?' <i class="ti ti-alert-triangle" title="Atrasado"></i>':''}</td>
-      <td><span class="tag ${e.tipo==='os'?'tag-pur':'tag-grn'}" style="font-size:10px">${e.tipo==='os'?'Ordem de Serviço':'Produto'}</span></td>
+      <td><span class="tag ${tipoTag[e.tipo]||'tag-gry'}" style="font-size:10px">${tipoLbl[e.tipo]||e.tipo}</span></td>
       <td>${e.cliente}</td>
       <td>${e.detalhe}</td>
       <td><span class="tag ${OC[e.status]||'tag-gry'}" style="font-size:10px">${e.status}</span></td>
+      <td>${e.tipo==='avulsa'?`<button class="btn btn-out btn-xs" onclick="abrirEntregaAvulsa('${e.ref}')"><i class="ti ti-edit"></i></button>`:''}</td>
     </tr>`;
   }).join('');
+}
+
+/* ── ENTREGAS AVULSAS (NOVO) ─────────────────────────── */
+function abrirEntregaAvulsa(id) {
+  const e = id ? (G.entregasAvulsas || []).find(x => x.id === id) : null;
+  document.getElementById('entrega-avulsa-title').textContent = e ? 'Editar Entrega' : 'Nova Entrega';
+  document.getElementById('ea-id').value = e?.id || '';
+  document.getElementById('ea-titulo').value = e?.titulo || '';
+  document.getElementById('ea-cliente').value = e?.cliente_nome || '';
+  document.getElementById('ea-data').value = e?.data || new Date().toISOString().split('T')[0];
+  document.getElementById('ea-hora').value = e?.hora ? e.hora.slice(0,5) : '';
+  document.getElementById('ea-obs').value = e?.observacoes || '';
+  document.getElementById('ea-status').value = e?.status || 'pendente';
+  document.getElementById('ea-btn-excluir').style.display = e ? '' : 'none';
+  openModal('modal-entrega-avulsa');
+}
+
+async function salvarEntregaAvulsa() {
+  const id = document.getElementById('ea-id').value;
+  const titulo = document.getElementById('ea-titulo').value.trim();
+  const data = document.getElementById('ea-data').value;
+  if (!titulo) { notify('Informe o título/descrição da entrega.', 'warn'); return; }
+  if (!data) { notify('Informe a data da entrega.', 'warn'); return; }
+
+  const payload = {
+    titulo,
+    cliente_nome: document.getElementById('ea-cliente').value.trim() || null,
+    data,
+    hora: document.getElementById('ea-hora').value || null,
+    observacoes: document.getElementById('ea-obs').value.trim() || null,
+    status: document.getElementById('ea-status').value,
+  };
+
+  setLoad(true);
+  try {
+    if (id) {
+      const { error } = await db.from('entregas_avulsas').update(payload).eq('id', id);
+      if (error) throw error;
+    } else {
+      payload.criado_por = G.profile?.id || null;
+      payload.empresa_id = EID();
+      const { error } = await db.from('entregas_avulsas').insert(payload);
+      if (error) throw error;
+    }
+    closeModal('modal-entrega-avulsa');
+    notify('✅ Entrega salva com sucesso!', 'success');
+    await recarregarEntregasAvulsas();
+    renderAgenda();
+  } catch (err) {
+    notify('Erro ao salvar: ' + (err.message || ''), 'error');
+  } finally {
+    setLoad(false);
+  }
+}
+
+async function excluirEntregaAvulsa() {
+  const id = document.getElementById('ea-id').value;
+  if (!id) return;
+  confirmAct('Excluir entrega', 'Tem certeza que deseja excluir este compromisso da agenda?', async () => {
+    setLoad(true);
+    try {
+      const { error } = await db.from('entregas_avulsas').delete().eq('id', id);
+      if (error) throw error;
+      closeModal('modal-entrega-avulsa');
+      notify('Entrega removida.', 'info');
+      await recarregarEntregasAvulsas();
+      renderAgenda();
+    } catch (err) {
+      notify('Erro ao excluir: ' + (err.message || ''), 'error');
+    } finally {
+      setLoad(false);
+    }
+  });
+}
+
+async function recarregarEntregasAvulsas() {
+  const { data, error } = await db.from('entregas_avulsas').select('*').neq('status','cancelado').order('data');
+  if (error) { console.error(error); return; }
+  G.entregasAvulsas = data || [];
 }
 
 /* ── COMISSÃO POR TÉCNICO ────────────────────────────── */
@@ -4804,7 +5279,7 @@ async function saveUsr(){
   setLoad(true);
   let err;
   if(editId){({error:err}=await db.from('usuarios').update({nome,role,ativo,comissao_pct}).eq('id',editId));}
-  else{({error:err}=await db.from('usuarios').insert({nome,email,role,ativo,comissao_pct}));}
+  else{({error:err}=await db.from('usuarios').insert({nome,email,role,ativo,comissao_pct,empresa_id:EID()}));}
   setLoad(false);
   if(err){notify('Erro: '+err.message,'error');return;}
   notify(editId?'Usuário atualizado!':'Perfil criado! Crie o login no Supabase Auth.');
@@ -6550,7 +7025,7 @@ async function executarImport() {
     const existente = sku ? G.produtos.find(p => p.sku === sku) : null;
     const { error } = existente
       ? await db.from('produtos').update(payload).eq('id', existente.id)
-      : await db.from('produtos').insert(payload);
+      : await db.from('produtos').insert({...payload,empresa_id:EID()});
     if (error) erros++;
     else existente ? atualizados++ : criados++;
   }
@@ -6742,6 +7217,8 @@ function renderAparencia() {
   if (opRel) { opRel.value = MARCA.wmRelOpacity || 12; document.getElementById('wm-rel-opacity-val').textContent = (MARCA.wmRelOpacity || 12) + '%'; }
   const emp = MARCA.empresa || {};
   ['nome','cnpj','tel','email','end','cid','site','rodape'].forEach(k => { const el = document.getElementById('emp-' + k); if (el && emp[k]) el.value = emp[k]; });
+  const cnpjEl = document.getElementById('emp-cnpj');
+  if (cnpjEl && cnpjEl.value) mascararDocCnpjCpf(cnpjEl);
   document.getElementById('ap-count-logos').textContent = ((MARCA.logoLogin?1:0)+(MARCA.logoSidebar?1:0)) + '/2';
   document.getElementById('ap-count-wm').textContent = ((MARCA.wmOS?1:0)+(MARCA.wmRel?1:0)) + '/2';
   carregarConfigWpp(); // carrega config WhatsApp (Zapster) do Supabase (NOVO)
@@ -7153,6 +7630,24 @@ delProd = function(id) {
 // ── UTILITÁRIOS DE PDF ──────────────────────────────────
 function getMarca() {
   try { return JSON.parse(localStorage.getItem('emetech_marca') || '{}'); } catch { return {}; }
+}
+
+/* ── MÁSCARA CPF/CNPJ (NOVO) ──────────────────────────── */
+// Aplica máscara dinamicamente: até 11 dígitos = CPF (000.000.000-00),
+// acima disso = CNPJ (00.000.000/0001-00)
+function mascararDocCnpjCpf(input) {
+  let v = input.value.replace(/\D/g, '').slice(0, 14);
+  if (v.length <= 11) {
+    v = v.replace(/(\d{3})(\d)/, '$1.$2');
+    v = v.replace(/(\d{3})(\d)/, '$1.$2');
+    v = v.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+  } else {
+    v = v.replace(/(\d{2})(\d)/, '$1.$2');
+    v = v.replace(/(\d{3})(\d)/, '$1.$2');
+    v = v.replace(/(\d{3})(\d{1,4})$/, '$1/$2');
+    v = v.replace(/(\d{4})(\d{1,2})$/, '$1-$2');
+  }
+  input.value = v;
 }
 
 function getEmpDados() {
@@ -10110,8 +10605,9 @@ function mapWppCfgFromDb(r) {
 
 async function getWppConfig() {
   if (_wppCfgCache) return _wppCfgCache;
-  if (!G.empresa?.id) return {};
-  const { data, error } = await db.from('config_whatsapp').select('*').eq('empresa_id', G.empresa.id).maybeSingle();
+  const empId = EID() || G.empresa?.id;
+  if (!empId) return {};
+  const { data, error } = await db.from('config_whatsapp').select('*').eq('empresa_id', empId).maybeSingle();
   if (error) { console.error('Erro ao carregar config WhatsApp:', error); return {}; }
   _wppCfgCache = mapWppCfgFromDb(data) || {};
   return _wppCfgCache;
@@ -10135,9 +10631,10 @@ async function getMsgsOS(osId) {
 }
 
 async function addMsgOS(osId, msg) {
-  if (!G.empresa?.id) return null;
+  const empId = EID() || G.empresa?.id;
+  if (!empId) return null;
   const payload = {
-    empresa_id: G.empresa.id,
+    empresa_id: empId,
     os_id: String(osId),
     numero: msg.numero,
     direcao: msg.direcao,
