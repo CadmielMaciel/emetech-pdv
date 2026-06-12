@@ -1418,6 +1418,13 @@ async function saveEmpresa(empresa) {
     const id = empresa.id || ('emp_' + Date.now());
     const { error } = await db.from('empresas').insert({ id, ...payload, senha_inicial: empresa.senha || null });
     if (error) throw error;
+    // TODO (multi-tenant): após criar a empresa, é necessário:
+    //   1. Criar o usuário no Supabase Auth (e-mail/senha) — requer service_role,
+    //      portanto deve ser feito via função serverless/Edge Function, não no client.
+    //   2. Inserir o registro correspondente em public.usuarios com:
+    //      { nome, email, role:'admin', ativo:true, empresa_id: id }
+    //   Sem esses dois passos, o login da empresa em index.html falhará
+    //   com "Usuário inativo" (nenhum registro em usuarios).
     return id;
   }
 }
@@ -1649,11 +1656,11 @@ async function doLogin() {
     const { data, error } = await db.auth.signInWithPassword({ email, password: pass });
     if (error) throw error;
 
-    // Verificar se é admin
+    // Verificar se é admin master (acesso ao painel SaaS, distinto do 'admin' de loja)
     const { data: perfil } = await db.from('usuarios').select('*').eq('email', email).single();
-    if (!perfil || perfil.role !== 'admin') {
+    if (!perfil || perfil.role !== 'admin_master') {
       await db.auth.signOut();
-      throw new Error('Acesso negado. Apenas administradores podem acessar o painel master.');
+      throw new Error('Acesso negado. Apenas administradores master podem acessar o painel.');
     }
 
     G.user = data.user;
@@ -3211,7 +3218,7 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
   const { data: { session } } = await db.auth.getSession();
   if (session?.user) {
     const { data: perfil } = await db.from('usuarios').select('*').eq('email', session.user.email).single();
-    if (perfil?.role === 'admin') {
+    if (perfil?.role === 'admin_master') {
       G.user = session.user;
       G.perfil = perfil;
       iniciarApp();
