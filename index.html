@@ -7785,13 +7785,12 @@ function pdfBase({ titulo, numero, tipo, conteudo, assinatura, wmSrc, wmOp }) {
 /* ── NETFLIX SLOTS EDITÁVEIS ───────────────────────── */
 .nf-slot { display:flex;flex-direction:column;align-items:center;gap:10px;position:relative;cursor:pointer;border-radius:16px;padding:8px;transition:outline .15s,background .15s;outline:3px solid transparent; }
 .nf-slot-edit-link {
-  margin-top:6px;display:flex;align-items:center;gap:5px;
-  background:none;border:none;color:rgba(255,255,255,.35);
-  font-size:11px;font-weight:600;cursor:pointer;padding:4px 10px;
-  border-radius:8px;transition:all .15s;letter-spacing:.3px;
+  margin-top:6px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.35);border:1.5px solid var(--pri);color:var(--pri);
+  border-radius:50%;cursor:pointer;transition:all .15s;padding:0;
 }
-.nf-slot-edit-link:hover { color:#fff;background:rgba(255,255,255,.08); }
-.nf-slot-edit-link i { font-size:13px; }
+.nf-slot-edit-link:hover { background:rgba(0,0,0,.55);color:#fff;border-color:var(--pri); }
+.nf-slot-edit-link i { font-size:14px; }
 .nf-slot-vazio .nf-avatar {
   background:rgba(255,255,255,.06) !important;
   border:2px dashed rgba(255,255,255,.2) !important;
@@ -9532,7 +9531,7 @@ function mostrarTelaNetflix() {
       <div style="font-size:9.5px;margin-top:10px;color:${pinOk ? 'rgba(255,255,255,.42)' : 'rgba(255,255,255,.22)'}" onclick="nfSelecionarCard('${u.id}')">
         ${pinOk ? '🔒 PIN configurado' : '⚪ Sem PIN'}
       </div>
-      ${editavel ? `<button class="nf-slot-edit-link" onclick="event.stopPropagation();abrirSlotModal(${i})" title="Editar perfil"><i class="ti ti-edit"></i> Editar</button>` : ''}
+      ${editavel ? `<button class="nf-slot-edit-link" onclick="event.stopPropagation();abrirSlotModal(${i})" title="Editar perfil"><i class="ti ti-edit"></i></button>` : ''}
     </div>`;
   }
 
