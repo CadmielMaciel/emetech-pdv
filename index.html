@@ -7521,11 +7521,12 @@ function atualizarDisplayPinSlot() {
   }
 }
 
-function confirmarPinSlot() {
+async function confirmarPinSlot() {
   if (_pinSlotDigitos.length !== 4) { notify('Digite 4 dígitos.', 'warn'); return; }
   if (!_pinSlotUserId) return;
   const userId = _pinSlotUserId;
-  setPin(userId, _pinSlotDigitos);
+  const ok = await setPin(userId, _pinSlotDigitos);
+  if (!ok) return;
   fecharPinSlotInline();
   const u = G.usuarios.find(x => x.id === userId);
   notify(`✅ PIN de ${u?.nome} ${hasPin(userId) ? 'atualizado' : 'criado'} com sucesso!`, 'success');
@@ -7535,8 +7536,8 @@ function confirmarPinSlot() {
 
 function removerPinSlot(userId) {
   const u = G.usuarios.find(x => x.id === userId);
-  confirmAct('Remover PIN', `Remover o PIN de "${u?.nome}"? Ele não precisará de PIN para entrar na tela inicial.`, () => {
-    removePin(userId);
+  confirmAct('Remover PIN', `Remover o PIN de "${u?.nome}"? Ele não precisará de PIN para entrar na tela inicial.`, async () => {
+    await removePin(userId);
     renderSlotsPreview();
     mostrarTelaNetflix();
     notify(`PIN de ${u?.nome} removido.`, 'info');
@@ -9433,14 +9434,22 @@ let _nfPerfilSelecionado = null;
 let _pinDigitos = '';
 let _nfModoAlterar = false; // flag para modo alteração de PIN
 
-// Chave para salvar PINs (no localStorage, indexado por userId)
-function getPINs() {
-  try { return JSON.parse(localStorage.getItem('emetech_pins') || '{}'); } catch { return {}; }
+// PINs agora ficam em usuarios.pin (Supabase) — sincronizados entre
+// dispositivos e gerenciáveis pelo admin master. getPin/hasPin lêem do
+// G.usuarios (já carregado); setPin/removePin gravam local + Supabase.
+function getPin(userId) {
+  const u = G.usuarios.find(x => x.id === userId);
+  return u?.pin || null;
 }
-function savePINs(obj) { localStorage.setItem('emetech_pins', JSON.stringify(obj)); }
-function getPin(userId) { return getPINs()[userId] || null; }
-function setPin(userId, pin) { const p = getPINs(); p[userId] = pin; savePINs(p); }
+async function setPin(userId, pin) {
+  const u = G.usuarios.find(x => x.id === userId);
+  if (u) u.pin = pin;
+  const { error } = await db.from('usuarios').update({ pin }).eq('id', userId);
+  if (error) { notify('Erro ao salvar PIN: ' + error.message, 'error'); return false; }
+  return true;
+}
 function hasPin(userId) { return !!getPin(userId); }
+async function removePin(userId) { return setPin(userId, null); }
 
 // ── EXIBIR TELA NETFLIX ─────────────────────────────────
 /* ── SISTEMA DE SLOTS NETFLIX ──────────────────────────
@@ -9875,7 +9884,7 @@ function verificarPin() {
     mostrarPinScreen(u, 'confirmar');
   } else if (_pinModo === 'confirmar') {
     if (_pinDigitos === _pinNovoTemp) {
-      setPin(u.id, _pinDigitos);
+      setPin(u.id, _pinDigitos); // fire-and-forget; UI já avança
       document.getElementById('pin-screen').style.display = 'none';
       entrarComPerfil(u);
       notify('✅ PIN configurado com sucesso!', 'success');
@@ -9917,7 +9926,7 @@ function abrirAlterarPIN(userId) {
   openModal('modal-alterar-pin');
 }
 
-function salvarNovoPIN() {
+async function salvarNovoPIN() {
   const userId = document.getElementById('ap-user-id').value;
   const pinAtual = document.getElementById('ap-pin-atual').value;
   const pinNovo = document.getElementById('ap-pin-novo').value;
@@ -9939,7 +9948,8 @@ function salvarNovoPIN() {
     if (pinAtual !== salvo) return showErr('PIN atual incorreto.');
   }
   
-  setPin(userId, pinNovo);
+  const ok = await setPin(userId, pinNovo);
+  if (!ok) return showErr('Erro ao salvar PIN. Tente novamente.');
   okEl.textContent = '✅ PIN alterado com sucesso!';
   okEl.style.display = '';
   document.getElementById('ap-pin-atual').value = '';
@@ -9953,8 +9963,8 @@ function salvarNovoPIN() {
 
 function removerPIN(userId) {
   const u = G.usuarios.find(x => x.id === userId);
-  confirmAct('Remover PIN', `Remover o PIN de "${u?.nome}"? O perfil ficará sem proteção.`, () => {
-    const pins = getPINs(); delete pins[userId]; savePINs(pins);
+  confirmAct('Remover PIN', `Remover o PIN de "${u?.nome}"? O perfil ficará sem proteção.`, async () => {
+    await removePin(userId);
     renderUsuarios(); notify('PIN removido.', 'info');
   });
 }
