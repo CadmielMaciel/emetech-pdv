@@ -1362,8 +1362,8 @@ const SKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 const { createClient } = supabase;
 const db = createClient(SURL, SKEY);
 
-// URL base das Edge Functions (mesmo projeto Supabase)
-const FUNCTIONS_URL = SURL.replace('.supabase.co', '.functions.supabase.co');
+// URL base das Edge Functions (formato correto: <ref>.supabase.co/functions/v1/<nome>)
+const FUNCTIONS_URL = `${SURL}/functions/v1`;
 
 /* ── ESTADO ── */
 let G = {
