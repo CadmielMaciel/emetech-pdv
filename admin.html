@@ -1392,6 +1392,7 @@ function mapEmpresaFromDb(r) {
     motivoBloqueio: r.motivo_bloqueio, bloqueioMotivo: r.motivo_bloqueio,
     bloqueadoEm: r.bloqueado_em, bloqueadoPor: r.bloqueado_por,
     diasAtrasoNoBloqueio: r.dias_atraso_bloqueio,
+    pagoAte: r.pago_ate,
     createdAt: r.created_at, updatedAt: r.updated_at,
   };
 }
@@ -1403,6 +1404,7 @@ function mapEmpresaToDb(e) {
     motivo_bloqueio: e.motivoBloqueio || e.bloqueioMotivo || null,
     bloqueado_em: e.bloqueadoEm || null, bloqueado_por: e.bloqueadoPor || null,
     dias_atraso_bloqueio: e.diasAtrasoNoBloqueio ?? null,
+    pago_ate: e.pagoAte ?? null,
   };
 }
 
@@ -1559,6 +1561,15 @@ function statusFinanceiro(empresa) {
   hoje.setHours(0,0,0,0);
   const venc = calcularProximoVencimento(empresa.venc);
   venc.setHours(0,0,0,0);
+
+  // Se há um pagamento registrado que cobre a data de hoje, está em dia
+  // independente do "dia de vencimento" fixo do mês.
+  if (empresa.pagoAte) {
+    const pagoAte = new Date(empresa.pagoAte + 'T00:00:00');
+    if (hoje <= pagoAte) {
+      return { status: 'em_dia', dias: 0, venc };
+    }
+  }
 
   const diffMs = hoje - venc;
   const diasAtraso = Math.floor(diffMs / 86400000);
@@ -3128,22 +3139,33 @@ async function salvarPagamento() {
   try {
     await addPagamento(id, valor, comprovante, data);
 
-    // Se a empresa estava bloqueada/em tolerância e o pagamento regulariza, registra tolerância usada e desbloqueia
     const fin = statusFinanceiro(e);
     if (fin.status === 'tolerancia') {
       await addTolerancia(id, fin.dias);
     }
-    if (e.status === 'bloqueada' && e.bloqueioMotivo) {
+
+    // Calcula "pago até": próximo vencimento (dia configurado) após a data
+    // do pagamento, garantindo que o status fique "Em dia" até lá.
+    const dataPagamento = data ? new Date(data + 'T00:00:00') : new Date();
+    const diaVenc = Math.min(Math.max(parseInt(e.venc) || 10, 1), 28);
+    let pagoAte = new Date(dataPagamento.getFullYear(), dataPagamento.getMonth(), diaVenc);
+    if (pagoAte <= dataPagamento) {
+      pagoAte = new Date(dataPagamento.getFullYear(), dataPagamento.getMonth() + 1, diaVenc);
+    }
+    e.pagoAte = pagoAte.toISOString().slice(0, 10);
+
+    // Desbloqueia a empresa (se estava bloqueada manualmente ou em atraso/tolerância)
+    if (e.status === 'bloqueada') {
       e.status = 'ativa';
       e.motivoBloqueio = '';
       e.bloqueioMotivo = '';
-      await saveEmpresa(e);
       addLog('desbloqueada', `Empresa "${e.nome}" desbloqueada após pagamento`, e.nome, e.id);
     }
+    await saveEmpresa(e);
 
-    addLog('pagamento', `Pagamento de R$ ${valor.toLocaleString('pt-BR',{minimumFractionDigits:2})} registrado para "${e.nome}"`, e.nome, e.id);
+    addLog('pagamento', `Pagamento de R$ ${valor.toLocaleString('pt-BR',{minimumFractionDigits:2})} registrado para "${e.nome}" — em dia até ${pagoAte.toLocaleDateString('pt-BR')}`, e.nome, e.id);
     simularWebhook('pagamento.recebido', { empresa: e.nome, valor, data });
-    notify(`💰 Pagamento registrado para "${e.nome}"!`, 'success');
+    notify(`💰 Pagamento registrado para "${e.nome}"! Em dia até ${pagoAte.toLocaleDateString('pt-BR')}.`, 'success');
 
     await refreshDados();
     closeModal('modal-pagamento');
