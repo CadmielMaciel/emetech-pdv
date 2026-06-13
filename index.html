@@ -9524,7 +9524,6 @@ function mostrarTelaNetflix() {
       : `<span style="font-family:'Syne',sans-serif;font-weight:800;font-size:28px;color:#fff">${iniciais}</span>`;
 
     html += `<div class="nf-slot" id="nf-slot-card-${u.id}" onclick="nfSelecionarCard('${u.id}')">
-      ${editavel ? `<button class="nf-slot-edit-btn" onclick="event.stopPropagation();abrirSlotModal(${i})" title="Trocar"><i class="ti ti-edit"></i></button>` : ''}
       <div class="nf-avatar" style="background:${c.bg}">
         ${avatarContent}
       </div>
