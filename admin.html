@@ -1362,6 +1362,9 @@ const SKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 const { createClient } = supabase;
 const db = createClient(SURL, SKEY);
 
+// URL base das Edge Functions (mesmo projeto Supabase)
+const FUNCTIONS_URL = SURL.replace('.supabase.co', '.functions.supabase.co');
+
 /* ── ESTADO ── */
 let G = {
   user: null,
@@ -1418,19 +1421,39 @@ async function saveEmpresa(empresa) {
     const id = empresa.id || ('emp_' + Date.now());
     const { error } = await db.from('empresas').insert({ id, ...payload, senha_inicial: empresa.senha || null });
     if (error) throw error;
-    // TODO (multi-tenant): após criar a empresa, é necessário:
-    //   1. Criar o usuário no Supabase Auth (e-mail/senha) — requer service_role,
-    //      portanto deve ser feito via função serverless/Edge Function, não no client.
-    //   2. Inserir o registro correspondente em public.usuarios com:
-    //      { nome, email, role:'admin', ativo:true, empresa_id: id }
-    //   Sem esses dois passos, o login da empresa em index.html falhará
-    //   com "Usuário inativo" (nenhum registro em usuarios).
+    // Após inserir a empresa, salvarEmpresa() chama criarUsuarioEmpresa()
+    // para criar o usuário no Supabase Auth + public.usuarios (role='admin').
     return id;
   }
 }
 async function excluirEmpresaDb(id) {
   const { error } = await db.from('empresas').delete().eq('id', id);
   if (error) throw error;
+}
+
+// Cria o usuário de login da empresa (Supabase Auth + public.usuarios) via
+// Edge Function. Requer que o admin_master esteja autenticado (envia o
+// token de sessão atual no header Authorization).
+async function criarUsuarioEmpresa(empresaId, nomeUsuario, email, senha) {
+  try {
+    const { data: { session } } = await db.auth.getSession();
+    if (!session) return { ok: false, error: 'Sessão expirada.' };
+
+    const resp = await fetch(`${FUNCTIONS_URL}/criar-empresa-usuario`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ empresaId, nomeUsuario, email, senha }),
+    });
+
+    const result = await resp.json();
+    if (!resp.ok) return { ok: false, error: result.error || 'Erro desconhecido.' };
+    return { ok: true, ...result };
+  } catch (e) {
+    return { ok: false, error: e.message || String(e) };
+  }
 }
 
 function mapPlanoFromDb(r) {
@@ -2236,10 +2259,23 @@ async function salvarEmpresa() {
       addLog('editada', `Empresa "${nome}" atualizada`, nome, id);
       notify(`✅ ${nome} atualizada!`, 'success');
     } else {
+      if (!dadosForm.senha || dadosForm.senha.length < 6) {
+        notify('A senha de acesso precisa ter no mínimo 6 caracteres.', 'error');
+        setLoad(false);
+        return;
+      }
       dadosForm._isNew = true;
       const newId = await saveEmpresa(dadosForm);
       addLog('criada', `Nova empresa "${nome}" cadastrada`, nome, newId);
-      notify(`✅ Empresa "${nome}" criada com sucesso!`, 'success');
+
+      // Cria o usuário de login (Supabase Auth + public.usuarios) via Edge Function
+      const cred = await criarUsuarioEmpresa(newId, nome, email, dadosForm.senha);
+      if (!cred.ok) {
+        notify(`Empresa criada, mas houve um erro ao criar o login: ${cred.error}. ` +
+               `Crie o acesso manualmente depois.`, 'warn', 6000);
+      } else {
+        notify(`✅ Empresa "${nome}" criada! Login: ${email} / Senha: ${dadosForm.senha}`, 'success', 8000);
+      }
     }
 
     await refreshDados();
@@ -2443,14 +2479,21 @@ async function detTab(tab, btn) {
         <div class="code-block">https://emetech-pdv.vercel.app</div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
-        ${campo('E-mail de login', e.email)}
-        ${campo('Senha inicial', e.senha || '(não registrada)')}
+        ${campo('E-mail do admin (cadastro)', e.email)}
+        ${campo('Senha inicial (cadastro)', e.senha || '(não registrada)')}
       </div>
-      <div style="padding:12px 14px;background:var(--pri-light);border-radius:10px;border:1px solid rgba(124,58,237,.3)">
+      <div style="padding:12px 14px;background:var(--pri-light);border-radius:10px;border:1px solid rgba(124,58,237,.3);margin-bottom:18px">
         <div style="font-size:12px;font-weight:700;color:var(--pri);margin-bottom:4px"><i class="ti ti-info-circle"></i> Como a empresa acessa</div>
-        <div style="font-size:12.5px;color:var(--txt2)">A empresa acessa o mesmo <code style="background:var(--bg3);padding:1px 5px;border-radius:4px">index.html</code> com as credenciais acima. O sistema identifica a empresa pelo e-mail do admin e carrega os dados isolados pelo Supabase.</div>
+        <div style="font-size:12.5px;color:var(--txt2)">A empresa acessa o mesmo <code style="background:var(--bg3);padding:1px 5px;border-radius:4px">index.html</code> com as credenciais de cada usuário abaixo. O acesso é isolado por empresa via Supabase (RLS).</div>
       </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div class="ms" style="margin-top:0">Usuários da empresa</div>
+        <button class="btn btn-pri btn-sm" onclick="abrirNovoUsuarioEmpresa('${e.id}')"><i class="ti ti-user-plus"></i> Novo usuário</button>
+      </div>
+      <div id="acesso-usuarios-list" style="color:var(--txt3);text-align:center;padding:20px">Carregando...</div>
     `;
+    renderUsuariosEmpresa(e.id);
   } else if (tab === 'updates') {
     const upds = G.updates.filter(u => u.empresa === e.id || u.empresa === 'global');
     document.getElementById('det-updates-content').innerHTML = `
@@ -2510,6 +2553,257 @@ function campo(label, valor) {
     <div style="font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px">${label}</div>
     <div style="font-size:13px;color:var(--txt)">${valor}</div>
   </div>`;
+}
+
+/* ── GESTÃO DE USUÁRIOS DA EMPRESA (aba Acesso) ──────────────────────── */
+
+const USER_ROLE_LABEL = {
+  admin: 'Administrador', gerente: 'Gerente', operador: 'Operador de Caixa', tecnico: 'Técnico',
+};
+
+async function getUsuariosEmpresa(empresaId) {
+  const { data, error } = await db.from('usuarios').select('*').eq('empresa_id', empresaId).order('nome');
+  if (error) { console.error(error); return []; }
+  return data || [];
+}
+
+async function renderUsuariosEmpresa(empresaId) {
+  const el = document.getElementById('acesso-usuarios-list');
+  if (!el) return;
+  const usuarios = await getUsuariosEmpresa(empresaId);
+  if (usuarios.length === 0) {
+    el.innerHTML = '<div style="color:var(--txt3);text-align:center;padding:20px">Nenhum usuário cadastrado ainda.</div>';
+    return;
+  }
+  el.innerHTML = usuarios.map(u => `
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="width:38px;height:38px;border-radius:10px;background:${stringToColor(u.nome)};display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;color:#fff;font-size:14px;flex-shrink:0">
+        ${(u.nome||'?').slice(0,2).toUpperCase()}
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;color:var(--txt)">${u.nome}${!u.ativo ? ' <span class="badge badge-red" style="margin-left:6px">Inativo</span>' : ''}</div>
+        <div style="font-size:11.5px;color:var(--txt3)">${u.email} · ${USER_ROLE_LABEL[u.role]||u.role}</div>
+      </div>
+      <div style="font-size:11px;color:var(--txt3);white-space:nowrap">${u.pin ? '🔒 PIN ativo' : '⚪ Sem PIN'}</div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-out btn-xs" onclick="abrirEditarUsuarioEmpresa('${u.id}','${empresaId}')" title="Editar"><i class="ti ti-pencil"></i></button>
+        <button class="btn btn-out btn-xs" onclick="abrirPinUsuarioEmpresa('${u.id}','${empresaId}')" title="Gerenciar PIN"><i class="ti ti-password"></i></button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function abrirNovoUsuarioEmpresa(empresaId) {
+  abrirFormUsuarioEmpresa(empresaId, null);
+}
+
+async function abrirEditarUsuarioEmpresa(userId, empresaId) {
+  const usuarios = await getUsuariosEmpresa(empresaId);
+  const u = usuarios.find(x => x.id === userId);
+  if (!u) return;
+  abrirFormUsuarioEmpresa(empresaId, u);
+}
+
+function abrirFormUsuarioEmpresa(empresaId, u) {
+  const isEdit = !!u;
+  const existing = document.getElementById('modal-usuario-empresa');
+  if (existing) existing.remove();
+
+  const modalHtml = `<div class="modal-overlay" id="modal-usuario-empresa">
+    <div class="modal" style="max-width:440px">
+      <div class="modal-title"><i class="ti ti-user"></i><span>${isEdit ? 'Editar usuário' : 'Novo usuário'}</span></div>
+      <input type="hidden" id="ue-id" value="${u?.id||''}">
+      <input type="hidden" id="ue-empresa-id" value="${empresaId}">
+      <div class="fg">
+        <label class="lbl">Nome *</label>
+        <input type="text" id="ue-nome" value="${u?.nome||''}" placeholder="Nome completo">
+      </div>
+      <div class="fg">
+        <label class="lbl">E-mail *</label>
+        <input type="email" id="ue-email" value="${u?.email||''}" placeholder="email@exemplo.com" ${isEdit ? 'disabled title="O e-mail de login não pode ser alterado aqui."' : ''}>
+        ${isEdit ? '<div style="font-size:11px;color:var(--txt3);margin-top:4px">E-mail de login não pode ser alterado.</div>' : ''}
+      </div>
+      ${!isEdit ? `
+      <div class="fg">
+        <label class="lbl">Senha de acesso *</label>
+        <input type="text" id="ue-senha" value="${gerarSenha()}">
+      </div>` : ''}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="fg">
+          <label class="lbl">Nível *</label>
+          <select id="ue-role">
+            <option value="operador" ${u?.role==='operador'?'selected':''}>Operador de Caixa</option>
+            <option value="tecnico" ${u?.role==='tecnico'?'selected':''}>Técnico</option>
+            <option value="gerente" ${u?.role==='gerente'?'selected':''}>Gerente</option>
+            <option value="admin" ${u?.role==='admin'?'selected':''}>Administrador</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label class="lbl">Comissão (%)</label>
+          <input type="number" id="ue-comissao" min="0" step="0.1" value="${u?.comissao_pct ?? 0}">
+        </div>
+      </div>
+      ${isEdit ? `
+      <div class="fg">
+        <label class="lbl">Status</label>
+        <label class="toggle" title="Ativo/Inativo">
+          <input type="checkbox" id="ue-ativo" ${u?.ativo !== false ? 'checked' : ''}>
+          <span class="tslider"></span>
+        </label>
+        <span style="font-size:12px;color:var(--txt3);margin-left:8px">Usuário ${u?.ativo !== false ? 'ativo' : 'inativo'} (desmarque para bloquear o login)</span>
+      </div>` : ''}
+      <div class="modal-footer">
+        <button class="btn btn-out" onclick="closeModal('modal-usuario-empresa')">Cancelar</button>
+        <button class="btn btn-pri" onclick="salvarUsuarioEmpresa()"><i class="ti ti-check"></i> Salvar</button>
+      </div>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+  openModal('modal-usuario-empresa');
+}
+
+async function salvarUsuarioEmpresa() {
+  const id = document.getElementById('ue-id').value;
+  const empresaId = document.getElementById('ue-empresa-id').value;
+  const nome = document.getElementById('ue-nome').value.trim();
+  const email = document.getElementById('ue-email').value.trim();
+  const role = document.getElementById('ue-role').value;
+  const comissao_pct = parseFloat(document.getElementById('ue-comissao').value) || 0;
+
+  if (!nome) { notify('Informe o nome.', 'error'); return; }
+
+  setLoad(true);
+  try {
+    if (id) {
+      // Edição: nome, role, comissão e status (e-mail não muda aqui)
+      const ativo = document.getElementById('ue-ativo').checked;
+      const { error } = await db.from('usuarios').update({ nome, role, comissao_pct, ativo }).eq('id', id);
+      if (error) throw error;
+      notify(`✅ Usuário "${nome}" atualizado!`, 'success');
+    } else {
+      // Novo usuário: cria no Auth + usuarios via Edge Function
+      const senha = document.getElementById('ue-senha').value;
+      if (!email) { notify('Informe o e-mail.', 'error'); setLoad(false); return; }
+      if (!senha || senha.length < 6) { notify('A senha precisa ter no mínimo 6 caracteres.', 'error'); setLoad(false); return; }
+
+      const result = await criarUsuarioEmpresaCompleto(empresaId, nome, email, senha, role, comissao_pct);
+      if (!result.ok) { notify('Erro: ' + result.error, 'error'); setLoad(false); return; }
+      notify(`✅ Usuário "${nome}" criado! Login: ${email} / Senha: ${senha}`, 'success', 8000);
+    }
+
+    closeModal('modal-usuario-empresa');
+    renderUsuariosEmpresa(empresaId);
+  } catch (e) {
+    notify('Erro ao salvar usuário: ' + e.message, 'error');
+  } finally {
+    setLoad(false);
+  }
+}
+
+// Cria usuário (Auth + public.usuarios) com role/comissão customizados via Edge Function
+async function criarUsuarioEmpresaCompleto(empresaId, nomeUsuario, email, senha, role, comissaoPct) {
+  try {
+    const { data: { session } } = await db.auth.getSession();
+    if (!session) return { ok: false, error: 'Sessão expirada.' };
+
+    const resp = await fetch(`${FUNCTIONS_URL}/criar-empresa-usuario`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ empresaId, nomeUsuario, email, senha, role, comissaoPct }),
+    });
+
+    const result = await resp.json();
+    if (!resp.ok) return { ok: false, error: result.error || 'Erro desconhecido.' };
+    return { ok: true, ...result };
+  } catch (e) {
+    return { ok: false, error: e.message || String(e) };
+  }
+}
+
+/* ── GERENCIAR PIN DE USUÁRIO (admin master) ─────────────────────────── */
+let _adminPinUserId = null;
+let _adminPinEmpresaId = null;
+let _adminPinDigitos = '';
+
+async function abrirPinUsuarioEmpresa(userId, empresaId) {
+  const usuarios = await getUsuariosEmpresa(empresaId);
+  const u = usuarios.find(x => x.id === userId);
+  if (!u) return;
+
+  _adminPinUserId = userId;
+  _adminPinEmpresaId = empresaId;
+  _adminPinDigitos = '';
+
+  const existing = document.getElementById('modal-pin-usuario');
+  if (existing) existing.remove();
+
+  const pinAtivo = !!u.pin;
+  const modalHtml = `<div class="modal-overlay" id="modal-pin-usuario">
+    <div class="modal" style="max-width:360px;text-align:center">
+      <div class="modal-title" style="justify-content:center">
+        <i class="ti ti-password" style="color:var(--pri)"></i>
+        <span>${pinAtivo ? 'Alterar' : 'Criar'} PIN — ${u.nome}</span>
+      </div>
+      <div style="font-size:13px;color:var(--txt2);margin-bottom:20px">
+        ${pinAtivo ? 'PIN atual ativo. Digite o novo PIN de 4 dígitos para substituir.' : 'Digite um PIN de 4 dígitos para este usuário.'}
+      </div>
+      <div id="admin-pin-display" style="display:flex;gap:10px;justify-content:center;margin-bottom:20px">
+        ${[0,1,2,3].map(i => `<div id="admin-pin-dot-${i}" style="width:14px;height:14px;border-radius:50%;border:2px solid var(--border);transition:all .15s"></div>`).join('')}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:200px;margin:0 auto 20px">
+        ${[1,2,3,4,5,6,7,8,9,'',0,'⌫'].map(k => k==='' ? '<div></div>' :
+          `<button onclick="adminPinKey('${k}')" style="padding:14px;border-radius:10px;border:1px solid var(--border);background:var(--surface);font-size:18px;font-weight:700;cursor:pointer;color:var(--txt);transition:all .1s" onmousedown="this.style.transform='scale(.93)'" onmouseup="this.style.transform=''">${k}</button>`
+        ).join('')}
+      </div>
+      <div class="modal-footer" style="justify-content:center;gap:8px">
+        ${pinAtivo ? '<button class="btn btn-danger" onclick="removerPinUsuarioEmpresa()"><i class="ti ti-trash"></i> Remover PIN</button>' : ''}
+        <button class="btn btn-out" onclick="closeModal('modal-pin-usuario');document.getElementById('modal-pin-usuario').remove()">Cancelar</button>
+        <button class="btn btn-pri" onclick="confirmarPinUsuarioEmpresa()"><i class="ti ti-check"></i> Salvar PIN</button>
+      </div>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+  atualizarDotsAdminPin();
+  openModal('modal-pin-usuario');
+}
+
+function adminPinKey(k) {
+  if (k === '⌫') { _adminPinDigitos = _adminPinDigitos.slice(0,-1); }
+  else if (_adminPinDigitos.length < 4) { _adminPinDigitos += String(k); }
+  atualizarDotsAdminPin();
+}
+
+function atualizarDotsAdminPin() {
+  for (let i=0;i<4;i++) {
+    const dot = document.getElementById('admin-pin-dot-'+i);
+    if (!dot) continue;
+    const preenchido = i < _adminPinDigitos.length;
+    dot.style.background = preenchido ? 'var(--pri)' : 'transparent';
+    dot.style.borderColor = preenchido ? 'var(--pri)' : 'var(--border)';
+    dot.style.transform = preenchido ? 'scale(1.15)' : 'scale(1)';
+  }
+}
+
+async function confirmarPinUsuarioEmpresa() {
+  if (_adminPinDigitos.length !== 4) { notify('Digite 4 dígitos.', 'warn'); return; }
+  const { error } = await db.from('usuarios').update({ pin: _adminPinDigitos }).eq('id', _adminPinUserId);
+  const modal = document.getElementById('modal-pin-usuario');
+  if (error) { notify('Erro ao salvar PIN: ' + error.message, 'error'); return; }
+  notify('✅ PIN salvo com sucesso!', 'success');
+  if (modal) { closeModal('modal-pin-usuario'); modal.remove(); }
+  renderUsuariosEmpresa(_adminPinEmpresaId);
+}
+
+async function removerPinUsuarioEmpresa() {
+  const { error } = await db.from('usuarios').update({ pin: null }).eq('id', _adminPinUserId);
+  const modal = document.getElementById('modal-pin-usuario');
+  if (error) { notify('Erro ao remover PIN: ' + error.message, 'error'); return; }
+  notify('PIN removido.', 'info');
+  if (modal) { closeModal('modal-pin-usuario'); modal.remove(); }
+  renderUsuariosEmpresa(_adminPinEmpresaId);
 }
 
 /* ── PLANOS ── */
@@ -3174,7 +3468,7 @@ function setLoad(show) {
 }
 
 let _notifTimer = {};
-function notify(msg, type = 'info') {
+function notify(msg, type = 'info', duration = 3500) {
   const stack = document.getElementById('notif-stack');
   const id = 'n_' + Date.now();
   const icons = { success:'ti-check', error:'ti-alert-triangle', info:'ti-info-circle', warn:'ti-alert-circle' };
@@ -3188,7 +3482,7 @@ function notify(msg, type = 'info') {
   _notifTimer[id] = setTimeout(() => {
     div.classList.remove('show');
     setTimeout(() => div.remove(), 400);
-  }, 3500);
+  }, duration);
 }
 
 function gerarSenha() {
