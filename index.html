@@ -7784,14 +7784,14 @@ function pdfBase({ titulo, numero, tipo, conteudo, assinatura, wmSrc, wmOp }) {
 
 /* ── NETFLIX SLOTS EDITÁVEIS ───────────────────────── */
 .nf-slot { display:flex;flex-direction:column;align-items:center;gap:10px;position:relative;cursor:pointer;border-radius:16px;padding:8px;transition:outline .15s,background .15s;outline:3px solid transparent; }
-.nf-slot-edit-btn {
-  position:absolute;top:-8px;right:-8px;width:26px;height:26px;
-  border-radius:50%;background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);
-  color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;
-  font-size:13px;transition:all .2s;z-index:10;opacity:0;
+.nf-slot-edit-link {
+  margin-top:6px;display:flex;align-items:center;gap:5px;
+  background:none;border:none;color:rgba(255,255,255,.35);
+  font-size:11px;font-weight:600;cursor:pointer;padding:4px 10px;
+  border-radius:8px;transition:all .15s;letter-spacing:.3px;
 }
-.nf-slot:hover .nf-slot-edit-btn { opacity:1; }
-.nf-slot-edit-btn:hover { background:rgba(255,255,255,.3);transform:scale(1.1); }
+.nf-slot-edit-link:hover { color:#fff;background:rgba(255,255,255,.08); }
+.nf-slot-edit-link i { font-size:13px; }
 .nf-slot-vazio .nf-avatar {
   background:rgba(255,255,255,.06) !important;
   border:2px dashed rgba(255,255,255,.2) !important;
@@ -9523,15 +9523,16 @@ function mostrarTelaNetflix() {
       ? `<img src="${logoSidebar}" style="width:100%;height:100%;object-fit:contain;padding:8px">`
       : `<span style="font-family:'Syne',sans-serif;font-weight:800;font-size:28px;color:#fff">${iniciais}</span>`;
 
-    html += `<div class="nf-slot" id="nf-slot-card-${u.id}" onclick="nfSelecionarCard('${u.id}')">
-      <div class="nf-avatar" style="background:${c.bg}">
+    html += `<div class="nf-slot" id="nf-slot-card-${u.id}">
+      <div class="nf-avatar" style="background:${c.bg}" onclick="nfSelecionarCard('${u.id}')">
         ${avatarContent}
       </div>
-      <div class="nf-nome">${u.nome}</div>
-      <span class="role-badge ${NFRoleTag[u.role] || ''}" style="font-size:9.5px;padding:1.5px 7px">${NFRoleLbl[u.role] || u.role}</span>
-      <div style="font-size:9.5px;margin-top:10px;color:${pinOk ? 'rgba(255,255,255,.42)' : 'rgba(255,255,255,.22)'}">
+      <div class="nf-nome" onclick="nfSelecionarCard('${u.id}')">${u.nome}</div>
+      <span class="role-badge ${NFRoleTag[u.role] || ''}" style="font-size:9.5px;padding:1.5px 7px" onclick="nfSelecionarCard('${u.id}')">${NFRoleLbl[u.role] || u.role}</span>
+      <div style="font-size:9.5px;margin-top:10px;color:${pinOk ? 'rgba(255,255,255,.42)' : 'rgba(255,255,255,.22)'}" onclick="nfSelecionarCard('${u.id}')">
         ${pinOk ? '🔒 PIN configurado' : '⚪ Sem PIN'}
       </div>
+      ${editavel ? `<button class="nf-slot-edit-link" onclick="event.stopPropagation();abrirSlotModal(${i})" title="Editar perfil"><i class="ti ti-edit"></i> Editar</button>` : ''}
     </div>`;
   }
 
