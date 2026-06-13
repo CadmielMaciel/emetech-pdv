@@ -217,7 +217,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--pri);box-shadow:0 0 0
 input::placeholder,textarea::placeholder{color:var(--txt4)}
 .ig{position:relative}.ig i{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--txt3);font-size:16px;pointer-events:none}.ig input{padding-left:34px}
 .modal-overlay{position:fixed;inset:0;background:rgba(15,10,30,.6);display:flex;align-items:center;justify-content:center;z-index:1000;opacity:0;pointer-events:none;transition:opacity .22s;padding:14px}
-.modal-overlay.open{opacity:1;pointer-events:all}
+.modal-overlay.open{opacity:1;pointer-events:all;z-index:9999}
 .modal{background:var(--bg2);border-radius:var(--radius-lg);padding:24px;width:100%;max-width:500px;max-height:92vh;overflow-y:auto;transform:translateY(16px) scale(.98);transition:transform .22s;box-shadow:var(--shadow-lg)}
 .modal-overlay.open .modal{transform:translateY(0) scale(1)}
 .modal.lg{max-width:720px}.modal.xl{max-width:960px}.modal.sm{max-width:380px}
