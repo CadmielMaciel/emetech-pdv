@@ -3084,6 +3084,10 @@ async function loadProfile(user){
   const ok = await carregarEmpresaELoginCheck();
   if(!ok) return; // tela de bloqueio já foi exibida, interrompe o login
 
+  // Aplica marca/aparência e paleta salvas da empresa (Supabase)
+  await aplicarMarcasSalvas();
+  aplicarPaletaSalva();
+
   document.getElementById('ls').classList.add('hidden');
   await loadAll();
   initPlanos(); // inicializar planos após carregar dados
@@ -5078,35 +5082,6 @@ let MARCA = {
   empresa: {}
 };
 
-function renderAparencia() {
-  // Carrega dados salvos no localStorage
-  const saved = localStorage.getItem('emetech_marca');
-  if (saved) {
-    try { MARCA = { ...MARCA, ...JSON.parse(saved) }; } catch(e){}
-  }
-  // Atualiza previews com dados salvos
-  if (MARCA.logoLogin) atualizarPrevLogin(MARCA.logoLogin);
-  if (MARCA.logoSidebar) atualizarPrevSidebar(MARCA.logoSidebar);
-  if (MARCA.wmOS) atualizarPrevWM('os', MARCA.wmOS);
-  if (MARCA.wmRel) atualizarPrevWM('rel', MARCA.wmRel);
-  // Opacidade
-  const opOS = document.getElementById('wm-os-opacity');
-  const opRel = document.getElementById('wm-rel-opacity');
-  if (opOS) { opOS.value = MARCA.wmOsOpacity; document.getElementById('wm-os-opacity-val').textContent = MARCA.wmOsOpacity + '%'; }
-  if (opRel) { opRel.value = MARCA.wmRelOpacity; document.getElementById('wm-rel-opacity-val').textContent = MARCA.wmRelOpacity + '%'; }
-  // Dados empresa
-  const emp = MARCA.empresa || {};
-  ['nome','cnpj','tel','email','end','cid','site','rodape'].forEach(k => {
-    const el = document.getElementById('emp-' + k);
-    if (el && emp[k]) el.value = emp[k];
-  });
-  // Stats
-  const logos = (MARCA.logoLogin ? 1 : 0) + (MARCA.logoSidebar ? 1 : 0);
-  document.getElementById('ap-count-logos').textContent = logos + '/2';
-  const wms = (MARCA.wmOS ? 1 : 0) + (MARCA.wmRel ? 1 : 0);
-  document.getElementById('ap-count-wm').textContent = wms + '/2';
-}
-
 function triggerUpload(id) {
   document.getElementById('upload-' + id)?.click();
 }
@@ -5235,27 +5210,45 @@ function salvarAparencia() {
     site: document.getElementById('emp-site')?.value || '',
     rodape: document.getElementById('emp-rodape')?.value || ''
   };
-  try {
-    localStorage.setItem('emetech_marca', JSON.stringify(MARCA));
+  salvarMarcaSupabase(MARCA).then(ok => {
+    if (!ok) return;
     // Aplica logos no sistema ao vivo
     if (MARCA.logoLogin) atualizarLogoLoginReal(MARCA.logoLogin);
     if (MARCA.logoSidebar) atualizarLogoSidebarReal(MARCA.logoSidebar);
     document.getElementById('ap-last-update').textContent = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
     notify('✅ Aparência salva com sucesso!', 'success');
-  } catch(e) {
-    notify('Erro ao salvar (localStorage cheio?). Tente remover logos grandes.', 'error');
-  }
+  });
 }
 
-// Aplica marcas salvas ao carregar o sistema
-function aplicarMarcasSalvas() {
-  const saved = localStorage.getItem('emetech_marca');
-  if (!saved) return;
+// Grava o objeto MARCA em aparencia_config.config_marca (jsonb), por empresa
+async function salvarMarcaSupabase(marca) {
+  const empId = EID() || G.empresa?.id;
+  if (!empId) { notify('Não foi possível identificar a empresa.', 'error'); return false; }
+  const { error } = await db.from('aparencia_config')
+    .update({ config_marca: marca, updated_at: new Date().toISOString(), updated_by: G.profile?.id || null })
+    .eq('empresa_id', empId);
+  if (error) {
+    // Linha pode não existir ainda — tenta criar
+    const { error: insErr } = await db.from('aparencia_config').insert({ empresa_id: empId, config_marca: marca });
+    if (insErr) { notify('Erro ao salvar aparência: ' + insErr.message, 'error'); return false; }
+  }
+  return true;
+}
+
+// Aplica marcas salvas ao carregar o sistema (após login, quando G.empresa
+// já está disponível)
+async function aplicarMarcasSalvas() {
+  const empId = EID() || G.empresa?.id;
+  if (!empId) return;
+  const { data, error } = await db.from('aparencia_config').select('config_marca').eq('empresa_id', empId).maybeSingle();
+  if (error || !data?.config_marca) return;
   try {
-    const m = JSON.parse(saved);
-    MARCA = { ...MARCA, ...m };
-    if (m.logoLogin) atualizarLogoLoginReal(m.logoLogin);
-    if (m.logoSidebar) atualizarLogoSidebarReal(m.logoSidebar);
+    const m = data.config_marca;
+    if (m && Object.keys(m).length) {
+      MARCA = { ...MARCA, ...m };
+      if (m.logoLogin) atualizarLogoLoginReal(m.logoLogin);
+      if (m.logoSidebar) atualizarLogoSidebarReal(m.logoSidebar);
+    }
   } catch(e) {}
 }
 
@@ -7137,10 +7130,9 @@ function aplicarPaleta() {
   root.style.setProperty('--border2', c1 + '66');
   // Atualiza gradientes da sidebar via stylesheet
   updateSidebarGradient(c1, c2, dir, modo);
-  // Salva na paleta
-  const m = getMarca();
-  m.paleta = paletaAtual;
-  localStorage.setItem('emetech_marca', JSON.stringify(m));
+  // Salva na paleta (Supabase)
+  MARCA.paleta = paletaAtual;
+  salvarMarcaSupabase(MARCA);
   // Favicon dinâmico
   atualizarFavicon(c1, c2);
   notify('✅ Paleta aplicada com sucesso!', 'success');
@@ -7193,8 +7185,7 @@ function aplicarPaletaSalva() {
 }
 
 function renderAparencia() {
-  const saved = localStorage.getItem('emetech_marca');
-  if (saved) { try { MARCA = { ...MARCA, ...JSON.parse(saved) }; } catch(e){} }
+  // MARCA já foi carregada do Supabase em aplicarMarcasSalvas() no login.
   // Sincroniza dark mode toggle
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
   const dt = document.getElementById('dark-toggle-ap');
@@ -7630,7 +7621,7 @@ delProd = function(id) {
 
 // ── UTILITÁRIOS DE PDF ──────────────────────────────────
 function getMarca() {
-  try { return JSON.parse(localStorage.getItem('emetech_marca') || '{}'); } catch { return {}; }
+  return MARCA || {};
 }
 
 /* ── MÁSCARA CPF/CNPJ (NOVO) ──────────────────────────── */
@@ -9980,7 +9971,6 @@ function removerPIN(userId) {
 // Assim: login email/senha → autentica no Supabase → carrega todos os usuários → mostra Netflix.
 
 (async()=>{
-  aplicarMarcasSalvas(); // aplica logos/marcas salvas antes do login
   const {data:{session}}=await db.auth.getSession();
   if(session?.user)await loadProfile(session.user);
 })();
