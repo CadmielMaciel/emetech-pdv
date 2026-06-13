@@ -1133,6 +1133,7 @@ select option { background: var(--bg2); }
       <button class="tab-btn active" onclick="detTab('geral',this)">Geral</button>
       <button class="tab-btn" onclick="detTab('financeiro',this)">Financeiro</button>
       <button class="tab-btn" onclick="detTab('acesso',this)">Acesso</button>
+      <button class="tab-btn" onclick="detTab('marca',this)">Marca</button>
       <button class="tab-btn" onclick="detTab('updates',this)">Updates</button>
       <button class="tab-btn" onclick="detTab('bloqueio',this)">Bloqueio</button>
     </div>
@@ -1147,6 +1148,10 @@ select option { background: var(--bg2); }
     <!-- Aba Acesso -->
     <div id="det-tab-acesso" style="display:none">
       <div id="det-acesso-content"></div>
+    </div>
+    <!-- Aba Marca / Aparência -->
+    <div id="det-tab-marca" style="display:none">
+      <div id="det-marca-content"></div>
     </div>
     <!-- Aba Updates -->
     <div id="det-tab-updates" style="display:none">
@@ -2403,7 +2408,7 @@ function abrirDetalhes(id) {
 }
 
 async function detTab(tab, btn) {
-  ['geral','financeiro','acesso','updates','bloqueio'].forEach(t => {
+  ['geral','financeiro','acesso','marca','updates','bloqueio'].forEach(t => {
     document.getElementById('det-tab-' + t).style.display = t === tab ? '' : 'none';
   });
   document.querySelectorAll('#modal-detalhes .tab-btn').forEach(b => b.classList.remove('active'));
@@ -2505,6 +2510,9 @@ async function detTab(tab, btn) {
       <div id="acesso-usuarios-list" style="color:var(--txt3);text-align:center;padding:20px">Carregando...</div>
     `;
     renderUsuariosEmpresa(e.id);
+  } else if (tab === 'marca') {
+    document.getElementById('det-marca-content').innerHTML = '<div style="color:var(--txt3);text-align:center;padding:20px">Carregando...</div>';
+    await renderMarcaEmpresa(e.id);
   } else if (tab === 'updates') {
     const upds = G.updates.filter(u => u.empresa === e.id || u.empresa === 'global');
     document.getElementById('det-updates-content').innerHTML = `
@@ -2565,6 +2573,137 @@ function campo(label, valor) {
     <div style="font-size:13px;color:var(--txt)">${valor}</div>
   </div>`;
 }
+
+/* ── MARCA / APARÊNCIA POR EMPRESA (aba Marca) ───────────────────────── */
+
+async function getMarcaEmpresa(empresaId) {
+  const { data, error } = await db.from('aparencia_config').select('config_marca').eq('empresa_id', empresaId).maybeSingle();
+  if (error) { console.error(error); return {}; }
+  return data?.config_marca || {};
+}
+
+async function renderMarcaEmpresa(empresaId) {
+  const marca = await getMarcaEmpresa(empresaId);
+  const emp = marca.empresa || {};
+  const paleta = marca.paleta || { c1: '#7C3AED', c2: '#5B47E0' };
+
+  document.getElementById('det-marca-content').innerHTML = `
+    <div style="padding:12px 14px;background:var(--pri-light);border-radius:10px;border:1px solid rgba(124,58,237,.3);margin-bottom:18px">
+      <div style="font-size:12px;font-weight:700;color:var(--pri);margin-bottom:4px"><i class="ti ti-palette"></i> Marca da empresa</div>
+      <div style="font-size:12.5px;color:var(--txt2)">Configure aqui a marca/aparência que essa empresa verá no <code style="background:var(--bg3);padding:1px 5px;border-radius:4px">index.html</code> — logos, cores e dados usados em PDFs/relatórios.</div>
+    </div>
+
+    <div class="ms" style="margin-top:0">Logos</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px">
+      <div>
+        <div class="lbl">Logo da tela de login</div>
+        <div id="me-prev-login" style="width:100%;height:90px;border:1.5px dashed var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;overflow:hidden;margin-bottom:8px;background:var(--bg3)">
+          ${marca.logoLogin ? `<img src="${marca.logoLogin}" style="max-width:100%;max-height:100%;object-fit:contain">` : '<i class="ti ti-photo" style="font-size:24px;color:var(--txt4)"></i>'}
+        </div>
+        <input type="file" id="me-upload-login" accept="image/*" style="display:none" onchange="meHandleUpload(event,'logoLogin')">
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-out btn-xs" onclick="document.getElementById('me-upload-login').click()"><i class="ti ti-upload"></i> Enviar</button>
+          ${marca.logoLogin ? `<button class="btn btn-out btn-xs" onclick="meRemoverLogo('logoLogin')"><i class="ti ti-trash"></i></button>` : ''}
+        </div>
+      </div>
+      <div>
+        <div class="lbl">Logo do menu lateral</div>
+        <div id="me-prev-sidebar" style="width:100%;height:90px;border:1.5px dashed var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;overflow:hidden;margin-bottom:8px;background:var(--bg3)">
+          ${marca.logoSidebar ? `<img src="${marca.logoSidebar}" style="max-width:100%;max-height:100%;object-fit:contain">` : '<i class="ti ti-photo" style="font-size:24px;color:var(--txt4)"></i>'}
+        </div>
+        <input type="file" id="me-upload-sidebar" accept="image/*" style="display:none" onchange="meHandleUpload(event,'logoSidebar')">
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-out btn-xs" onclick="document.getElementById('me-upload-sidebar').click()"><i class="ti ti-upload"></i> Enviar</button>
+          ${marca.logoSidebar ? `<button class="btn btn-out btn-xs" onclick="meRemoverLogo('logoSidebar')"><i class="ti ti-trash"></i></button>` : ''}
+        </div>
+      </div>
+    </div>
+
+    <div class="ms">Paleta de cores</div>
+    <div style="display:flex;gap:16px;align-items:center;margin-bottom:18px">
+      <div>
+        <div class="lbl">Cor primária</div>
+        <input type="color" id="me-cor1" value="${paleta.c1 || '#7C3AED'}" style="width:60px;height:36px;border-radius:8px;border:1px solid var(--border);cursor:pointer">
+      </div>
+      <div>
+        <div class="lbl">Cor secundária</div>
+        <input type="color" id="me-cor2" value="${paleta.c2 || '#5B47E0'}" style="width:60px;height:36px;border-radius:8px;border:1px solid var(--border);cursor:pointer">
+      </div>
+    </div>
+
+    <div class="ms">Dados da empresa (para PDFs/relatórios)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px">
+      <div class="fg"><label class="lbl">Nome / Razão Social</label><input type="text" id="me-emp-nome" value="${emp.nome||''}"></div>
+      <div class="fg"><label class="lbl">CNPJ/CPF</label><input type="text" id="me-emp-cnpj" value="${emp.cnpj||''}"></div>
+      <div class="fg"><label class="lbl">Telefone</label><input type="text" id="me-emp-tel" value="${emp.tel||''}"></div>
+      <div class="fg"><label class="lbl">E-mail</label><input type="text" id="me-emp-email" value="${emp.email||''}"></div>
+      <div class="fg" style="grid-column:1/-1"><label class="lbl">Endereço</label><input type="text" id="me-emp-end" value="${emp.end||''}"></div>
+      <div class="fg"><label class="lbl">Cidade/UF</label><input type="text" id="me-emp-cid" value="${emp.cid||''}"></div>
+      <div class="fg"><label class="lbl">Site</label><input type="text" id="me-emp-site" value="${emp.site||''}"></div>
+      <div class="fg" style="grid-column:1/-1"><label class="lbl">Rodapé (recibos/relatórios)</label><input type="text" id="me-emp-rodape" value="${emp.rodape||''}"></div>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end">
+      <button class="btn btn-pri" onclick="salvarMarcaEmpresaAdmin('${empresaId}')"><i class="ti ti-check"></i> Salvar marca</button>
+    </div>
+  `;
+  window._meMarcaAtual = marca; // cache para uploads/remover logo
+}
+
+function meHandleUpload(ev, campo) {
+  const file = ev.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    window._meMarcaAtual = window._meMarcaAtual || {};
+    window._meMarcaAtual[campo] = reader.result;
+    const previewId = campo === 'logoLogin' ? 'me-prev-login' : 'me-prev-sidebar';
+    document.getElementById(previewId).innerHTML = `<img src="${reader.result}" style="max-width:100%;max-height:100%;object-fit:contain">`;
+  };
+  reader.readAsDataURL(file);
+}
+
+function meRemoverLogo(campo) {
+  window._meMarcaAtual = window._meMarcaAtual || {};
+  window._meMarcaAtual[campo] = null;
+  const previewId = campo === 'logoLogin' ? 'me-prev-login' : 'me-prev-sidebar';
+  document.getElementById(previewId).innerHTML = '<i class="ti ti-photo" style="font-size:24px;color:var(--txt4)"></i>';
+}
+
+async function salvarMarcaEmpresaAdmin(empresaId) {
+  const marca = window._meMarcaAtual || {};
+  marca.paleta = {
+    ...(marca.paleta||{}),
+    c1: document.getElementById('me-cor1').value,
+    c2: document.getElementById('me-cor2').value,
+    modo: marca.paleta?.modo || 'gradiente',
+    dir: marca.paleta?.dir || '135deg',
+  };
+  marca.empresa = {
+    nome: document.getElementById('me-emp-nome').value,
+    cnpj: document.getElementById('me-emp-cnpj').value,
+    tel: document.getElementById('me-emp-tel').value,
+    email: document.getElementById('me-emp-email').value,
+    end: document.getElementById('me-emp-end').value,
+    cid: document.getElementById('me-emp-cid').value,
+    site: document.getElementById('me-emp-site').value,
+    rodape: document.getElementById('me-emp-rodape').value,
+  };
+
+  setLoad(true);
+  const { error } = await db.from('aparencia_config')
+    .update({ config_marca: marca, updated_at: new Date().toISOString() })
+    .eq('empresa_id', empresaId);
+  setLoad(false);
+
+  if (error) {
+    // Tenta criar a linha se não existir
+    const { error: insErr } = await db.from('aparencia_config').insert({ empresa_id: empresaId, config_marca: marca });
+    if (insErr) { notify('Erro ao salvar marca: ' + insErr.message, 'error'); return; }
+  }
+  notify('✅ Marca salva com sucesso!', 'success');
+}
+
 
 /* ── GESTÃO DE USUÁRIOS DA EMPRESA (aba Acesso) ──────────────────────── */
 
