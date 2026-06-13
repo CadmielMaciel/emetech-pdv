@@ -7785,11 +7785,12 @@ function pdfBase({ titulo, numero, tipo, conteudo, assinatura, wmSrc, wmOp }) {
 /* ── NETFLIX SLOTS EDITÁVEIS ───────────────────────── */
 .nf-slot { display:flex;flex-direction:column;align-items:center;gap:10px;position:relative;cursor:pointer;border-radius:16px;padding:8px;transition:outline .15s,background .15s;outline:3px solid transparent; }
 .nf-slot-edit-link {
-  margin-top:6px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;
-  background:rgba(0,0,0,.35);border:1.5px solid var(--pri);color:var(--pri);
+  position:absolute;top:6px;right:6px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;
+  background:var(--pri);border:none;color:#fff;
   border-radius:50%;cursor:pointer;transition:all .15s;padding:0;
+  box-shadow:0 4px 12px rgba(0,0,0,.3);z-index:5;
 }
-.nf-slot-edit-link:hover { background:rgba(0,0,0,.55);color:#fff;border-color:var(--pri); }
+.nf-slot-edit-link:hover { background:var(--pri-dark);transform:scale(1.08); }
 .nf-slot-edit-link i { font-size:14px; }
 .nf-slot-vazio .nf-avatar {
   background:rgba(255,255,255,.06) !important;
