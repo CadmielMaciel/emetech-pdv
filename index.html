@@ -7547,17 +7547,17 @@ function removerPinSlot(userId) {
 function limparSlotDireto(slotNum) {
   const slots = getSlotsConfig();
   const u = G.usuarios.find(x => x.id === slots['slot'+slotNum]);
-  confirmAct(`Remover do slot ${slotNum}`, `Remover "${u?.nome}" do slot ${slotNum}?`, () => {
+  confirmAct(`Remover do slot ${slotNum}`, `Remover "${u?.nome}" do slot ${slotNum}?`, async () => {
     slots['slot'+slotNum] = null;
-    saveSlotsConfig(slots);
+    await saveSlotsConfig(slots);
     renderSlotsPreview();
     notify(`Slot ${slotNum} removido.`, 'info');
   });
 }
 
 function resetarTodosSlots() {
-  confirmAct('Resetar todos os slots', 'Isso vai limpar os 3 slots da tela inicial. Continuar?', () => {
-    saveSlotsConfig({ slot1:null, slot2:null, slot3:null });
+  confirmAct('Resetar todos os slots', 'Isso vai limpar os 3 slots da tela inicial. Continuar?', async () => {
+    await saveSlotsConfig({ slot1:null, slot2:null, slot3:null });
     renderSlotsPreview();
     notify('Slots resetados.', 'info');
   });
@@ -9457,13 +9457,18 @@ async function removePin(userId) { return setPin(userId, null); }
    Admin Master (seu perfil) sempre aparece separado.
    ─────────────────────────────────────────────────── */
 
-// Carrega/salva configuração dos slots
+// Slots da tela Netflix — agora em empresas.netflix_slots (Supabase),
+// compartilhado entre dispositivos da mesma empresa.
 function getSlotsConfig() {
-  try { return JSON.parse(localStorage.getItem('emetech_nf_slots') || 'null') || { slot1:null, slot2:null, slot3:null }; }
-  catch { return { slot1:null, slot2:null, slot3:null }; }
+  return G.empresa?.netflix_slots || { slot1:null, slot2:null, slot3:null };
 }
-function saveSlotsConfig(cfg) {
-  localStorage.setItem('emetech_nf_slots', JSON.stringify(cfg));
+async function saveSlotsConfig(cfg) {
+  if (G.empresa) G.empresa.netflix_slots = cfg;
+  const empId = EID() || G.empresa?.id;
+  if (!empId) return false;
+  const { error } = await db.from('empresas').update({ netflix_slots: cfg }).eq('id', empId);
+  if (error) { notify('Erro ao salvar configuração de perfis: ' + error.message, 'error'); return false; }
+  return true;
 }
 
 // Verifica se o usuário atual pode editar slots
@@ -9675,7 +9680,7 @@ function selecionarUsuarioSlot(userId) {
   }
 }
 
-function confirmarSlot() {
+async function confirmarSlot() {
   if (!_slotAtual || !_slotUserSelecionado) {
     fecharSlotModal(); return;
   }
@@ -9687,7 +9692,7 @@ function confirmarSlot() {
     }
   });
   slots['slot'+_slotAtual] = _slotUserSelecionado;
-  saveSlotsConfig(slots);
+  await saveSlotsConfig(slots);
   closeModal('modal-slot-config');
   _slotAtual = null;
   const u = G.usuarios.find(x => x.id === _slotUserSelecionado);
@@ -9696,11 +9701,11 @@ function confirmarSlot() {
   notify(`✅ ${u?.nome || 'Usuário'} adicionado ao slot!`, 'success');
 }
 
-function limparSlot() {
+async function limparSlot() {
   if (!_slotAtual) return;
   const slots = getSlotsConfig();
   slots['slot'+_slotAtual] = null;
-  saveSlotsConfig(slots);
+  await saveSlotsConfig(slots);
   const num = _slotAtual;
   _slotAtual = null;
   closeModal('modal-slot-config');
