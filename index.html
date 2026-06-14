@@ -903,6 +903,11 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
           <input type="date" id="hf-ate" onchange="renderOSHist()">
           <select id="hf-tec" onchange="renderOSHist()" style="min-width:150px"><option value="">Todos técnicos</option></select>
           <select id="hf-cli" onchange="renderOSHist()" style="min-width:150px"><option value="">Todos clientes</option></select>
+          <select id="hf-status" onchange="renderOSHist()" style="min-width:140px">
+            <option value="">Entregue + Cancelada</option>
+            <option value="Entregue">Entregue</option>
+            <option value="Cancelada">Cancelada</option>
+          </select>
           <button class="btn btn-out btn-sm" onclick="limparFiltrosOS()"><i class="ti ti-x"></i>Limpar</button>
         </div>
         <div class="card" style="padding:0"><div class="tw"><table>
@@ -4327,8 +4332,8 @@ async function verHistoricoPreco(id){
 
 /* ── OS ──────────────────────────────────────────────── */
 const ON={'Aguardando':'Em Análise','Em Análise':'Em Reparo','Em Reparo':'Aguardando Peça','Aguardando Peça':'Pronto',Pronto:'Entregue'};
-const OP={Aguardando:8,'Em Análise':25,'Em Reparo':55,'Aguardando Peça':45,Pronto:90,Entregue:100};
-const OC={Aguardando:'tag-amb','Em Análise':'tag-blu','Em Reparo':'tag-pur','Aguardando Peça':'tag-red',Pronto:'tag-grn',Entregue:'tag-gry'};
+const OP={Aguardando:8,'Em Análise':25,'Em Reparo':55,'Aguardando Peça':45,Pronto:90,Entregue:100,Cancelada:0};
+const OC={Aguardando:'tag-amb','Em Análise':'tag-blu','Em Reparo':'tag-pur','Aguardando Peça':'tag-red',Pronto:'tag-grn',Entregue:'tag-gry',Cancelada:'tag-red'};
 
 function popTecSel(){
   const sel=document.getElementById('os-tec');if(!sel)return;
@@ -4441,6 +4446,10 @@ function detOS(id){
             <i class="ti ti-edit"></i>
             <span>Editar</span>
           </div>
+          ${(o.status!=='Entregue'&&o.status!=='Cancelada')?`<div class="os-qa-btn danger" onclick="abrirCancelarOS('${o.id}')">
+            <i class="ti ti-ban"></i>
+            <span>Cancelar OS</span>
+          </div>`:''}
         </div>
 
         <!-- Valor e garantia -->
@@ -4541,6 +4550,29 @@ async function advOS(id,next){
   notify(o.numero+' → '+next,next==='Entregue'?'success':'info');
 }
 
+// Abre prompt para motivo do cancelamento e confirma cancelamento da OS
+function abrirCancelarOS(id){
+  const o=G.os.find(x=>x.id===id);if(!o)return;
+  const motivo=prompt('Informe o motivo do cancelamento da OS '+o.numero+':');
+  if(motivo===null)return; // usuário cancelou o prompt
+  if(!motivo.trim()){notify('Informe um motivo para cancelar a OS.','error');return;}
+  confirmAct('Cancelar OS', `Cancelar a OS ${o.numero}? Esta ação não pode ser desfeita.`, ()=>cancelarOS(id,motivo.trim()), 'Cancelar OS');
+}
+
+async function cancelarOS(id,motivo){
+  const o=G.os.find(x=>x.id===id);if(!o)return;
+  const tl=[...(o.timeline||[]),{status:'Cancelada',data:new Date().toISOString(),motivo}];
+  const pl={status:'Cancelada',progresso:0,timeline:tl,atualizado_em:new Date().toISOString(),data_conclusao:new Date().toISOString(),motivo_cancelamento:motivo};
+  setLoad(true);
+  const {error}=await db.from('ordens_servico').update(pl).eq('id',id);
+  setLoad(false);
+  if(error){notify('Erro ao cancelar OS: '+error.message,'error');return;}
+  Object.assign(o,pl);
+  G.os=G.os.filter(x=>x.id!==id);
+  closeModal('modal-os-det');renderOSList();renderDashboard();
+  notify(o.numero+' cancelada.','info');
+}
+
 /* ── HISTÓRICO OS ────────────────────────────────────── */
 function popOSFiltros(){
   const t=document.getElementById('hf-tec');const c=document.getElementById('hf-cli');
@@ -4553,8 +4585,11 @@ async function renderOSHist(){
   const ate=document.getElementById('hf-ate')?.value;
   const tec=document.getElementById('hf-tec')?.value;
   const cli=document.getElementById('hf-cli')?.value;
+  const statusFiltro=document.getElementById('hf-status')?.value;
   setLoad(true);
-  let q=db.from('ordens_servico').select('*').eq('status','Entregue').order('criado_em',{ascending:false});
+  let q=db.from('ordens_servico').select('*').order('criado_em',{ascending:false});
+  if(statusFiltro)q=q.eq('status',statusFiltro);
+  else q=q.in('status',['Entregue','Cancelada']);
   if(de)q=q.gte('criado_em',de+'T00:00:00');
   if(ate)q=q.lte('criado_em',ate+'T23:59:59');
   if(tec)q=q.eq('tecnico_nome',tec);
@@ -4562,7 +4597,7 @@ async function renderOSHist(){
   const {data}=await q.limit(200);
   setLoad(false);
   const list=data||[];
-  document.getElementById('os-hist-table').innerHTML=list.length===0?'<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--txt3)">Nenhuma OS concluída</td></tr>':list.map(o=>`<tr>
+  document.getElementById('os-hist-table').innerHTML=list.length===0?'<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--txt3)">Nenhuma OS encontrada</td></tr>':list.map(o=>`<tr>
     <td style="font-weight:700;color:var(--pri)">${o.numero}</td>
     <td>${o.cliente_nome}</td>
     <td>${o.aparelho}</td>
@@ -4570,11 +4605,11 @@ async function renderOSHist(){
     <td style="font-size:11.5px;color:var(--txt3)">${o.data_conclusao?fmtD(o.data_conclusao):'—'}</td>
     <td>${o.tecnico_nome||'—'}</td>
     <td style="font-weight:700;color:var(--pri)">${fmt(o.total)}</td>
-    <td><span class="tag tag-grn">Entregue</span></td>
+    <td><span class="tag ${o.status==='Cancelada'?'tag-red':'tag-grn'}">${o.status}</span></td>
   </tr>`).join('');
 }
 
-function limparFiltrosOS(){['hf-de','hf-ate'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});document.getElementById('hf-tec').value='';document.getElementById('hf-cli').value='';renderOSHist();}
+function limparFiltrosOS(){['hf-de','hf-ate'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});document.getElementById('hf-tec').value='';document.getElementById('hf-cli').value='';if(document.getElementById('hf-status'))document.getElementById('hf-status').value='';renderOSHist();}
 
 /* ── RELATÓRIOS ──────────────────────────────────────── */
 // Aplica filtro de período (de/ate) às vendas (exclui canceladas)
@@ -8691,6 +8726,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
 .os-card-mobile.status-reparo::before    { background: var(--warn); }
 .os-card-mobile.status-pronto::before    { background: var(--success); }
 .os-card-mobile.status-entregue::before  { background: var(--border); }
+.os-card-mobile.status-cancelada::before { background: var(--danger); }
 
 .os-card-num { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--txt3); }
 .os-card-aparelho { font-weight: 700; font-size: 15px; color: var(--txt); margin: 2px 0; }
@@ -8822,6 +8858,8 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
 .os-qa-btn.warn i, .os-qa-btn.warn span { color: var(--warn); }
 .os-qa-btn.wpp { border-color: #25D366; background: rgba(37,211,102,.08); }
 .os-qa-btn.wpp i, .os-qa-btn.wpp span { color: #25D366; }
+.os-qa-btn.danger { border-color: var(--danger); background: rgba(239,68,68,.08); }
+.os-qa-btn.danger i, .os-qa-btn.danger span { color: var(--danger); }
 
 /* Timeline mobile — compacta */
 .tl-mobile { display: flex; gap: 0; overflow-x: auto; padding: 4px 0 8px; }
@@ -11077,6 +11115,7 @@ function renderOSMobile() {
     'Em Reparo':  'status-reparo',
     'Pronto':     'status-pronto',
     'Entregue':   'status-entregue',
+    'Cancelada':  'status-cancelada',
   };
   const statusCor = {
     'Aguardando': 'tag-gry',
@@ -11084,6 +11123,7 @@ function renderOSMobile() {
     'Em Reparo':  'tag-amb',
     'Pronto':     'tag-grn',
     'Entregue':   'tag-gry',
+    'Cancelada':  'tag-red',
   };
 
   if (lista.length === 0) {
@@ -11679,7 +11719,7 @@ function gerarTermoEntrada() {
   const { os, m, emp, cli, tec, usaAssin, dual, hoje, logoHtml } = getDocDados();
   const cor = m.paleta?.c1 || '#5B47E0';
 
-  const statusCor = { 'Aguardando':'#f59e0b','Em Análise':'#3b82f6','Em Reparo':'#8b5cf6','Pronto':'#10b981','Entregue':'#6b7280' };
+  const statusCor = { 'Aguardando':'#f59e0b','Em Análise':'#3b82f6','Em Reparo':'#8b5cf6','Pronto':'#10b981','Entregue':'#6b7280','Cancelada':'#ef4444' };
 
   const corpo = `
     <div class="doc-header">
@@ -12071,7 +12111,7 @@ function gerarOrdemServicoPDF() {
   const { os, m, emp, cli, tec, usaAssin, dual, hoje, logoHtml } = getDocDados();
   const cor = m.paleta?.c1 || '#5B47E0';
 
-  const statusCor = { 'Aguardando':'#f59e0b','Em Análise':'#3b82f6','Em Reparo':'#8b5cf6','Pronto':'#10b981','Entregue':'#6b7280' };
+  const statusCor = { 'Aguardando':'#f59e0b','Em Análise':'#3b82f6','Em Reparo':'#8b5cf6','Pronto':'#10b981','Entregue':'#6b7280','Cancelada':'#ef4444' };
 
   const corpo = `
     <div class="doc-header">
