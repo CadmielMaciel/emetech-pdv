@@ -2330,25 +2330,28 @@ async function salvarEmpresa() {
   }
 }
 
-function excluirEmpresa(id) {
+async function excluirEmpresa(id) {
   const e = G.empresas.find(x => x.id === id);
-  if (!e) return;
-  confirmAct('Excluir empresa', `Excluir "${e.nome}" permanentemente? Esta ação não pode ser desfeita.`, async () => {
-    setLoad(true);
-    try {
-      await excluirEmpresaDb(id);
-      addLog('excluida', `Empresa "${e.nome}" excluída`, e.nome);
-      notify(`Empresa "${e.nome}" excluída.`, 'info');
-      await refreshDados();
-      renderEmpresas();
-      await renderDashboard();
-      populateSelects();
-    } catch (err) {
-      notify('Erro ao excluir empresa: ' + (err.message || ''), 'error');
-    } finally {
-      setLoad(false);
-    }
-  }, 'Excluir');
+  if (!e) { notify('Empresa não encontrada na lista local.', 'error'); return; }
+
+  const ok = confirm(`Excluir "${e.nome}" permanentemente?\n\nIsso vai apagar TODOS os dados dessa empresa (produtos, clientes, vendas, OS, financeiro, usuários...).\n\nEsta ação NÃO PODE ser desfeita.`);
+  if (!ok) return;
+
+  setLoad(true);
+  try {
+    await excluirEmpresaDb(id);
+    addLog('excluida', `Empresa "${e.nome}" excluída`, e.nome);
+    notify(`Empresa "${e.nome}" excluída.`, 'info');
+    await refreshDados();
+    renderEmpresas();
+    await renderDashboard();
+    populateSelects();
+  } catch (err) {
+    console.error('Erro ao excluir empresa:', err);
+    notify('Erro ao excluir empresa: ' + (err.message || String(err)), 'error');
+  } finally {
+    setLoad(false);
+  }
 }
 
 /* ── TOGGLE BLOQUEIO ── */
