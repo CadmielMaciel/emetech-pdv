@@ -1447,7 +1447,7 @@ function mapEmpresaToDb(e) {
 }
 
 async function getEmpresas() {
-  const { data, error } = await db.from('empresas').select('*').order('created_at', { ascending:false });
+  const { data, error } = await db.from('empresas').select('*').eq('is_system', false).order('created_at', { ascending:false });
   if (error) { console.error(error); notify('Erro ao carregar empresas: ' + error.message, 'error'); return []; }
   return (data || []).map(mapEmpresaFromDb);
 }
