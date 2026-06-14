@@ -1455,8 +1455,11 @@ async function saveEmpresa(empresa) {
   }
 }
 async function excluirEmpresaDb(id) {
-  const { error } = await db.from('empresas').delete().eq('id', id);
+  const { data, error } = await db.from('empresas').delete().eq('id', id).select('id');
   if (error) throw error;
+  if (!data || data.length === 0) {
+    throw new Error('Nenhuma linha excluída. Verifique permissões (RLS) ou se a empresa ainda existe.');
+  }
 }
 
 // Cria o usuário de login da empresa (Supabase Auth + public.usuarios) via
