@@ -587,6 +587,27 @@ select option { background: var(--bg2); }
 .feed-dot.gold  { background: var(--gold); }
 .feed-time { font-size: 11px; color: var(--txt3); margin-top: 2px; }
 
+/* ── ABA MARCA (aparência por empresa) ── */
+.palette-preset {
+  width: 36px; height: 36px; border-radius: 10px; cursor: pointer;
+  border: 2px solid transparent; transition: all .15s;
+}
+.palette-preset:hover { transform: scale(1.08); }
+.palette-preset.active { border-color: var(--txt); box-shadow: 0 0 0 2px var(--bg2), 0 0 0 4px var(--pri); }
+.grad-dir-btn {
+  padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--bg3); color: var(--txt2); font-size: 11.5px; font-weight: 600;
+  cursor: pointer; transition: all .15s;
+}
+.grad-dir-btn.active, .grad-dir-btn:hover { background: var(--pri-light); border-color: var(--pri); color: var(--pri); }
+.ap-upload-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; padding: 9px; border-radius: 9px; border: 1px solid var(--border);
+  background: var(--bg3); color: var(--txt2); font-size: 12.5px; font-weight: 600;
+  cursor: pointer; transition: all .15s;
+}
+.ap-upload-btn:hover { background: var(--pri-light); border-color: var(--pri); color: var(--pri); }
+
 /* Responsive */
 @media (max-width: 768px) {
   .sidebar { display: none; }
@@ -2576,6 +2597,18 @@ function campo(label, valor) {
 
 /* ── MARCA / APARÊNCIA POR EMPRESA (aba Marca) ───────────────────────── */
 
+/* ── PRESETS DE COR (mesmos do index.html) ── */
+const ME_PRESETS = {
+  roxo:     { c1:'#5B47E0', c2:'#7C3AED', dark:'#2D1B8E', light:'#EDE9FF' },
+  azul:     { c1:'#1D4ED8', c2:'#3B82F6', dark:'#1E3A8A', light:'#EFF6FF' },
+  verde:    { c1:'#059669', c2:'#10B981', dark:'#064E3B', light:'#ECFDF5' },
+  laranja:  { c1:'#D97706', c2:'#F59E0B', dark:'#78350F', light:'#FFFBEB' },
+  vermelho: { c1:'#DC2626', c2:'#EF4444', dark:'#7F1D1D', light:'#FEF2F2' },
+  rosa:     { c1:'#BE185D', c2:'#EC4899', dark:'#831843', light:'#FDF2F8' },
+  ciano:    { c1:'#0E7490', c2:'#06B6D4', dark:'#0C4A6E', light:'#ECFEFF' },
+  escuro:   { c1:'#111827', c2:'#374151', dark:'#030712', light:'#F9FAFB' },
+};
+
 async function getMarcaEmpresa(empresaId) {
   const { data, error } = await db.from('aparencia_config').select('config_marca').eq('empresa_id', empresaId).maybeSingle();
   if (error) { console.error(error); return {}; }
@@ -2585,49 +2618,145 @@ async function getMarcaEmpresa(empresaId) {
 async function renderMarcaEmpresa(empresaId) {
   const marca = await getMarcaEmpresa(empresaId);
   const emp = marca.empresa || {};
-  const paleta = marca.paleta || { c1: '#7C3AED', c2: '#5B47E0' };
+  const paleta = marca.paleta || { c1:'#5B47E0', c2:'#7C3AED', dir:'135deg', modo:'gradiente' };
+  window._meMarca = marca;
+  window._mePaleta = { ...paleta };
+
+  const wmOsOp = marca.wmOsOpacity ?? 12;
+  const wmRelOp = marca.wmRelOpacity ?? 12;
 
   document.getElementById('det-marca-content').innerHTML = `
     <div style="padding:12px 14px;background:var(--pri-light);border-radius:10px;border:1px solid rgba(124,58,237,.3);margin-bottom:18px">
       <div style="font-size:12px;font-weight:700;color:var(--pri);margin-bottom:4px"><i class="ti ti-palette"></i> Marca da empresa</div>
-      <div style="font-size:12.5px;color:var(--txt2)">Configure aqui a marca/aparência que essa empresa verá no <code style="background:var(--bg3);padding:1px 5px;border-radius:4px">index.html</code> — logos, cores e dados usados em PDFs/relatórios.</div>
+      <div style="font-size:12.5px;color:var(--txt2)">Configure aqui a marca/aparência que essa empresa verá no <code style="background:var(--bg3);padding:1px 5px;border-radius:4px">index.html</code> — logos, cores, marcas d'água e dados usados em PDFs/relatórios.</div>
     </div>
 
-    <div class="ms" style="margin-top:0">Logos</div>
+    <!-- PALETA DE CORES -->
+    <div class="ms" style="margin-top:0">Paleta de Cores</div>
+    <div style="margin-bottom:10px">
+      <div class="lbl" style="margin-bottom:8px">Temas Prontos</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${Object.entries(ME_PRESETS).map(([nome,p]) => `
+          <div class="palette-preset ${paleta.c1===p.c1 && paleta.c2===p.c2 ? 'active':''}" data-preset="${nome}"
+            style="background:linear-gradient(135deg,${p.c1},${p.c2})" onclick="mePreset('${nome}',this)" title="${nome}"></div>
+        `).join('')}
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:18px">
+      <div>
+        <div style="display:flex;gap:14px;margin-bottom:10px">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12.5px;font-weight:600;color:var(--txt2)">
+            <input type="radio" name="me-color-mode" value="solido" id="me-cm-solido" ${paleta.modo==='solido'?'checked':''} onchange="meToggleColorMode()" style="width:auto;cursor:pointer"> Cor Sólida
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12.5px;font-weight:600;color:var(--txt2)">
+            <input type="radio" name="me-color-mode" value="gradiente" id="me-cm-grad" ${paleta.modo!=='solido'?'checked':''} onchange="meToggleColorMode()" style="width:auto;cursor:pointer"> Gradiente
+          </label>
+        </div>
+        <div class="fg" style="margin-bottom:10px">
+          <div style="display:flex;gap:10px;align-items:center">
+            <input type="color" id="me-cor1" value="${paleta.c1||'#5B47E0'}" style="width:44px;height:44px;padding:2px;border-radius:9px;border:2px solid var(--border);cursor:pointer;background:var(--bg2)" oninput="mePreviewPaleta()">
+            <div>
+              <div style="font-size:12.5px;font-weight:600;color:var(--txt)">Cor Principal</div>
+              <div id="me-cor1-hex" style="font-size:11px;font-family:monospace;color:var(--txt3)">${paleta.c1||'#5B47E0'}</div>
+            </div>
+          </div>
+        </div>
+        <div id="me-grad-fields" class="fg" style="margin-bottom:0;${paleta.modo==='solido'?'display:none':''}">
+          <div style="display:flex;gap:10px;align-items:center">
+            <input type="color" id="me-cor2" value="${paleta.c2||'#7C3AED'}" style="width:44px;height:44px;padding:2px;border-radius:9px;border:2px solid var(--border);cursor:pointer;background:var(--bg2)" oninput="mePreviewPaleta()">
+            <div>
+              <div style="font-size:12.5px;font-weight:600;color:var(--txt)">Cor do Gradiente</div>
+              <div id="me-cor2-hex" style="font-size:11px;font-family:monospace;color:var(--txt3)">${paleta.c2||'#7C3AED'}</div>
+            </div>
+          </div>
+          <div style="margin-top:10px">
+            <div class="lbl" style="margin-bottom:6px">Direção do Gradiente</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <button class="grad-dir-btn ${paleta.dir==='135deg'||!paleta.dir?'active':''}" data-dir="135deg" onclick="meSetGradDir('135deg',this)">↗ Diagonal</button>
+              <button class="grad-dir-btn ${paleta.dir==='90deg'?'active':''}" data-dir="90deg" onclick="meSetGradDir('90deg',this)">→ Horizontal</button>
+              <button class="grad-dir-btn ${paleta.dir==='180deg'?'active':''}" data-dir="180deg" onclick="meSetGradDir('180deg',this)">↓ Vertical</button>
+              <button class="grad-dir-btn ${paleta.dir==='45deg'?'active':''}" data-dir="45deg" onclick="meSetGradDir('45deg',this)">↙ Inverso</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="lbl" style="margin-bottom:10px">Preview em Tempo Real</div>
+        <div style="border-radius:12px;overflow:hidden;border:1px solid var(--border)">
+          <div id="me-prev-sidebar" style="padding:12px;display:flex;align-items:center;gap:8px"></div>
+          <div style="padding:10px;background:var(--bg2)">
+            <div id="me-prev-btn" style="color:#fff;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;text-align:center">Botão Primário</div>
+            <div style="margin-top:7px;display:flex;gap:6px">
+              <div id="me-prev-tag" style="padding:3px 8px;border-radius:5px;font-size:11px;font-weight:700">Tag</div>
+              <div id="me-prev-badge" style="color:#fff;padding:3px 8px;border-radius:5px;font-size:11px;font-weight:700">Badge</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LOGOS -->
+    <div class="ms">Logos</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px">
       <div>
         <div class="lbl">Logo da tela de login</div>
         <div id="me-prev-login" style="width:100%;height:90px;border:1.5px dashed var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;overflow:hidden;margin-bottom:8px;background:var(--bg3)">
-          ${marca.logoLogin ? `<img src="${marca.logoLogin}" style="max-width:100%;max-height:100%;object-fit:contain">` : '<i class="ti ti-photo" style="font-size:24px;color:var(--txt4)"></i>'}
+          ${marca.logoLogin ? `<img src="${marca.logoLogin}" style="max-width:100%;max-height:100%;object-fit:contain">` : '<i class="ti ti-photo" style="font-size:24px;color:var(--txt3)"></i>'}
         </div>
         <input type="file" id="me-upload-login" accept="image/*" style="display:none" onchange="meHandleUpload(event,'logoLogin')">
         <div style="display:flex;gap:6px">
-          <button class="btn btn-out btn-xs" onclick="document.getElementById('me-upload-login').click()"><i class="ti ti-upload"></i> Enviar</button>
-          ${marca.logoLogin ? `<button class="btn btn-out btn-xs" onclick="meRemoverLogo('logoLogin')"><i class="ti ti-trash"></i></button>` : ''}
+          <label class="ap-upload-btn" style="flex:1" onclick="document.getElementById('me-upload-login').click()"><i class="ti ti-upload"></i> Enviar</label>
+          ${marca.logoLogin ? `<button class="btn btn-out btn-xs" onclick="meRemoverLogo('logoLogin')" title="Remover"><i class="ti ti-trash"></i></button>` : ''}
         </div>
       </div>
       <div>
         <div class="lbl">Logo do menu lateral</div>
-        <div id="me-prev-sidebar" style="width:100%;height:90px;border:1.5px dashed var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;overflow:hidden;margin-bottom:8px;background:var(--bg3)">
-          ${marca.logoSidebar ? `<img src="${marca.logoSidebar}" style="max-width:100%;max-height:100%;object-fit:contain">` : '<i class="ti ti-photo" style="font-size:24px;color:var(--txt4)"></i>'}
+        <div id="me-prev-sidebar-logo" style="width:100%;height:90px;border:1.5px dashed var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;overflow:hidden;margin-bottom:8px;background:var(--bg3)">
+          ${marca.logoSidebar ? `<img src="${marca.logoSidebar}" style="max-width:100%;max-height:100%;object-fit:contain">` : '<i class="ti ti-photo" style="font-size:24px;color:var(--txt3)"></i>'}
         </div>
         <input type="file" id="me-upload-sidebar" accept="image/*" style="display:none" onchange="meHandleUpload(event,'logoSidebar')">
         <div style="display:flex;gap:6px">
-          <button class="btn btn-out btn-xs" onclick="document.getElementById('me-upload-sidebar').click()"><i class="ti ti-upload"></i> Enviar</button>
-          ${marca.logoSidebar ? `<button class="btn btn-out btn-xs" onclick="meRemoverLogo('logoSidebar')"><i class="ti ti-trash"></i></button>` : ''}
+          <label class="ap-upload-btn" style="flex:1" onclick="document.getElementById('me-upload-sidebar').click()"><i class="ti ti-upload"></i> Enviar</label>
+          ${marca.logoSidebar ? `<button class="btn btn-out btn-xs" onclick="meRemoverLogo('logoSidebar')" title="Remover"><i class="ti ti-trash"></i></button>` : ''}
         </div>
       </div>
     </div>
 
-    <div class="ms">Paleta de cores</div>
-    <div style="display:flex;gap:16px;align-items:center;margin-bottom:18px">
+    <!-- MARCAS D'ÁGUA -->
+    <div class="ms">Marcas D'água — PDFs e Impressões</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px">
       <div>
-        <div class="lbl">Cor primária</div>
-        <input type="color" id="me-cor1" value="${paleta.c1 || '#7C3AED'}" style="width:60px;height:36px;border-radius:8px;border:1px solid var(--border);cursor:pointer">
+        <div class="lbl">Ordens de Serviço</div>
+        <div id="me-prev-wm-os" style="width:100%;height:90px;border:1.5px dashed var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;overflow:hidden;margin-bottom:8px;background:var(--bg3)">
+          ${marca.wmOS ? `<img src="${marca.wmOS}" style="max-width:100%;max-height:100%;object-fit:contain;opacity:.5">` : '<i class="ti ti-droplet" style="font-size:24px;color:var(--txt3)"></i>'}
+        </div>
+        <input type="file" id="me-upload-wm-os" accept="image/*" style="display:none" onchange="meHandleUpload(event,'wmOS')">
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <label class="ap-upload-btn" style="flex:1" onclick="document.getElementById('me-upload-wm-os').click()"><i class="ti ti-upload"></i> Enviar</label>
+          ${marca.wmOS ? `<button class="btn btn-out btn-xs" onclick="meRemoverLogo('wmOS')" title="Remover"><i class="ti ti-trash"></i></button>` : ''}
+        </div>
+        <label class="lbl">Opacidade</label>
+        <div style="display:flex;align-items:center;gap:10px">
+          <input type="range" id="me-wm-os-opacity" min="5" max="40" value="${wmOsOp}" style="flex:1;height:4px;padding:0;border:none;background:var(--border);border-radius:2px;cursor:pointer" oninput="meUpdateWmOpacity('os',this.value)">
+          <span id="me-wm-os-opacity-val" style="font-size:12px;font-weight:700;color:var(--pri);min-width:32px">${wmOsOp}%</span>
+        </div>
       </div>
       <div>
-        <div class="lbl">Cor secundária</div>
-        <input type="color" id="me-cor2" value="${paleta.c2 || '#5B47E0'}" style="width:60px;height:36px;border-radius:8px;border:1px solid var(--border);cursor:pointer">
+        <div class="lbl">Relatórios &amp; Dashboard</div>
+        <div id="me-prev-wm-rel" style="width:100%;height:90px;border:1.5px dashed var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;overflow:hidden;margin-bottom:8px;background:var(--bg3)">
+          ${marca.wmRel ? `<img src="${marca.wmRel}" style="max-width:100%;max-height:100%;object-fit:contain;opacity:.5">` : '<i class="ti ti-droplet" style="font-size:24px;color:var(--txt3)"></i>'}
+        </div>
+        <input type="file" id="me-upload-wm-rel" accept="image/*" style="display:none" onchange="meHandleUpload(event,'wmRel')">
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <label class="ap-upload-btn" style="flex:1" onclick="document.getElementById('me-upload-wm-rel').click()"><i class="ti ti-upload"></i> Enviar</label>
+          ${marca.wmRel ? `<button class="btn btn-out btn-xs" onclick="meRemoverLogo('wmRel')" title="Remover"><i class="ti ti-trash"></i></button>` : ''}
+        </div>
+        <label class="lbl">Opacidade</label>
+        <div style="display:flex;align-items:center;gap:10px">
+          <input type="range" id="me-wm-rel-opacity" min="5" max="40" value="${wmRelOp}" style="flex:1;height:4px;padding:0;border:none;background:var(--border);border-radius:2px;cursor:pointer" oninput="meUpdateWmOpacity('rel',this.value)">
+          <span id="me-wm-rel-opacity-val" style="font-size:12px;font-weight:700;color:var(--pri);min-width:32px">${wmRelOp}%</span>
+        </div>
       </div>
     </div>
 
@@ -2647,38 +2776,90 @@ async function renderMarcaEmpresa(empresaId) {
       <button class="btn btn-pri" onclick="salvarMarcaEmpresaAdmin('${empresaId}')"><i class="ti ti-check"></i> Salvar marca</button>
     </div>
   `;
-  window._meMarcaAtual = marca; // cache para uploads/remover logo
+  mePreviewPaleta();
 }
 
+/* ── PALETA: presets, modo, direção, preview ── */
+function mePreset(nome, el) {
+  const p = ME_PRESETS[nome]; if (!p) return;
+  document.querySelectorAll('#det-marca-content .palette-preset').forEach(e => e.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('me-cor1').value = p.c1;
+  document.getElementById('me-cor2').value = p.c2;
+  document.getElementById('me-cm-grad').checked = true;
+  document.getElementById('me-grad-fields').style.display = '';
+  window._mePaleta = { c1: p.c1, c2: p.c2, dir: window._mePaleta?.dir || '135deg', modo: 'gradiente', dark: p.dark, light: p.light };
+  mePreviewPaleta();
+}
+
+function meToggleColorMode() {
+  const modo = document.querySelector('#det-marca-content input[name="me-color-mode"]:checked').value;
+  document.getElementById('me-grad-fields').style.display = modo === 'gradiente' ? '' : 'none';
+  window._mePaleta.modo = modo;
+  mePreviewPaleta();
+}
+
+function meSetGradDir(dir, btn) {
+  document.querySelectorAll('#det-marca-content .grad-dir-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  window._mePaleta.dir = dir;
+  mePreviewPaleta();
+}
+
+function mePreviewPaleta() {
+  const c1 = document.getElementById('me-cor1').value;
+  const c2 = document.getElementById('me-cor2').value;
+  const modo = window._mePaleta?.modo || 'gradiente';
+  const dir = window._mePaleta?.dir || '135deg';
+  document.getElementById('me-cor1-hex').textContent = c1;
+  document.getElementById('me-cor2-hex').textContent = c2;
+  const bgSide = modo === 'gradiente' ? `linear-gradient(170deg,${c1}dd,${c1} 60%,${c2})` : c1;
+  const bgBtn = modo === 'gradiente' ? `linear-gradient(${dir},${c1},${c2})` : c1;
+  document.getElementById('me-prev-sidebar').style.background = bgSide;
+  document.getElementById('me-prev-btn').style.background = bgBtn;
+  document.getElementById('me-prev-badge').style.background = bgBtn;
+  document.getElementById('me-prev-tag').style.color = c1;
+  document.getElementById('me-prev-tag').style.background = c1 + '22';
+  window._mePaleta = { ...window._mePaleta, c1, c2, dir, modo };
+}
+
+/* ── UPLOADS (logos e marcas d'água) ── */
+const ME_PREVIEW_IDS = {
+  logoLogin: 'me-prev-login', logoSidebar: 'me-prev-sidebar-logo',
+  wmOS: 'me-prev-wm-os', wmRel: 'me-prev-wm-rel',
+};
 function meHandleUpload(ev, campo) {
   const file = ev.target.files[0];
   if (!file) return;
   const reader = new FileReader();
   reader.onload = () => {
-    window._meMarcaAtual = window._meMarcaAtual || {};
-    window._meMarcaAtual[campo] = reader.result;
-    const previewId = campo === 'logoLogin' ? 'me-prev-login' : 'me-prev-sidebar';
-    document.getElementById(previewId).innerHTML = `<img src="${reader.result}" style="max-width:100%;max-height:100%;object-fit:contain">`;
+    window._meMarca = window._meMarca || {};
+    window._meMarca[campo] = reader.result;
+    const previewId = ME_PREVIEW_IDS[campo];
+    const isWm = campo.startsWith('wm');
+    document.getElementById(previewId).innerHTML = `<img src="${reader.result}" style="max-width:100%;max-height:100%;object-fit:contain${isWm?';opacity:.5':''}">`;
   };
   reader.readAsDataURL(file);
 }
 
 function meRemoverLogo(campo) {
-  window._meMarcaAtual = window._meMarcaAtual || {};
-  window._meMarcaAtual[campo] = null;
-  const previewId = campo === 'logoLogin' ? 'me-prev-login' : 'me-prev-sidebar';
-  document.getElementById(previewId).innerHTML = '<i class="ti ti-photo" style="font-size:24px;color:var(--txt4)"></i>';
+  window._meMarca = window._meMarca || {};
+  window._meMarca[campo] = null;
+  const previewId = ME_PREVIEW_IDS[campo];
+  const icon = campo.startsWith('wm') ? 'ti-droplet' : 'ti-photo';
+  document.getElementById(previewId).innerHTML = `<i class="ti ${icon}" style="font-size:24px;color:var(--txt3)"></i>`;
+}
+
+function meUpdateWmOpacity(tipo, val) {
+  window._meMarca = window._meMarca || {};
+  if (tipo === 'os') window._meMarca.wmOsOpacity = parseInt(val);
+  else window._meMarca.wmRelOpacity = parseInt(val);
+  document.getElementById('me-wm-' + tipo + '-opacity-val').textContent = val + '%';
 }
 
 async function salvarMarcaEmpresaAdmin(empresaId) {
-  const marca = window._meMarcaAtual || {};
-  marca.paleta = {
-    ...(marca.paleta||{}),
-    c1: document.getElementById('me-cor1').value,
-    c2: document.getElementById('me-cor2').value,
-    modo: marca.paleta?.modo || 'gradiente',
-    dir: marca.paleta?.dir || '135deg',
-  };
+  const marca = window._meMarca || {};
+  marca.paleta = { ...window._mePaleta };
   marca.empresa = {
     nome: document.getElementById('me-emp-nome').value,
     cnpj: document.getElementById('me-emp-cnpj').value,
