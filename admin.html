@@ -1230,6 +1230,18 @@ select option { background: var(--bg2); }
   </div>
 </div>
 
+<!-- Excluir Empresa (modal dedicado) -->
+<div class="confirm-overlay" id="del-empresa-overlay">
+  <div class="confirm-box">
+    <div class="confirm-title"><i class="ti ti-alert-triangle" style="color:var(--danger)"></i> Excluir empresa</div>
+    <div class="confirm-msg" id="del-empresa-msg"></div>
+    <div class="confirm-footer">
+      <button class="btn btn-out" onclick="closeDelEmpresa()">Cancelar</button>
+      <button class="btn btn-danger" onclick="confirmarExcluirEmpresa()"><i class="ti ti-trash"></i> Excluir</button>
+    </div>
+  </div>
+</div>
+
 <!-- Registrar Pagamento (NOVO) -->
 <div class="modal-overlay" id="modal-pagamento">
   <div class="modal" style="max-width:440px">
@@ -2330,12 +2342,27 @@ async function salvarEmpresa() {
   }
 }
 
-async function excluirEmpresa(id) {
+let _delEmpresaId = null;
+
+function excluirEmpresa(id) {
   const e = G.empresas.find(x => x.id === id);
   if (!e) { notify('Empresa não encontrada na lista local.', 'error'); return; }
+  _delEmpresaId = id;
+  document.getElementById('del-empresa-msg').innerHTML =
+    `Excluir <b>"${e.nome}"</b> permanentemente?<br><br>Isso vai apagar TODOS os dados dessa empresa (produtos, clientes, vendas, OS, financeiro, usuários...).<br><br><b style="color:var(--danger)">Esta ação NÃO PODE ser desfeita.</b>`;
+  document.getElementById('del-empresa-overlay').classList.add('show');
+}
 
-  const ok = confirm(`Excluir "${e.nome}" permanentemente?\n\nIsso vai apagar TODOS os dados dessa empresa (produtos, clientes, vendas, OS, financeiro, usuários...).\n\nEsta ação NÃO PODE ser desfeita.`);
-  if (!ok) return;
+function closeDelEmpresa() {
+  document.getElementById('del-empresa-overlay').classList.remove('show');
+  _delEmpresaId = null;
+}
+
+async function confirmarExcluirEmpresa() {
+  const id = _delEmpresaId;
+  const e = G.empresas.find(x => x.id === id);
+  closeDelEmpresa();
+  if (!id || !e) return;
 
   setLoad(true);
   try {
