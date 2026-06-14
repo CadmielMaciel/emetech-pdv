@@ -1042,6 +1042,15 @@ select option { background: var(--bg2); }
             </div>
           </div>
         </div>
+
+        <div class="sec-hdr" style="margin-top:24px"><div class="sec-title" style="color:var(--danger)"><i class="ti ti-alert-triangle"></i> Zona de perigo</div></div>
+        <div class="card" style="border-color:rgba(239,68,68,.4)">
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:6px;color:var(--danger)">Limpar banco de dados</div>
+          <div style="font-size:12.5px;color:var(--txt2);margin-bottom:14px;max-width:560px">
+            Exclui <b>permanentemente todas as empresas</b> e todos os dados relacionados (produtos, clientes, vendas, OS, financeiro, usuários...). A empresa de sistema (admin_master) <b>não</b> é afetada e seu acesso ao painel é preservado. Esta ação <b>não pode ser desfeita</b>.
+          </div>
+          <button class="btn btn-danger" onclick="abrirLimparBanco()"><i class="ti ti-database-off"></i> Limpar banco de dados</button>
+        </div>
       </div>
 
     </div><!-- /content -->
@@ -1238,6 +1247,42 @@ select option { background: var(--bg2); }
     <div class="confirm-footer">
       <button class="btn btn-out" onclick="closeDelEmpresa()">Cancelar</button>
       <button class="btn btn-danger" onclick="confirmarExcluirEmpresa()"><i class="ti ti-trash"></i> Excluir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Limpar Banco de Dados (modal dedicado) -->
+<div class="confirm-overlay" id="limpar-banco-overlay">
+  <div class="confirm-box">
+    <div class="confirm-title"><i class="ti ti-database-off" style="color:var(--danger)"></i> Limpar banco de dados</div>
+    <div class="confirm-msg">
+      Isso vai excluir <b>TODAS as empresas</b> e todos os dados relacionados (produtos, clientes, vendas, OS, financeiro, usuários...) — <span id="lb-contagem"></span>.<br><br>
+      A empresa de sistema (admin_master) não é afetada.<br><br>
+      <b style="color:var(--danger)">Esta ação NÃO PODE ser desfeita.</b><br><br>
+      Para confirmar, digite <b>LIMPAR TUDO</b> abaixo:
+      <input type="text" id="lb-confirm-input" placeholder="LIMPAR TUDO" style="margin-top:8px;width:100%" autocomplete="off">
+    </div>
+    <div class="confirm-footer">
+      <button class="btn btn-out" onclick="closeLimparBanco()">Cancelar</button>
+      <button class="btn btn-danger" onclick="confirmarLimparBanco()"><i class="ti ti-database-off"></i> Limpar tudo</button>
+    </div>
+  </div>
+</div>
+
+<!-- Limpar Dados de uma Empresa (modal dedicado) -->
+<div class="confirm-overlay" id="limpar-dados-empresa-overlay">
+  <div class="confirm-box">
+    <div class="confirm-title"><i class="ti ti-database-off" style="color:var(--danger)"></i> Limpar dados da empresa</div>
+    <div class="confirm-msg">
+      Isso vai excluir <b>vendas, produtos, clientes, OS, financeiro, estoque, caixas</b> e demais dados operacionais de <b id="ldemp-nome"></b>.<br><br>
+      O cadastro da empresa, os logins de usuários e a marca/aparência <b>serão mantidos</b>.<br><br>
+      <b style="color:var(--danger)">Esta ação NÃO PODE ser desfeita.</b><br><br>
+      Para confirmar, digite <b>LIMPAR DADOS</b> abaixo:
+      <input type="text" id="ldemp-confirm-input" placeholder="LIMPAR DADOS" style="margin-top:8px;width:100%" autocomplete="off">
+    </div>
+    <div class="confirm-footer">
+      <button class="btn btn-out" onclick="closeLimparDadosEmpresa()">Cancelar</button>
+      <button class="btn btn-danger" onclick="confirmarLimparDadosEmpresa()"><i class="ti ti-database-off"></i> Limpar dados</button>
     </div>
   </div>
 </div>
@@ -2381,6 +2426,88 @@ async function confirmarExcluirEmpresa() {
   }
 }
 
+/* ── LIMPAR BANCO DE DADOS (Zona de Perigo) ──────────────────────────── */
+function abrirLimparBanco() {
+  const n = G.empresas.length;
+  document.getElementById('lb-contagem').textContent = n === 1 ? '1 empresa será excluída' : `${n} empresas serão excluídas`;
+  document.getElementById('lb-confirm-input').value = '';
+  document.getElementById('limpar-banco-overlay').classList.add('show');
+}
+
+function closeLimparBanco() {
+  document.getElementById('limpar-banco-overlay').classList.remove('show');
+}
+
+async function confirmarLimparBanco() {
+  const texto = document.getElementById('lb-confirm-input').value.trim();
+  if (texto !== 'LIMPAR TUDO') {
+    notify('Digite exatamente "LIMPAR TUDO" para confirmar.', 'error');
+    return;
+  }
+  closeLimparBanco();
+
+  setLoad(true);
+  try {
+    const { data, error } = await db.from('empresas').delete().eq('is_system', false).select('id');
+    if (error) throw error;
+    const n = data?.length || 0;
+    addLog('limpeza', `Banco de dados limpo — ${n} empresa(s) excluída(s)`, 'Sistema');
+    notify(`✅ ${n} empresa(s) excluída(s). Banco de dados limpo.`, 'info');
+    await refreshDados();
+    renderEmpresas();
+    await renderDashboard();
+    populateSelects();
+  } catch (err) {
+    console.error('Erro ao limpar banco de dados:', err);
+    notify('Erro ao limpar banco de dados: ' + (err.message || String(err)), 'error');
+  } finally {
+    setLoad(false);
+  }
+}
+
+/* ── LIMPAR DADOS DE UMA EMPRESA (mantém cadastro/usuários) ──────────── */
+let _ldEmpresaId = null;
+
+function abrirLimparDadosEmpresa(empresaId) {
+  const e = G.empresas.find(x => x.id === empresaId);
+  if (!e) return;
+  _ldEmpresaId = empresaId;
+  document.getElementById('ldemp-nome').textContent = e.nome;
+  document.getElementById('ldemp-confirm-input').value = '';
+  document.getElementById('limpar-dados-empresa-overlay').classList.add('show');
+}
+
+function closeLimparDadosEmpresa() {
+  document.getElementById('limpar-dados-empresa-overlay').classList.remove('show');
+  _ldEmpresaId = null;
+}
+
+async function confirmarLimparDadosEmpresa() {
+  const texto = document.getElementById('ldemp-confirm-input').value.trim();
+  if (texto !== 'LIMPAR DADOS') {
+    notify('Digite exatamente "LIMPAR DADOS" para confirmar.', 'error');
+    return;
+  }
+  const empresaId = _ldEmpresaId;
+  const e = G.empresas.find(x => x.id === empresaId);
+  closeLimparDadosEmpresa();
+  if (!empresaId || !e) return;
+
+  setLoad(true);
+  try {
+    const { data, error } = await db.rpc('limpar_dados_empresa', { p_empresa_id: empresaId });
+    if (error) throw error;
+    const total = (data || []).reduce((s, r) => s + Number(r.linhas_excluidas || 0), 0);
+    addLog('limpeza_empresa', `Dados de "${e.nome}" limpos — ${total} registro(s) excluído(s)`, e.nome, empresaId);
+    notify(`✅ Dados de "${e.nome}" limpos (${total} registro(s) excluído(s)).`, 'info');
+  } catch (err) {
+    console.error('Erro ao limpar dados da empresa:', err);
+    notify('Erro ao limpar dados: ' + (err.message || String(err)), 'error');
+  } finally {
+    setLoad(false);
+  }
+}
+
 /* ── TOGGLE BLOQUEIO ── */
 function toggleBloqueio(id, ativar) {
   const e = G.empresas.find(x => x.id === id);
@@ -2489,6 +2616,14 @@ async function detTab(tab, btn) {
         ${campo('Cadastrada em', e.createdAt ? new Date(e.createdAt).toLocaleDateString('pt-BR') : '—')}
       </div>
       ${e.obs ? `<div style="margin-top:14px;padding:12px;background:var(--bg3);border-radius:9px;font-size:13px;color:var(--txt2)"><strong style="color:var(--txt3);font-size:11px;text-transform:uppercase;letter-spacing:.8px">Observações</strong><br>${e.obs}</div>` : ''}
+
+      <div class="ms" style="color:var(--danger)"><i class="ti ti-alert-triangle"></i> Zona de perigo</div>
+      <div style="padding:12px 14px;border:1px solid rgba(239,68,68,.35);border-radius:10px;background:rgba(239,68,68,.06)">
+        <div style="font-size:12.5px;color:var(--txt2);margin-bottom:10px">
+          Apaga vendas, produtos, clientes, OS, financeiro, estoque, caixas e demais dados operacionais <b>desta empresa</b>. O cadastro da empresa, os logins de usuários e a marca/aparência <b>são mantidos</b>. <b style="color:var(--danger)">Não pode ser desfeito.</b>
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="abrirLimparDadosEmpresa('${e.id}')"><i class="ti ti-database-off"></i> Limpar dados desta empresa</button>
+      </div>
     `;
   } else if (tab === 'financeiro') {
     // Aba Financeiro (NOVO)
