@@ -769,7 +769,7 @@ select option { background: var(--bg2); }
         <div class="sec-hdr">
           <div class="sec-title">Todas as empresas</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <input type="text" id="empresa-search" placeholder="Buscar empresa..." style="max-width:200px;padding:7px 12px;font-size:13px" oninput="renderEmpresas()">
+            <input type="text" id="empresa-search" placeholder="Buscar empresa..." style="max-width:200px;padding:7px 12px;font-size:13px" oninput="aplicarFiltrosEmpresas()">
             <button class="btn btn-out btn-sm" onclick="exportarCSV('empresas')"><i class="ti ti-download"></i> CSV</button>
             <button class="btn btn-pri btn-sm" onclick="abrirNovaEmpresa()">
               <i class="ti ti-plus"></i> Nova empresa
@@ -778,23 +778,23 @@ select option { background: var(--bg2); }
         </div>
         <!-- Filtros avançados (NOVO) -->
         <div class="filters-bar" style="margin-bottom:16px">
-          <select id="filtro-status-fin" onchange="renderEmpresas()">
+          <select id="filtro-status-fin" onchange="aplicarFiltrosEmpresas()">
             <option value="">Status financeiro: Todos</option>
             <option value="em_dia">Em dia</option>
             <option value="atrasado">Atrasado</option>
             <option value="tolerancia">Em Tolerância</option>
             <option value="bloqueado">Bloqueado</option>
           </select>
-          <select id="filtro-plano" onchange="renderEmpresas()">
+          <select id="filtro-plano" onchange="aplicarFiltrosEmpresas()">
             <option value="">Plano: Todos</option>
           </select>
-          <select id="filtro-atraso" onchange="renderEmpresas()">
+          <select id="filtro-atraso" onchange="aplicarFiltrosEmpresas()">
             <option value="">Dias de atraso: Todos</option>
             <option value="1-5">1 a 5 dias</option>
             <option value="6-15">6 a 15 dias</option>
             <option value="16+">16+ dias</option>
           </select>
-          <input type="text" id="filtro-cidade" placeholder="Filtrar por cidade..." oninput="renderEmpresas()">
+          <input type="text" id="filtro-cidade" placeholder="Filtrar por cidade..." oninput="aplicarFiltrosEmpresas()">
           <button class="btn btn-out btn-sm" onclick="limparFiltros()"><i class="ti ti-x"></i> Limpar</button>
         </div>
         <div id="empresas-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px">
@@ -1455,8 +1455,10 @@ let G = {
   logs: [],
   updates: [],
   faturas: [],
+  metrics: null,
 };
 let _charts = {}; // instâncias Chart.js
+let _empresasLite = null; // cache (id,nome) de todas as empresas p/ dropdowns
 
 let _confirmFn = null;
 let _empresaAtual = null;
@@ -1476,6 +1478,10 @@ function mapEmpresaFromDb(r) {
     diasAtrasoNoBloqueio: r.dias_atraso_bloqueio,
     pagoAte: r.pago_ate,
     createdAt: r.created_at, updatedAt: r.updated_at,
+    // Campos calculados pela view empresas_status (server-side):
+    statusFinanceiroSrv: r.status_financeiro,
+    diasAtrasoSrv: r.dias_atraso,
+    proxVencSrv: r.prox_venc,
   };
 }
 function mapEmpresaToDb(e) {
@@ -1490,10 +1496,48 @@ function mapEmpresaToDb(e) {
   };
 }
 
+// Estado de paginação/filtros da listagem de empresas (server-side)
+const EMPRESAS_PAGE = { page: 0, size: 24, total: 0, busca: '', status: '', plano: '', cidade: '', fin: '', atraso: '' };
+
+// Busca uma PÁGINA de empresas no servidor (view empresas_status), aplicando
+// busca/filtros via SQL. Retorna { rows, count }.
+async function getEmpresasPagina() {
+  const p = EMPRESAS_PAGE;
+  let q = db.from('empresas_status').select('*', { count: 'exact' });
+
+  if (p.busca) {
+    const term = `%${p.busca}%`;
+    q = q.or(`nome.ilike.${term},email.ilike.${term},cidade.ilike.${term}`);
+  }
+  if (p.status) q = q.eq('status', p.status);
+  if (p.plano) q = q.eq('plano', p.plano);
+  if (p.cidade) q = q.ilike('cidade', `%${p.cidade}%`);
+  if (p.fin) q = q.eq('status_financeiro', p.fin);
+  if (p.atraso === '1-5')  q = q.gte('dias_atraso', 1).lte('dias_atraso', 5);
+  if (p.atraso === '6-15') q = q.gte('dias_atraso', 6).lte('dias_atraso', 15);
+  if (p.atraso === '16+')  q = q.gte('dias_atraso', 16);
+
+  const from = p.page * p.size;
+  const to = from + p.size - 1;
+  q = q.order('created_at', { ascending: false }).range(from, to);
+
+  const { data, error, count } = await q;
+  if (error) { console.error(error); notify('Erro ao carregar empresas: ' + error.message, 'error'); return { rows: [], count: 0 }; }
+  return { rows: (data || []).map(mapEmpresaFromDb), count: count || 0 };
+}
+
+// Métricas do dashboard via agregação no banco (não traz linhas)
+async function getDashboardMetrics() {
+  const { data, error } = await db.rpc('admin_dashboard_metrics');
+  if (error) { console.error(error); return null; }
+  return data;
+}
+
+// Compat: getEmpresas() ainda existe para selects/lookups pontuais, mas agora
+// busca só a primeira página (não é mais usado para popular a lista inteira).
 async function getEmpresas() {
-  const { data, error } = await db.from('empresas').select('*').eq('is_system', false).order('created_at', { ascending:false });
-  if (error) { console.error(error); notify('Erro ao carregar empresas: ' + error.message, 'error'); return []; }
-  return (data || []).map(mapEmpresaFromDb);
+  const { rows } = await getEmpresasPagina();
+  return rows;
 }
 async function saveEmpresa(empresa) {
   const payload = mapEmpresaToDb(empresa);
@@ -1827,14 +1871,28 @@ async function iniciarApp() {
 
 // Recarrega todos os dados do Supabase para o estado global G (NOVO)
 async function refreshDados() {
-  const [empresas, planos, logs, updates, faturas] = await Promise.all([
-    getEmpresas(), getPlanos(), getLogs(), getUpdates(), getFaturas(),
+  const [planos, logs, updates, faturas, metrics, pagina] = await Promise.all([
+    getPlanos(), getLogs(), getUpdates(), getFaturas(),
+    getDashboardMetrics(), getEmpresasPagina(),
   ]);
-  G.empresas = empresas;
   G.planos = planos;
   G.logs = logs;
   G.updates = updates;
   G.faturas = faturas;
+  G.metrics = metrics;
+  G.empresas = pagina.rows;       // apenas a página atual
+  EMPRESAS_PAGE.total = pagina.count;
+  _empresasLite = null;           // invalida cache de dropdowns (id,nome)
+
+  // Se a página atual ficou fora do range (ex: após exclusão/limpeza), volta
+  // para uma página válida e recarrega.
+  const maxPage = Math.max(0, Math.ceil(pagina.count / EMPRESAS_PAGE.size) - 1);
+  if (EMPRESAS_PAGE.page > maxPage && pagina.count >= 0) {
+    EMPRESAS_PAGE.page = maxPage;
+    const corrigida = await getEmpresasPagina();
+    G.empresas = corrigida.rows;
+    EMPRESAS_PAGE.total = corrigida.count;
+  }
 }
 
 /* ── NAVEGAÇÃO ── */
@@ -1938,22 +1996,16 @@ function executarResultadoBusca(i) {
 
 /* ── DASHBOARD ── */
 async function renderDashboard() {
-  const empresas = G.empresas;
-  const ativas   = empresas.filter(e => e.status === 'ativa').length;
-  const bloq     = empresas.filter(e => e.status === 'bloqueada').length;
-  const mrr      = empresas
-    .filter(e => e.status === 'ativa')
-    .reduce((acc, e) => {
-      const plano = G.planos.find(p => p.id === e.plano);
-      return acc + (plano?.preco || 0);
-    }, 0);
+  // Métricas via agregação no banco (escala para milhares de empresas)
+  const m = G.metrics || await getDashboardMetrics() || {};
+  const ativas = m.ativas || 0;
+  const bloq = m.bloqueadas || 0;
+  const mrr = Number(m.mrr || 0);
+  const total = m.total || 0;
+  const inadimplentes = m.inadimplentes || 0;
+  const taxaInadimplencia = total ? (inadimplentes / total * 100) : 0;
 
-  // ── Métricas financeiras (NOVO) ──
-  const finList = empresas.map(e => ({ e, fin: statusFinanceiro(e) }));
-  const inadimplentes = finList.filter(x => x.fin.status === 'atrasado' || x.fin.status === 'tolerancia').length;
-  const taxaInadimplencia = empresas.length ? (inadimplentes / empresas.length * 100) : 0;
-
-  document.getElementById('st-total').textContent = empresas.length;
+  document.getElementById('st-total').textContent = total;
   document.getElementById('st-ativas').textContent = ativas;
   document.getElementById('st-bloq').textContent = bloq;
   document.getElementById('st-mrr').textContent = 'R$ ' + mrr.toLocaleString('pt-BR', { minimumFractionDigits:2 });
@@ -1979,12 +2031,13 @@ async function renderDashboard() {
     deltaEl.innerHTML = '';
   }
 
-  // Lista resumida
+  // Lista resumida (empresas mais recentes — primeira página já vem ordenada)
   const list = document.getElementById('dash-empresas-list');
-  if (empresas.length === 0) {
+  const recentes = G.empresas || [];
+  if (recentes.length === 0) {
     list.innerHTML = '<div style="color:var(--txt3);font-size:13px;text-align:center;padding:20px">Nenhuma empresa cadastrada ainda</div>';
   } else {
-    list.innerHTML = empresas.slice(0,5).map(e => {
+    list.innerHTML = recentes.slice(0,5).map(e => {
       const statusCor = { ativa:'green', bloqueada:'red', trial:'gold', cancelada:'gray' }[e.status] || 'gray';
       const ini = (e.nome || '?').slice(0,2).toUpperCase();
       const cor = stringToColor(e.id || e.nome);
@@ -2019,11 +2072,11 @@ async function renderDashboard() {
     }).join('');
   }
 
-  await renderCharts(mrrHist, finList);
+  await renderCharts(mrrHist, m);
 }
 
 // ── Gráficos (Chart.js) (NOVO) ──
-async function renderCharts(mrrHist, finList) {
+async function renderCharts(mrrHist, metrics) {
   const css = getComputedStyle(document.documentElement);
   const cPri = css.getPropertyValue('--pri').trim();
   const cSuccess = css.getPropertyValue('--success').trim();
@@ -2069,8 +2122,9 @@ async function renderCharts(mrrHist, finList) {
 
   // 2) Evolução de inadimplência (histórico salvo a cada render)
   const inadHist = await getInadimplenciaHistorico();
-  const taxaAtual = G.empresas.length
-    ? (finList.filter(x=>x.fin.status==='atrasado'||x.fin.status==='tolerancia').length / G.empresas.length * 100)
+  const totalEmp = metrics.total || 0;
+  const taxaAtual = totalEmp
+    ? ((metrics.inadimplentes || 0) / totalEmp * 100)
     : 0;
   const hojeKey = new Date().toISOString().slice(0,10);
   if (inadHist[hojeKey] !== taxaAtual) {
@@ -2102,11 +2156,11 @@ async function renderCharts(mrrHist, finList) {
     });
   }
 
-  // 3) Empresas ativas vs bloqueadas (doughnut)
-  const ativas = G.empresas.filter(e=>e.status==='ativa').length;
-  const bloqueadas = G.empresas.filter(e=>e.status==='bloqueada').length;
-  const trial = G.empresas.filter(e=>e.status==='trial').length;
-  const cancel = G.empresas.filter(e=>e.status==='cancelada').length;
+  // 3) Empresas ativas vs bloqueadas (doughnut) — usa métricas agregadas
+  const ativas = metrics.ativas || 0;
+  const bloqueadas = metrics.bloqueadas || 0;
+  const trial = metrics.trial || 0;
+  const cancel = metrics.canceladas || 0;
 
   if (_charts.ativasBloq) _charts.ativasBloq.destroy();
   const ctxAB = document.getElementById('chart-ativas-bloqueadas');
@@ -2133,12 +2187,6 @@ async function renderCharts(mrrHist, finList) {
 
 /* ── EMPRESAS ── */
 function renderEmpresas() {
-  const q = (document.getElementById('empresa-search')?.value || '').toLowerCase();
-  const filtroFin = document.getElementById('filtro-status-fin')?.value || '';
-  const filtroPlano = document.getElementById('filtro-plano')?.value || '';
-  const filtroAtraso = document.getElementById('filtro-atraso')?.value || '';
-  const filtroCidade = (document.getElementById('filtro-cidade')?.value || '').toLowerCase();
-
   // popular filtro de planos uma vez
   const filtroPlanoSel = document.getElementById('filtro-plano');
   if (filtroPlanoSel && filtroPlanoSel.options.length <= 1) {
@@ -2146,34 +2194,27 @@ function renderEmpresas() {
       G.planos.map(p => `<option value="${p.id}">${p.nome}</option>`).join('');
   }
 
-  let empresas = G.empresas.filter(e =>
-    !q || e.nome?.toLowerCase().includes(q) || e.email?.toLowerCase().includes(q) || e.cidade?.toLowerCase().includes(q)
-  );
-
-  if (filtroPlano) empresas = empresas.filter(e => e.plano === filtroPlano);
-  if (filtroCidade) empresas = empresas.filter(e => (e.cidade||'').toLowerCase().includes(filtroCidade));
-
-  // Pré-computar status financeiro
-  empresas = empresas.map(e => ({ e, fin: statusFinanceiro(e) }));
-
-  if (filtroFin) empresas = empresas.filter(x => x.fin.status === filtroFin);
-  if (filtroAtraso) {
-    empresas = empresas.filter(x => {
-      const d = x.fin.dias;
-      if (filtroAtraso === '1-5') return d >= 1 && d <= 5;
-      if (filtroAtraso === '6-15') return d >= 6 && d <= 15;
-      if (filtroAtraso === '16+') return d >= 16;
-      return true;
-    });
-  }
+  // G.empresas já é a PÁGINA atual, filtrada no servidor. Usa o status
+  // financeiro calculado pela view (statusFinanceiroSrv) — sem recomputar.
+  const empresas = G.empresas.map(e => ({
+    e,
+    fin: {
+      status: e.statusFinanceiroSrv || 'em_dia',
+      dias: e.diasAtrasoSrv || 0,
+      venc: e.proxVencSrv ? new Date(e.proxVencSrv + 'T00:00:00') : null,
+    }
+  }));
 
   const grid = document.getElementById('empresas-grid');
   if (!grid) return;
 
   if (empresas.length === 0) {
     grid.innerHTML = `<div style="color:var(--txt3);font-size:13px;padding:30px;text-align:center;grid-column:1/-1">
-      ${G.empresas.length === 0 ? 'Nenhuma empresa cadastrada. Clique em "+ Nova empresa" para começar.' : 'Nenhuma empresa encontrada com os filtros aplicados.'}
+      ${EMPRESAS_PAGE.total === 0 && !EMPRESAS_PAGE.busca && !EMPRESAS_PAGE.status && !EMPRESAS_PAGE.plano && !EMPRESAS_PAGE.cidade && !EMPRESAS_PAGE.fin
+        ? 'Nenhuma empresa cadastrada. Clique em "+ Nova empresa" para começar.'
+        : 'Nenhuma empresa encontrada com os filtros aplicados.'}
     </div>`;
+    renderPaginacaoEmpresas();
     return;
   }
 
@@ -2244,15 +2285,71 @@ function renderEmpresas() {
       </div>
     </div>`;
   }).join('');
+
+  renderPaginacaoEmpresas();
+}
+
+// Renderiza controles de paginação abaixo do grid
+function renderPaginacaoEmpresas() {
+  let pag = document.getElementById('empresas-paginacao');
+  const grid = document.getElementById('empresas-grid');
+  if (!grid) return;
+  if (!pag) {
+    pag = document.createElement('div');
+    pag.id = 'empresas-paginacao';
+    pag.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:14px;margin-top:20px;grid-column:1/-1';
+    grid.parentNode.insertBefore(pag, grid.nextSibling);
+  }
+  const p = EMPRESAS_PAGE;
+  const totalPaginas = Math.max(1, Math.ceil(p.total / p.size));
+  const paginaAtual = p.page + 1;
+  if (p.total === 0) { pag.innerHTML = ''; return; }
+  const de = p.page * p.size + 1;
+  const ate = Math.min(p.total, (p.page + 1) * p.size);
+  pag.innerHTML = `
+    <button class="btn btn-out btn-sm" ${p.page === 0 ? 'disabled' : ''} onclick="irParaPaginaEmpresas(${p.page - 1})"><i class="ti ti-chevron-left"></i></button>
+    <span style="font-size:12.5px;color:var(--txt2)">${de}–${ate} de ${p.total} · página ${paginaAtual}/${totalPaginas}</span>
+    <button class="btn btn-out btn-sm" ${paginaAtual >= totalPaginas ? 'disabled' : ''} onclick="irParaPaginaEmpresas(${p.page + 1})"><i class="ti ti-chevron-right"></i></button>
+  `;
+}
+
+async function irParaPaginaEmpresas(novaPagina) {
+  if (novaPagina < 0) return;
+  EMPRESAS_PAGE.page = novaPagina;
+  setLoad(true);
+  try {
+    const pagina = await getEmpresasPagina();
+    G.empresas = pagina.rows;
+    EMPRESAS_PAGE.total = pagina.count;
+    renderEmpresas();
+  } finally {
+    setLoad(false);
+  }
+}
+
+// Lê os campos de busca/filtro, reseta para a página 0 e recarrega do servidor.
+let _filtroDebounce = null;
+function aplicarFiltrosEmpresas() {
+  clearTimeout(_filtroDebounce);
+  _filtroDebounce = setTimeout(async () => {
+    EMPRESAS_PAGE.busca  = (document.getElementById('empresa-search')?.value || '').trim();
+    EMPRESAS_PAGE.fin    = document.getElementById('filtro-status-fin')?.value || '';
+    EMPRESAS_PAGE.plano  = document.getElementById('filtro-plano')?.value || '';
+    EMPRESAS_PAGE.cidade = (document.getElementById('filtro-cidade')?.value || '').trim();
+    EMPRESAS_PAGE.atraso = document.getElementById('filtro-atraso')?.value || '';
+    EMPRESAS_PAGE.page = 0;
+    await irParaPaginaEmpresas(0);
+  }, 300);
 }
 
 function limparFiltros() {
   document.getElementById('empresa-search').value = '';
   document.getElementById('filtro-status-fin').value = '';
   document.getElementById('filtro-plano').value = '';
-  document.getElementById('filtro-atraso').value = '';
+  const fa = document.getElementById('filtro-atraso'); if (fa) fa.value = '';
   document.getElementById('filtro-cidade').value = '';
-  renderEmpresas();
+  Object.assign(EMPRESAS_PAGE, { busca:'', status:'', plano:'', cidade:'', fin:'', atraso:'', page:0 });
+  irParaPaginaEmpresas(0);
 }
 
 /* ── MÁSCARA CPF/CNPJ (NOVO) ──────────────────────────── */
@@ -2577,8 +2674,8 @@ async function confirmarBloqueio() {
 }
 
 /* ── DETALHES DA EMPRESA ── */
-function abrirDetalhes(id) {
-  const e = G.empresas.find(x => x.id === id);
+async function abrirDetalhes(id) {
+  const e = await getEmpresaById(id);
   if (!e) return;
   _empresaAtual = e;
 
@@ -3486,26 +3583,42 @@ function enviarUpdateParaEmpresa(id) {
 }
 
 /* ── COBRANÇA ── */
-function renderCobrancas() {
+async function renderCobrancas() {
   const tbody = document.getElementById('cobrancas-tbody');
   if (!tbody) return;
 
   const filtroStatus = document.getElementById('cob-filtro-status')?.value || '';
-  const busca = (document.getElementById('cob-filtro-busca')?.value || '').toLowerCase();
+  const busca = (document.getElementById('cob-filtro-busca')?.value || '').trim();
 
-  let lista = G.empresas
-    .filter(e => e.status !== 'cancelada')
-    .map(e => ({ e, fin: statusFinanceiro(e), plano: G.planos.find(p => p.id === e.plano) }));
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--txt3);padding:20px">Carregando...</td></tr>';
 
-  if (filtroStatus) lista = lista.filter(x => x.fin.status === filtroStatus);
-  if (busca) lista = lista.filter(x => x.e.nome?.toLowerCase().includes(busca));
+  // Busca todas as empresas não-canceladas da view (status financeiro já
+  // calculado no servidor). Cobranças mostra o quadro completo — não usa a
+  // paginação da aba Empresas.
+  let q = db.from('empresas_status').select('*').neq('status', 'cancelada');
+  if (filtroStatus) q = q.eq('status_financeiro', filtroStatus);
+  if (busca) q = q.ilike('nome', `%${busca}%`);
+  const { data, error } = await q.order('dias_atraso', { ascending: false }).limit(500);
+  if (error) { console.error(error); tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--danger);padding:20px">Erro ao carregar cobranças</td></tr>'; return; }
 
-  // KPIs
-  const all = G.empresas.filter(e => e.status !== 'cancelada').map(e => statusFinanceiro(e));
-  document.getElementById('cob-st-emdia').textContent      = all.filter(f=>f.status==='em_dia').length;
-  document.getElementById('cob-st-atrasadas').textContent  = all.filter(f=>f.status==='atrasado').length;
-  document.getElementById('cob-st-tolerancia').textContent = all.filter(f=>f.status==='tolerancia').length;
-  document.getElementById('cob-st-bloqueadas').textContent = all.filter(f=>f.status==='bloqueado').length;
+  const lista = (data || []).map(mapEmpresaFromDb).map(e => ({
+    e,
+    fin: {
+      status: e.statusFinanceiroSrv || 'em_dia',
+      dias: e.diasAtrasoSrv || 0,
+      venc: e.proxVencSrv ? new Date(e.proxVencSrv + 'T00:00:00') : null,
+      diasRestantes: Math.max(0, (Number(e.tolerancia ?? 5)) - (e.diasAtrasoSrv || 0)),
+    },
+    plano: G.planos.find(p => p.id === e.plano),
+  }));
+
+  // KPIs sempre refletem o TOTAL (via RPC de métricas), independente do
+  // filtro/busca aplicado na tabela abaixo.
+  const m = G.metrics || await getDashboardMetrics() || {};
+  document.getElementById('cob-st-emdia').textContent      = m.fin_em_dia ?? 0;
+  document.getElementById('cob-st-atrasadas').textContent  = m.fin_atrasado ?? 0;
+  document.getElementById('cob-st-tolerancia').textContent = m.fin_tolerancia ?? 0;
+  document.getElementById('cob-st-bloqueadas').textContent = m.fin_bloqueado ?? 0;
 
   if (lista.length === 0) {
     tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--txt3);padding:20px">Nenhuma cobrança encontrada</td></tr>';
@@ -3551,9 +3664,20 @@ function montarMensagem(template, e, fin, plano) {
     .replace(/{dias}/g, fin.dias ?? 0);
 }
 
+// Busca uma empresa por id: primeiro no cache da página atual, senão no
+// servidor (necessário porque a lista de Empresas é paginada, mas Cobranças
+// e outras telas podem referenciar empresas fora da página corrente).
+async function getEmpresaById(id) {
+  const local = G.empresas.find(x => x.id === id);
+  if (local) return local;
+  const { data, error } = await db.from('empresas_status').select('*').eq('id', id).maybeSingle();
+  if (error || !data) return null;
+  return mapEmpresaFromDb(data);
+}
+
 // Botão "Enviar Lembrete WhatsApp" — gera link wa.me com mensagem personalizada (NOVO)
 async function enviarLembreteWhatsApp(id) {
-  const e = G.empresas.find(x => x.id === id);
+  const e = await getEmpresaById(id);
   if (!e) return;
   const fin = statusFinanceiro(e);
   const plano = G.planos.find(p => p.id === e.plano);
@@ -3578,8 +3702,8 @@ async function enviarLembreteWhatsApp(id) {
 }
 
 // Geração simulada de boleto (visual + botão "enviar boleto") (NOVO)
-function gerarBoletoSimulado(id) {
-  const e = G.empresas.find(x => x.id === id);
+async function gerarBoletoSimulado(id) {
+  const e = await getEmpresaById(id);
   if (!e) return;
   const fin = statusFinanceiro(e);
   const plano = G.planos.find(p => p.id === e.plano);
@@ -3599,13 +3723,20 @@ function gerarBoletoSimulado(id) {
 }
 
 // Registrar pagamento manual (com data e comprovante) (NOVO)
-function abrirRegistrarPagamento(empresaId) {
+async function abrirRegistrarPagamento(empresaId) {
   const sel = document.getElementById('pag-empresa-sel');
-  sel.innerHTML = G.empresas.filter(e=>e.status!=='cancelada').map(e => `<option value="${e.id}">${e.nome}</option>`).join('');
+  let lista = G.empresas.filter(e=>e.status!=='cancelada');
+  // Garante que a empresa-alvo esteja na lista, mesmo fora da página atual
+  let alvo = null;
+  if (empresaId) {
+    alvo = lista.find(e => e.id === empresaId) || await getEmpresaById(empresaId);
+    if (alvo && !lista.some(e => e.id === alvo.id)) lista = [alvo, ...lista];
+  }
+  sel.innerHTML = lista.map(e => `<option value="${e.id}">${e.nome}</option>`).join('');
   if (empresaId) sel.value = empresaId;
   document.getElementById('pag-empresa-id').value = sel.value;
 
-  const e = G.empresas.find(x => x.id === sel.value);
+  const e = lista.find(x => x.id === sel.value);
   const plano = G.planos.find(p => p.id === e?.plano);
   document.getElementById('pag-valor').value = plano?.preco || '';
   document.getElementById('pag-data').value = new Date().toISOString().slice(0,10);
@@ -3938,11 +4069,22 @@ async function alterarSenha() {
 }
 
 /* ── HELPERS ── */
-function populateSelects() {
+// Cache leve de (id, nome) de todas as empresas, para dropdowns de seleção
+// (updates, associar plano) — payload pequeno, escala bem.
+async function getEmpresasLite(force = false) {
+  if (_empresasLite && !force) return _empresasLite;
+  const { data, error } = await db.from('empresas_status').select('id, nome').order('nome');
+  if (error) { console.error(error); return []; }
+  _empresasLite = data || [];
+  return _empresasLite;
+}
+
+async function populateSelects() {
+  const lite = await getEmpresasLite();
   const sel1 = document.getElementById('upd-empresa-sel');
-  if (sel1) sel1.innerHTML = G.empresas.map(e => `<option value="${e.id}">${e.nome}</option>`).join('');
+  if (sel1) sel1.innerHTML = lite.map(e => `<option value="${e.id}">${e.nome}</option>`).join('');
   const sel2 = document.getElementById('assoc-empresa-sel');
-  if (sel2) sel2.innerHTML = G.empresas.map(e => `<option value="${e.id}">${e.nome}</option>`).join('');
+  if (sel2) sel2.innerHTML = lite.map(e => `<option value="${e.id}">${e.nome}</option>`).join('');
   const sel3 = document.getElementById('assoc-plano-sel');
   if (sel3) sel3.innerHTML = G.planos.map(p => `<option value="${p.id}">${p.nome} — R$ ${p.preco}/mês</option>`).join('');
 }
