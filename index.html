@@ -3089,6 +3089,9 @@ async function loadProfile(user){
   const ok = await carregarEmpresaELoginCheck();
   if(!ok) return; // tela de bloqueio já foi exibida, interrompe o login
 
+  // ── Carrega entitlements (permissões/limites do plano) do servidor ──
+  await carregarEntitlements();
+
   // Aplica marca/aparência e paleta salvas da empresa (Supabase)
   await aplicarMarcasSalvas();
   aplicarPaletaSalva();
@@ -3208,13 +3211,11 @@ const PT={dashboard:'Dashboard',pdv:'PDV / Caixa',orcamentos:'Orçamentos',devol
 
 function go(page){
   if(!canAccess(G.role,page)){notify('Acesso não permitido.','error');return;}
-  // Verificar plano para páginas com restrição
-  const _featReq = {crediario:'crediario',fornecedores:'fornecedores',orcamentos:'orcamentos',inteligencia:'inteligencia',devolucoes:'devoluções',relatorios:'relatorios'};
-  if (_featReq[page] && typeof temFeature==='function' && !temFeature(_featReq[page])) {
-    const _pln = getPlanoAtual();
-    const _req = _featReq[page]==='inteligencia'?'Enterprise':'Pro';
-    notify(`🔒 Requer plano ${_req}. Você está no ${_pln.nome}.`,'warn');
-    openModal('modal-planos');
+  // Verificar plano (entitlements reais do servidor) para páginas restritas
+  const _featKey = PAGE_FEATURE[page];
+  if (_featKey && typeof temFeatureKey==='function' && !temFeatureKey(_featKey)) {
+    notify('🔒 Este recurso não está incluído no plano da sua empresa.','warn');
+    if (typeof openModal==='function') openModal('modal-planos');
     return;
   }
   // Esconder todas as tabs mobile ao navegar (só reaparecem na página correta)
@@ -9820,6 +9821,7 @@ function entrarComPerfil(u) {
   document.getElementById('app').classList.add('visible');
   document.getElementById('tb-date').textContent = new Date().toLocaleDateString('pt-BR', {weekday:'short',day:'2-digit',month:'short',year:'numeric'});
   applyRoleUI();
+  if (typeof aplicarRestricoesDePlano === 'function') aplicarRestricoesDePlano();
   go(RH[u.role] || 'dashboard');
 }
 
@@ -11350,6 +11352,67 @@ const PLANOS = {
 };
 
 /* ── GET/SET PLANO ATUAL (NOVO: lido do Supabase via G.empresa) ── */
+/* ── ENTITLEMENTS (permissões/limites por plano, vindos do servidor) ──────
+   Fonte de verdade: RPC meus_entitlements() (resolve override>plano>default).
+   G.entitlements = { 'technical.service_orders': true, 'users.max_count': 5, ... }
+   Mapa de compatibilidade traduz nomes curtos antigos -> chaves novas, para
+   o código legado que chama temFeature('crediario') continuar funcionando.   */
+const FEATURE_ALIAS = {
+  crediario:    'store.orcamentos',      // crediário não tem flag própria; tratado como núcleo abaixo
+  relatorios:   'reports.advanced',
+  fornecedores: 'store.suppliers',
+  orcamentos:   'store.orcamentos',
+  inteligencia: 'ai.insights',
+  'devoluções': 'store.devolucoes',
+  devolucoes:   'store.devolucoes',
+  os:           'technical.service_orders',
+  'os-hist':    'technical.service_orders',
+  agenda:       'technical.delivery_schedule',
+  comissoes:    'technical.technicians',
+};
+
+// Mapa página -> chave de feature do catálogo (gating de navegação por plano).
+// Páginas que NÃO aparecem aqui são consideradas núcleo (sempre liberadas).
+const PAGE_FEATURE = {
+  os:           'technical.service_orders',
+  'os-hist':    'technical.service_orders',
+  agenda:       'technical.delivery_schedule',
+  comissoes:    'technical.technicians',
+  orcamentos:   'store.orcamentos',
+  devolucoes:   'store.devolucoes',
+  fornecedores: 'store.suppliers',
+  relatorios:   'reports.advanced',
+  inteligencia: 'ai.insights',
+};
+
+async function carregarEntitlements() {
+  try {
+    const { data, error } = await db.rpc('meus_entitlements');
+    if (error) { console.error('Erro ao carregar entitlements:', error); G.entitlements = null; return; }
+    G.entitlements = data || {};
+  } catch (e) {
+    console.error('Falha ao carregar entitlements:', e);
+    G.entitlements = null; // null = modo tolerante (não trava o app)
+  }
+}
+
+// Retorna true/false para uma feature. Aceita tanto a chave nova
+// ('technical.service_orders') quanto um alias antigo ('os').
+function temFeatureKey(key) {
+  if (!G.entitlements) return true;            // sem dados = não bloqueia (tolerante)
+  if (key in G.entitlements) return G.entitlements[key] === true;
+  const alias = FEATURE_ALIAS[key];
+  if (alias && alias in G.entitlements) return G.entitlements[alias] === true;
+  return true; // chave desconhecida = não bloqueia
+}
+
+// Limite numérico de uma feature ('users.max_count'...). -1 = ilimitado.
+function limiteFeature(key) {
+  if (!G.entitlements || !(key in G.entitlements)) return -1; // sem dado = ilimitado (tolerante)
+  const v = G.entitlements[key];
+  return (typeof v === 'number') ? v : -1;
+}
+
 function getPlanoAtual() {
   // 1) Plano definido pela empresa no painel master (Supabase) — fonte de verdade
   const planoEmpresa = G.empresa?.plano;
@@ -11372,13 +11435,30 @@ function setPlanoAtual(planoId) {
   atualizarBadgePlano();
 }
 
-/* ── VERIFICAR SE TEM ACESSO ───────────────────────────── */
+/* ── VERIFICAR SE TEM ACESSO ─────────────────────────────
+   Agora consulta os entitlements REAIS do servidor (via temFeatureKey),
+   com fallback ao sistema antigo de PLANOS só se não houver dados.        */
 function temFeature(feature) {
+  if (G.entitlements) return temFeatureKey(feature);
+  // Fallback legado (sem entitlements carregados)
   const plano = getPlanoAtual();
   return plano.features[feature] === true;
 }
 
 function dentroDeLimite(tipo) {
+  // tipo: 'usuarios' | 'produtos' | 'caixas'
+  const KEYMAP = { usuarios:'users.max_count', produtos:'products.max_count', caixas:'cash.max_count' };
+  const key = KEYMAP[tipo];
+  if (key && G.entitlements) {
+    const lim = limiteFeature(key);
+    if (lim === -1) return true;
+    let atual = 0;
+    if (tipo === 'usuarios') atual = (G.usuarios||[]).filter(u=>u.ativo).length;
+    else if (tipo === 'caixas') atual = (G.caixas||[]).length;
+    else if (tipo === 'produtos') atual = (G.produtos||[]).length;
+    return atual < lim;
+  }
+  // Fallback legado
   const plano = getPlanoAtual();
   const limite = plano.limites[tipo];
   if (!limite) return true;
@@ -11405,26 +11485,15 @@ function usoPorcentagem(tipo) {
 
 /* ── APLICAR RESTRIÇÕES NO UI ──────────────────────────── */
 function aplicarRestricoesDePlano() {
-  const plano = getPlanoAtual();
-
-  // Mapa: feature → seletor dos elementos no nav/menu
-  const featureNav = {
-    crediario:    '[onclick*="crediario"]',
-    relatorios:   '[onclick*="relatorios"]',
-    fornecedores: '[onclick*="fornecedores"]',
-    orcamentos:   '[onclick*="orcamentos"]',
-    inteligencia: '[onclick*="inteligencia"]',
-    devoluções:   '[onclick*="devolucoes"]',
-  };
-
-  Object.entries(featureNav).forEach(([feat, sel]) => {
-    const tem = plano.features[feat];
-    document.querySelectorAll(sel).forEach(el => {
+  // Esconde/bloqueia itens de menu cujas features o plano não inclui.
+  // Usa os entitlements reais do servidor (PAGE_FEATURE -> chave do catálogo).
+  Object.entries(PAGE_FEATURE).forEach(([page, featKey]) => {
+    const tem = temFeatureKey(featKey);
+    document.querySelectorAll(`.ni[onclick*="'${page}'"]`).forEach(el => {
       if (!tem) {
         el.style.opacity = '0.4';
         el.style.pointerEvents = 'none';
-        el.title = `🔒 Disponível no plano ${feat === 'inteligencia' ? 'Enterprise' : 'Pro'}`;
-        // Adicionar ícone de cadeado se não tiver
+        el.title = '🔒 Não incluído no seu plano';
         if (!el.querySelector('.ni-lock-ico')) {
           const lock = document.createElement('span');
           lock.className = 'ni-lock-ico';
@@ -11440,9 +11509,6 @@ function aplicarRestricoesDePlano() {
       }
     });
   });
-
-  // Ocultar colunas da sidebar que não fazem parte do plano
-  // (não remove, só desativa visual)
 }
 
 /* ── BADGE DO PLANO NA TOPBAR ──────────────────────────── */
