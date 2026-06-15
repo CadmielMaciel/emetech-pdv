@@ -2767,7 +2767,9 @@ const LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 580" 
 const SURL = 'https://icgfpfwcnhkjglrmnuca.supabase.co';
 const SKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljZ2ZwZndjbmhramdscm1udWNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwODA2OTEsImV4cCI6MjA5NTY1NjY5MX0.xDGiGCIlqXaqdWhWo0NoNi_XUdlw5raCogO_Jnc0ezw';
 const { createClient } = supabase;
-const db = createClient(SURL, SKEY);
+const db = createClient(SURL, SKEY, {
+  auth: { autoRefreshToken: true, persistSession: true, detectSessionInUrl: true },
+});
 
 // Retorna o empresa_id do usuário logado — usar em todo payload de insert
 // (RLS exige empresa_id correto em WITH CHECK)
@@ -3079,28 +3081,53 @@ async function doLogin(){
 
 async function loadProfile(user){
   G.user=user;
+
+  // ── MODELO NOVO: a conta logada é a CONTA DA EMPRESA ──
+  // Resolve a empresa cujo auth_user_id == este usuário Auth.
+  let empresa = null;
+  try {
+    const { data: emp } = await db.from('empresas').select('*').eq('auth_user_id', user.id).maybeSingle();
+    empresa = emp || null;
+  } catch(e) { console.error('Erro ao resolver empresa por auth_user_id:', e); }
+
+  if (empresa) {
+    // É uma conta de empresa. Carrega a empresa e seus funcionários (perfis).
+    G.empresa = empresa;
+    G.empresaId = empresa.id;
+    G.profile = null;   // ainda não escolheu o perfil (vem pelo PIN/Netflix)
+    G.role = null;
+
+    if (empresa.status === 'bloqueada') { mostrarTelaBloqueio(empresa); return; }
+
+    await carregarEntitlements();
+    await aplicarMarcasSalvas();
+    aplicarPaletaSalva();
+
+    document.getElementById('ls').classList.add('hidden');
+    await loadAll();
+    initPlanos();
+    iniciarVerificacaoBloqueio();
+    mostrarTelaNetflix();   // lista funcionários da empresa; PIN define o perfil
+    return;
+  }
+
+  // ── FALLBACK (MODELO ANTIGO): a conta logada é um usuário individual ──
   const {data:p}=await db.from('usuarios').select('*').eq('email',user.email).single();
-  if(!p||!p.ativo){await db.auth.signOut();document.getElementById('l-err').textContent='Usuário inativo.';document.getElementById('l-err').style.display='block';document.getElementById('l-btn').disabled=false;document.getElementById('l-btn').innerHTML='<i class="ti ti-lock" style="font-size:17px"></i>Entrar';return;}
+  if(!p||!p.ativo){await db.auth.signOut();document.getElementById('l-err').textContent='Conta sem empresa vinculada. Verifique as credenciais.';document.getElementById('l-err').style.display='block';document.getElementById('l-btn').disabled=false;document.getElementById('l-btn').innerHTML='<i class="ti ti-lock" style="font-size:17px"></i>Entrar';return;}
   G.profile=p;G.role=p.role;
-  // empresa_id do usuário logado — usado em todos os inserts (RLS exige)
   G.empresaId = p.empresa_id;
 
-  // ── Verificação de status financeiro/bloqueio da empresa (NOVO) ──
   const ok = await carregarEmpresaELoginCheck();
-  if(!ok) return; // tela de bloqueio já foi exibida, interrompe o login
+  if(!ok) return;
 
-  // ── Carrega entitlements (permissões/limites do plano) do servidor ──
   await carregarEntitlements();
-
-  // Aplica marca/aparência e paleta salvas da empresa (Supabase)
   await aplicarMarcasSalvas();
   aplicarPaletaSalva();
 
   document.getElementById('ls').classList.add('hidden');
   await loadAll();
-  initPlanos(); // inicializar planos após carregar dados
-  iniciarVerificacaoBloqueio(); // verificação periódica de bloqueio (NOVO)
-  // Mostra tela Netflix de seleção de perfil
+  initPlanos();
+  iniciarVerificacaoBloqueio();
   mostrarTelaNetflix();
 }
 
@@ -9523,6 +9550,17 @@ function mostrarTelaNetflix() {
   const tela = document.getElementById('nf-screen');
   const grid = document.getElementById('nf-grid');
   if (!tela || !grid) return;
+
+  // Atalho: se a empresa tem apenas 1 funcionário ativo, pula a tela de
+  // perfis e vai direto para o PIN dele (ou entra direto se não tiver PIN).
+  const ativos = (G.usuarios || []).filter(u => u.ativo);
+  if (ativos.length === 1) {
+    const u = ativos[0];
+    _nfPerfilSelecionado = u;
+    if (typeof hasPin === 'function' && !hasPin(u.id)) { entrarComPerfil(u); return; }
+    mostrarPinScreen(u, 'verificar');
+    return;
+  }
 
   const m = getMarca ? getMarca() : {};
   const logoSidebar = m.logoSidebar || null;
