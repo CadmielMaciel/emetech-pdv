@@ -1226,6 +1226,24 @@ select option { background: var(--bg2); }
   </div>
 </div>
 
+<!-- Permissões do Plano (Entitlements) -->
+<div class="modal-overlay" id="modal-entitlements">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-title"><i class="ti ti-adjustments"></i> Permissões — <span id="ent-plano-nome"></span></div>
+    <div style="font-size:12.5px;color:var(--txt2);margin-bottom:14px">
+      Defina o que este plano libera. Empresas com este plano terão acesso apenas ao que estiver marcado. Limites: use <b>-1</b> para ilimitado.
+    </div>
+    <input type="hidden" id="ent-plano-id">
+    <div id="ent-conteudo" style="max-height:60vh;overflow-y:auto;padding-right:6px">
+      <div style="text-align:center;color:var(--txt3);padding:20px">Carregando...</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-out" onclick="closeModal('modal-entitlements')">Cancelar</button>
+      <button class="btn btn-pri" onclick="salvarEntitlements()"><i class="ti ti-check"></i> Salvar permissões</button>
+    </div>
+  </div>
+</div>
+
 <!-- Confirm -->
 <div class="confirm-overlay" id="confirm-overlay">
   <div class="confirm-box">
@@ -1646,6 +1664,107 @@ async function getPlanos() {
   const { data, error } = await db.from('planos').select('*').order('preco', { ascending:true });
   if (error) { console.error(error); notify('Erro ao carregar planos: ' + error.message, 'error'); return []; }
   return (data || []).map(mapPlanoFromDb);
+}
+
+// ── ENTITLEMENTS (permissões por plano) ─────────────────────────────────
+let _featureCatalog = null;
+async function getFeatureCatalog(force = false) {
+  if (_featureCatalog && !force) return _featureCatalog;
+  const { data, error } = await db.from('feature_catalog').select('*').eq('ativo', true).order('ordem');
+  if (error) { console.error(error); notify('Erro ao carregar catálogo de features: ' + error.message, 'error'); return []; }
+  _featureCatalog = data || [];
+  return _featureCatalog;
+}
+
+async function getPlanoEntitlements(planoId) {
+  const { data, error } = await db.from('plano_entitlements').select('*').eq('plano_id', planoId);
+  if (error) { console.error(error); notify('Erro ao carregar permissões do plano: ' + error.message, 'error'); return []; }
+  return data || [];
+}
+
+// Salva (upsert) os entitlements de um plano. `valores` = { key: {tipo, bool, int} }
+async function salvarPlanoEntitlements(planoId, valores) {
+  const rows = Object.entries(valores).map(([key, v]) => ({
+    plano_id: planoId,
+    feature_key: key,
+    bool_value: v.tipo === 'flag' ? !!v.bool : null,
+    int_value:  v.tipo === 'limit' ? (Number.isFinite(v.int) ? v.int : null) : null,
+  }));
+  // upsert em lote
+  const { error } = await db.from('plano_entitlements').upsert(rows, { onConflict: 'plano_id,feature_key' });
+  if (error) throw error;
+}
+
+// Abre o modal de permissões e popula com o catálogo + valores do plano
+async function abrirEntitlements(planoId) {
+  const p = G.planos.find(x => x.id === planoId);
+  if (!p) return;
+  document.getElementById('ent-plano-id').value = planoId;
+  document.getElementById('ent-plano-nome').textContent = p.nome;
+  const cont = document.getElementById('ent-conteudo');
+  cont.innerHTML = '<div style="text-align:center;color:var(--txt3);padding:20px">Carregando...</div>';
+  openModal('modal-entitlements');
+
+  const [catalogo, entitlements] = await Promise.all([
+    getFeatureCatalog(), getPlanoEntitlements(planoId),
+  ]);
+  // Mapa de valores atuais do plano
+  const mapa = {};
+  entitlements.forEach(e => { mapa[e.feature_key] = e; });
+
+  // Agrupa por categoria
+  const grupos = {};
+  catalogo.forEach(f => { (grupos[f.categoria] = grupos[f.categoria] || []).push(f); });
+
+  let html = '';
+  Object.keys(grupos).forEach(cat => {
+    html += `<div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:var(--pri);margin:16px 0 8px;text-transform:uppercase;letter-spacing:.5px">${cat}</div>`;
+    grupos[cat].forEach(f => {
+      const atual = mapa[f.key];
+      if (f.tipo === 'flag') {
+        const val = atual?.bool_value != null ? atual.bool_value : f.default_bool;
+        html += `
+          <label style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:8px;cursor:pointer;gap:10px" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
+            <span style="font-size:13px;color:var(--txt)">${f.nome}<br><span style="font-size:11px;color:var(--txt3);font-family:monospace">${f.key}</span></span>
+            <input type="checkbox" class="ent-flag" data-key="${f.key}" ${val ? 'checked' : ''} style="width:18px;height:18px;cursor:pointer">
+          </label>`;
+      } else {
+        const val = atual?.int_value != null ? atual.int_value : f.default_int;
+        html += `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;gap:10px">
+            <span style="font-size:13px;color:var(--txt)">${f.nome}<br><span style="font-size:11px;color:var(--txt3);font-family:monospace">${f.key}</span></span>
+            <input type="number" class="ent-limit" data-key="${f.key}" value="${val}" style="width:100px;text-align:right" title="-1 = ilimitado">
+          </div>`;
+      }
+    });
+  });
+  cont.innerHTML = html;
+}
+
+async function salvarEntitlements() {
+  const planoId = document.getElementById('ent-plano-id').value;
+  if (!planoId) return;
+  const valores = {};
+  document.querySelectorAll('#ent-conteudo .ent-flag').forEach(el => {
+    valores[el.dataset.key] = { tipo: 'flag', bool: el.checked };
+  });
+  document.querySelectorAll('#ent-conteudo .ent-limit').forEach(el => {
+    valores[el.dataset.key] = { tipo: 'limit', int: parseInt(el.value, 10) };
+  });
+
+  setLoad(true);
+  try {
+    await salvarPlanoEntitlements(planoId, valores);
+    const p = G.planos.find(x => x.id === planoId);
+    addLog('plano', `Permissões do plano "${p?.nome || planoId}" atualizadas`);
+    notify('✅ Permissões salvas!', 'success');
+    closeModal('modal-entitlements');
+  } catch (e) {
+    console.error('Erro ao salvar permissões:', e);
+    notify('Erro ao salvar permissões: ' + (e.message || String(e)), 'error');
+  } finally {
+    setLoad(false);
+  }
 }
 async function salvarPlanoDb(plano) {
   const payload = { nome: plano.nome, preco: plano.preco, usuarios: plano.usuarios, features: plano.features };
@@ -3464,6 +3583,7 @@ function renderPlanos() {
   grid.innerHTML = G.planos.map((p, i) => `
     <div class="card" style="border-top:3px solid ${cores[i%cores.length]};position:relative">
       <div style="position:absolute;top:14px;right:14px;display:flex;gap:5px">
+        <button class="btn btn-out btn-xs" onclick="abrirEntitlements('${p.id}')" title="Permissões do plano"><i class="ti ti-adjustments"></i></button>
         <button class="btn btn-out btn-xs" onclick="editarPlano('${p.id}')"><i class="ti ti-edit"></i></button>
       </div>
       <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:var(--txt);margin-bottom:4px">${p.nome}</div>
