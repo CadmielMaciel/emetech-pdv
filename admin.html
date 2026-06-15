@@ -1744,6 +1744,7 @@ async function abrirEntitlements(planoId) {
 async function salvarEntitlements() {
   const planoId = document.getElementById('ent-plano-id').value;
   if (!planoId) return;
+  if (!await sessaoValida()) return;
   const valores = {};
   document.querySelectorAll('#ent-conteudo .ent-flag').forEach(el => {
     valores[el.dataset.key] = { tipo: 'flag', bool: el.checked };
