@@ -2948,23 +2948,44 @@ async function detTab(tab, btn) {
       }
     `;
   } else if (tab === 'acesso') {
+    const contaCriada = !!e.authUserId;
     document.getElementById('det-acesso-content').innerHTML = `
       <div style="margin-bottom:16px">
         <div class="lbl">URL de acesso da empresa</div>
         <div class="code-block">https://emetech-pdv.vercel.app</div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
-        ${campo('E-mail do admin (cadastro)', e.email)}
-        ${campo('Senha inicial (cadastro)', e.senha || '(não registrada)')}
+
+      <div class="ms" style="margin-top:0"><i class="ti ti-key"></i> Conta de acesso da empresa</div>
+      <div style="padding:12px 14px;background:var(--pri-light);border-radius:10px;border:1px solid rgba(124,58,237,.3);margin-bottom:14px">
+        <div style="font-size:12.5px;color:var(--txt2)">
+          A empresa entra no app com <b>1 único login</b> (e-mail + senha abaixo). Esse mesmo e-mail recebe boletos e avisos. Depois de entrar, cada funcionário acessa seu perfil pelo <b>PIN</b>.
+        </div>
       </div>
-      <div style="padding:12px 14px;background:var(--pri-light);border-radius:10px;border:1px solid rgba(124,58,237,.3);margin-bottom:18px">
-        <div style="font-size:12px;font-weight:700;color:var(--pri);margin-bottom:4px"><i class="ti ti-info-circle"></i> Como a empresa acessa</div>
-        <div style="font-size:12.5px;color:var(--txt2)">A empresa acessa o mesmo <code style="background:var(--bg3);padding:1px 5px;border-radius:4px">index.html</code> com as credenciais de cada usuário abaixo. O acesso é isolado por empresa via Supabase (RLS).</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:8px">
+        <div>
+          <div class="lbl">E-mail de login da empresa</div>
+          <input type="email" id="conta-emp-email" value="${e.email || ''}" placeholder="empresa@exemplo.com">
+        </div>
+        <div>
+          <div class="lbl">Senha ${contaCriada ? '(redefinir)' : '(definir)'}</div>
+          <input type="text" id="conta-emp-senha" placeholder="mín. 6 caracteres">
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+        <button class="btn btn-pri btn-sm" onclick="salvarContaEmpresa('${e.id}')">
+          <i class="ti ti-device-floppy"></i> ${contaCriada ? 'Atualizar conta de acesso' : 'Criar conta de acesso'}
+        </button>
+        <span style="font-size:12px;color:${contaCriada ? 'var(--success)' : 'var(--txt3)'}">
+          ${contaCriada ? '✅ Conta de acesso ativa' : '⚠️ Conta de acesso ainda não criada'}
+        </span>
       </div>
 
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <div class="ms" style="margin-top:0">Usuários da empresa</div>
-        <button class="btn btn-pri btn-sm" onclick="abrirNovoUsuarioEmpresa('${e.id}')"><i class="ti ti-user-plus"></i> Novo usuário</button>
+        <div class="ms" style="margin-top:0"><i class="ti ti-users"></i> Funcionários (perfis com PIN)</div>
+        <button class="btn btn-pri btn-sm" onclick="abrirNovoUsuarioEmpresa('${e.id}')"><i class="ti ti-user-plus"></i> Novo funcionário</button>
+      </div>
+      <div style="font-size:12px;color:var(--txt3);margin-bottom:10px">
+        Funcionários não têm e-mail nem senha próprios — apenas <b>nome + PIN</b>. O PIN é a credencial de cada um na tela de perfis.
       </div>
       <div id="acesso-usuarios-list" style="color:var(--txt3);text-align:center;padding:20px">Carregando...</div>
     `;
@@ -3351,7 +3372,7 @@ async function renderUsuariosEmpresa(empresaId) {
       </div>
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;font-weight:600;color:var(--txt)">${u.nome}${!u.ativo ? ' <span class="badge badge-red" style="margin-left:6px">Inativo</span>' : ''}</div>
-        <div style="font-size:11.5px;color:var(--txt3)">${u.email} · ${USER_ROLE_LABEL[u.role]||u.role}</div>
+        <div style="font-size:11.5px;color:var(--txt3)">${USER_ROLE_LABEL[u.role]||u.role}${u.email ? ' · ' + u.email : ''}</div>
       </div>
       <div style="font-size:11px;color:var(--txt3);white-space:nowrap">${u.pin ? '🔒 PIN ativo' : '⚪ Sem PIN'}</div>
       <div style="display:flex;gap:6px">
@@ -3380,23 +3401,18 @@ function abrirFormUsuarioEmpresa(empresaId, u) {
 
   const modalHtml = `<div class="modal-overlay" id="modal-usuario-empresa">
     <div class="modal" style="max-width:440px">
-      <div class="modal-title"><i class="ti ti-user"></i><span>${isEdit ? 'Editar usuário' : 'Novo usuário'}</span></div>
+      <div class="modal-title"><i class="ti ti-user"></i><span>${isEdit ? 'Editar funcionário' : 'Novo funcionário'}</span></div>
       <input type="hidden" id="ue-id" value="${u?.id||''}">
       <input type="hidden" id="ue-empresa-id" value="${empresaId}">
       <div class="fg">
         <label class="lbl">Nome *</label>
-        <input type="text" id="ue-nome" value="${u?.nome||''}" placeholder="Nome completo">
+        <input type="text" id="ue-nome" value="${u?.nome||''}" placeholder="Nome do funcionário">
       </div>
       <div class="fg">
-        <label class="lbl">E-mail *</label>
-        <input type="email" id="ue-email" value="${u?.email||''}" placeholder="email@exemplo.com" ${isEdit ? 'disabled title="O e-mail de login não pode ser alterado aqui."' : ''}>
-        ${isEdit ? '<div style="font-size:11px;color:var(--txt3);margin-top:4px">E-mail de login não pode ser alterado.</div>' : ''}
+        <label class="lbl">PIN (4 dígitos) ${isEdit ? '— deixe em branco para manter' : '*'}</label>
+        <input type="text" id="ue-pin" inputmode="numeric" maxlength="6" value="" placeholder="${isEdit ? '••••' : 'ex: 1234'}">
+        <div style="font-size:11px;color:var(--txt3);margin-top:4px">O PIN é a credencial do funcionário na tela de perfis. Sem e-mail nem senha.</div>
       </div>
-      ${!isEdit ? `
-      <div class="fg">
-        <label class="lbl">Senha de acesso *</label>
-        <input type="text" id="ue-senha" value="${gerarSenha()}">
-      </div>` : ''}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div class="fg">
           <label class="lbl">Nível *</label>
@@ -3404,7 +3420,7 @@ function abrirFormUsuarioEmpresa(empresaId, u) {
             <option value="operador" ${u?.role==='operador'?'selected':''}>Operador de Caixa</option>
             <option value="tecnico" ${u?.role==='tecnico'?'selected':''}>Técnico</option>
             <option value="gerente" ${u?.role==='gerente'?'selected':''}>Gerente</option>
-            <option value="admin" ${u?.role==='admin'?'selected':''}>Administrador</option>
+            <option value="admin" ${u?.role==='admin'?'selected':''}>Administrador (dono)</option>
           </select>
         </div>
         <div class="fg">
@@ -3419,7 +3435,7 @@ function abrirFormUsuarioEmpresa(empresaId, u) {
           <input type="checkbox" id="ue-ativo" ${u?.ativo !== false ? 'checked' : ''}>
           <span class="tslider"></span>
         </label>
-        <span style="font-size:12px;color:var(--txt3);margin-left:8px">Usuário ${u?.ativo !== false ? 'ativo' : 'inativo'} (desmarque para bloquear o login)</span>
+        <span style="font-size:12px;color:var(--txt3);margin-left:8px">Funcionário ${u?.ativo !== false ? 'ativo' : 'inativo'}</span>
       </div>` : ''}
       <div class="modal-footer">
         <button class="btn btn-out" onclick="closeModal('modal-usuario-empresa')">Cancelar</button>
@@ -3435,35 +3451,70 @@ async function salvarUsuarioEmpresa() {
   const id = document.getElementById('ue-id').value;
   const empresaId = document.getElementById('ue-empresa-id').value;
   const nome = document.getElementById('ue-nome').value.trim();
-  const email = document.getElementById('ue-email').value.trim();
+  const pin = document.getElementById('ue-pin').value.trim();
   const role = document.getElementById('ue-role').value;
   const comissao_pct = parseFloat(document.getElementById('ue-comissao').value) || 0;
 
   if (!nome) { notify('Informe o nome.', 'error'); return; }
+  if (pin && !/^\d{4,6}$/.test(pin)) { notify('O PIN deve ter de 4 a 6 dígitos numéricos.', 'error'); return; }
+  if (!id && !pin) { notify('Defina um PIN para o novo funcionário.', 'error'); return; }
+  if (!await sessaoValida()) return;
 
   setLoad(true);
   try {
     if (id) {
-      // Edição: nome, role, comissão e status (e-mail não muda aqui)
+      // Edição: nome, role, comissão, status, e PIN (se informado)
       const ativo = document.getElementById('ue-ativo').checked;
-      const { error } = await db.from('usuarios').update({ nome, role, comissao_pct, ativo }).eq('id', id);
+      const patch = { nome, role, comissao_pct, ativo };
+      if (pin) patch.pin = pin;
+      const { error } = await db.from('usuarios').update(patch).eq('id', id);
       if (error) throw error;
-      notify(`✅ Usuário "${nome}" atualizado!`, 'success');
+      notify(`✅ Funcionário "${nome}" atualizado!`, 'success');
     } else {
-      // Novo usuário: cria no Auth + usuarios via Edge Function
-      const senha = document.getElementById('ue-senha').value;
-      if (!email) { notify('Informe o e-mail.', 'error'); setLoad(false); return; }
-      if (!senha || senha.length < 6) { notify('A senha precisa ter no mínimo 6 caracteres.', 'error'); setLoad(false); return; }
-
-      const result = await criarUsuarioEmpresaCompleto(empresaId, nome, email, senha, role, comissao_pct);
-      if (!result.ok) { notify('Erro: ' + result.error, 'error'); setLoad(false); return; }
-      notify(`✅ Usuário "${nome}" criado! Login: ${email} / Senha: ${senha}`, 'success', 8000);
+      // Novo funcionário: perfil direto (sem Auth/e-mail). admin_master grava via RLS.
+      const { error } = await db.from('usuarios').insert({
+        nome, pin, role, comissao_pct, ativo: true, empresa_id: empresaId,
+      });
+      if (error) throw error;
+      notify(`✅ Funcionário "${nome}" criado! PIN: ${pin}`, 'success', 6000);
     }
 
     closeModal('modal-usuario-empresa');
     renderUsuariosEmpresa(empresaId);
   } catch (e) {
-    notify('Erro ao salvar usuário: ' + e.message, 'error');
+    notify('Erro ao salvar funcionário: ' + e.message, 'error');
+  } finally {
+    setLoad(false);
+  }
+}
+
+// Cria/atualiza a CONTA DE ACESSO da empresa (1 login por empresa) via Edge Function
+async function salvarContaEmpresa(empresaId) {
+  const email = document.getElementById('conta-emp-email').value.trim();
+  const senha = document.getElementById('conta-emp-senha').value;
+  if (!email) { notify('Informe o e-mail de login da empresa.', 'error'); return; }
+  if (!senha || senha.length < 6) { notify('A senha precisa ter no mínimo 6 caracteres.', 'error'); return; }
+  if (!await sessaoValida()) return;
+
+  setLoad(true);
+  try {
+    const { data: { session } } = await db.auth.getSession();
+    const resp = await fetch(`${FUNCTIONS_URL}/criar-conta-empresa`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+      body: JSON.stringify({ empresaId, email, senha }),
+    });
+    const result = await resp.json();
+    if (!resp.ok) { notify('Erro: ' + (result.error || 'desconhecido'), 'error'); setLoad(false); return; }
+
+    addLog('acesso', `Conta de acesso da empresa atualizada (${email})`, null, empresaId);
+    notify(`✅ Conta de acesso ativa! Login: ${email}`, 'success', 7000);
+    await refreshDados();
+    // Reabre a aba acesso com o estado atualizado
+    const e = await getEmpresaById(empresaId);
+    if (e) { _empresaAtual = e; detTab('acesso', null); }
+  } catch (e) {
+    notify('Erro ao salvar conta da empresa: ' + (e.message || String(e)), 'error');
   } finally {
     setLoad(false);
   }
