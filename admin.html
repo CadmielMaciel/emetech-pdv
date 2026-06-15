@@ -1442,7 +1442,59 @@ const SURL = 'https://icgfpfwcnhkjglrmnuca.supabase.co';
 const SKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljZ2ZwZndjbmhramdscm1udWNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwODA2OTEsImV4cCI6MjA5NTY1NjY5MX0.xDGiGCIlqXaqdWhWo0NoNi_XUdlw5raCogO_Jnc0ezw';
 
 const { createClient } = supabase;
-const db = createClient(SURL, SKEY);
+const db = createClient(SURL, SKEY, {
+  auth: {
+    autoRefreshToken: true,   // renova o token automaticamente em background
+    persistSession: true,     // mantém a sessão no storage entre reloads
+    detectSessionInUrl: true,
+  },
+});
+
+// ── TRATAMENTO DE SESSÃO EXPIRADA ───────────────────────────────────────
+// Se a sessão acabar (logout, refresh token expirado/revogado), em vez de
+// deixar a página re-tentando requisições mortas (que travam o painel com
+// 401/403), voltamos limpo para a tela de login.
+let _sessaoEncerrada = false;
+function encerrarSessaoUI(msg) {
+  if (_sessaoEncerrada) return;
+  _sessaoEncerrada = true;
+  try {
+    document.getElementById('app')?.classList.remove('visible');
+    const ls = document.getElementById('login-screen');
+    if (ls) ls.style.display = '';
+    const errEl = document.getElementById('login-err');
+    if (errEl && msg) { errEl.textContent = msg; errEl.style.display = 'block'; }
+  } catch(e) {}
+}
+
+db.auth.onAuthStateChange((event, session) => {
+  // Eventos: SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED, USER_UPDATED
+  if (event === 'SIGNED_OUT' || (!session && (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED'))) {
+    encerrarSessaoUI('Sua sessão expirou. Faça login novamente.');
+  }
+  if (event === 'SIGNED_IN' && session) {
+    _sessaoEncerrada = false;
+  }
+});
+
+// Garante uma sessão válida ANTES de uma operação de dados. Tenta renovar o
+// token; se não houver sessão válida, leva o usuário ao login e retorna false.
+async function sessaoValida() {
+  try {
+    const { data: { session } } = await db.auth.getSession();
+    if (!session) { encerrarSessaoUI('Sua sessão expirou. Faça login novamente.'); return false; }
+    // Se o token expira em menos de 60s, força refresh proativo
+    const expEmMs = (session.expires_at ? session.expires_at * 1000 : 0) - Date.now();
+    if (expEmMs < 60000) {
+      const { data, error } = await db.auth.refreshSession();
+      if (error || !data?.session) { encerrarSessaoUI('Sua sessão expirou. Faça login novamente.'); return false; }
+    }
+    return true;
+  } catch (e) {
+    encerrarSessaoUI('Sua sessão expirou. Faça login novamente.');
+    return false;
+  }
+}
 
 // URL base das Edge Functions (formato correto: <ref>.supabase.co/functions/v1/<nome>)
 const FUNCTIONS_URL = `${SURL}/functions/v1`;
@@ -1828,6 +1880,7 @@ async function doLogin() {
 
     G.user = data.user;
     G.perfil = perfil;
+    _sessaoEncerrada = false;
     iniciarApp();
   } catch(e) {
     errEl.textContent = e.message || 'Erro ao entrar.';
@@ -1871,6 +1924,7 @@ async function iniciarApp() {
 
 // Recarrega todos os dados do Supabase para o estado global G (NOVO)
 async function refreshDados() {
+  if (!await sessaoValida()) return;
   const [planos, logs, updates, faturas, metrics, pagina] = await Promise.all([
     getPlanos(), getLogs(), getUpdates(), getFaturas(),
     getDashboardMetrics(), getEmpresasPagina(),
@@ -2593,7 +2647,7 @@ async function confirmarLimparDadosEmpresa() {
   try {
     const { data, error } = await db.rpc('limpar_dados_empresa', { p_empresa_id: empresaId });
     if (error) throw error;
-    const total = (data || []).reduce((s, r) => s + Number(r.linhas_excluidas || 0), 0);
+    const total = Number(data || 0);
     addLog('limpeza_empresa', `Dados de "${e.nome}" limpos — ${total} registro(s) excluído(s)`, e.nome, empresaId);
     notify(`✅ Dados de "${e.nome}" limpos (${total} registro(s) excluído(s)).`, 'info');
   } catch (err) {
@@ -4162,12 +4216,17 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
 (async () => {
   const { data: { session } } = await db.auth.getSession();
   if (session?.user) {
-    const { data: perfil } = await db.from('usuarios').select('*').eq('email', session.user.email).single();
-    if (perfil?.role === 'admin_master') {
-      G.user = session.user;
-      G.perfil = perfil;
-      iniciarApp();
-      return;
+    // Garante que o token está válido/renovável antes de entrar
+    const ok = await sessaoValida();
+    if (ok) {
+      const { data: perfil } = await db.from('usuarios').select('*').eq('email', session.user.email).single();
+      if (perfil?.role === 'admin_master') {
+        G.user = session.user;
+        G.perfil = perfil;
+        _sessaoEncerrada = false;
+        iniciarApp();
+        return;
+      }
     }
   }
   // Mostrar login
