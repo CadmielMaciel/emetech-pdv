@@ -3378,6 +3378,7 @@ async function renderUsuariosEmpresa(empresaId) {
       <div style="display:flex;gap:6px">
         <button class="btn btn-out btn-xs" onclick="abrirEditarUsuarioEmpresa('${u.id}','${empresaId}')" title="Editar"><i class="ti ti-pencil"></i></button>
         <button class="btn btn-out btn-xs" onclick="abrirPinUsuarioEmpresa('${u.id}','${empresaId}')" title="Gerenciar PIN"><i class="ti ti-password"></i></button>
+        <button class="btn btn-danger btn-xs" onclick="excluirUsuarioEmpresa('${u.id}','${(u.nome||'').replace(/'/g,'')}')" title="Excluir"><i class="ti ti-trash"></i></button>
       </div>
     </div>
   `).join('');
@@ -3431,13 +3432,16 @@ function abrirFormUsuarioEmpresa(empresaId, u) {
       ${isEdit ? `
       <div class="fg">
         <label class="lbl">Status</label>
-        <label class="toggle" title="Ativo/Inativo">
-          <input type="checkbox" id="ue-ativo" ${u?.ativo !== false ? 'checked' : ''}>
-          <span class="tslider"></span>
-        </label>
-        <span style="font-size:12px;color:var(--txt3);margin-left:8px">Funcionário ${u?.ativo !== false ? 'ativo' : 'inativo'}</span>
+        <div style="display:flex;align-items:center;gap:10px">
+          <label class="toggle" title="Ativo/Inativo">
+            <input type="checkbox" id="ue-ativo" ${u?.ativo !== false ? 'checked' : ''} onchange="document.getElementById('ue-ativo-lbl').textContent = this.checked ? 'Funcionário ativo' : 'Funcionário inativo'">
+            <span class="tslider"></span>
+          </label>
+          <span id="ue-ativo-lbl" style="font-size:13px;color:var(--txt2)">Funcionário ${u?.ativo !== false ? 'ativo' : 'inativo'}</span>
+        </div>
       </div>` : ''}
-      <div class="modal-footer">
+      <div class="modal-footer" style="display:flex;align-items:center;gap:8px">
+        ${isEdit ? `<button class="btn btn-danger" style="margin-right:auto" onclick="excluirUsuarioEmpresa('${u.id}','${(u.nome||'').replace(/'/g,"")}')"><i class="ti ti-trash"></i> Excluir</button>` : ''}
         <button class="btn btn-out" onclick="closeModal('modal-usuario-empresa')">Cancelar</button>
         <button class="btn btn-pri" onclick="salvarUsuarioEmpresa()"><i class="ti ti-check"></i> Salvar</button>
       </div>
@@ -3483,6 +3487,27 @@ async function salvarUsuarioEmpresa() {
     renderUsuariosEmpresa(empresaId);
   } catch (e) {
     notify('Erro ao salvar funcionário: ' + e.message, 'error');
+  } finally {
+    setLoad(false);
+  }
+}
+
+// Exclui um funcionário (perfil) da empresa
+async function excluirUsuarioEmpresa(id, nome) {
+  if (!id) return;
+  const empresaId = document.getElementById('ue-empresa-id')?.value || _empresaAtual?.id;
+  if (!confirm(`Excluir o funcionário "${nome || ''}"?\n\nEssa ação remove o perfil e o PIN dele. Não pode ser desfeita.`)) return;
+  if (!await sessaoValida()) return;
+
+  setLoad(true);
+  try {
+    const { error } = await db.from('usuarios').delete().eq('id', id);
+    if (error) throw error;
+    notify(`Funcionário "${nome || ''}" excluído.`, 'info');
+    closeModal('modal-usuario-empresa');
+    if (empresaId) renderUsuariosEmpresa(empresaId);
+  } catch (e) {
+    notify('Erro ao excluir funcionário: ' + (e.message || String(e)), 'error');
   } finally {
     setLoad(false);
   }
