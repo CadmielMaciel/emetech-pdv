@@ -9551,9 +9551,9 @@ function mostrarTelaNetflix() {
   const grid = document.getElementById('nf-grid');
   if (!tela || !grid) return;
 
-  // Atalho: se a empresa tem apenas 1 funcionário ativo, pula a tela de
-  // perfis e vai direto para o PIN dele (ou entra direto se não tiver PIN).
   const ativos = (G.usuarios || []).filter(u => u.ativo);
+
+  // Atalho: 1 só funcionário ativo → vai direto pro PIN dele.
   if (ativos.length === 1) {
     const u = ativos[0];
     _nfPerfilSelecionado = u;
@@ -9564,35 +9564,10 @@ function mostrarTelaNetflix() {
 
   const m = getMarca ? getMarca() : {};
   const logoSidebar = m.logoSidebar || null;
-  const slots = getSlotsConfig();
-  const editavel = podeEditarSlots();
 
-  // Encontra o admin master (seu usuário)
-  const adminMaster = G.usuarios.find(u => u.role === 'admin' && u.ativo);
-
-  // Renderiza os 3 slots + admin master separado
+  // Lista TODOS os funcionários ativos da empresa (modelo: 1 conta por empresa).
   let html = '';
-
-  // ── 3 SLOTS CONFIGURÁVEIS ─────────────────────────
-  // Slots preenchidos mostram o perfil; slots vazios mostram um placeholder
-  // "+" SE o usuário atual pode editar (admin/gerente) — assim é possível
-  // configurar o primeiro perfil mesmo sem nenhum slot preenchido ainda.
-  for (let i = 1; i <= 3; i++) {
-    const userId = slots['slot'+i];
-    const u = userId ? G.usuarios.find(x => x.id === userId && x.ativo) : null;
-
-    if (!u) {
-      if (editavel) {
-        html += `<div class="nf-slot nf-slot-empty" onclick="abrirSlotModal(${i})" style="cursor:pointer">
-          <div class="nf-avatar" style="background:rgba(255,255,255,.06);border:2px dashed rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center">
-            <i class="ti ti-plus" style="font-size:28px;color:rgba(255,255,255,.3)"></i>
-          </div>
-          <div class="nf-nome" style="color:rgba(255,255,255,.35)">Adicionar perfil</div>
-        </div>`;
-      }
-      continue;
-    }
-
+  ativos.forEach(u => {
     const c = getNFColor(u.role);
     const iniciais = (u.nome || '?').slice(0,2).toUpperCase();
     const pinOk = hasPin(u.id);
@@ -9610,46 +9585,14 @@ function mostrarTelaNetflix() {
         ${pinOk ? '🔒 PIN configurado' : '⚪ Sem PIN'}
       </div>
     </div>`;
-  }
+  });
 
-  if (!html) html = `<div style="color:rgba(255,255,255,.28);font-size:13px;padding:16px 0">Nenhum perfil configurado ainda.</div>`;
+  if (!html) html = `<div style="color:rgba(255,255,255,.28);font-size:13px;padding:16px 0">Nenhum funcionário cadastrado. Cadastre funcionários no painel admin.</div>`;
   grid.innerHTML = html;
 
-  // ── SEPARADOR + ADMIN MASTER ──────────────────────
-  // Admin master sempre aparece separado, abaixo dos slots
-  let adminHtml = '';
-  if (adminMaster) {
-    const c = getNFColor('admin');
-    const iniciais = (adminMaster.nome || '?').slice(0,2).toUpperCase();
-    const pinOk = hasPin(adminMaster.id);
-    const avatarContent = logoSidebar
-      ? `<img src="${logoSidebar}" style="width:100%;height:100%;object-fit:contain;padding:6px">`
-      : `<span style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:#fff">${iniciais}</span>`;
+  // Remove container antigo de admin master (modelo antigo) se existir
+  document.getElementById('nf-admin-container')?.remove();
 
-    adminHtml = `<div style="margin-top:24px;display:flex;flex-direction:column;align-items:center;gap:6px">
-      <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.2);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px">Administrador</div>
-      <div id="nf-admin-slot" style="display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;border-radius:16px;padding:8px;transition:outline .15s,background .15s;outline:3px solid transparent" onclick="nfSelecionarCard('${adminMaster.id}')">
-        <div class="nf-avatar" style="width:60px;height:60px;border-radius:10px;background:${c.bg};display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.4)">
-          ${avatarContent}
-        </div>
-        <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,.6)">${adminMaster.nome}</div>
-        <div style="font-size:9.5px;color:${pinOk ? 'rgba(255,255,255,.3)' : 'rgba(255,255,255,.18)'}">
-          ${pinOk ? '🔒 PIN ativo' : '⚪ Sem PIN'}
-        </div>
-      </div>
-    </div>`;
-  }
-
-  // Injeta admin master após o grid
-  let adminContainer = document.getElementById('nf-admin-container');
-  if (!adminContainer) {
-    adminContainer = document.createElement('div');
-    adminContainer.id = 'nf-admin-container';
-    tela.querySelector('.nf-grid')?.after(adminContainer);
-  }
-  if (adminContainer) adminContainer.innerHTML = adminHtml;
-
-  // Botão Gerenciar removido da tela Netflix
   const _mgBtn = document.getElementById('nf-manage-btn');
   if (_mgBtn) _mgBtn.remove();
 
@@ -10131,8 +10074,8 @@ function closeSidebarMobile() {
   const sidebar = document.querySelector('.sidebar');
   const overlay = document.getElementById('sidebar-overlay');
   const icon    = document.getElementById('hamburger-icon');
-  sidebar.classList.remove('mobile-open');
-  overlay.classList.remove('active');
+  if (sidebar) sidebar.classList.remove('mobile-open');
+  if (overlay) overlay.classList.remove('active');
   if (icon) icon.className = 'ti ti-menu-2';
   document.body.style.overflow = '';
 }
