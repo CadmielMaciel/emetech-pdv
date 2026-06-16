@@ -839,7 +839,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
           <button class="btn btn-pri" onclick="openModal('modal-devolucao')"><i class="ti ti-plus"></i>Nova Devolução</button>
         </div>
         <div class="card" style="padding:0"><div class="tw"><table>
-          <thead><tr><th>#Dev</th><th>Venda</th><th>Cliente</th><th>Tipo</th><th>Motivo</th><th>Valor</th><th>Estorno</th><th>Data</th></tr></thead>
+          <thead><tr><th>#Dev</th><th>Venda</th><th>Cliente</th><th>Tipo</th><th>Motivo</th><th>Valor</th><th>Estorno</th><th>Data</th><th>Comprovante</th></tr></thead>
           <tbody id="dev-table"></tbody>
         </table></div></div>
       </div>
@@ -914,7 +914,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
           <button class="btn btn-out btn-sm" onclick="limparFiltrosOS()"><i class="ti ti-x"></i>Limpar</button>
         </div>
         <div class="card" style="padding:0"><div class="tw"><table>
-          <thead><tr><th>OS</th><th>Cliente</th><th>Equipamento</th><th>Abertura</th><th>Conclusão</th><th>Técnico</th><th>Valor</th><th>Status</th></tr></thead>
+          <thead><tr><th>OS</th><th>Cliente</th><th>Equipamento</th><th>Abertura</th><th>Conclusão</th><th>Técnico</th><th>Valor</th><th>Status</th><th>Documentos</th></tr></thead>
           <tbody id="os-hist-table"></tbody>
         </table></div></div>
       </div>
@@ -1000,6 +1000,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
           <select id="mf-tipo" onchange="renderMov()" style="padding:7px 10px;font-size:12.5px;border-radius:8px;width:auto">
             <option value="">Todos os tipos</option><option value="entrada">Entrada</option><option value="saida">Saída</option><option value="ajuste">Ajuste</option>
           </select>
+          <button class="btn btn-out" onclick="imprimirHistoricoMov()"><i class="ti ti-printer"></i>Documento</button>
           <button class="btn btn-pri" onclick="openModal('modal-ajuste')"><i class="ti ti-adjustments"></i>Ajuste Manual</button>
         </div>
         <div class="card" style="padding:0"><div class="tw"><table>
@@ -3893,17 +3894,85 @@ async function saveDevolucao(){
   setLoad(false);
   if(error){notify('Erro: '+error.message,'error');return;}
   closeModal('modal-devolucao');renderDevolucoes();notify('Devolução registrada!');
+  const novaDev=data;
   devVendaAtual=null;
   document.getElementById('dev-venda-info').style.display='none';
   document.getElementById('dev-itens-sel').innerHTML='';
   document.getElementById('dev-venda-num').value='';
+  // Oferece o comprovante (não fiscal) logo após registrar
+  if(novaDev) setTimeout(()=>{ if(confirm('Devolução registrada! Deseja imprimir o comprovante?')) imprimirComprovanteDevolucao(novaDev.id); }, 150);
+}
+
+// Comprovante NÃO FISCAL de devolução (imprimível / PDF)
+function imprimirComprovanteDevolucao(devId){
+  const d=(G.devolucoes||[]).find(x=>x.id===devId);
+  if(!d){notify('Devolução não encontrada.','error');return;}
+  const emp=getEmpDados();
+  const cor=(getMarca&&getMarca().paleta?.c1)||'#5B47E0';
+  const hoje=new Date().toLocaleString('pt-BR');
+  const itens=(d.itens||[]).map(i=>`<tr>
+    <td style="padding:5px 0">${i.nome}</td>
+    <td style="text-align:center">${i.qty}x</td>
+    <td style="text-align:right">${fmt(i.preco*i.qty)}</td>
+  </tr>`).join('');
+  const estornoLbl={dinheiro:'Dinheiro',credito_loja:'Crédito na loja',pix:'PIX',cartao:'Cartão'}[d.forma_estorno]||(d.forma_estorno||'—');
+
+  const corpo=`
+    <div style="text-align:center;margin-bottom:10px">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:${cor}">${emp.nome||'Minha Empresa'}</div>
+      <div style="font-size:11px;color:#666">${emp.cnpj?'CNPJ: '+emp.cnpj:''}${emp.tel?' · '+emp.tel:''}</div>
+      ${emp.endereco?`<div style="font-size:11px;color:#666">${emp.endereco}</div>`:''}
+    </div>
+    <div style="text-align:center;border-top:2px dashed #ccc;border-bottom:2px dashed #ccc;padding:8px 0;margin-bottom:10px">
+      <div style="font-weight:800;font-size:15px;letter-spacing:1px">COMPROVANTE DE DEVOLUÇÃO</div>
+      <div style="font-size:11px;color:#888">Documento não fiscal</div>
+    </div>
+    <div style="font-size:12px;line-height:1.7;margin-bottom:10px">
+      <div><b>Devolução nº:</b> ${pad(d.numero||0)}</div>
+      <div><b>Venda de origem:</b> #${pad(d.venda_numero||0)}</div>
+      <div><b>Cliente:</b> ${d.cliente_nome||'Consumidor Final'}</div>
+      <div><b>Operador:</b> ${d.operador_nome||'—'}</div>
+      <div><b>Data:</b> ${hoje}</div>
+      <div><b>Tipo:</b> ${d.tipo||'—'}</div>
+      <div><b>Motivo:</b> ${d.motivo||'—'}</div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:8px">
+      <thead><tr style="border-bottom:1px solid #ddd"><th style="text-align:left;padding-bottom:4px">Item</th><th style="text-align:center">Qtd</th><th style="text-align:right">Valor</th></tr></thead>
+      <tbody>${itens}</tbody>
+    </table>
+    <div style="border-top:2px dashed #ccc;padding-top:8px;font-size:13px">
+      <div style="display:flex;justify-content:space-between;font-weight:800;font-size:15px"><span>Total devolvido</span><span style="color:${cor}">${fmt(d.valor_total)}</span></div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px"><span>Forma de estorno</span><span>${estornoLbl}</span></div>
+    </div>
+    <div style="text-align:center;font-size:10px;color:#999;margin-top:18px;border-top:1px solid #eee;padding-top:8px">
+      Este comprovante não tem valor fiscal. Emitido por ${emp.nome||'—'} em ${hoje}.
+    </div>`;
+
+  const html=`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+    <title>Comprovante de Devolução ${pad(d.numero||0)}</title>
+    <style>
+      body{font-family:'DM Sans',Arial,sans-serif;margin:0;background:#fff;color:#111}
+      .print-bar{position:sticky;top:0;display:flex;gap:8px;align-items:center;background:#1a1a1a;padding:10px 14px}
+      .print-btn{border:0;border-radius:7px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer}
+      .print-btn-pri{background:${cor};color:#fff} .print-btn-out{background:#444;color:#fff}
+      .cupom{max-width:340px;margin:18px auto;padding:18px 20px}
+      @media print{.print-bar{display:none}.cupom{margin:0}}
+    </style></head><body>
+    <div class="print-bar">
+      <span style="color:rgba(255,255,255,.6);font-size:12px;flex:1">Comprovante de Devolução · ${pad(d.numero||0)}</span>
+      <button class="print-btn print-btn-out" onclick="window.close()">Fechar</button>
+      <button class="print-btn print-btn-pri" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
+    </div>
+    <div class="cupom">${corpo}</div>
+  </body></html>`;
+  abrirPDFModal(html, 'Comprovante-Devolucao-'+pad(d.numero||0));
 }
 
 function renderDevolucoes(q=''){
   const f=q.toLowerCase();
   const list=G.devolucoes.filter(d=>!f||d.cliente_nome.toLowerCase().includes(f)||String(d.venda_numero).includes(f));
   const eC={dinheiro:'tag-grn',credito_loja:'tag-pur',pix:'tag-blu'};
-  document.getElementById('dev-table').innerHTML=list.length===0?'<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--txt3)">Nenhuma devolução</td></tr>':list.map(d=>`<tr>
+  document.getElementById('dev-table').innerHTML=list.length===0?'<tr><td colspan="9" style="text-align:center;padding:28px;color:var(--txt3)">Nenhuma devolução</td></tr>':list.map(d=>`<tr>
     <td style="font-weight:700;color:var(--pri)">#${pad(d.numero||0)}</td>
     <td style="font-weight:600">#${pad(d.venda_numero||0)}</td>
     <td>${d.cliente_nome}</td>
@@ -3912,6 +3981,7 @@ function renderDevolucoes(q=''){
     <td style="font-weight:700;color:var(--danger)">${fmt(d.valor_total)}</td>
     <td><span class="tag ${eC[d.forma_estorno]||'tag-gry'}">${d.forma_estorno||'—'}</span></td>
     <td style="font-size:12px;color:var(--txt3)">${fmtDT(d.criado_em)}</td>
+    <td><button class="btn btn-out btn-xs" onclick="imprimirComprovanteDevolucao('${d.id}')" title="Comprovante"><i class="ti ti-receipt"></i></button></td>
   </tr>`).join('');
 }
 
@@ -4377,6 +4447,70 @@ function renderMov(){
   </tr>`).join('');
 }
 
+// Gera documento (A4) do histórico de movimentações conforme o filtro atual
+function imprimirHistoricoMov(){
+  const fp=document.getElementById('mf-prod')?.value||'';
+  const ft=document.getElementById('mf-tipo')?.value||'';
+  const list=G.movs.filter(m=>(!fp||m.produto_id===fp)&&(!ft||m.tipo===ft));
+  if(!list.length){notify('Nenhuma movimentação para imprimir.','warn');return;}
+  const emp=getEmpDados();
+  const cor=(getMarca&&getMarca().paleta?.c1)||'#5B47E0';
+  const hoje=new Date().toLocaleString('pt-BR');
+  const prodNome=fp?(G.produtos.find(p=>p.id===fp)?.nome||''):'Todos os produtos';
+  const tipoLbl=ft?ft.charAt(0).toUpperCase()+ft.slice(1):'Todos os tipos';
+
+  const linhas=list.map(m=>`<tr>
+    <td>${fmtDT(m.criado_em)}</td>
+    <td>${m.produto_nome||'—'}</td>
+    <td style="text-transform:capitalize">${m.tipo}</td>
+    <td style="text-align:center;font-weight:700">${m.quantidade}</td>
+    <td style="text-align:center">${m.estoque_apos!=null?m.estoque_apos:'∞'}</td>
+    <td>${m.usuario_nome||'—'}</td>
+    <td>${m.motivo||'—'}</td>
+  </tr>`).join('');
+
+  const corpo=`
+    <div class="doc-header">
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:${cor}">${emp.nome||'Minha Empresa'}</div>
+        <div style="font-size:12px;color:#666">${emp.cnpj?'CNPJ: '+emp.cnpj:''} ${emp.tel?' · '+emp.tel:''}</div>
+      </div>
+      <div style="text-align:right;font-size:12px;color:#666">
+        <div style="font-weight:700;color:#111;font-size:15px">Relatório de Movimentações</div>
+        <div>Emitido em ${hoje}</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:24px;margin:14px 0;font-size:12.5px">
+      <div><b>Produto:</b> ${prodNome}</div>
+      <div><b>Tipo:</b> ${tipoLbl}</div>
+      <div><b>Total de registros:</b> ${list.length}</div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr style="background:${cor};color:#fff">
+        <th style="padding:7px;text-align:left">Data/Hora</th>
+        <th style="padding:7px;text-align:left">Produto</th>
+        <th style="padding:7px;text-align:left">Tipo</th>
+        <th style="padding:7px;text-align:center">Qtd</th>
+        <th style="padding:7px;text-align:center">Após</th>
+        <th style="padding:7px;text-align:left">Usuário</th>
+        <th style="padding:7px;text-align:left">Motivo</th>
+      </tr></thead>
+      <tbody>${linhas}</tbody>
+    </table>`;
+
+  const html=`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+    <title>Movimentações de Estoque</title>
+    <style>${getCssDocA4(cor)} table tr:nth-child(even){background:#f7f7fb} td{padding:6px 7px;border-bottom:1px solid #eee}</style></head><body>
+    <div class="print-bar">
+      <span style="color:rgba(255,255,255,.6);font-size:12px;flex:1">Movimentações de Estoque</span>
+      <button class="print-btn print-btn-out" onclick="window.close()">Fechar</button>
+      <button class="print-btn print-btn-pri" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
+    </div>
+    <div class="page">${corpo}</div>
+  </body></html>`;
+  abrirPDFModal(html, 'Movimentacoes-Estoque');
+}
+
 function verMovProd(id){
   const p=G.produtos.find(x=>x.id===id);
   const list=G.movs.filter(m=>m.produto_id===id);
@@ -4707,7 +4841,8 @@ async function renderOSHist(){
   const {data}=await q.limit(200);
   setLoad(false);
   const list=data||[];
-  document.getElementById('os-hist-table').innerHTML=list.length===0?'<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--txt3)">Nenhuma OS encontrada</td></tr>':list.map(o=>`<tr>
+  G._osHist=list; // cache para o botão Documentos do histórico
+  document.getElementById('os-hist-table').innerHTML=list.length===0?'<tr><td colspan="9" style="text-align:center;padding:28px;color:var(--txt3)">Nenhuma OS encontrada</td></tr>':list.map(o=>`<tr>
     <td style="font-weight:700;color:var(--pri)">${o.numero}</td>
     <td>${o.cliente_nome}</td>
     <td>${o.aparelho}</td>
@@ -4716,7 +4851,19 @@ async function renderOSHist(){
     <td>${o.tecnico_nome||'—'}</td>
     <td style="font-weight:700;color:var(--pri)">${fmt(o.total)}</td>
     <td><span class="tag ${o.status==='Cancelada'?'tag-red':'tag-grn'}">${o.status}</span></td>
+    <td><button class="btn btn-out btn-xs" onclick="abrirDocumentosOSHist('${o.id}')" title="Documentos"><i class="ti ti-file-text"></i></button></td>
   </tr>`).join('');
+}
+
+// Abre os documentos de uma OS a partir do histórico (busca no cache do histórico,
+// pois o histórico carrega de ordens_servico, não de G.os)
+function abrirDocumentosOSHist(osId){
+  let os=(G.os||[]).find(x=>x.id===osId) || (G._osHist||[]).find(x=>x.id===osId);
+  if(!os){notify('OS não encontrada.','error');return;}
+  _docOsAtual=os;
+  document.getElementById('modal-docs-titulo').textContent=`Documentos — OS ${os.numero}`;
+  document.getElementById('modal-docs-sub').textContent=`${os.aparelho} · ${os.cliente_nome} · Status: ${os.status}`;
+  openModal('modal-docs-os');
 }
 
 function limparFiltrosOS(){['hf-de','hf-ate'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});document.getElementById('hf-tec').value='';document.getElementById('hf-cli').value='';if(document.getElementById('hf-status'))document.getElementById('hf-status').value='';renderOSHist();}
