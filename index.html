@@ -1651,7 +1651,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
       <div class="page" id="page-usuarios">
         <div style="display:flex;gap:8px;margin-bottom:12px">
           <div class="ig" style="flex:1"><i class="ti ti-search"></i><input type="text" placeholder="Buscar usuário..." oninput="renderUsuarios(this.value)"></div>
-          <button class="btn btn-pri" onclick="document.getElementById('u-comissao-grp').style.display='none';document.getElementById('u-comissao').value='';openModal('modal-usr')"><i class="ti ti-user-plus"></i>Novo Usuário</button>
+          <button class="btn btn-pri" onclick="document.getElementById('u-id').value='';document.getElementById('u-nome').value='';document.getElementById('u-pin').value='';var h=document.getElementById('u-pin-hint');if(h)h.textContent='';document.getElementById('u-comissao-grp').style.display='none';document.getElementById('u-comissao').value='';openModal('modal-usr')"><i class="ti ti-user-plus"></i>Novo Usuário</button>
         </div>
         <div class="fin-tabs" style="margin-bottom:14px">
           <button class="fin-tab active" onclick="usrTab('lista',this)"><i class="ti ti-users" style="font-size:13px"></i> Usuários</button>
@@ -1993,7 +1993,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
   <div class="modal-title"><i class="ti ti-shield-lock"></i><span id="usr-ttl">Novo Usuário</span></div>
   <input type="hidden" id="u-id">
   <div class="fg"><label class="lbl">Nome *</label><input type="text" id="u-nome"></div>
-  <div class="fg"><label class="lbl">E-mail *</label><input type="email" id="u-email"></div>
+  <div class="fg"><label class="lbl">PIN (4 dígitos) <span id="u-pin-hint" style="font-weight:400;color:rgba(255,255,255,.4)"></span></label><input type="text" id="u-pin" inputmode="numeric" maxlength="6" placeholder="ex: 1234"></div>
   <div id="u-pass-grp" class="fg"><label class="lbl">Senha (mín. 6 chars) *</label><input type="password" id="u-pass"></div>
   <div class="fg"><label class="lbl">Nível *</label><select id="u-role" onchange="toggleComissaoField()"><option value="operador">Operador de Caixa</option><option value="tecnico">Técnico</option><option value="gerente">Gerente</option><option value="admin">Administrador</option></select></div>
   <div class="fg" id="u-comissao-grp" style="display:none"><label class="lbl">Comissão por OS concluída (%)</label><input type="number" id="u-comissao" step="0.1" min="0" max="100" placeholder="Ex: 10"></div>
@@ -5326,19 +5326,34 @@ function getMarcaDagua(tipo) {
 /* ── USUÁRIOS ────────────────────────────────────────── */
 async function saveUsr(){
   const nome=document.getElementById('u-nome').value.trim();
-  const email=document.getElementById('u-email').value.trim();
+  const pin=document.getElementById('u-pin').value.trim();
   const role=document.getElementById('u-role').value;
   const ativo=document.getElementById('u-ativo').value==='true';
   const comissao_pct=role==='tecnico'?(parseFloat(document.getElementById('u-comissao').value)||0):0;
   const editId=document.getElementById('u-id').value;
-  if(!nome||!email){notify('Nome e e-mail obrigatórios!','error');return;}
+  if(!nome){notify('Nome obrigatório!','error');return;}
+  if(pin && !/^\d{4,6}$/.test(pin)){notify('O PIN deve ter de 4 a 6 dígitos.','error');return;}
+  if(!editId && !pin){notify('Defina um PIN para o novo funcionário.','error');return;}
   setLoad(true);
   let err;
-  if(editId){({error:err}=await db.from('usuarios').update({nome,role,ativo,comissao_pct}).eq('id',editId));}
-  else{({error:err}=await db.from('usuarios').insert({nome,email,role,ativo,comissao_pct,empresa_id:EID()}));}
+  if(editId){
+    const patch={nome,role,ativo,comissao_pct};
+    if(pin) patch.pin=pin;
+    ({error:err}=await db.from('usuarios').update(patch).eq('id',editId));
+  } else {
+    ({error:err}=await db.from('usuarios').insert({nome,pin,role,ativo,comissao_pct,empresa_id:EID()}));
+  }
   setLoad(false);
-  if(err){notify('Erro: '+err.message,'error');return;}
-  notify(editId?'Usuário atualizado!':'Perfil criado! Crie o login no Supabase Auth.');
+  if(err){
+    // Erro de limite do plano (trigger) vem como check_violation
+    if((err.message||'').toLowerCase().includes('limite')){
+      notify('🔒 '+err.message,'warn',6000);
+    } else {
+      notify('Erro: '+err.message,'error');
+    }
+    return;
+  }
+  notify(editId?'Funcionário atualizado!':'Funcionário criado!');
   const {data}=await db.from('usuarios').select('*').order('nome');G.usuarios=data||[];
   closeModal('modal-usr');renderUsuarios();
 }
@@ -5420,7 +5435,8 @@ function editUsr(id){
   const u=G.usuarios.find(x=>x.id===id);if(!u)return;
   document.getElementById('u-id').value=u.id;
   document.getElementById('u-nome').value=u.nome;
-  document.getElementById('u-email').value=u.email;
+  document.getElementById('u-pin').value='';
+  const hint=document.getElementById('u-pin-hint'); if(hint) hint.textContent = u.pin ? '— deixe em branco para manter' : '— defina um PIN';
   document.getElementById('u-role').value=u.role;
   document.getElementById('u-ativo').value=u.ativo?'true':'false';
   document.getElementById('u-comissao').value=u.comissao_pct||'';
