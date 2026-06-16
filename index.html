@@ -791,7 +791,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
             <select id="cred-filter-status" onchange="renderContratos()" style="padding:7px 10px;font-size:12.5px;border-radius:8px;width:auto">
               <option value="">Todos</option><option value="aberto">Em dia</option><option value="inadimplente">Inadimplente</option><option value="quitado">Quitado</option>
             </select>
-            <button class="btn btn-pri" onclick="openModal('modal-novo-credito')"><i class="ti ti-plus"></i>Novo Crediário</button>
+            <button class="btn btn-pri" onclick="popSelects();openModal('modal-novo-credito')"><i class="ti ti-plus"></i>Novo Crediário</button>
           </div>
           <div id="contratos-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px"></div>
         </div>
@@ -1815,6 +1815,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
   <div class="g2"><div class="fg"><label class="lbl">Endereço</label><input type="text" id="c-end"></div><div class="fg"><label class="lbl">Número</label><input type="text" id="c-num"></div></div>
   <div class="g3"><div class="fg"><label class="lbl">Bairro</label><input type="text" id="c-bai"></div><div class="fg"><label class="lbl">Cidade</label><input type="text" id="c-cid"></div><div class="fg"><label class="lbl">Estado</label><input type="text" id="c-est" placeholder="BA"></div></div>
   <div class="g2"><div class="fg"><label class="lbl">CEP</label><input type="text" id="c-cep"></div><div class="fg"><label class="lbl">Limite Crédito R$</label><input type="number" id="c-lim" value="0" step="0.01"></div></div>
+  <div class="fg"><label class="lbl">Data de aniversário</label><input type="date" id="c-nasc"><div style="font-size:11px;color:var(--txt3);margin-top:4px">Usada pelo CRM para enviar parabéns e ofertas.</div></div>
   <div class="fg"><label class="lbl">Observações</label><textarea id="c-obs" rows="2"></textarea></div>
   <div class="modal-footer">
     <button class="btn btn-out" onclick="closeModal('modal-cli')">Cancelar</button>
@@ -3869,7 +3870,7 @@ async function saveCliente(){
   const tel=document.getElementById('c-tel').value.trim();
   if(!nome||!tel){notify('Nome e telefone obrigatórios!','error');return;}
   const id=document.getElementById('c-id').value;
-  const payload={nome,cpf:document.getElementById('c-cpf').value,telefone:tel,email:document.getElementById('c-email').value,endereco:document.getElementById('c-end').value,numero:document.getElementById('c-num').value,bairro:document.getElementById('c-bai').value,cidade:document.getElementById('c-cid').value,estado:document.getElementById('c-est').value,cep:document.getElementById('c-cep').value,limite_credito:parseFloat(document.getElementById('c-lim').value)||0,observacoes:document.getElementById('c-obs').value};
+  const payload={nome,cpf:document.getElementById('c-cpf').value,telefone:tel,email:document.getElementById('c-email').value,endereco:document.getElementById('c-end').value,numero:document.getElementById('c-num').value,bairro:document.getElementById('c-bai').value,cidade:document.getElementById('c-cid').value,estado:document.getElementById('c-est').value,cep:document.getElementById('c-cep').value,limite_credito:parseFloat(document.getElementById('c-lim').value)||0,data_nascimento:document.getElementById('c-nasc').value||null,observacoes:document.getElementById('c-obs').value};
   setLoad(true);
   let err;
   if(id){({error:err}=await db.from('clientes').update(payload).eq('id',id));}
@@ -3878,7 +3879,7 @@ async function saveCliente(){
   if(err){notify('Erro: '+err.message,'error');return;}
   notify(id?'Cliente atualizado!':'Cliente cadastrado!');
   closeModal('modal-cli');
-  ['c-id','c-nome','c-cpf','c-tel','c-email','c-end','c-num','c-bai','c-cid','c-est','c-cep','c-obs'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
+  ['c-id','c-nome','c-cpf','c-tel','c-email','c-end','c-num','c-bai','c-cid','c-est','c-cep','c-obs','c-nasc'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
   document.getElementById('c-lim').value='0';
   const {data}=await db.from('clientes').select('*').order('nome');
   G.clientes=data||[];renderClientes();popSelects();
@@ -3905,6 +3906,7 @@ function editCli(id){
   document.getElementById('c-id').value=c.id;
   ['nome','cpf','telefone','email','endereco','numero','bairro','cidade','estado','cep','observacoes'].forEach(f=>{const el=document.getElementById('c-'+f.replace('endereco','end').replace('numero','num').replace('bairro','bai').replace('cidade','cid').replace('estado','est').replace('observacoes','obs'));if(el)el.value=c[f]||'';});
   document.getElementById('c-lim').value=c.limite_credito||0;
+  document.getElementById('c-nasc').value=c.data_nascimento||'';
   openModal('modal-cli');
 }
 
@@ -5485,6 +5487,12 @@ async function toggleUsr(id){
 function popSelects(){
   const opts='<option value="">Consumidor Final</option>'+G.clientes.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
   ['cart-cli','os-cli','orc-cli'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=opts;});
+  // Crediário: seletor de cliente do "Novo Crediário" (não tem Consumidor Final — exige cliente)
+  const ncCli=document.getElementById('nc-cli');
+  if(ncCli)ncCli.innerHTML='<option value="">Selecione o cliente...</option>'+G.clientes.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+  // Filtro de cliente nas parcelas
+  const parcCli=document.getElementById('parc-filter-cli');
+  if(parcCli)parcCli.innerHTML='<option value="">Todos clientes</option>'+G.clientes.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
   const ajSel=document.getElementById('aj-prod');
   if(ajSel)ajSel.innerHTML='<option value="">Selecionar...</option>'+G.produtos.filter(p=>!p.estoque_infinito).map(p=>`<option value="${p.id}">${p.nome} (${p.estoque})</option>`).join('');
 }
@@ -10061,20 +10069,40 @@ function removerPIN(userId) {
   const SELECTORS = '.btn, .ni, .fin-tab, .slot-user-item, .nf-slot, #nf-admin-slot, .nf-card';
 
   function createRipple(e, el) {
-    // Detecta se fundo é escuro (nav, nf-screen) ou claro
-    const isDark = el.closest('.nav, .nf-screen, #pin-screen') !== null;
+    // Não aplica ripple em elementos cujo recorte (overflow:hidden) quebraria o layout
+    // (ex.: itens que mostram dropdowns, tooltips ou conteúdo que ultrapassa a borda).
+    const cs = getComputedStyle(el);
+    // Só cria ripple se o elemento já estiver posicionado OU se pudermos posicioná-lo
+    // sem efeito colateral. Em vez de mutar o host, usamos um wrapper absoluto que
+    // não afeta o fluxo, com clip-path no próprio dot para não vazar.
     const rect = el.getBoundingClientRect();
+    const isDark = el.closest('.nav, .nf-screen, #pin-screen') !== null;
+
+    // Guarda os estilos inline originais para restaurar depois
+    const hadInlinePosition = el.style.position;
+    const hadInlineOverflow = el.style.overflow;
+    const wasStatic = cs.position === 'static';
+    if (wasStatic) el.style.position = 'relative';
+    // overflow só temporariamente, e restaura ao fim da animação
+    el.style.overflow = 'hidden';
+
     const dot = document.createElement('span');
     dot.className = 'ripple-dot' + (isDark ? '' : ' ripple-dot-dark');
     dot.style.left = (e.clientX - rect.left) + 'px';
     dot.style.top  = (e.clientY - rect.top)  + 'px';
-    el.style.position = el.style.position || 'relative';
-    el.style.overflow = 'hidden';
     el.appendChild(dot);
-    dot.addEventListener('animationend', () => dot.remove());
+
+    const cleanup = () => {
+      dot.remove();
+      // Restaura exatamente os estilos inline anteriores (não deixa lixo)
+      el.style.overflow = hadInlineOverflow;
+      if (wasStatic) el.style.position = hadInlinePosition;
+    };
+    dot.addEventListener('animationend', cleanup);
+    // Failsafe: limpa mesmo se animationend não disparar
+    setTimeout(cleanup, 600);
   }
 
-  // Usa delegação de eventos no document
   document.addEventListener('mousedown', function(e) {
     const el = e.target.closest(SELECTORS);
     if (el && !el.disabled && !el.classList.contains('disabled')) {
@@ -10082,7 +10110,6 @@ function removerPIN(userId) {
     }
   }, true);
 
-  // Touch support
   document.addEventListener('touchstart', function(e) {
     const el = e.target.closest(SELECTORS);
     if (el && !el.disabled && !el.classList.contains('disabled')) {
