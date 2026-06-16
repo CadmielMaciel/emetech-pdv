@@ -663,6 +663,7 @@ select option { background: var(--bg2); }
       <div class="sb-item" onclick="go('updates')"><i class="ti ti-cloud-upload"></i> Updates</div>
       <div class="sb-item" onclick="go('logs')"><i class="ti ti-activity"></i> Logs</div>
       <div class="sb-sec">Sistema</div>
+      <div class="sb-item" onclick="go('suporte')"><i class="ti ti-headset"></i> Suporte</div>
       <div class="sb-item" onclick="go('config')"><i class="ti ti-settings"></i> Configurações</div>
     </nav>
     <div class="sb-footer">
@@ -1049,6 +1050,30 @@ select option { background: var(--bg2); }
             Exclui <b>permanentemente todas as empresas</b> e todos os dados relacionados (produtos, clientes, vendas, OS, financeiro, usuários...). A empresa de sistema (admin_master) <b>não</b> é afetada e seu acesso ao painel é preservado. Esta ação <b>não pode ser desfeita</b>.
           </div>
           <button class="btn btn-danger" onclick="abrirLimparBanco()"><i class="ti ti-database-off"></i> Limpar banco de dados</button>
+        </div>
+      </div>
+
+      <div class="page" id="page-suporte">
+        <div class="sec-hdr"><div class="sec-title">Suporte (exibido no app das empresas)</div></div>
+        <div class="card" style="max-width:600px">
+          <div style="font-size:12.5px;color:var(--txt2);margin-bottom:16px">
+            Estas informações alimentam o botão <b>Suporte</b> e o <b>"Falar no WhatsApp"</b> que aparecem no app de todas as empresas. Alterar aqui reflete para todos.
+          </div>
+          <div class="fg">
+            <label class="lbl">WhatsApp do suporte (só números, com DDI/DDD)</label>
+            <input type="text" id="sup-whatsapp" placeholder="5575999999999">
+            <div style="font-size:11px;color:var(--txt3);margin-top:4px">Ex.: 55 (Brasil) + 75 (DDD) + número. Sem espaços ou símbolos.</div>
+          </div>
+          <div class="fg">
+            <label class="lbl">Mensagem padrão (opcional)</label>
+            <input type="text" id="sup-msg" placeholder="Olá! Preciso de suporte com o EMETech PDV.">
+          </div>
+          <div class="fg">
+            <label class="lbl">E-mail de suporte (opcional)</label>
+            <input type="email" id="sup-email" placeholder="suporte@emetech.com">
+          </div>
+          <button class="btn btn-pri" onclick="salvarSuporteConfig()"><i class="ti ti-device-floppy"></i> Salvar</button>
+          <span id="sup-status" style="margin-left:10px;font-size:12px;color:var(--txt3)"></span>
         </div>
       </div>
 
@@ -2079,6 +2104,7 @@ const PAGE_TITLES = {
   updates:   { title:'Updates',      icon:'ti-cloud-upload'     },
   logs:      { title:'Logs',         icon:'ti-activity'         },
   config:    { title:'Configurações',icon:'ti-settings'         },
+  suporte:   { title:'Suporte',      icon:'ti-headset'          },
 };
 
 function go(page) {
@@ -2098,6 +2124,7 @@ function go(page) {
   if (page === 'logs') carregarLogs();
   if (page === 'cobrancas') renderCobrancas();
   if (page === 'whatsapp') renderWhatsapp();
+  if (page === 'suporte') carregarSuporteConfig();
 }
 
 // ── BUSCA GLOBAL (Ctrl+K) (NOVO) ──
@@ -3545,26 +3572,42 @@ async function salvarContaEmpresa(empresaId) {
   }
 }
 
-// Cria usuário (Auth + public.usuarios) com role/comissão customizados via Edge Function
-async function criarUsuarioEmpresaCompleto(empresaId, nomeUsuario, email, senha, role, comissaoPct) {
+// ── CONFIG DE SUPORTE (global, exibida no app das empresas) ──
+async function carregarSuporteConfig() {
+  const st = document.getElementById('sup-status');
   try {
-    const { data: { session } } = await db.auth.getSession();
-    if (!session) return { ok: false, error: 'Sessão expirada.' };
-
-    const resp = await fetch(`${FUNCTIONS_URL}/criar-empresa-usuario`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify({ empresaId, nomeUsuario, email, senha, role, comissaoPct }),
-    });
-
-    const result = await resp.json();
-    if (!resp.ok) return { ok: false, error: result.error || 'Erro desconhecido.' };
-    return { ok: true, ...result };
+    const { data, error } = await db.from('app_config').select('*').eq('id', 1).maybeSingle();
+    if (error) throw error;
+    document.getElementById('sup-whatsapp').value = data?.suporte_whatsapp || '';
+    document.getElementById('sup-msg').value = data?.suporte_msg || '';
+    document.getElementById('sup-email').value = data?.suporte_email || '';
+    if (st) st.textContent = '';
   } catch (e) {
-    return { ok: false, error: e.message || String(e) };
+    if (st) { st.textContent = 'Não foi possível carregar (rode a migração E01).'; st.style.color = 'var(--danger)'; }
+  }
+}
+
+async function salvarSuporteConfig() {
+  const st = document.getElementById('sup-status');
+  const wpp = document.getElementById('sup-whatsapp').value.trim().replace(/\D/g, '');
+  const msg = document.getElementById('sup-msg').value.trim();
+  const email = document.getElementById('sup-email').value.trim();
+  if (wpp && (wpp.length < 10 || wpp.length > 15)) { notify('WhatsApp inválido. Use DDI+DDD+número, só dígitos.', 'error'); return; }
+  if (!await sessaoValida()) return;
+
+  setLoad(true);
+  try {
+    const { error } = await db.from('app_config')
+      .upsert({ id: 1, suporte_whatsapp: wpp || null, suporte_msg: msg || null, suporte_email: email || null, updated_at: new Date().toISOString() }, { onConflict: 'id' });
+    if (error) throw error;
+    addLog('config', 'Configuração de suporte atualizada');
+    notify('✅ Configuração de suporte salva!', 'success');
+    if (st) { st.textContent = 'Salvo.'; st.style.color = 'var(--success)'; }
+  } catch (e) {
+    notify('Erro ao salvar: ' + (e.message || String(e)), 'error');
+    if (st) { st.textContent = 'Erro ao salvar.'; st.style.color = 'var(--danger)'; }
+  } finally {
+    setLoad(false);
   }
 }
 
