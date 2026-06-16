@@ -1770,6 +1770,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
               </button>
             </div></div>
       <div class="g2"><div class="fg"><label class="lbl">Categoria</label><select id="p-cat"><option>Celular</option><option>Acessório</option><option>Peça</option><option>Serviço</option><option>Outro</option></select></div><div class="fg"><label class="lbl">Marca</label><input type="text" id="p-marca"></div></div>
+      <div class="g2"><div class="fg"><label class="lbl">Subcategoria</label><input type="text" id="p-subcat" placeholder="Ex: Capa, Película, Bateria..."></div><div class="fg"><label class="lbl">Fornecedor</label><select id="p-forn"><option value="">— Nenhum —</option></select></div></div>
       <div class="ms">Preços</div>
       <div class="g2"><div class="fg"><label class="lbl">Custo R$</label><input type="number" id="p-custo" step="0.01" placeholder="0,00"></div><div class="fg"><label class="lbl">Preço R$ *</label><input type="number" id="p-preco" step="0.01" placeholder="0,00"></div></div>
     </div>
@@ -2193,7 +2194,9 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
   <div class="modal-title"><i class="ti ti-send"></i>Enviar Cobrança</div>
   <input type="hidden" id="cob-contrato-id">
   <div id="cob-info" style="background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:12px;margin-bottom:14px"></div>
-  <div class="fg"><label class="lbl">E-mail do Cliente</label><input type="email" id="cob-email" placeholder="cliente@email.com"></div>
+  <div class="fg"><label class="lbl">E-mail do Cliente</label><input type="email" id="cob-email" placeholder="cliente@email.com">
+    <div style="font-size:11px;color:var(--txt3);margin-top:5px;line-height:1.4"><i class="ti ti-info-circle" style="font-size:12px"></i> O e-mail será simulado (abrir cliente de e-mail). Para envio automático, configure SMTP nas configurações.</div>
+  </div>
   <div class="fg"><label class="lbl">Layout do E-mail</label>
     <div style="display:flex;gap:8px">
       <label style="flex:1;padding:10px;border:1.5px solid var(--border);border-radius:9px;cursor:pointer;text-align:center" id="cob-layout-est-lbl">
@@ -3405,9 +3408,10 @@ function toggleInf(){const v=document.getElementById('p-inf').checked;document.g
 function fotoFull(s){document.getElementById('foto-full-img').src=s;document.getElementById('foto-full').style.display='flex';}
 
 /* ── PRODUTOS ────────────────────────────────────────── */
-function abrirModalProd(){clearProdForm();openModal('modal-prod');}
+function abrirModalProd(){clearProdForm();popSelects();openModal('modal-prod');}
 function clearProdForm(){
-  ['p-id','p-nome','p-sku','p-bc','p-marca','p-custo','p-preco'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
+  ['p-id','p-nome','p-sku','p-bc','p-marca','p-custo','p-preco','p-subcat'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
+  const pf=document.getElementById('p-forn');if(pf)pf.value='';
   document.getElementById('p-est').value='1';document.getElementById('p-estmin').value='3';
   document.getElementById('p-cat').value='Celular';document.getElementById('p-status').value='ativo';
   document.getElementById('p-inf').checked=false;document.getElementById('p-est-fields').style.display='';
@@ -3421,7 +3425,7 @@ async function saveProd(){
   const inf=document.getElementById('p-inf').checked;
   const id=document.getElementById('p-id').value;
   const custo=parseFloat(document.getElementById('p-custo').value)||0;
-  const payload={nome,sku:document.getElementById('p-sku').value||'SKU-'+Date.now(),barcode:document.getElementById('p-bc').value,categoria:document.getElementById('p-cat').value,marca:document.getElementById('p-marca').value,custo,preco,estoque_infinito:inf,estoque:inf?null:parseInt(document.getElementById('p-est').value)||0,estoque_minimo:inf?0:parseInt(document.getElementById('p-estmin').value)||0,status:document.getElementById('p-status').value,fotos:G.prodFotos};
+  const payload={nome,sku:document.getElementById('p-sku').value||'SKU-'+Date.now(),barcode:document.getElementById('p-bc').value,categoria:document.getElementById('p-cat').value,subcategoria:document.getElementById('p-subcat').value||null,fornecedor_id:document.getElementById('p-forn').value||null,marca:document.getElementById('p-marca').value,custo,preco,estoque_infinito:inf,estoque:inf?null:parseInt(document.getElementById('p-est').value)||0,estoque_minimo:inf?0:parseInt(document.getElementById('p-estmin').value)||0,status:document.getElementById('p-status').value,fotos:G.prodFotos};
   setLoad(true);
   let err,data;
   // Detecta mudança de preço/custo ANTES de salvar (para registrar histórico)
@@ -3454,6 +3458,9 @@ function editProd(id){
   document.getElementById('p-bc').value=p.barcode||'';
   document.getElementById('p-cat').value=p.categoria||'Celular';
   document.getElementById('p-marca').value=p.marca||'';
+  document.getElementById('p-subcat').value=p.subcategoria||'';
+  popSelects();
+  document.getElementById('p-forn').value=p.fornecedor_id||'';
   document.getElementById('p-custo').value=p.custo||'';
   document.getElementById('p-preco').value=p.preco;
   document.getElementById('p-inf').checked=!!p.estoque_infinito;toggleInf();
@@ -3752,12 +3759,55 @@ async function saveOrcamento(status='aberto'){
   const sub=G.orcItems.reduce((s,i)=>s+i.preco*i.qty,0);
   const desc=parseFloat(document.getElementById('orc-desc').value)||0;
   const total=sub*(1-desc/100);
-  const payload={empresa_id:EID(),cliente_id:cliSel?.value||null,cliente_nome:cliSel?.options[cliSel.selectedIndex]?.text||'Consumidor Final',operador_id:G.profile.id,operador_nome:G.profile.nome,itens:G.orcItems,subtotal:sub,desconto_pct:desc,total,validade:document.getElementById('orc-val').value||null,data_entrega_prevista:document.getElementById('orc-entrega').value||null,observacoes:document.getElementById('orc-obs').value,status};
+  const editId=document.getElementById('orc-id').value;
+  const payload={cliente_id:cliSel?.value||null,cliente_nome:cliSel?.options[cliSel.selectedIndex]?.text||'Consumidor Final',itens:G.orcItems,subtotal:sub,desconto_pct:desc,total,validade:document.getElementById('orc-val').value||null,data_entrega_prevista:document.getElementById('orc-entrega').value||null,observacoes:document.getElementById('orc-obs').value,status};
   setLoad(true);
-  const {data,error}=await db.from('orcamentos').insert(payload).select().single();
-  setLoad(false);
-  if(error){notify('Erro: '+error.message,'error');return;}
-  G.orcamentos.unshift(data);closeModal('modal-orc');renderOrcamentos();notify('Orçamento salvo!');
+  if(editId){
+    const {data,error}=await db.from('orcamentos').update(payload).eq('id',editId).select().single();
+    setLoad(false);
+    if(error){notify('Erro: '+error.message,'error');return;}
+    const idx=G.orcamentos.findIndex(o=>o.id===editId);
+    if(idx>=0)G.orcamentos[idx]=data;
+    closeModal('modal-orc');renderOrcamentos();notify('Orçamento atualizado!');
+  } else {
+    const ins={...payload,empresa_id:EID(),operador_id:G.profile.id,operador_nome:G.profile.nome};
+    const {data,error}=await db.from('orcamentos').insert(ins).select().single();
+    setLoad(false);
+    if(error){notify('Erro: '+error.message,'error');return;}
+    G.orcamentos.unshift(data);closeModal('modal-orc');renderOrcamentos();notify('Orçamento salvo!');
+  }
+}
+
+// Reabre um orçamento para edição
+function reabrirOrc(id){
+  const o=G.orcamentos.find(x=>x.id===id);
+  if(!o){notify('Orçamento não encontrado!','error');return;}
+  if(o.status==='convertido'){notify('Orçamento já convertido não pode ser editado.','warn');return;}
+  popSelects();
+  G.orcItems=(o.itens||[]).map(i=>({id:i.id,nome:i.nome,preco:i.preco,qty:i.qty}));
+  renderOrcItems();
+  document.getElementById('orc-id').value=o.id;
+  document.getElementById('orc-ttl').textContent='Editar Orçamento #'+pad(o.numero||0);
+  document.getElementById('orc-obs').value=o.observacoes||'';
+  document.getElementById('orc-desc').value=o.desconto_pct||0;
+  document.getElementById('orc-val').value=o.validade||'';
+  document.getElementById('orc-entrega').value=o.data_entrega_prevista||'';
+  const cliSel=document.getElementById('orc-cli'); if(cliSel&&o.cliente_id)cliSel.value=o.cliente_id;
+  calcOrcTotal();
+  openModal('modal-orc');
+}
+
+// Exclui um orçamento
+async function excluirOrc(id){
+  const o=G.orcamentos.find(x=>x.id===id);
+  confirmAct('Excluir orçamento',`Excluir o orçamento #${pad(o?.numero||0)} de "${o?.cliente_nome||''}"? Esta ação não pode ser desfeita.`,async()=>{
+    setLoad(true);
+    const {error}=await db.from('orcamentos').delete().eq('id',id);
+    setLoad(false);
+    if(error){notify('Erro ao excluir: '+error.message,'error');return;}
+    G.orcamentos=G.orcamentos.filter(x=>x.id!==id);
+    renderOrcamentos();notify('Orçamento excluído.');
+  });
 }
 
 async function converterOrcamento(){
@@ -3784,9 +3834,10 @@ function renderOrcamentos(q=''){
     <td style="font-size:12px">${o.validade?fmtD(o.validade+'T12:00'):'—'}</td>
     <td><span class="tag ${stC[o.status]||'tag-gry'}">${o.status}</span></td>
     <td><div style="display:flex;gap:3px">
-      ${o.status==='aberto'?`<button class="btn btn-out btn-xs" onclick="reabrirOrc('${o.id}')"><i class="ti ti-edit"></i></button>
-      <button class="btn btn-success btn-xs" onclick="conv2venda('${o.id}')"><i class="ti ti-shopping-cart"></i>Converter</button>`:''}
-      <button class="btn btn-out btn-xs" onclick="gerarPdfOrcamento('${o.id}')"><i class="ti ti-file-text"></i>PDF</button>
+      ${o.status!=='convertido'?`<button class="btn btn-out btn-xs" onclick="reabrirOrc('${o.id}')" title="Editar"><i class="ti ti-edit"></i></button>`:''}
+      ${o.status==='aberto'?`<button class="btn btn-success btn-xs" onclick="conv2venda('${o.id}')"><i class="ti ti-shopping-cart"></i>Converter</button>`:''}
+      <button class="btn btn-out btn-xs" onclick="gerarPdfOrcamento('${o.id}')" title="PDF"><i class="ti ti-file-text"></i></button>
+      <button class="btn btn-danger btn-xs" onclick="excluirOrc('${o.id}')" title="Excluir"><i class="ti ti-trash"></i></button>
     </div></td>
   </tr>`).join('');
 }
@@ -5495,6 +5546,9 @@ function popSelects(){
   if(parcCli)parcCli.innerHTML='<option value="">Todos clientes</option>'+G.clientes.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
   const ajSel=document.getElementById('aj-prod');
   if(ajSel)ajSel.innerHTML='<option value="">Selecionar...</option>'+G.produtos.filter(p=>!p.estoque_infinito).map(p=>`<option value="${p.id}">${p.nome} (${p.estoque})</option>`).join('');
+  // Fornecedor no cadastro de produto
+  const pForn=document.getElementById('p-forn');
+  if(pForn){const cur=pForn.value;pForn.innerHTML='<option value="">— Nenhum —</option>'+(G.fornecedores||[]).map(f=>`<option value="${f.id}">${f.razao_social||f.nome||'Fornecedor'}</option>`).join('');pForn.value=cur;}
 }
 function popProdSel(){
   const sel=document.getElementById('orc-prod-sel');if(!sel)return;
@@ -9104,38 +9158,48 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
 /* Modal de planos */
 #modal-planos .modal { max-width: 760px; }
 .plano-card {
-  border: 2px solid var(--border); border-radius: 16px;
-  padding: 22px 20px; transition: all .2s; cursor: pointer;
-  position: relative; overflow: hidden;
+  border: 2px solid var(--border); border-radius: 18px;
+  padding: 24px 20px 22px; transition: transform .22s cubic-bezier(.2,.7,.3,1), box-shadow .22s, border-color .22s; cursor: pointer;
+  position: relative; overflow: hidden; background: var(--surface);
 }
-.plano-card:hover { border-color: var(--pri); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.12); }
+.plano-card::after {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+  background: linear-gradient(90deg, var(--border2), var(--border2)); opacity: .6; transition: opacity .22s;
+}
+.plano-card:hover { border-color: var(--pri); transform: translateY(-6px) scale(1.01); box-shadow: 0 18px 40px rgba(0,0,0,.16); }
+.plano-card:hover::after { opacity: 1; }
+#plano-card-pro { border-color: rgba(91,71,224,.45); box-shadow: 0 8px 28px rgba(91,71,224,.12); }
+#plano-card-pro::after { background: linear-gradient(90deg, var(--pri2), var(--pri)); opacity: 1; }
+#plano-card-pro:hover { box-shadow: 0 22px 48px rgba(91,71,224,.28); }
+.plano-card.enterprise::after { background: linear-gradient(90deg, #f59e0b, #d97706); opacity: 1; }
 .plano-card.ativo {
   border-color: var(--pri);
-  box-shadow: 0 0 0 3px rgba(91,71,224,.15);
+  box-shadow: 0 0 0 3px rgba(91,71,224,.18), 0 10px 30px rgba(91,71,224,.14);
 }
 .plano-card.ativo::before {
   content: '✓ Plano Atual';
   position: absolute; top: 12px; right: 12px;
-  background: var(--pri); color: #fff;
-  font-size: 10px; font-weight: 700; padding: 3px 8px;
-  border-radius: 5px; font-family: 'DM Sans', sans-serif;
+  background: linear-gradient(90deg,var(--pri2),var(--pri)); color: #fff;
+  font-size: 10px; font-weight: 700; padding: 4px 9px;
+  border-radius: 6px; font-family: 'DM Sans', sans-serif; z-index: 2;
+  box-shadow: 0 4px 12px rgba(91,71,224,.35);
 }
 .plano-card.enterprise { border-color: rgba(245,158,11,.4); }
 .plano-card.enterprise:hover { border-color: #d97706; }
-.plano-card.enterprise.ativo { border-color: #d97706; box-shadow: 0 0 0 3px rgba(245,158,11,.15); }
-.plano-nome { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 18px; margin-bottom: 4px; }
-.plano-preco { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 28px; margin-bottom: 4px; }
+.plano-card.enterprise.ativo { border-color: #d97706; box-shadow: 0 0 0 3px rgba(245,158,11,.18), 0 10px 30px rgba(245,158,11,.16); }
+.plano-nome { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 19px; margin-bottom: 4px; letter-spacing: -.3px; }
+.plano-preco { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 30px; margin-bottom: 4px; letter-spacing: -1px; }
 .plano-preco span { font-size: 14px; font-weight: 400; color: var(--txt3); }
-.plano-desc { font-size: 12.5px; color: var(--txt2); margin-bottom: 14px; }
-.plano-feat { display: flex; flex-direction: column; gap: 6px; }
+.plano-desc { font-size: 12.5px; color: var(--txt2); margin-bottom: 16px; min-height: 32px; }
+.plano-feat { display: flex; flex-direction: column; gap: 8px; }
 .plano-feat-item {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 12.5px; color: var(--txt2);
+  display: flex; align-items: center; gap: 9px;
+  font-size: 12.5px; color: var(--txt);
 }
-.plano-feat-item i { font-size: 14px; flex-shrink: 0; }
-.plano-feat-item.ok i { color: var(--success); }
-.plano-feat-item.no i { color: var(--danger); }
-.plano-feat-item.no { opacity: .5; text-decoration: line-through; }
+.plano-feat-item i { font-size: 12px; flex-shrink: 0; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; }
+.plano-feat-item.ok i { color: var(--success); background: rgba(34,197,94,.12); }
+.plano-feat-item.no i { color: var(--txt3); background: rgba(120,120,120,.1); }
+.plano-feat-item.no { opacity: .55; }
 
 /* Limite atingido — banner */
 .limite-banner {
