@@ -3103,6 +3103,7 @@ async function loadProfile(user){
     if (empresa.status === 'bloqueada') { mostrarTelaBloqueio(empresa); return; }
 
     await carregarEntitlements();
+    await carregarSuporteConfigApp();
     await aplicarMarcasSalvas();
     aplicarPaletaSalva();
 
@@ -3124,6 +3125,7 @@ async function loadProfile(user){
   if(!ok) return;
 
   await carregarEntitlements();
+  await carregarSuporteConfigApp();
   await aplicarMarcasSalvas();
   aplicarPaletaSalva();
 
@@ -3169,13 +3171,22 @@ function mostrarTelaBloqueio(emp){
   bq.style.display = 'flex';
 }
 
-// Número de WhatsApp do suporte/comercial EMETech (formato internacional, só dígitos)
-// TODO: ajustar para o número real
-const WHATSAPP_SUPORTE = '5575999999999';
+// Número de WhatsApp do suporte/comercial EMETech (carregado do servidor; fallback abaixo)
+let WHATSAPP_SUPORTE = '5575999999999';
+let SUPORTE_MSG = 'Olá! Preciso de suporte com o EMETech PDV.';
+
+// Carrega config global de suporte (definida no painel admin)
+async function carregarSuporteConfigApp() {
+  try {
+    const { data } = await db.from('app_config').select('suporte_whatsapp,suporte_msg').eq('id', 1).maybeSingle();
+    if (data?.suporte_whatsapp) WHATSAPP_SUPORTE = String(data.suporte_whatsapp).replace(/\D/g, '');
+    if (data?.suporte_msg) SUPORTE_MSG = data.suporte_msg;
+  } catch (e) { /* mantém fallback */ }
+}
 
 // Abre o WhatsApp de suporte
 function abrirWhatsAppSuporte(){
-  const msg = `Olá! Sou da empresa "${G.empresa?.nome||'—'}" e preciso de suporte com o EMETech PDV.`;
+  const msg = `${SUPORTE_MSG} (Empresa: "${G.empresa?.nome||'—'}")`;
   window.open(`https://wa.me/${WHATSAPP_SUPORTE}?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
