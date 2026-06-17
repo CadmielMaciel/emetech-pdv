@@ -585,9 +585,11 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
       </div>
     </div>
   </aside>
+  <div id="sidebar-overlay" onclick="closeSidebarMobile()"></div>
 
   <main class="main">
     <div class="topbar">
+      <button id="hamburger-btn" onclick="toggleSidebarMobile()" aria-label="Menu" style="display:none"><i class="ti ti-menu-2" id="hamburger-icon"></i></button>
       <div class="topbar-title" id="topbar-title">Dashboard</div>
       <div class="topbar-right">
         <div id="net-pill" class="net-pill online" onclick="syncOfflineQueue(true)" title="Status de conexão"><i class="ti ti-wifi" style="font-size:14px"></i><span id="net-pill-txt">Online</span><span id="net-pending" class="pending-badge" style="display:none">0</span></div>
@@ -1675,7 +1677,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
       <div class="page" id="page-usuarios">
         <div style="display:flex;gap:8px;margin-bottom:12px">
           <div class="ig" style="flex:1"><i class="ti ti-search"></i><input type="text" placeholder="Buscar usuário..." oninput="renderUsuarios(this.value)"></div>
-          <button class="btn btn-pri" onclick="document.getElementById('u-id').value='';document.getElementById('u-nome').value='';document.getElementById('u-pin').value='';var h=document.getElementById('u-pin-hint');if(h)h.textContent='';document.getElementById('u-comissao-grp').style.display='none';document.getElementById('u-comissao').value='';openModal('modal-usr')"><i class="ti ti-user-plus"></i>Novo Usuário</button>
+          <button class="btn btn-pri" onclick="document.getElementById('u-id').value='';document.getElementById('u-nome').value='';document.getElementById('u-pin').value='';var h=document.getElementById('u-pin-hint');if(h)h.textContent='';document.getElementById('u-comissao-grp').style.display='none';document.getElementById('u-comissao').value='';document.getElementById('u-ativo').value='true';document.getElementById('u-role').value='operador';document.getElementById('usr-ttl').textContent='Novo Usuário';openModal('modal-usr')"><i class="ti ti-user-plus"></i>Novo Usuário</button>
         </div>
         <div class="fin-tabs" style="margin-bottom:14px">
           <button class="fin-tab active" onclick="usrTab('lista',this)"><i class="ti ti-users" style="font-size:13px"></i> Usuários</button>
@@ -1689,12 +1691,12 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:10px 14px;background:var(--surface);border-radius:10px;border:1px solid var(--border)">
             <i class="ti ti-info-circle" style="color:var(--pri);font-size:16px;flex-shrink:0"></i>
             <div style="font-size:12.5px;color:var(--txt2);flex:1">
-              Gerencie o <strong>acesso ao sistema</strong> por e-mail/senha. O PIN é configurado em <strong>Perfis na Tela Inicial</strong>.
+              Gerencie os <strong>funcionários</strong> da empresa. Cada um acessa por <strong>nome + PIN</strong> na tela inicial. O login da empresa (e-mail/senha) é gerenciado pelo administrador do sistema.
             </div>
             <div id="usr-plano-info" style="text-align:right;flex-shrink:0"></div>
           </div>
           <div class="card" style="padding:0"><div class="tw"><table>
-            <thead><tr><th>Usuário</th><th>E-mail de acesso</th><th>Nível</th><th>Acesso</th><th>Ações</th></tr></thead>
+            <thead><tr><th>Funcionário</th><th>PIN</th><th>Nível</th><th>Acesso</th><th>Ações</th></tr></thead>
             <tbody id="usr-table"></tbody>
           </table></div></div>
         </div>
@@ -2020,11 +2022,10 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
   <input type="hidden" id="u-id">
   <div class="fg"><label class="lbl">Nome *</label><input type="text" id="u-nome"></div>
   <div class="fg"><label class="lbl">PIN (4 dígitos) <span id="u-pin-hint" style="font-weight:400;color:rgba(255,255,255,.4)"></span></label><input type="text" id="u-pin" inputmode="numeric" maxlength="6" placeholder="ex: 1234"></div>
-  <div id="u-pass-grp" class="fg"><label class="lbl">Senha (mín. 6 chars) *</label><input type="password" id="u-pass"></div>
   <div class="fg"><label class="lbl">Nível *</label><select id="u-role" onchange="toggleComissaoField()"><option value="operador">Operador de Caixa</option><option value="tecnico">Técnico</option><option value="gerente">Gerente</option><option value="admin">Administrador</option></select></div>
   <div class="fg" id="u-comissao-grp" style="display:none"><label class="lbl">Comissão por OS concluída (%)</label><input type="number" id="u-comissao" step="0.1" min="0" max="100" placeholder="Ex: 10"></div>
   <div class="fg"><label class="lbl">Status</label><select id="u-ativo"><option value="true">Ativo</option><option value="false">Inativo</option></select></div>
-  <div class="alert-box alert-info" style="font-size:12px"><i class="ti ti-info-circle"></i>Crie o login no Supabase → Authentication → Users. O perfil aqui define as permissões.</div>
+  <div class="alert-box alert-info" style="font-size:12px"><i class="ti ti-info-circle"></i>O funcionário acessa por <b>nome + PIN</b> na tela inicial. Sem e-mail nem senha próprios.</div>
   <div class="modal-footer">
     <button class="btn btn-out" onclick="closeModal('modal-usr')">Cancelar</button>
     <button class="btn btn-pri" onclick="saveUsr()"><i class="ti ti-check"></i>Salvar</button>
@@ -3592,7 +3593,6 @@ function toggleInf(){const v=document.getElementById('p-inf').checked;document.g
 function fotoFull(s){document.getElementById('foto-full-img').src=s;document.getElementById('foto-full').style.display='flex';}
 
 /* ── PRODUTOS ────────────────────────────────────────── */
-function abrirModalProd(){clearProdForm();popSelects();openModal('modal-prod');}
 function clearProdForm(){
   ['p-id','p-nome','p-sku','p-bc','p-marca','p-custo','p-preco','p-subcat'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
   const pf=document.getElementById('p-forn');if(pf)pf.value='';
@@ -5780,37 +5780,32 @@ function toggleComissaoField(){
 
 function renderUsuarios(q=''){
   const f=q.toLowerCase();
-  const list=G.usuarios.filter(u=>!f||u.nome.toLowerCase().includes(f)||(u.email||'').toLowerCase().includes(f));
+  const list=G.usuarios.filter(u=>!f||u.nome.toLowerCase().includes(f));
   const ehAdmin = G.role === 'admin';
   const ehGerente = G.role === 'gerente';
   const podeMexer = ehAdmin || ehGerente;
 
-  // Atualizar info do plano
+  // Atualizar info do plano (limite de usuários)
   const _plInfo = document.getElementById('usr-plano-info');
   if (_plInfo && typeof getPlanoAtual === 'function') {
     const _pl = getPlanoAtual();
     const _ativos = list.filter(u => u.ativo).length;
-    const _lim = _pl.limites.usuarios;
-    const _pct = Math.round((_ativos/_lim)*100);
+    const _lim = (typeof limiteFeature==='function') ? limiteFeature('users.max_count') : (_pl.limites?.usuarios||999);
+    const _limTxt = (_lim<0||_lim>900) ? '∞' : _lim;
+    const _pct = (_lim>0) ? Math.round((_ativos/_lim)*100) : 0;
     _plInfo.innerHTML = `<span style="font-size:11.5px;color:${_pct>=90?'var(--danger)':'var(--txt3)'}">
-      ${_ativos}/${_lim > 900 ? '∞' : _lim} usuários
+      ${_ativos}/${_limTxt} usuários
       <span class="plano-badge ${_pl.cor}" style="margin-left:6px;cursor:pointer" onclick="openModal('modal-planos')">${_pl.nome}</span>
     </span>`;
   }
   document.getElementById('usr-table').innerHTML = list.length===0
-    ? '<tr><td colspan="5" style="text-align:center;padding:28px;color:var(--txt3)">Nenhum usuário</td></tr>'
+    ? '<tr><td colspan="5" style="text-align:center;padding:28px;color:var(--txt3)">Nenhum funcionário</td></tr>'
     : list.map(u => {
         const euMesmo = G.profile?.id === u.id;
         const eAdmin = u.role === 'admin';
         const podeEditar = podeMexer && !euMesmo;
         const podeDesativar = ehAdmin && !euMesmo && !eAdmin;
-        const podeAlterarRole = ehAdmin && !euMesmo;
-
-        const slotDesteUser = (() => {
-          const s = getSlotsConfig();
-          for (let i=1;i<=3;i++) if (s['slot'+i]===u.id) return i;
-          return null;
-        })();
+        const pinOk = (typeof hasPin === 'function') ? hasPin(u.id) : !!u.pin;
 
         return `<tr>
           <td>
@@ -5820,15 +5815,13 @@ function renderUsuarios(q=''){
                 <div style="font-weight:600;font-size:13.5px;color:var(--txt);display:flex;align-items:center;gap:6px">
                   ${u.nome}
                   ${euMesmo ? '<span class="tag tag-pur" style="font-size:9px">Você</span>' : ''}
-                  ${eAdmin ? '<span class="tag" style="font-size:9px;background:#fef3c7;color:#92400e">★ Admin</span>' : ''}
+                  ${eAdmin ? '<span class="tag" style="font-size:9px;background:#fef3c7;color:#92400e">★ Dono</span>' : ''}
                 </div>
-                ${slotDesteUser ? `<div style="font-size:10.5px;color:var(--pri);margin-top:1px">📌 Slot ${slotDesteUser} na tela inicial</div>` : ''}
               </div>
             </div>
           </td>
           <td>
-            <div style="font-size:12.5px;color:var(--txt2);font-family:monospace">${u.email || '—'}</div>
-            <div style="font-size:10.5px;color:var(--txt3);margin-top:1px">Login via e-mail + senha</div>
+            <span style="font-size:12px;color:${pinOk?'#16a34a':'var(--txt3)'}">${pinOk ? '🔒 PIN configurado' : '⚪ Sem PIN'}</span>
           </td>
           <td><span class="role-badge ${RC[u.role]||''}">${RL[u.role]||u.role}</span></td>
           <td>
@@ -5838,7 +5831,7 @@ function renderUsuarios(q=''){
           </td>
           <td>
             ${!euMesmo ? `<div style="display:flex;gap:5px;flex-wrap:wrap">
-              ${podeEditar ? `<button class="btn btn-out btn-xs" onclick="editUsr('${u.id}')" title="Editar dados"><i class="ti ti-edit"></i> Editar</button>` : ''}
+              ${podeEditar ? `<button class="btn btn-out btn-xs" onclick="editUsr('${u.id}')" title="Editar dados e PIN"><i class="ti ti-edit"></i> Editar</button>` : ''}
               ${podeDesativar ? `<button class="btn btn-xs ${u.ativo ? 'btn-danger' : 'btn-success'}" onclick="toggleUsr('${u.id}')">${u.ativo ? '<i class="ti ti-lock"></i> Desativar' : '<i class="ti ti-lock-open"></i> Ativar'}</button>` : ''}
             </div>` : '<span style="color:var(--txt3);font-size:12px">—</span>'}
           </td>
@@ -5857,7 +5850,6 @@ function editUsr(id){
   document.getElementById('u-comissao').value=u.comissao_pct||'';
   toggleComissaoField();
   document.getElementById('usr-ttl').textContent='Editar Usuário';
-  document.getElementById('u-pass-grp').style.display='none';
   openModal('modal-usr');
 }
 
@@ -7506,6 +7498,7 @@ function gerarBarcodeSVG(codigo, largura = 180, altura = 50) {
 // Adiciona botão "Gerar EAN-13" ao form de produto
 function abrirModalProd() {
   clearProdForm();
+  popSelects(); // popula fornecedor (e demais selects) no cadastro de produto
   // Adiciona botão de gerar EAN se não existir
   const bcField = document.getElementById('p-bc');
   if (bcField && !document.getElementById('btn-gen-ean')) {
@@ -7700,8 +7693,14 @@ async function executarImport() {
     const estoque = parseInt(row[document.getElementById('im-estoque').value]||'0') || 0;
     const categoria = row[document.getElementById('im-categoria').value] || 'Outro';
     const marca = row[document.getElementById('im-marca').value] || '';
-    const fornecedor = row[document.getElementById('im-fornecedor').value] || '';
-    const payload = { nome, sku: sku||'SKU-'+Date.now(), barcode, preco, custo, estoque, categoria, marca, fornecedor, status:'ativo', estoque_infinito:false, fotos:[] };
+    const fornecedorNome = row[document.getElementById('im-fornecedor').value] || '';
+    // Resolve o fornecedor pelo nome (se a planilha trouxe um nome que casa com um cadastrado)
+    let fornecedor_id = null;
+    if (fornecedorNome) {
+      const fmatch = (G.fornecedores||[]).find(f => (f.razao_social||f.nome||'').toLowerCase().trim() === fornecedorNome.toLowerCase().trim());
+      if (fmatch) fornecedor_id = fmatch.id;
+    }
+    const payload = { nome, sku: sku||'SKU-'+Date.now(), barcode, preco, custo, estoque, categoria, marca, fornecedor_id, status:'ativo', estoque_infinito:false, fotos:[] };
     // Verifica se já existe pelo SKU
     const existente = sku ? G.produtos.find(p => p.sku === sku) : null;
     const { error } = existente
@@ -8090,7 +8089,6 @@ function renderSlotsPreview() {
         <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:3px">
           <span style="font-weight:700;font-size:13.5px;color:var(--txt)">${u.nome}</span>
           <span class="role-badge ${NFRoleTag[u.role]||''}" style="font-size:10px">${NFRoleLbl[u.role]||u.role}</span>
-          ${slotNum ? `<span style="font-size:10px;padding:1.5px 7px;border-radius:5px;background:var(--pri-light,#ede9fe);color:var(--pri);border:1px solid var(--pri-border,#c4b5fd);font-weight:600">📌 Slot ${slotNum}</span>` : ''}
           ${ehAdminMaster ? '<span style="font-size:10px;padding:1.5px 7px;border-radius:5px;background:#fef3c7;color:#92400e;font-weight:600">★ Admin Master</span>' : ''}
           ${!u.ativo ? '<span class="tag tag-danger" style="font-size:10px">Bloqueado</span>' : ''}
         </div>
@@ -8103,10 +8101,8 @@ function renderSlotsPreview() {
       </div>
       <!-- AÇÕES -->
       <div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end">
-        ${!ehAdminMaster && u.ativo && !slotNum && podEditar ? `<button class="btn btn-out btn-xs" onclick="atribuirSlotRapido('${u.id}')"><i class="ti ti-layout-grid-add"></i> Slot</button>` : ''}
-        ${!ehAdminMaster && slotNum && podEditar ? `<button class="btn btn-xs" style="background:#ede9fe;color:var(--pri);border:1px solid #c4b5fd" onclick="limparSlotDireto(${slotNum})"><i class="ti ti-layout-grid-remove"></i> Remover slot</button>` : ''}
-        ${podePIN && u.ativo ? `<button class="btn btn-out btn-xs" onclick="abrirGerenciarPinSlot('${u.id}')"><i class="ti ti-password"></i> ${pinAtivo ? 'PIN' : '+ PIN'}</button>` : ''}
-        ${pinAtivo && podEditar ? `<button class="btn btn-xs" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5" onclick="removerPinSlot('${u.id}')"><i class="ti ti-lock-open"></i></button>` : ''}
+        ${podePIN && u.ativo ? `<button class="btn btn-out btn-xs" onclick="abrirGerenciarPinSlot('${u.id}')"><i class="ti ti-password"></i> ${pinAtivo ? 'Alterar PIN' : '+ PIN'}</button>` : ''}
+        ${pinAtivo && podEditar ? `<button class="btn btn-xs" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5" onclick="removerPinSlot('${u.id}')" title="Remover PIN"><i class="ti ti-lock-open"></i></button>` : ''}
         ${podeBloquear && !ehAdminMaster ? `<button class="btn btn-xs" style="${u.ativo ? 'background:#fee2e2;color:#dc2626;border:1px solid #fca5a5' : 'background:#dcfce7;color:#15803d;border:1px solid #86efac'}" onclick="toggleBloqueioUsuario('${u.id}')">
           <i class="ti ti-${u.ativo ? 'lock' : 'lock-open'}"></i> ${u.ativo ? 'Bloquear' : 'Liberar'}
         </button>` : ''}
@@ -8117,6 +8113,27 @@ function renderSlotsPreview() {
 
 /* ── GERENCIAR PIN DO SLOT ──────────────────────────── */
 let _pinSlotUserId = null;
+
+// Bloqueia/libera o acesso de um funcionário (toggle do campo ativo).
+// Bloqueado = não aparece na tela inicial e não consegue entrar.
+async function toggleBloqueioUsuario(userId){
+  const u = G.usuarios.find(x => x.id === userId);
+  if (!u) return;
+  // Gerente não pode bloquear o dono (admin)
+  if (G.role === 'gerente' && u.role === 'admin') { notify('Você não pode bloquear o administrador.', 'warn'); return; }
+  if (G.profile?.id === userId) { notify('Você não pode bloquear a si mesmo.', 'warn'); return; }
+  const acao = u.ativo ? 'Bloquear' : 'Liberar';
+  confirmAct(`${acao} funcionário`, `${acao} o acesso de "${u.nome}"?`, async () => {
+    setLoad(true);
+    const { error } = await db.from('usuarios').update({ ativo: !u.ativo }).eq('id', userId);
+    setLoad(false);
+    if (error) { notify('Erro: ' + error.message, 'error'); return; }
+    u.ativo = !u.ativo;
+    if (typeof renderUsuarios === 'function') renderUsuarios();
+    if (typeof renderSlotsPreview === 'function') renderSlotsPreview();
+    notify(u.ativo ? `${u.nome} liberado.` : `${u.nome} bloqueado.`, u.ativo ? 'success' : 'warn');
+  });
+}
 
 function abrirGerenciarPinSlot(userId) {
   const u = G.usuarios.find(x => x.id === userId);
@@ -10711,17 +10728,18 @@ function toggleSidebarMobile() {
   const sidebar = document.querySelector('.sidebar');
   const overlay = document.getElementById('sidebar-overlay');
   const icon    = document.getElementById('hamburger-icon');
+  if (!sidebar) return;
   const isOpen  = sidebar.classList.contains('mobile-open');
 
   if (isOpen) {
     sidebar.classList.remove('mobile-open');
-    overlay.classList.remove('active');
-    icon.className = 'ti ti-menu-2';
+    if (overlay) overlay.classList.remove('active');
+    if (icon) icon.className = 'ti ti-menu-2';
     document.body.style.overflow = '';
   } else {
     sidebar.classList.add('mobile-open');
-    overlay.classList.add('active');
-    icon.className = 'ti ti-x';
+    if (overlay) overlay.classList.add('active');
+    if (icon) icon.className = 'ti ti-x';
     document.body.style.overflow = 'hidden'; // Evita scroll do fundo
   }
 }
@@ -10941,6 +10959,12 @@ function buscarProdutoPorBarras(code) {
 /* ══════════════════════════════════════════════════════
    QUICK STOCK — Entrada rápida de estoque
    ════════════════════════════════════════════════════ */
+// Alias usado pelo botão de scan dentro do cadastro de produto.
+// Reaproveita o fluxo de entrada rápida por código de barras.
+function abrirQuickAjuste() {
+  if (typeof abrirQuickStock === 'function') abrirQuickStock();
+}
+
 async function abrirQuickStock() {
   _qsProdId  = null;
   _qsBarcode = null;
