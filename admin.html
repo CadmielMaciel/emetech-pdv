@@ -3573,10 +3573,17 @@ async function salvarContaEmpresa(empresaId) {
 
     addLog('acesso', `Conta de acesso da empresa atualizada (${email})`, null, empresaId);
     notify(`✅ Conta de acesso ativa! Login: ${email}`, 'success', 7000);
-    await refreshDados();
-    // Reabre a aba acesso com o estado atualizado
-    const e = await getEmpresaById(empresaId);
-    if (e) { _empresaAtual = e; detTab('acesso', null); }
+    // Atualiza o estado em memória na hora (a resposta da função traz o authUserId),
+    // assim o aviso "conta ativa" reflete imediatamente sem esperar a view/cache.
+    if (_empresaAtual && _empresaAtual.id === empresaId) {
+      _empresaAtual.authUserId = result.authUserId || _empresaAtual.authUserId || true;
+      _empresaAtual.email = email;
+    }
+    const cacheItem = (G.empresas || []).find(x => x.id === empresaId);
+    if (cacheItem) { cacheItem.authUserId = result.authUserId || cacheItem.authUserId || true; cacheItem.email = email; }
+    detTab('acesso', null);
+    // Recarrega dados em segundo plano para manter tudo consistente
+    refreshDados();
   } catch (e) {
     notify('Erro ao salvar conta da empresa: ' + (e.message || String(e)), 'error');
   } finally {
