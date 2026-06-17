@@ -1548,7 +1548,8 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
           </div>
           <div class="g2">
             <div>
-              <div class="fg"><label class="lbl">Nome / Razão Social</label><input type="text" id="emp-nome" placeholder="EMETech Assistência Técnica"></div>
+              <div class="fg"><label class="lbl">Nome / Razão Social</label><input type="text" id="emp-nome" placeholder="Nome da sua empresa"></div>
+              <div class="fg"><label class="lbl">Slogan (opcional)</label><input type="text" id="emp-slogan" placeholder="Ex: Qualidade e confiança"></div>
               <div class="fg"><label class="lbl">CNPJ / CPF</label><input type="text" id="emp-cnpj" placeholder="000.000.000-00 ou 00.000.000/0001-00" maxlength="18" oninput="mascararDocCnpjCpf(this)"></div>
               <div class="fg"><label class="lbl">Telefone</label><input type="text" id="emp-tel" placeholder="(71) 99999-0000"></div>
               <div class="fg"><label class="lbl">E-mail</label><input type="email" id="emp-email" placeholder="contato@emetech.com"></div>
@@ -5544,6 +5545,7 @@ function resetWM(tipo) {
 function salvarEmpresa() {
   MARCA.empresa = {
     nome: document.getElementById('emp-nome')?.value || '',
+    slogan: document.getElementById('emp-slogan')?.value || '',
     cnpj: document.getElementById('emp-cnpj')?.value || '',
     tel: document.getElementById('emp-tel')?.value || '',
     email: document.getElementById('emp-email')?.value || '',
@@ -5559,6 +5561,7 @@ function salvarAparencia() {
   // Coleta dados empresa
   MARCA.empresa = {
     nome: document.getElementById('emp-nome')?.value || '',
+    slogan: document.getElementById('emp-slogan')?.value || '',
     cnpj: document.getElementById('emp-cnpj')?.value || '',
     tel: document.getElementById('emp-tel')?.value || '',
     email: document.getElementById('emp-email')?.value || '',
@@ -6746,7 +6749,8 @@ function gerarCarneGraficaFromContrato(c){
   const cli = (G.clientes||[]).find(x=>x.nome===c.clienteNome) || {};
   // Logo da marca (preferência: login > sidebar). Usada na capa e como marca d'água de fundo.
   const logoFundo = (getMarca&&(getMarca().logoLogin||getMarca().logoSidebar)) || emp.logo || null;
-  const logoHtml = logoFundo ? `<img src="${logoFundo}" style="max-height:54px;max-width:160px;object-fit:contain">` : `<div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:#fff">${emp.nome}</div>`;
+  const logoHtml = logoFundo ? `<img src="${logoFundo}" style="max-height:54px;max-width:160px;object-fit:contain">` : '';
+  const slogan = emp.slogan ? `<div class="capa-slogan">${emp.slogan}</div>` : '';
   // Marca d'água (fundo) — só aparece se houver logo
   const wmHtml = logoFundo ? `<img class="wm" src="${logoFundo}" alt="">` : '';
 
@@ -6755,7 +6759,9 @@ function gerarCarneGraficaFromContrato(c){
   <section class="pg capa">
     ${wmHtml}
     <div class="capa-inner">
-      <div class="capa-top">${logoHtml}</div>
+      ${logoHtml ? `<div class="capa-top">${logoHtml}</div>` : ''}
+      <div class="capa-emp-nome">${emp.nome}</div>
+      ${slogan}
       <div class="capa-titulo">CARNÊ DE PAGAMENTO</div>
       <div class="capa-num">${c.numero}</div>
       <div class="capa-box">
@@ -6827,14 +6833,16 @@ function gerarCarneGraficaFromContrato(c){
     .pg{width:210mm;height:100mm;padding:8mm 10mm;margin:0 auto 6mm;background:#fff;page-break-after:always;position:relative;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.12)}
     .pg:last-child{page-break-after:auto}
     /* Marca d'água de fundo */
-    .wm{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-8deg);max-width:62%;max-height:80%;object-fit:contain;opacity:.06;z-index:0;pointer-events:none}
+    .wm{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-8deg);max-width:60%;max-height:78%;object-fit:contain;opacity:.08;z-index:0;pointer-events:none}
     /* CAPA colorida */
     .capa{background:linear-gradient(135deg,${cor},${cor2});color:#fff;display:flex;align-items:center;justify-content:center}
-    .capa .wm{opacity:.12;filter:brightness(0) invert(1)}
+    .capa .wm{opacity:.16;filter:brightness(0) invert(1)}
     .capa-inner{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;text-align:center;width:100%}
-    .capa-top{margin-bottom:6px}
-    .capa-titulo{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;letter-spacing:1px}
-    .capa-num{font-size:12px;opacity:.85;font-weight:700;margin:2px 0 10px}
+    .capa-top{margin-bottom:4px}
+    .capa-emp-nome{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;line-height:1.15}
+    .capa-slogan{font-size:11px;opacity:.85;font-style:italic;margin-bottom:6px}
+    .capa-titulo{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;letter-spacing:1px;margin-top:4px}
+    .capa-num{font-size:12px;opacity:.85;font-weight:700;margin:2px 0 8px}
     .capa-box{width:100%;max-width:440px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);border-radius:10px;padding:8px 16px;backdrop-filter:blur(2px)}
     .capa-row{display:flex;justify-content:space-between;padding:2.5px 0;font-size:11px;border-bottom:1px solid rgba(255,255,255,.15)}
     .capa-row:last-child{border-bottom:0}
@@ -6880,7 +6888,7 @@ function gerarCarneGraficaFromContrato(c){
       ${css}
     </style></head><body>
     <div class="print-bar">
-      <span style="color:rgba(255,255,255,.6);font-size:12px;flex:1">Carnê p/ Gráfica · ${c.numero} · talões 21×10cm (capa + parcelas + verso)</span>
+      <span style="color:rgba(255,255,255,.7);font-size:12px;flex:1">Carnê p/ Gráfica · ${c.numero} · talões 21×10cm — <b style="color:#ffd966">Na impressão, ative "Gráficos de segundo plano" para sair as cores e a marca d'água.</b></span>
       <button class="print-btn print-btn-out" onclick="window.close()">Fechar</button>
       <button class="print-btn print-btn-pri" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
     </div>
@@ -6888,7 +6896,10 @@ function gerarCarneGraficaFromContrato(c){
     ${parcelasHtml}
     ${verso}
   </body></html>`;
-  abrirPDFModal(html, 'Carne-Grafica-'+c.numero);
+  // Abre em janela dedicada (impressão limpa do formato 21x10, sem o modal interno)
+  const w = window.open('', '_blank');
+  if (w) { w.document.write(html); w.document.close(); }
+  else { abrirPDFModal(html, 'Carne-Grafica-'+c.numero); } // fallback se popup bloqueado
 }
 
 // Verifica inadimplência ao abrir PDV
@@ -7766,7 +7777,7 @@ function renderAparencia() {
   if (opOS) { opOS.value = MARCA.wmOsOpacity || 12; document.getElementById('wm-os-opacity-val').textContent = (MARCA.wmOsOpacity || 12) + '%'; }
   if (opRel) { opRel.value = MARCA.wmRelOpacity || 12; document.getElementById('wm-rel-opacity-val').textContent = (MARCA.wmRelOpacity || 12) + '%'; }
   const emp = MARCA.empresa || {};
-  ['nome','cnpj','tel','email','end','cid','site','rodape'].forEach(k => { const el = document.getElementById('emp-' + k); if (el && emp[k]) el.value = emp[k]; });
+  ['nome','slogan','cnpj','tel','email','end','cid','site','rodape'].forEach(k => { const el = document.getElementById('emp-' + k); if (el && emp[k]) el.value = emp[k]; });
   const cnpjEl = document.getElementById('emp-cnpj');
   if (cnpjEl && cnpjEl.value) mascararDocCnpjCpf(cnpjEl);
   document.getElementById('ap-count-logos').textContent = ((MARCA.logoLogin?1:0)+(MARCA.logoSidebar?1:0)) + '/2';
@@ -8204,7 +8215,8 @@ function mascararDocCnpjCpf(input) {
 function getEmpDados() {
   const m = getMarca();
   return {
-    nome:    m.empresa?.nome    || 'EMETech Assistência Técnica',
+    nome:    m.empresa?.nome    || 'Minha Empresa',
+    slogan:  m.empresa?.slogan  || '',
     cnpj:    m.empresa?.cnpj    || '',
     tel:     m.empresa?.tel     || '',
     email:   m.empresa?.email   || '',
