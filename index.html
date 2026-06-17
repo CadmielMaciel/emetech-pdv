@@ -860,7 +860,12 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
               </div>
               <div class="g2">
                 <div class="fg"><label class="lbl">Aparelho *</label><input type="text" id="os-ap" placeholder="iPhone 13..."></div>
-                <div class="fg"><label class="lbl">IMEI / Série</label><input type="text" id="os-imei" placeholder="IMEI ou S/N"></div>
+                <div class="fg"><label class="lbl">IMEI / Série</label>
+                  <div style="display:flex;gap:6px">
+                    <input type="text" id="os-imei" placeholder="IMEI ou S/N" style="flex:1">
+                    <button type="button" class="btn btn-out btn-sm" onclick="consultarImeiAnatel(document.getElementById('os-imei').value)" title="Consultar situação na Anatel (roubo/bloqueio)"><i class="ti ti-shield-search"></i></button>
+                  </div>
+                </div>
               </div>
               <div class="fg"><label class="lbl">Defeito *</label><textarea id="os-def" rows="2" placeholder="Defeito relatado..."></textarea></div>
               <div class="fg"><label class="lbl">Diagnóstico</label><textarea id="os-diag" rows="2" placeholder="Laudo técnico..."></textarea></div>
@@ -916,6 +921,12 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
             <option value="Cancelada">Cancelada</option>
           </select>
           <button class="btn btn-out btn-sm" onclick="limparFiltrosOS()"><i class="ti ti-x"></i>Limpar</button>
+        </div>
+        <div class="card" style="margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <div style="font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px"><i class="ti ti-shield-search" style="color:var(--pri)"></i>Consultar IMEI na Anatel</div>
+          <input type="text" id="imei-consulta" placeholder="Digite o IMEI (15 dígitos)" inputmode="numeric" style="flex:1;min-width:180px;padding:8px 10px;border-radius:8px;border:1px solid var(--border)">
+          <button class="btn btn-pri btn-sm" onclick="consultarImeiAnatel(document.getElementById('imei-consulta').value)"><i class="ti ti-external-link"></i>Consultar situação</button>
+          <span style="font-size:11px;color:var(--txt3);flex-basis:100%">Verifica roubo/furto/bloqueio na base oficial. O IMEI é copiado; cole no site da Anatel e resolva o captcha.</span>
         </div>
         <div class="card" style="padding:0"><div class="tw"><table>
           <thead><tr><th>OS</th><th>Cliente</th><th>Equipamento</th><th>Abertura</th><th>Conclusão</th><th>Técnico</th><th>Valor</th><th>Status</th><th>Documentos</th></tr></thead>
@@ -4786,6 +4797,35 @@ const OC={Aguardando:'tag-amb','Em Análise':'tag-blu','Em Reparo':'tag-pur','Ag
 function popTecSel(){
   const sel=document.getElementById('os-tec');if(!sel)return;
   sel.innerHTML='<option value="">Sem técnico</option>'+G.usuarios.filter(u=>u.ativo&&['tecnico','admin','gerente'].includes(u.role)).map(u=>`<option value="${u.id}">${u.nome}</option>`).join('');
+}
+
+/* ── CONSULTA DE IMEI (situação roubo/bloqueio na Anatel) ──────────────
+   Não há API oficial pública/gratuita para integrar a consulta direto.
+   A base oficial (Celular Legal / ABR Telecom) usa captcha e consulta manual.
+   Então: validamos o IMEI, copiamos para a área de transferência e abrimos a
+   página oficial — o usuário cola o IMEI, resolve o captcha e vê o resultado. */
+const ANATEL_CONSULTA_URL = 'https://www.anatel.gov.br/celularlegal/consulte-sua-situacao';
+const ABR_CONSULTA_URL = 'https://www.consultaserialaparelho.com.br/';
+
+function imeiValido(imei){
+  // IMEI tem 15 dígitos (alguns aparelhos mostram 14 + dígito verificador). Aceita 14-16 só dígitos.
+  const s=(imei||'').replace(/\D/g,'');
+  return s.length>=14 && s.length<=16 ? s : null;
+}
+
+async function consultarImeiAnatel(imeiRaw){
+  const imei=imeiValido(imeiRaw);
+  if(!imeiRaw || !imeiRaw.trim()){ notify('Informe o IMEI primeiro.','warn'); return; }
+  if(!imei){ notify('IMEI inválido. Deve ter 15 dígitos (digite *#06# no aparelho para ver).','warn',5000); return; }
+  // Copia o IMEI para colar na página oficial
+  let copiou=false;
+  try{ await navigator.clipboard.writeText(imei); copiou=true; }catch(e){}
+  // Abre a consulta oficial
+  window.open(ANATEL_CONSULTA_URL,'_blank');
+  notify(copiou
+    ? `IMEI ${imei} copiado! Cole no site da Anatel que abriu, resolva o captcha e veja a situação.`
+    : `Abra o site da Anatel, informe o IMEI ${imei}, resolva o captcha e veja a situação.`,
+    'info', 7000);
 }
 
 async function createOS(){
