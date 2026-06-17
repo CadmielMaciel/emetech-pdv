@@ -682,6 +682,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
                 <div id="misto-items"></div>
                 <button class="btn btn-out btn-sm" onclick="addMistoItem()" style="width:100%;justify-content:center;margin-top:4px"><i class="ti ti-plus"></i>Adicionar forma</button>
               </div>
+              <div class="cr" id="recebido-row" style="display:flex;align-items:center;gap:8px"><span style="color:var(--txt2);white-space:nowrap">Valor recebido</span><input type="number" id="c-recebido" min="0" step="0.01" placeholder="R$" oninput="renderCart()" style="flex:1;text-align:right;padding:6px 8px;border-radius:7px;border:1px solid var(--border);font-weight:700"></div>
               <div class="cr" id="troco-row" style="display:none"><span style="color:var(--txt2)">Troco</span><span id="c-troco" style="font-weight:700;color:var(--success)">R$ 0,00</span></div>
               <button class="fin-btn" id="fin-btn" onclick="finalizeSale()" disabled><i class="ti ti-check"></i>Finalizar Venda</button>
             </div>
@@ -3540,11 +3541,25 @@ async function confirmarAbertura(){
 
 async function fecharCaixa(){
   if(!G.caixaAtual){notify('Nenhum caixa aberto.','warn');return;}
-  const totalVendas=G.vendas.filter(v=>v.caixa_id===G.caixaAtual.id&&v.status==='concluida').reduce((s,v)=>s+v.total,0);
-  const sangrias=G.caixas.reduce((s)=>s,0);
-  confirmAct('Fechar Caixa',`Total em vendas no caixa: ${fmt(totalVendas)}. Confirmar fechamento?`, async()=>{
+  const vendasCx=G.vendas.filter(v=>v.caixa_id===G.caixaAtual.id&&v.status==='concluida');
+  const totalVendas=vendasCx.reduce((s,v)=>s+(v.total||0),0);
+  // Apenas DINHEIRO entra no caixa físico (pix/cartão não somam à gaveta)
+  const totalDinheiro=vendasCx.reduce((s,v)=>{
+    const pgs=v.pagamentos||[{forma:v.pagamento,valor:v.total}];
+    const din=pgs.filter(p=>p.forma==='dinheiro').reduce((a,p)=>a+(parseFloat(p.valor)||0),0);
+    // desconta troco dado (só faz sentido em dinheiro)
+    return s+din-(v.troco||0);
+  },0);
+  // Sangrias (negativas) e reforços (positivos) do período
+  let ajustes=0;
+  try{
+    const {data}=await db.from('movimentacoes_caixa').select('valor,tipo').eq('caixa_id',G.caixaAtual.id).in('tipo',['sangria','reforco']);
+    ajustes=(data||[]).reduce((s,m)=>s+(parseFloat(m.valor)||0),0);
+  }catch(e){}
+  const valorSistema=(G.caixaAtual.valor_abertura||0)+totalDinheiro+ajustes;
+  confirmAct('Fechar Caixa',`Vendas no caixa: ${fmt(totalVendas)} (sendo ${fmt(totalDinheiro)} em dinheiro). Esperado na gaveta: ${fmt(valorSistema)}. Confirmar fechamento?`, async()=>{
     setLoad(true);
-    const payload={status:'fechado',data_fechamento:new Date().toISOString(),valor_sistema:totalVendas+G.caixaAtual.valor_abertura};
+    const payload={status:'fechado',data_fechamento:new Date().toISOString(),valor_sistema:valorSistema};
     await db.from('caixas').update(payload).eq('id',G.caixaAtual.id);
     const idx=G.caixas.findIndex(c=>c.id===G.caixaAtual.id);
     if(idx>=0)Object.assign(G.caixas[idx],payload);
@@ -3774,13 +3789,18 @@ function renderCart(){
   const total=sub*(1-desc/100)+acr;
   document.getElementById('c-sub').textContent=fmt(sub);
   document.getElementById('c-tot').textContent=fmt(total);
-  // Troco (apenas dinheiro)
+  // Campo "valor recebido" e troco só fazem sentido para dinheiro
+  const recRow=document.getElementById('recebido-row');
+  const trocoRow=document.getElementById('troco-row');
   if(G.payMethod==='dinheiro'){
-    const totalMisto=G.payMisto.reduce((s,p)=>s+parseFloat(p.valor||0),0);
-    const recebido=G.payMethod==='misto'?totalMisto:sub;
+    if(recRow)recRow.style.display='flex';
+    const recebido=parseFloat(document.getElementById('c-recebido')?.value)||0;
     const troco=Math.max(0,recebido-total);
-    document.getElementById('troco-row').style.display=troco>0?'':'none';
+    if(trocoRow)trocoRow.style.display=(recebido>0)?'flex':'none';
     document.getElementById('c-troco').textContent=fmt(troco);
+  } else {
+    if(recRow)recRow.style.display='none';
+    if(trocoRow)trocoRow.style.display='none';
   }
   // Atualizar itens misto
   renderMistoTotal(total);
@@ -3788,7 +3808,7 @@ function renderCart(){
 
 function cQty(id,d){const p=G.produtos.find(x=>x.id===id);const ci=G.cart.find(x=>x.id===id);if(!ci)return;ci.qty+=d;if(!ci.inf&&p&&ci.qty>p.estoque){ci.qty=p.estoque;notify('Limite!','warn');return;}if(ci.qty<1)G.cart=G.cart.filter(x=>x.id!==id);renderCart();}
 function rmCart(id){G.cart=G.cart.filter(x=>x.id!==id);renderCart();}
-function clearCart(){G.cart=[];document.getElementById('c-desc').value=0;document.getElementById('c-acr').value=0;renderCart();}
+function clearCart(){G.cart=[];document.getElementById('c-desc').value=0;document.getElementById('c-acr').value=0;var r=document.getElementById('c-recebido');if(r)r.value='';renderCart();}
 
 function selPay(btn,m){
   document.querySelectorAll('.pb').forEach(b=>b.classList.remove('sel'));
@@ -3835,7 +3855,8 @@ async function finalizeSale(){
   const cliId=cli?.value||null;
   const cliNome=cli?.options[cli.selectedIndex]?.text||'Consumidor Final';
   const pagamentos=G.payMethod==='misto'?G.payMisto:[{forma:G.payMethod,valor:total}];
-  const troco=G.payMethod==='dinheiro'?Math.max(0,sub-total):0;
+  const recebidoDin=parseFloat(document.getElementById('c-recebido')?.value)||0;
+  const troco=G.payMethod==='dinheiro'?Math.max(0,recebidoDin-total):0;
   // Verifica inadimplência do cliente antes de finalizar (somente online)
   if (navigator.onLine && cliId && typeof verificarInadimplencia==='function' && verificarInadimplencia(cliId)) {
     notify('⚠️ Cliente com parcelas em atraso no crediário!', 'warn', 5000);
