@@ -2186,6 +2186,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
   <div class="modal-footer">
     <button class="btn btn-out" onclick="closeModal('modal-novo-credito')">Cancelar</button>
     <button class="btn btn-out" onclick="gerarCarnePDF()"><i class="ti ti-file-text"></i>Gerar Carnê</button>
+    <button class="btn btn-out" onclick="gerarCarneGraficaModal()"><i class="ti ti-printer"></i>Carnê p/ Gráfica</button>
     <button class="btn btn-pri" onclick="salvarCredito()"><i class="ti ti-check"></i>Confirmar</button>
   </div>
 </div></div>
@@ -6258,6 +6259,7 @@ function renderContratos(q = '') {
           <button class="btn btn-pri btn-sm" onclick="verContrato('${c.id}')"><i class="ti ti-list"></i>Parcelas</button>
           <button class="btn btn-out btn-sm" onclick="abrirCobranca('${c.id}')"><i class="ti ti-send"></i>Cobrar</button>
           <button class="btn btn-out btn-sm" onclick="gerarCarneContrato('${c.id}')"><i class="ti ti-file-text"></i>Carnê</button>
+          <button class="btn btn-out btn-sm" onclick="gerarCarneGrafica('${c.id}')"><i class="ti ti-printer"></i>Gráfica</button>
         </div>
       </div>`;
     }).join('');
@@ -6647,6 +6649,177 @@ function gerarCarnePDFFromContrato(c) {
 </button>
 </body></html>`;
   abrirPDFModal(html, 'Carne-'+c.numero);
+}
+
+// ── CARNÊ PARA GRÁFICA (capa + parcelas frente + verso com instruções) ──
+function gerarCarneGrafica(id){
+  const c = G_CONTRATOS.find(x=>x.id===id); if(!c){notify('Contrato não encontrado.','error');return;}
+  gerarCarneGraficaFromContrato(c);
+}
+function gerarCarneGraficaModal(){
+  // Reaproveita a montagem do rascunho do gerarCarnePDF
+  const cliSel = document.getElementById('nc-cli');
+  const total = parseFloat(document.getElementById('nc-valor')?.value)||0;
+  const entrada = parseFloat(document.getElementById('nc-entrada')?.value)||0;
+  const nParc = parseInt(document.getElementById('nc-parcelas')?.value)||1;
+  const venc1 = document.getElementById('nc-venc1')?.value;
+  const interv = parseInt(document.getElementById('nc-intervalo')?.value)||30;
+  if(!total||!venc1){notify('Preencha os dados primeiro!','error');return;}
+  const saldo = total - entrada;
+  const valorParc = saldo / nParc;
+  const parcelas = [];
+  for(let i=0;i<nParc;i++){ const d=new Date(venc1+'T12:00'); d.setDate(d.getDate()+i*interv); parcelas.push({num:i+1,valor:valorParc,vencimento:d.toISOString().split('T')[0],status:'aberta'}); }
+  const c = { numero:'RASCUNHO', clienteNome:cliSel?.options[cliSel.selectedIndex]?.text||'—', descricao:document.getElementById('nc-desc')?.value||'', valorTotal:total, entrada, saldo, parcelas };
+  gerarCarneGraficaFromContrato(c);
+}
+
+function gerarCarneGraficaFromContrato(c){
+  const emp = getEmpDados();
+  const cor = (getMarca&&getMarca().paleta?.c1) || '#5B47E0';
+  const cor2 = (getMarca&&getMarca().paleta?.c2) || '#7C3AED';
+  const hoje = new Date().toLocaleDateString('pt-BR');
+  const cli = (G.clientes||[]).find(x=>x.nome===c.clienteNome) || {};
+  const logoHtml = emp.logo ? `<img src="${emp.logo}" style="max-height:64px;max-width:180px;object-fit:contain">` : `<div style="font-family:'Syne',sans-serif;font-weight:800;font-size:24px;color:#fff">${emp.nome}</div>`;
+
+  // ── CAPA ──
+  const capa = `
+  <section class="pg capa">
+    <div class="capa-top">${logoHtml}</div>
+    <div class="capa-titulo">CARNÊ DE PAGAMENTO</div>
+    <div class="capa-num">${c.numero}</div>
+    <div class="capa-box">
+      <div class="capa-row"><span>Cliente</span><b>${c.clienteNome}</b></div>
+      ${cli.cpf?`<div class="capa-row"><span>CPF/CNPJ</span><b>${cli.cpf}</b></div>`:''}
+      ${cli.telefone?`<div class="capa-row"><span>Telefone</span><b>${cli.telefone}</b></div>`:''}
+      <div class="capa-row"><span>Descrição</span><b>${c.descricao||'Crediário'}</b></div>
+      <div class="capa-row"><span>Valor total</span><b>${fmt(c.valorTotal)}</b></div>
+      ${c.entrada?`<div class="capa-row"><span>Entrada</span><b>${fmt(c.entrada)}</b></div>`:''}
+      <div class="capa-row"><span>Parcelas</span><b>${c.parcelas.length}x de ${fmt(c.parcelas[0]?.valor||0)}</b></div>
+      <div class="capa-row"><span>Emitido em</span><b>${hoje}</b></div>
+    </div>
+    <div class="capa-emp">
+      <div style="font-weight:700">${emp.nome}</div>
+      <div>${emp.cnpj?'CNPJ: '+emp.cnpj+' · ':''}${emp.tel||''}</div>
+      <div>${emp.end?emp.end+' · ':''}${emp.cid||''}</div>
+      ${emp.email?`<div>${emp.email}</div>`:''}
+    </div>
+  </section>`;
+
+  // ── PARCELAS (frente) ──
+  const parcelasHtml = c.parcelas.map(p=>`
+    <div class="parc">
+      <div class="parc-stub">
+        <div class="parc-emp">${emp.nome}</div>
+        <div class="parc-cli">${c.clienteNome}</div>
+        <div class="parc-num-mini">${c.numero}</div>
+        <div class="parc-via">VIA DA LOJA</div>
+        <div class="parc-mini-val"><span>Parc. ${p.num}/${c.parcelas.length}</span><b>${fmt(p.valor)}</b></div>
+        <div class="parc-mini-venc">Venc. ${fmtD(p.vencimento+'T12:00')}</div>
+      </div>
+      <div class="parc-main">
+        <div class="parc-head">
+          <div><div class="parc-emp2">${emp.nome}</div><div class="parc-cli2">${c.clienteNome} · ${c.numero}</div></div>
+          <div class="parc-badge">${p.num}/${c.parcelas.length}</div>
+        </div>
+        <div class="parc-body">
+          <div><div class="parc-lbl">VENCIMENTO</div><div class="parc-venc">${fmtD(p.vencimento+'T12:00')}</div></div>
+          <div style="text-align:right"><div class="parc-lbl">VALOR</div><div class="parc-val">${fmt(p.valor)}</div></div>
+        </div>
+        <div class="parc-foot">
+          <div style="font-size:9px;color:#999">${emp.tel||''} ${emp.email?'· '+emp.email:''}</div>
+          <div class="parc-assin">Assinatura/Autenticação</div>
+        </div>
+      </div>
+    </div>`).join('');
+
+  const frente = `<section class="pg"><div class="frente-titulo">Parcelas — ${c.clienteNome}</div>${parcelasHtml}</section>`;
+
+  // ── VERSO (instruções) ──
+  const verso = `
+  <section class="pg verso">
+    <div class="verso-titulo">Instruções de Pagamento</div>
+    <ol class="verso-list">
+      <li>Pague cada parcela até a data de vencimento indicada no respectivo recibo.</li>
+      <li>Guarde os comprovantes de pagamento até a quitação total do carnê.</li>
+      <li>Em caso de atraso, poderão incidir juros e multa conforme contrato.</li>
+      <li>A via da loja deve ser apresentada/autenticada no momento do pagamento.</li>
+      <li>Para 2ª via, dúvidas ou negociação, entre em contato com a loja.</li>
+    </ol>
+    <div class="verso-contato">
+      <div style="font-weight:700;margin-bottom:4px">${emp.nome}</div>
+      <div>${emp.cnpj?'CNPJ: '+emp.cnpj:''}</div>
+      <div>${emp.tel?'Telefone: '+emp.tel:''}</div>
+      <div>${emp.end?emp.end+' · ':''}${emp.cid||''}</div>
+      ${emp.email?`<div>${emp.email}</div>`:''}
+    </div>
+    <div class="verso-rodape">${emp.rodape||''}</div>
+  </section>`;
+
+  const css = `
+    *{box-sizing:border-box}
+    body{font-family:'DM Sans',Arial,sans-serif;margin:0;color:#1A0F3C;-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#eee}
+    .pg{width:210mm;min-height:297mm;padding:16mm 14mm;margin:0 auto 8mm;background:#fff;page-break-after:always;position:relative}
+    .pg:last-child{page-break-after:auto}
+    /* CAPA */
+    .capa{display:flex;flex-direction:column;align-items:center;text-align:center}
+    .capa-top{width:100%;background:linear-gradient(135deg,${cor},${cor2});border-radius:14px;padding:34px;display:flex;justify-content:center;align-items:center;margin-bottom:30px}
+    .capa-titulo{font-family:'Syne',sans-serif;font-weight:800;font-size:30px;letter-spacing:1px}
+    .capa-num{font-size:15px;color:${cor};font-weight:700;margin:6px 0 26px}
+    .capa-box{width:100%;max-width:440px;border:2px solid #eee;border-radius:14px;padding:18px 22px}
+    .capa-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px dashed #eee;font-size:13px}
+    .capa-row:last-child{border-bottom:0}
+    .capa-row span{color:#888}
+    .capa-emp{margin-top:auto;padding-top:40px;font-size:12px;color:#666;line-height:1.6}
+    /* FRENTE */
+    .frente-titulo{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;margin-bottom:14px;color:${cor}}
+    .parc{display:flex;border:1.5px solid #ddd;border-radius:10px;overflow:hidden;margin-bottom:9px;break-inside:avoid;min-height:96px}
+    .parc-stub{width:33%;border-right:2px dashed #ccc;padding:10px 12px;background:#faf9ff}
+    .parc-emp{font-size:10px;font-weight:700;color:${cor}}
+    .parc-cli{font-size:11px;margin-top:2px}
+    .parc-num-mini{font-size:9px;color:#999}
+    .parc-via{font-size:8px;color:#bbb;letter-spacing:1px;margin-top:4px}
+    .parc-mini-val{display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:11px}
+    .parc-mini-val b{font-family:'Syne',sans-serif;font-size:14px;color:${cor}}
+    .parc-mini-venc{font-size:10px;color:#666;margin-top:2px}
+    .parc-main{flex:1;padding:10px 14px;display:flex;flex-direction:column}
+    .parc-head{display:flex;justify-content:space-between;align-items:flex-start}
+    .parc-emp2{font-size:11px;font-weight:700;color:${cor}}
+    .parc-cli2{font-size:11px;color:#555}
+    .parc-badge{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:#fff;background:${cor};border-radius:8px;padding:3px 11px}
+    .parc-body{display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding-top:8px;border-top:1px dashed #eee}
+    .parc-lbl{font-size:9px;color:#999;letter-spacing:.5px}
+    .parc-venc{font-size:14px;font-weight:700}
+    .parc-val{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:${cor}}
+    .parc-foot{display:flex;justify-content:space-between;align-items:flex-end;margin-top:auto;padding-top:8px}
+    .parc-assin{font-size:9px;color:#bbb;border-top:1px solid #ddd;width:130px;text-align:center;padding-top:2px}
+    /* VERSO */
+    .verso-titulo{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:${cor};margin-bottom:16px}
+    .verso-list{font-size:13px;line-height:1.9;color:#444;padding-left:18px}
+    .verso-contato{margin-top:30px;font-size:12px;color:#555;line-height:1.7;border-top:1px solid #eee;padding-top:16px}
+    .verso-rodape{margin-top:24px;font-size:11px;color:#999;text-align:center}
+    @media print{body{background:#fff}.pg{margin:0;box-shadow:none}@page{size:A4;margin:0}}
+  `;
+
+  const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+    <title>Carnê (Gráfica) — ${c.numero}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+      .print-bar{position:sticky;top:0;z-index:9;display:flex;gap:8px;align-items:center;background:#1a1a1a;padding:10px 14px}
+      .print-btn{border:0;border-radius:7px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer}
+      .print-btn-pri{background:${cor};color:#fff}.print-btn-out{background:#444;color:#fff}
+      @media print{.print-bar{display:none}}
+      ${css}
+    </style></head><body>
+    <div class="print-bar">
+      <span style="color:rgba(255,255,255,.6);font-size:12px;flex:1">Carnê p/ Gráfica · ${c.numero} (capa + parcelas + verso)</span>
+      <button class="print-btn print-btn-out" onclick="window.close()">Fechar</button>
+      <button class="print-btn print-btn-pri" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
+    </div>
+    ${capa}
+    ${frente}
+    ${verso}
+  </body></html>`;
+  abrirPDFModal(html, 'Carne-Grafica-'+c.numero);
 }
 
 // Verifica inadimplência ao abrir PDV
