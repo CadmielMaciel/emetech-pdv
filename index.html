@@ -3184,10 +3184,74 @@ let SUPORTE_MSG = 'Olá! Preciso de suporte com o EMETech PDV.';
 // Carrega config global de suporte (definida no painel admin)
 async function carregarSuporteConfigApp() {
   try {
-    const { data } = await db.from('app_config').select('suporte_whatsapp,suporte_msg').eq('id', 1).maybeSingle();
+    const { data } = await db.from('app_config').select('suporte_whatsapp,suporte_msg,app_version').eq('id', 1).maybeSingle();
     if (data?.suporte_whatsapp) WHATSAPP_SUPORTE = String(data.suporte_whatsapp).replace(/\D/g, '');
     if (data?.suporte_msg) SUPORTE_MSG = data.suporte_msg;
+    if (typeof data?.app_version === 'number') {
+      _serverVersionInicial = data.app_version;
+      if (data.app_version > APP_VERSION) mostrarAvisoAtualizacao();
+    }
   } catch (e) { /* mantém fallback */ }
+}
+
+/* ── ATUALIZAÇÃO OBRIGATÓRIA ──────────────────────────────────
+   APP_VERSION = versão que ESTE build conhece. O admin incrementa
+   app_config.app_version ao publicar; quando o servidor tem versão maior,
+   o app avisa (contagem de 5s) e recarrega furando o cache.              */
+const APP_VERSION = 1; // ⬆️ Incremente este número a cada deploy (igual ao do painel)
+let _serverVersionInicial = APP_VERSION;
+let _avisoAtualizacaoAberto = false;
+
+function recarregarForcado() {
+  // Cache-busting: adiciona/atualiza um parâmetro de versão e recarrega
+  try {
+    const u = new URL(window.location.href);
+    u.searchParams.set('v', Date.now().toString());
+    window.location.replace(u.toString());
+  } catch (e) {
+    window.location.reload(true);
+  }
+}
+
+function mostrarAvisoAtualizacao() {
+  if (_avisoAtualizacaoAberto) return;
+  _avisoAtualizacaoAberto = true;
+
+  const ov = document.createElement('div');
+  ov.id = 'update-overlay';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(10,8,24,.72);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:20px';
+  ov.innerHTML = `
+    <div style="background:var(--surface,#fff);color:var(--txt,#1a0f3c);max-width:380px;width:100%;border-radius:18px;padding:28px 26px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.4)">
+      <div style="font-size:38px;margin-bottom:6px">🚀</div>
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;margin-bottom:8px">Nova versão disponível</div>
+      <div style="font-size:13px;color:var(--txt2,#666);line-height:1.5;margin-bottom:20px">
+        Uma atualização do sistema foi publicada. O app será atualizado automaticamente em <b id="upd-count">5</b>s para garantir que você use a versão mais recente.
+      </div>
+      <button onclick="recarregarForcado()" style="width:100%;border:0;border-radius:10px;padding:13px;background:linear-gradient(135deg,var(--pri,#5B47E0),var(--pri2,#7C3AED));color:#fff;font-weight:700;font-size:14px;cursor:pointer">
+        Atualizar agora
+      </button>
+    </div>`;
+  document.body.appendChild(ov);
+
+  let n = 5;
+  const el = () => document.getElementById('upd-count');
+  const t = setInterval(() => {
+    n--;
+    if (el()) el().textContent = n;
+    if (n <= 0) { clearInterval(t); recarregarForcado(); }
+  }, 1000);
+}
+
+// Verifica periodicamente se saiu versão nova (a cada 2 min)
+function iniciarVerificacaoVersao() {
+  setInterval(async () => {
+    try {
+      const { data } = await db.from('app_config').select('app_version').eq('id', 1).maybeSingle();
+      if (typeof data?.app_version === 'number' && data.app_version > APP_VERSION) {
+        mostrarAvisoAtualizacao();
+      }
+    } catch (e) {}
+  }, 120000);
 }
 
 // Abre o WhatsApp de suporte
@@ -10448,6 +10512,7 @@ function removerPIN(userId) {
 (async()=>{
   const {data:{session}}=await db.auth.getSession();
   if(session?.user)await loadProfile(session.user);
+  if(typeof iniciarVerificacaoVersao==='function')iniciarVerificacaoVersao();
 })();
 
 /* ── RIPPLE EFFECT GLOBAL ──────────────────────────────
