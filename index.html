@@ -3153,11 +3153,15 @@ async function salvarPermissoes(){
   const empId=EID()||G.empresa?.id;
   if(!empId){notify('Empresa não identificada.','error');return;}
   setLoad(true);
-  let {error}=await db.from('aparencia_config').update({role_permissions:novo,updated_at:new Date().toISOString()}).eq('empresa_id',empId);
-  if(error){ const ins=await db.from('aparencia_config').insert({empresa_id:empId,role_permissions:novo}); error=ins.error; }
+  // upsert por empresa_id (requer constraint única — migração G02)
+  const {data,error}=await db.from('aparencia_config')
+    .upsert({empresa_id:empId,role_permissions:novo,updated_at:new Date().toISOString()},{onConflict:'empresa_id'})
+    .select('role_permissions')
+    .maybeSingle();
   setLoad(false);
   if(error){notify('Erro ao salvar permissões: '+error.message,'error');return;}
-  ROLE_PERMS=novo;
+  if(!data){notify('As permissões não foram confirmadas. Rode a migração G02 e tente de novo.','warn',6000);return;}
+  ROLE_PERMS=data.role_permissions||novo;
   applyRoleUI();
   notify('✅ Permissões salvas! Os funcionários verão as mudanças no próximo login.','success',5000);
 }
@@ -5697,14 +5701,12 @@ function salvarAparencia() {
 async function salvarMarcaSupabase(marca) {
   const empId = EID() || G.empresa?.id;
   if (!empId) { notify('Não foi possível identificar a empresa.', 'error'); return false; }
-  const { error } = await db.from('aparencia_config')
-    .update({ config_marca: marca, updated_at: new Date().toISOString(), updated_by: G.profile?.id || null })
-    .eq('empresa_id', empId);
-  if (error) {
-    // Linha pode não existir ainda — tenta criar
-    const { error: insErr } = await db.from('aparencia_config').insert({ empresa_id: empId, config_marca: marca });
-    if (insErr) { notify('Erro ao salvar aparência: ' + insErr.message, 'error'); return false; }
-  }
+  const { data, error } = await db.from('aparencia_config')
+    .upsert({ empresa_id: empId, config_marca: marca, updated_at: new Date().toISOString(), updated_by: G.profile?.id || null }, { onConflict: 'empresa_id' })
+    .select('empresa_id')
+    .maybeSingle();
+  if (error) { notify('Erro ao salvar aparência: ' + error.message, 'error'); return false; }
+  if (!data) { notify('A aparência não foi confirmada. Rode a migração G02 e tente de novo.', 'warn', 6000); return false; }
   return true;
 }
 
