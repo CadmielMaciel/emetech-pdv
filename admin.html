@@ -1075,6 +1075,18 @@ select option { background: var(--bg2); }
           <button class="btn btn-pri" onclick="salvarSuporteConfig()"><i class="ti ti-device-floppy"></i> Salvar</button>
           <span id="sup-status" style="margin-left:10px;font-size:12px;color:var(--txt3)"></span>
         </div>
+
+        <div class="card" style="max-width:600px;margin-top:18px">
+          <div class="sec-title" style="margin-bottom:10px"><i class="ti ti-refresh-alert"></i> Atualização obrigatória</div>
+          <div style="font-size:12.5px;color:var(--txt2);margin-bottom:14px">
+            Ao publicar uma nova versão do app, clique em <b>"Forçar atualização"</b>. Todas as empresas com versão antiga verão um aviso e o app recarregará automaticamente (5s). <b>Lembre de incrementar também o número APP_VERSION no código do index.html antes de publicar.</b>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+            <div style="font-size:13px">Versão atual no servidor: <b id="ver-atual" style="color:var(--pri);font-size:16px">—</b></div>
+            <button class="btn btn-danger btn-sm" onclick="forcarAtualizacaoApp()"><i class="ti ti-rocket"></i> Forçar atualização (+1)</button>
+          </div>
+          <span id="ver-status" style="font-size:12px;color:var(--txt3)"></span>
+        </div>
       </div>
 
     </div><!-- /content -->
@@ -3581,9 +3593,33 @@ async function carregarSuporteConfig() {
     document.getElementById('sup-whatsapp').value = data?.suporte_whatsapp || '';
     document.getElementById('sup-msg').value = data?.suporte_msg || '';
     document.getElementById('sup-email').value = data?.suporte_email || '';
+    const va = document.getElementById('ver-atual');
+    if (va) va.textContent = (typeof data?.app_version === 'number') ? data.app_version : '—';
     if (st) st.textContent = '';
   } catch (e) {
-    if (st) { st.textContent = 'Não foi possível carregar (rode a migração E01).'; st.style.color = 'var(--danger)'; }
+    if (st) { st.textContent = 'Não foi possível carregar (rode a migração E01/E02).'; st.style.color = 'var(--danger)'; }
+  }
+}
+
+// Incrementa a versão do app — dispara o aviso de atualização nas empresas
+async function forcarAtualizacaoApp() {
+  if (!confirm('Forçar atualização de TODAS as empresas?\n\nQuem estiver com versão antiga verá o aviso e o app recarregará automaticamente.\n\nConfirme que você JÁ publicou a nova versão e incrementou o APP_VERSION no index.html.')) return;
+  if (!await sessaoValida()) return;
+  const vs = document.getElementById('ver-status');
+  setLoad(true);
+  try {
+    const { data: cur } = await db.from('app_config').select('app_version').eq('id', 1).maybeSingle();
+    const nova = (typeof cur?.app_version === 'number' ? cur.app_version : 0) + 1;
+    const { error } = await db.from('app_config').update({ app_version: nova, updated_at: new Date().toISOString() }).eq('id', 1);
+    if (error) throw error;
+    addLog('config', `Atualização forçada — versão ${nova}`);
+    notify(`✅ Versão atualizada para ${nova}. As empresas serão atualizadas.`, 'success', 6000);
+    const va = document.getElementById('ver-atual'); if (va) va.textContent = nova;
+    if (vs) { vs.textContent = `Versão ${nova} publicada.`; vs.style.color = 'var(--success)'; }
+  } catch (e) {
+    notify('Erro ao forçar atualização: ' + (e.message || String(e)), 'error');
+  } finally {
+    setLoad(false);
   }
 }
 
