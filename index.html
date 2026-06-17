@@ -571,6 +571,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
       <div class="nav-sec nav-adm-sec">Administração</div>
       <div class="ni nav-adm" onclick="go('inteligencia')" data-p="admin,gerente"><i class="ti ti-brain"></i><span class="ni-label">Inteligência</span><span class="ni-tip">Inteligência</span></div>
       <div class="ni nav-adm" onclick="go('usuarios')" data-p="admin"><i class="ti ti-shield-lock"></i><span class="ni-label">Usuários</span><span class="ni-tip">Usuários</span></div>
+      <div class="ni nav-adm" onclick="go('permissoes')" data-p="admin"><i class="ti ti-key"></i><span class="ni-label">Permissões</span><span class="ni-tip">Permissões</span></div>
       <div class="ni nav-adm" onclick="go('aparencia')" data-p="admin"><i class="ti ti-palette"></i><span class="ni-label">Aparência & Marca</span><span class="ni-tip">Aparência</span></div>
       <div class="nav-sec">Conta</div>
       <div class="ni" onclick="abrirUpgrade()" data-p="admin,gerente"><i class="ti ti-rocket"></i><span class="ni-label">Fazer Upgrade</span><span class="ni-tip">Upgrade de plano</span></div>
@@ -1648,6 +1649,24 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
             <div class="card-title" style="margin-bottom:14px">⚙️ Configurações do Motor de Inteligência</div>
             <div id="intel-config-rows"></div>
             <button class="btn btn-pri" style="margin-top:14px" onclick="salvarIntelConfig()"><i class="ti ti-check"></i>Salvar Configurações</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PERMISSÕES -->
+      <div class="page" id="page-permissoes">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <div class="sec-title"><i class="ti ti-key" style="color:var(--pri);margin-right:6px"></i>Permissões por nível</div>
+            <button class="btn btn-pri btn-sm" onclick="salvarPermissoes()"><i class="ti ti-check"></i>Salvar</button>
+          </div>
+          <div style="font-size:12.5px;color:var(--txt2);margin-bottom:16px">
+            Defina o que cada nível de funcionário pode acessar. O <b>Administrador (dono)</b> sempre vê tudo, incluindo Usuários e estas Permissões. Marque as telas liberadas para Gerente, Operador e Técnico.
+          </div>
+          <div id="perm-grid"></div>
+          <div style="margin-top:14px;display:flex;gap:8px">
+            <button class="btn btn-pri" onclick="salvarPermissoes()"><i class="ti ti-check"></i>Salvar Permissões</button>
+            <button class="btn btn-out" onclick="restaurarPermissoesPadrao()"><i class="ti ti-rotate"></i>Restaurar padrão</button>
           </div>
         </div>
       </div>
@@ -3060,15 +3079,108 @@ const RL = {admin:'Administrador',gerente:'Gerente',operador:'Operador de Caixa'
 const RC = {admin:'r-admin',gerente:'r-gerente',operador:'r-operador',tecnico:'r-tecnico'};
 const RH = {admin:'dashboard',gerente:'dashboard',operador:'pdv',tecnico:'os'};
 
+// Catálogo de páginas configuráveis (rótulo amigável) — usado na tela de Permissões.
+// admin (dono) e admin_master NÃO entram aqui: têm acesso total sempre.
+const PAGINAS_CONFIG = {
+  dashboard:'Dashboard', pdv:'PDV (Venda)', caixas:'Caixas', crediario:'Crediário',
+  orcamentos:'Orçamentos', 'os-hist':'Histórico de OS', devolucoes:'Devoluções',
+  os:'Ordens de Serviço', agenda:'Agenda', comissoes:'Comissões', produtos:'Produtos',
+  estoque:'Estoque', fornecedores:'Fornecedores', financeiro:'Financeiro',
+  clientes:'Clientes', relatorios:'Relatórios', inteligencia:'Inteligência (IA)'
+};
+
+// Padrões embutidos (usados quando a empresa não configurou nada)
+const ROLE_PERMS_DEFAULT = {
+  gerente:['dashboard','pdv','caixas','crediario','orcamentos','os-hist','devolucoes','os','agenda','comissoes','produtos','estoque','fornecedores','financeiro','clientes','relatorios','inteligencia'],
+  operador:['pdv','crediario','orcamentos','agenda','clientes'],
+  tecnico:['os-hist','os','agenda','clientes']
+};
+
+// Config atual (carregada do banco; null = usar padrões)
+let ROLE_PERMS = null;
+
+function getRolePerms(){
+  // Mescla: usa o configurado se existir, senão o padrão (por role)
+  const cfg = ROLE_PERMS || {};
+  return {
+    gerente: cfg.gerente || ROLE_PERMS_DEFAULT.gerente,
+    operador: cfg.operador || ROLE_PERMS_DEFAULT.operador,
+    tecnico: cfg.tecnico || ROLE_PERMS_DEFAULT.tecnico
+  };
+}
+
 function canAccess(role,page){
-  if(role==='admin_master') return true; // acesso master irrestrito (uso normal é via admin.html)
+  if(role==='admin_master') return true; // master irrestrito
+  if(role==='admin') return true;         // dono vê tudo (Usuários/Aparência inclusos)
+  // Usuários e Aparência são exclusivos do dono
+  if(page==='usuarios'||page==='aparencia') return false;
+  const perms=getRolePerms();
+  const lista=perms[role]||[];
+  return lista.includes(page);
+}
+
+function _canAccessLegado(role,page){
   const P={dashboard:['admin','gerente'],pdv:['admin','gerente','operador'],caixas:['admin','gerente'],crediario:['admin','gerente','operador'],orcamentos:['admin','gerente','operador'],'os-hist':['admin','gerente','tecnico'],devolucoes:['admin','gerente'],os:['admin','gerente','tecnico'],agenda:['admin','gerente','tecnico','operador'],comissoes:['admin','gerente'],produtos:['admin','gerente'],estoque:['admin','gerente'],fornecedores:['admin','gerente'],financeiro:['admin','gerente'],clientes:['admin','gerente','operador','tecnico'],relatorios:['admin','gerente'],inteligencia:['admin','gerente'],usuarios:['admin'],aparencia:['admin']};
   return (P[page]||[]).includes(role);
+}
+
+// ── TELA DE PERMISSÕES POR NÍVEL ──────────────────────────
+function renderPermissoes(){
+  const grid=document.getElementById('perm-grid'); if(!grid) return;
+  const perms=getRolePerms();
+  const roles=[['gerente','Gerente','ti-user-star'],['operador','Operador de Caixa','ti-cash'],['tecnico','Técnico','ti-tool']];
+  grid.innerHTML=roles.map(([rk,rlabel,ic])=>`
+    <div class="card" style="margin-bottom:12px;border:1px solid var(--border)">
+      <div style="font-weight:700;font-size:14px;margin-bottom:10px;display:flex;align-items:center;gap:7px"><i class="ti ${ic}" style="color:var(--pri)"></i>${rlabel}</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px">
+        ${Object.entries(PAGINAS_CONFIG).map(([pg,plabel])=>{
+          const checked=(perms[rk]||[]).includes(pg)?'checked':'';
+          return `<label style="display:flex;align-items:center;gap:7px;font-size:12.5px;cursor:pointer;padding:5px 8px;border-radius:7px;background:var(--bg2,rgba(0,0,0,.02))">
+            <input type="checkbox" data-role="${rk}" data-page="${pg}" ${checked} style="width:15px;height:15px;cursor:pointer">
+            <span>${plabel}</span>
+          </label>`;
+        }).join('')}
+      </div>
+    </div>`).join('');
+}
+
+async function salvarPermissoes(){
+  const novo={gerente:[],operador:[],tecnico:[]};
+  document.querySelectorAll('#perm-grid input[type="checkbox"]:checked').forEach(cb=>{
+    const r=cb.dataset.role, p=cb.dataset.page;
+    if(novo[r]) novo[r].push(p);
+  });
+  const empId=EID()||G.empresa?.id;
+  if(!empId){notify('Empresa não identificada.','error');return;}
+  setLoad(true);
+  let {error}=await db.from('aparencia_config').update({role_permissions:novo,updated_at:new Date().toISOString()}).eq('empresa_id',empId);
+  if(error){ const ins=await db.from('aparencia_config').insert({empresa_id:empId,role_permissions:novo}); error=ins.error; }
+  setLoad(false);
+  if(error){notify('Erro ao salvar permissões: '+error.message,'error');return;}
+  ROLE_PERMS=novo;
+  applyRoleUI();
+  notify('✅ Permissões salvas! Os funcionários verão as mudanças no próximo login.','success',5000);
+}
+
+function restaurarPermissoesPadrao(){
+  if(!confirm('Restaurar as permissões padrão de Gerente, Operador e Técnico?')) return;
+  ROLE_PERMS=null; // volta aos padrões embutidos
+  renderPermissoes();
+  notify('Padrões restaurados na tela. Clique em Salvar para aplicar.','info');
 }
 
 function applyRoleUI(){
   document.querySelectorAll('.ni[data-p]').forEach(el=>{el.style.display=el.dataset.p.split(',').includes(G.role)?'':'none';});
   document.querySelectorAll('.nav-adm-sec,.nav-adm').forEach(el=>{el.style.display=G.role==='admin'?'':'none';});
+  // Esconde também itens cujo acesso a config de permissões não permite ao role atual.
+  // (Itens de página têm onclick="go('xxx')". Suporte/Upgrade não são páginas e ficam de fora.)
+  document.querySelectorAll('.ni[onclick^="go("]').forEach(el=>{
+    const mm=el.getAttribute('onclick').match(/go\('([^']+)'\)/);
+    if(!mm) return;
+    const page=mm[1];
+    if(!(page in PAGINAS_CONFIG) && page!=='usuarios' && page!=='aparencia') return; // não é página gerenciável
+    if(!canAccess(G.role,page)) el.style.display='none';
+  });
   document.getElementById('uname').textContent=G.profile?.nome||G.user?.email||'—';
   document.getElementById('urole').textContent=RL[G.role]||G.role;
   document.getElementById('uav').textContent=(G.profile?.nome||'?').slice(0,2).toUpperCase();
@@ -3374,6 +3486,7 @@ function go(page){
     relatorios:renderRelatorios,
     aparencia:renderAparencia,
     usuarios:()=>{renderUsuarios();carregarAuditLog();renderAuditLog();},
+    permissoes:renderPermissoes,
     inteligencia:()=>{initIntel();renderAlertasIntel();popPrecoEspSelects();},
     caixas:()=>{initCaixas();go_caixas();},
     crediario:()=>{initCredario();renderContratos();popSelects();},
@@ -5600,8 +5713,11 @@ async function salvarMarcaSupabase(marca) {
 async function aplicarMarcasSalvas() {
   const empId = EID() || G.empresa?.id;
   if (!empId) return;
-  const { data, error } = await db.from('aparencia_config').select('config_marca').eq('empresa_id', empId).maybeSingle();
-  if (error || !data?.config_marca) return;
+  const { data, error } = await db.from('aparencia_config').select('config_marca,role_permissions').eq('empresa_id', empId).maybeSingle();
+  if (error) return;
+  // Permissões por nível (se a empresa configurou)
+  ROLE_PERMS = data?.role_permissions || null;
+  if (!data?.config_marca) return;
   try {
     const m = data.config_marca;
     if (m && Object.keys(m).length) {
