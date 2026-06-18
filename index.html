@@ -2691,6 +2691,17 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
 </div>
 
 
+<!-- MODAL RESULTADO CONSULTA IMEI -->
+<div class="modal-overlay" id="modal-imei-result">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-title"><i class="ti ti-device-mobile-search"></i><span>Consulta de IMEI</span></div>
+    <div id="imei-result-body" style="padding:4px 2px"></div>
+    <div class="modal-foot">
+      <button class="btn btn-out" onclick="closeModal('modal-imei-result')">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL DOCUMENTOS OS -->
 <div class="modal-overlay" id="modal-docs-os">
   <div class="modal" style="max-width:500px">
@@ -4804,28 +4815,96 @@ function popTecSel(){
    A base oficial (Celular Legal / ABR Telecom) usa captcha e consulta manual.
    Então: validamos o IMEI, copiamos para a área de transferência e abrimos a
    página oficial — o usuário cola o IMEI, resolve o captcha e vê o resultado. */
-const ANATEL_CONSULTA_URL = 'https://www.anatel.gov.br/celularlegal/consulte-sua-situacao';
+const ANATEL_CONSULTA_URL = 'https://www.gov.br/anatel/pt-br/assuntos/celular-legal/consulte-sua-situacao';
 const ABR_CONSULTA_URL = 'https://www.consultaserialaparelho.com.br/';
 
 function imeiValido(imei){
-  // IMEI tem 15 dígitos (alguns aparelhos mostram 14 + dígito verificador). Aceita 14-16 só dígitos.
   const s=(imei||'').replace(/\D/g,'');
   return s.length>=14 && s.length<=16 ? s : null;
 }
 
-async function consultarImeiAnatel(imeiRaw){
-  const imei=imeiValido(imeiRaw);
-  if(!imeiRaw || !imeiRaw.trim()){ notify('Informe o IMEI primeiro.','warn'); return; }
-  if(!imei){ notify('IMEI inválido. Deve ter 15 dígitos (digite *#06# no aparelho para ver).','warn',5000); return; }
-  // Copia o IMEI para colar na página oficial
+// Abre o site oficial da Anatel com o IMEI copiado (fallback gratuito).
+async function abrirImeiAnatelManual(imei){
   let copiou=false;
   try{ await navigator.clipboard.writeText(imei); copiou=true; }catch(e){}
-  // Abre a consulta oficial
   window.open(ANATEL_CONSULTA_URL,'_blank');
   notify(copiou
-    ? `IMEI ${imei} copiado! Cole no site da Anatel que abriu, resolva o captcha e veja a situação.`
-    : `Abra o site da Anatel, informe o IMEI ${imei}, resolva o captcha e veja a situação.`,
+    ? `IMEI ${imei} copiado! Cole no site da Anatel, resolva o captcha e veja a situação.`
+    : `Abra o site da Anatel, informe o IMEI ${imei} e resolva o captcha.`,
     'info', 7000);
+}
+
+// Consulta principal: tenta a API automática (Edge Function); se não estiver
+// configurada ou falhar, cai no fallback gratuito (site oficial).
+async function consultarImeiAnatel(imeiRaw){
+  if(!imeiRaw || !imeiRaw.trim()){ notify('Informe o IMEI primeiro.','warn'); return; }
+  const imei=imeiValido(imeiRaw);
+  if(!imei){ notify('IMEI inválido. Deve ter 15 dígitos (digite *#06# no aparelho).','warn',5000); return; }
+
+  // Mostra modal em estado "carregando"
+  const body=document.getElementById('imei-result-body');
+  if(body){
+    body.innerHTML=`<div style="text-align:center;padding:26px 10px">
+      <div class="spinner" style="margin:0 auto 12px;border-color:rgba(91,71,224,.2);border-top-color:var(--pri)"></div>
+      <div style="font-size:13px;color:var(--txt2)">Consultando IMEI <b>${imei}</b> na base da Anatel...</div>
+    </div>`;
+    openModal('modal-imei-result');
+  }
+
+  try{
+    const { data, error } = await db.functions.invoke('consultar-imei', {
+      body: { imei, empresa_id: EID(), usuario_id: G.profile?.id || null }
+    });
+    if(error) throw error;
+
+    // Não configurado → fallback manual
+    if(data && data.configured===false){
+      closeModal('modal-imei-result');
+      await abrirImeiAnatelManual(imei);
+      return;
+    }
+    if(data && data.error){
+      renderImeiResult({ erro:data.error, imei });
+      return;
+    }
+    renderImeiResult({ ...data, imei });
+  }catch(e){
+    // Falha de rede/função → oferece o caminho manual
+    renderImeiResult({ erro:'Não foi possível usar a consulta automática agora.', imei, ofereceManual:true });
+  }
+}
+
+// Renderiza o resultado da consulta numa interface clara
+function renderImeiResult(r){
+  const body=document.getElementById('imei-result-body');
+  if(!body) return;
+  if(r.erro){
+    body.innerHTML=`<div style="text-align:center;padding:18px 10px">
+      <div style="font-size:34px;margin-bottom:6px">⚠️</div>
+      <div style="font-weight:700;margin-bottom:6px">Não foi possível consultar</div>
+      <div style="font-size:13px;color:var(--txt2);margin-bottom:14px">${r.erro}</div>
+      ${r.ofereceManual!==false?`<button class="btn btn-pri" onclick="closeModal('modal-imei-result');abrirImeiAnatelManual('${r.imei}')"><i class="ti ti-external-link"></i> Consultar no site da Anatel</button>`:''}
+    </div>`;
+    return;
+  }
+  const restr=r.tem_restricao===true;
+  const cor=restr?'#dc2626':'#16a34a';
+  const bg=restr?'rgba(220,38,38,.08)':'rgba(22,163,74,.08)';
+  const icone=restr?'🚫':'✅';
+  const titulo=restr?'Aparelho com restrição':'Sem restrições';
+  body.innerHTML=`
+    <div style="text-align:center;padding:14px 10px 6px">
+      <div style="font-size:42px;margin-bottom:4px">${icone}</div>
+      <div style="font-weight:800;font-size:18px;color:${cor}">${titulo}</div>
+      ${r.cached?'<div style="font-size:10.5px;color:var(--txt3);margin-top:2px">(resultado recente em cache)</div>':''}
+    </div>
+    <div style="background:${bg};border:1px solid ${cor}33;border-radius:12px;padding:14px;margin:10px 0">
+      <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px"><span style="color:var(--txt3)">IMEI</span><b style="font-family:monospace">${r.imei}</b></div>
+      <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;border-top:1px solid ${cor}22"><span style="color:var(--txt3)">Situação</span><b style="text-align:right;max-width:60%">${r.resultado||'—'}</b></div>
+      ${r.responsavel?`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;border-top:1px solid ${cor}22"><span style="color:var(--txt3)">Responsável</span><b>${r.responsavel}</b></div>`:''}
+      ${r.data_consulta?`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:12px;border-top:1px solid ${cor}22"><span style="color:var(--txt3)">Consulta</span><span>${new Date(r.data_consulta).toLocaleString('pt-BR')}</span></div>`:''}
+    </div>
+    <div style="font-size:11px;color:var(--txt3);text-align:center">Fonte: Anatel / Celular Legal. ${restr?'Recomenda-se NÃO comprar/aceitar este aparelho.':'Nenhum impedimento por roubo/furto/bloqueio encontrado.'}</div>`;
 }
 
 async function createOS(){
