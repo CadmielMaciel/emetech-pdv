@@ -2888,18 +2888,28 @@ async function confirmarBloqueio() {
 
 /* ── DETALHES DA EMPRESA ── */
 async function abrirDetalhes(id) {
-  const e = await getEmpresaById(id);
-  if (!e) return;
+  let e = null;
+  try {
+    e = await getEmpresaById(id);
+  } catch (err) {
+    console.error('Erro ao carregar empresa:', err);
+    notify('Erro ao carregar a empresa. Tente recarregar a página.', 'error');
+    return;
+  }
+  if (!e) { notify('Empresa não encontrada.', 'warn'); return; }
   _empresaAtual = e;
 
-  document.getElementById('det-titulo').textContent = e.nome;
-  detTab('geral', null);
+  const tit = document.getElementById('det-titulo');
+  if (tit) tit.textContent = e.nome || 'Detalhes';
   openModal('modal-detalhes');
+  // Renderiza a aba geral por último (se algo falhar, o modal já está aberto)
+  try { detTab('geral', null); } catch (err) { console.error('Erro ao renderizar detalhes:', err); }
 }
 
 async function detTab(tab, btn) {
   ['geral','financeiro','acesso','marca','updates','bloqueio'].forEach(t => {
-    document.getElementById('det-tab-' + t).style.display = t === tab ? '' : 'none';
+    const el = document.getElementById('det-tab-' + t);
+    if (el) el.style.display = t === tab ? '' : 'none';
   });
   document.querySelectorAll('#modal-detalhes .tab-btn').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
@@ -2910,7 +2920,7 @@ async function detTab(tab, btn) {
 
   const e = _empresaAtual;
   if (!e) return;
-  const plano = G.planos.find(p => p.id === e.plano);
+  const plano = (G.planos || []).find(p => p.id === e.plano);
 
   if (tab === 'geral') {
     document.getElementById('det-geral-content').innerHTML = `
