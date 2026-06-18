@@ -556,6 +556,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
       <div class="nav-sec">Serviços</div>
       <div class="ni" onclick="go('os')" data-p="admin,gerente,tecnico"><i class="ti ti-tools"></i><span class="ni-label">Ordens de Serviço</span><span class="ni-tip">OS</span></div>
       <div class="ni" onclick="go('os-hist')" data-p="admin,gerente,tecnico"><i class="ti ti-history"></i><span class="ni-label">Histórico OS</span><span class="ni-tip">Histórico OS</span></div>
+      <div class="ni" onclick="go('garantias')" data-p="admin,gerente,tecnico"><i class="ti ti-shield-check"></i><span class="ni-label">Garantias</span><span class="ni-tip">Garantias</span></div>
       <div class="ni" onclick="go('agenda')" data-p="admin,gerente,tecnico,operador"><i class="ti ti-calendar-event"></i><span class="ni-label">Agenda de Entregas</span><span class="ni-tip">Agenda</span></div>
       <div class="ni" onclick="go('comissoes')" data-p="admin,gerente"><i class="ti ti-award"></i><span class="ni-label">Comissão Técnicos</span><span class="ni-tip">Comissões</span></div>
       <div class="nav-sec">Estoque & Produtos</div>
@@ -670,6 +671,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
               <div class="cr"><span style="color:var(--txt2)">Subtotal</span><span id="c-sub" style="font-weight:600">R$ 0,00</span></div>
               <div class="cr"><span style="color:var(--txt2)">Desconto</span><div style="display:flex;align-items:center;gap:4px"><input type="number" id="c-desc" min="0" max="100" value="0" style="width:48px;padding:2px 6px;font-size:11.5px;text-align:center;border-radius:5px" oninput="renderCart()"><span style="font-size:11.5px;color:var(--txt3)">%</span></div></div>
               <div class="cr"><span style="color:var(--txt2)">Acréscimo</span><div style="display:flex;align-items:center;gap:4px"><input type="number" id="c-acr" min="0" value="0" step="0.01" style="width:70px;padding:2px 6px;font-size:11.5px;border-radius:5px" oninput="renderCart()" placeholder="R$"></div></div>
+              <div class="cr"><span style="color:var(--txt2)">Garantia</span><div style="display:flex;align-items:center;gap:4px"><input type="number" id="c-garantia" min="0" value="0" style="width:48px;padding:2px 6px;font-size:11.5px;text-align:center;border-radius:5px" title="Dias de garantia da venda"><span style="font-size:11.5px;color:var(--txt3)">dias</span></div></div>
               <div class="cg"><span class="cg-lbl">Total</span><span class="cg-val" id="c-tot">R$ 0,00</span></div>
               <div style="font-size:10.5px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px">Pagamento</div>
               <div class="pay-grid">
@@ -931,6 +933,30 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
         <div class="card" style="padding:0"><div class="tw"><table>
           <thead><tr><th>OS</th><th>Cliente</th><th>Equipamento</th><th>Abertura</th><th>Conclusão</th><th>Técnico</th><th>Valor</th><th>Status</th><th>Documentos</th></tr></thead>
           <tbody id="os-hist-table"></tbody>
+        </table></div></div>
+      </div>
+
+      <!-- CENTRAL DE GARANTIAS -->
+      <div class="page" id="page-garantias">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+          <div>
+            <div class="sec-title" style="margin-bottom:2px"><i class="ti ti-shield-check" style="color:var(--pri)"></i>Central de Garantias</div>
+            <div style="font-size:12.5px;color:var(--txt2)">Acompanhe as garantias de vendas e ordens de serviço, com alerta de vencimento e aviso ao cliente.</div>
+          </div>
+        </div>
+        <div id="gar-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:14px 0"></div>
+        <div class="filter-bar" style="align-items:center;gap:8px;flex-wrap:wrap">
+          <div class="seg" id="gar-seg" style="display:flex;gap:4px">
+            <button class="btn btn-pri btn-xs" data-f="todas" onclick="setGarFiltro('todas',this)">Todas</button>
+            <button class="btn btn-out btn-xs" data-f="ativa" onclick="setGarFiltro('ativa',this)">Ativas</button>
+            <button class="btn btn-out btn-xs" data-f="vencendo" onclick="setGarFiltro('vencendo',this)">Vencendo</button>
+            <button class="btn btn-out btn-xs" data-f="vencida" onclick="setGarFiltro('vencida',this)">Vencidas</button>
+          </div>
+          <input type="text" id="gar-busca" placeholder="Buscar cliente, aparelho, nº..." oninput="renderGarantias()" style="flex:1;min-width:160px;padding:7px 10px;border-radius:8px;border:1px solid var(--border)">
+        </div>
+        <div class="card" style="padding:0"><div class="tw"><table>
+          <thead><tr><th>Origem</th><th>Cliente</th><th>Item/Aparelho</th><th>Início</th><th>Validade</th><th>Restante</th><th>Situação</th><th>Ações</th></tr></thead>
+          <tbody id="gar-table"></tbody>
         </table></div></div>
       </div>
 
@@ -3110,14 +3136,15 @@ const PAGINAS_CONFIG = {
   orcamentos:'Orçamentos', 'os-hist':'Histórico de OS', devolucoes:'Devoluções',
   os:'Ordens de Serviço', agenda:'Agenda', comissoes:'Comissões', produtos:'Produtos',
   estoque:'Estoque', fornecedores:'Fornecedores', financeiro:'Financeiro',
-  clientes:'Clientes', relatorios:'Relatórios', inteligencia:'Inteligência (IA)'
+  clientes:'Clientes', relatorios:'Relatórios', inteligencia:'Inteligência (IA)',
+  garantias:'Garantias'
 };
 
 // Padrões embutidos (usados quando a empresa não configurou nada)
 const ROLE_PERMS_DEFAULT = {
-  gerente:['dashboard','pdv','caixas','crediario','orcamentos','os-hist','devolucoes','os','agenda','comissoes','produtos','estoque','fornecedores','financeiro','clientes','relatorios','inteligencia'],
+  gerente:['dashboard','pdv','caixas','crediario','orcamentos','os-hist','devolucoes','os','agenda','comissoes','produtos','estoque','fornecedores','financeiro','clientes','relatorios','inteligencia','garantias'],
   operador:['pdv','crediario','orcamentos','agenda','clientes'],
-  tecnico:['os-hist','os','agenda','clientes']
+  tecnico:['os-hist','os','agenda','clientes','garantias']
 };
 
 // Config atual (carregada do banco; null = usar padrões)
@@ -3515,6 +3542,7 @@ function go(page){
     aparencia:renderAparencia,
     usuarios:()=>{renderUsuarios();carregarAuditLog();renderAuditLog();},
     permissoes:renderPermissoes,
+    garantias:()=>{_garCache=[];renderGarantias();},
     inteligencia:()=>{initIntel();renderAlertasIntel();popPrecoEspSelects();},
     caixas:()=>{initCaixas();go_caixas();},
     crediario:()=>{initCredario();renderContratos();popSelects();},
@@ -3830,7 +3858,7 @@ function renderCart(){
 
 function cQty(id,d){const p=G.produtos.find(x=>x.id===id);const ci=G.cart.find(x=>x.id===id);if(!ci)return;ci.qty+=d;if(!ci.inf&&p&&ci.qty>p.estoque){ci.qty=p.estoque;notify('Limite!','warn');return;}if(ci.qty<1)G.cart=G.cart.filter(x=>x.id!==id);renderCart();}
 function rmCart(id){G.cart=G.cart.filter(x=>x.id!==id);renderCart();}
-function clearCart(){G.cart=[];document.getElementById('c-desc').value=0;document.getElementById('c-acr').value=0;var r=document.getElementById('c-recebido');if(r)r.value='';renderCart();}
+function clearCart(){G.cart=[];document.getElementById('c-desc').value=0;document.getElementById('c-acr').value=0;var r=document.getElementById('c-recebido');if(r)r.value='';var g=document.getElementById('c-garantia');if(g)g.value=0;renderCart();}
 
 function selPay(btn,m){
   document.querySelectorAll('.pb').forEach(b=>b.classList.remove('sel'));
@@ -3885,7 +3913,7 @@ async function finalizeSale(){
     const continuar = window.confirm('Este cliente possui parcelas em atraso no crediário. Deseja continuar com a venda assim mesmo?');
     if (!continuar) return;
   }
-  const venda={empresa_id:EID(),caixa_id:G.caixaAtual.id,cliente_id:cliId||null,cliente_nome:cliNome,operador_id:G.profile.id,operador_nome:G.profile.nome,itens:G.cart,subtotal:sub,desconto_pct:desc,desconto_valor:sub*desc/100,acrescimo_valor:acr,total,custo_total:custo,lucro:total-custo,pagamentos,pagamento:G.payMethod==='misto'?'misto':G.payMethod,troco};
+  const venda={empresa_id:EID(),caixa_id:G.caixaAtual.id,cliente_id:cliId||null,cliente_nome:cliNome,operador_id:G.profile.id,operador_nome:G.profile.nome,itens:G.cart,subtotal:sub,desconto_pct:desc,desconto_valor:sub*desc/100,acrescimo_valor:acr,total,custo_total:custo,lucro:total-custo,pagamentos,pagamento:G.payMethod==='misto'?'misto':G.payMethod,troco,garantia_dias:parseInt(document.getElementById('c-garantia')?.value)||0};
 
   if(!navigator.onLine){
     // ── MODO OFFLINE: guarda venda na fila local, baixa estoque só na memória local ──
@@ -5190,6 +5218,139 @@ function abrirDocumentosOSHist(osId){
 }
 
 function limparFiltrosOS(){['hf-de','hf-ate'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});document.getElementById('hf-tec').value='';document.getElementById('hf-cli').value='';if(document.getElementById('hf-status'))document.getElementById('hf-status').value='';renderOSHist();}
+
+/* ── CENTRAL DE GARANTIAS ──────────────────────────────────────────
+   Deriva as garantias de vendas (garantia_dias) e ordens_servico
+   (garantia_dias), calcula validade e dias restantes, e permite avisar
+   o cliente por WhatsApp. Sem tabela separada (evita dessincronização). */
+let GAR_FILTRO = 'todas';
+let _garCache = [];
+const GAR_DIAS_ALERTA = 15; // "vencendo" quando faltam <= 15 dias
+
+function setGarFiltro(f, btn){
+  GAR_FILTRO = f;
+  document.querySelectorAll('#gar-seg .btn').forEach(b=>{b.classList.remove('btn-pri');b.classList.add('btn-out');});
+  if(btn){btn.classList.remove('btn-out');btn.classList.add('btn-pri');}
+  renderGarantias();
+}
+
+// Monta a lista unificada de garantias a partir do que já existe no sistema
+async function carregarGarantias(){
+  const lista = [];
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+
+  const calc = (inicioISO, dias) => {
+    const ini = new Date(inicioISO);
+    const fim = new Date(ini); fim.setDate(fim.getDate()+ (parseInt(dias)||0));
+    const restante = Math.ceil((fim - hoje)/86400000);
+    let status='ativa';
+    if(restante < 0) status='vencida';
+    else if(restante <= GAR_DIAS_ALERTA) status='vencendo';
+    return { inicio: ini, fim, restante, status };
+  };
+
+  // 1) Garantias de VENDAS (com garantia_dias > 0)
+  (G.vendas||[]).filter(v=>v.status!=='cancelada' && (v.garantia_dias||0)>0).forEach(v=>{
+    const c = calc(v.criado_em||v.data||new Date().toISOString(), v.garantia_dias);
+    const itensTxt = (v.itens||[]).map(i=>i.nome).slice(0,2).join(', ') + ((v.itens||[]).length>2?'...':'');
+    lista.push({
+      origem:'Venda', icone:'ti-shopping-cart', ref:'#'+pad(v.numero||0),
+      cliente_id:v.cliente_id, cliente_nome:v.cliente_nome||'Consumidor Final',
+      item: itensTxt||'Produtos', dias:v.garantia_dias, ...c
+    });
+  });
+
+  // 2) Garantias de ORDENS DE SERVIÇO (entregues/concluídas com garantia)
+  // Carrega do banco para pegar OS já finalizadas (não só as ativas em G.os)
+  let osList = [];
+  try{
+    const {data} = await db.from('ordens_servico').select('*').gt('garantia_dias',0).order('criado_em',{ascending:false}).limit(500);
+    osList = data||[];
+  }catch(e){ osList = (G.os||[]).filter(o=>(o.garantia_dias||0)>0); }
+  osList.forEach(o=>{
+    const inicio = o.data_conclusao || o.data_entrega || o.criado_em || new Date().toISOString();
+    const c = calc(inicio, o.garantia_dias);
+    lista.push({
+      origem:'OS', icone:'ti-tool', ref:'OS '+(o.numero||''),
+      cliente_id:o.cliente_id, cliente_nome:o.cliente_nome||'—',
+      item:o.aparelho||'Aparelho', dias:o.garantia_dias, ...c
+    });
+  });
+
+  // Ordena: vencendo primeiro, depois por menor restante
+  lista.sort((a,b)=> a.restante - b.restante);
+  _garCache = lista;
+  return lista;
+}
+
+async function renderGarantias(){
+  // Carrega só uma vez por visita (cache em _garCache); recarrega se vazio
+  if(!_garCache.length) await carregarGarantias();
+  const busca = (document.getElementById('gar-busca')?.value||'').toLowerCase();
+
+  let list = _garCache.slice();
+  if(GAR_FILTRO!=='todas') list = list.filter(g=>g.status===GAR_FILTRO);
+  if(busca) list = list.filter(g=>
+    (g.cliente_nome||'').toLowerCase().includes(busca) ||
+    (g.item||'').toLowerCase().includes(busca) ||
+    (g.ref||'').toLowerCase().includes(busca)
+  );
+
+  // Cards de resumo (sempre sobre o total, não o filtrado)
+  const tot=_garCache.length;
+  const ativas=_garCache.filter(g=>g.status==='ativa').length;
+  const vencendo=_garCache.filter(g=>g.status==='vencendo').length;
+  const vencidas=_garCache.filter(g=>g.status==='vencida').length;
+  const cards=document.getElementById('gar-cards');
+  if(cards) cards.innerHTML=`
+    ${garCard('Total', tot, 'var(--pri)', 'ti-shield')}
+    ${garCard('Ativas', ativas, '#16a34a', 'ti-shield-check')}
+    ${garCard('Vencendo', vencendo, '#d97706', 'ti-shield-exclamation')}
+    ${garCard('Vencidas', vencidas, '#dc2626', 'ti-shield-x')}`;
+
+  const corStatus={ativa:'tag-grn',vencendo:'tag-amb',vencida:'tag-red'};
+  const lblStatus={ativa:'Ativa',vencendo:'Vencendo',vencida:'Vencida'};
+  const tb=document.getElementById('gar-table');
+  if(!tb) return;
+  tb.innerHTML = list.length===0
+    ? '<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--txt3)">Nenhuma garantia encontrada</td></tr>'
+    : list.map((g,idx)=>`<tr>
+        <td><span style="display:inline-flex;align-items:center;gap:5px;font-size:12px"><i class="ti ${g.icone}" style="color:var(--pri)"></i>${g.origem} ${g.ref}</span></td>
+        <td>${g.cliente_nome}</td>
+        <td style="font-size:12.5px">${g.item}</td>
+        <td style="font-size:12px;color:var(--txt3)">${g.inicio.toLocaleDateString('pt-BR')}</td>
+        <td style="font-size:12px">${g.fim.toLocaleDateString('pt-BR')}</td>
+        <td style="font-weight:700;color:${g.status==='vencida'?'#dc2626':g.status==='vencendo'?'#d97706':'#16a34a'}">${g.restante<0?`${Math.abs(g.restante)}d atrás`:`${g.restante}d`}</td>
+        <td><span class="tag ${corStatus[g.status]}">${lblStatus[g.status]}</span></td>
+        <td><button class="btn btn-out btn-xs" onclick="avisarClienteGarantia(${idx})" title="Avisar cliente por WhatsApp"><i class="ti ti-brand-whatsapp"></i></button></td>
+      </tr>`).join('');
+}
+
+function garCard(label, val, cor, icone){
+  return `<div class="card" style="padding:14px 16px;display:flex;align-items:center;gap:12px">
+    <div style="width:40px;height:40px;border-radius:10px;background:${cor}1a;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ${icone}" style="color:${cor};font-size:20px"></i></div>
+    <div><div style="font-size:22px;font-weight:800;line-height:1;color:${cor}">${val}</div><div style="font-size:11.5px;color:var(--txt3)">${label}</div></div>
+  </div>`;
+}
+
+// Avisa o cliente sobre a garantia via WhatsApp
+function avisarClienteGarantia(idx){
+  const g=_garCache[idx]; if(!g){return;}
+  const cli=(G.clientes||[]).find(c=>c.id===g.cliente_id);
+  const tel=(cli?.telefone||cli?.whatsapp||'').replace(/\D/g,'');
+  const emp=getEmpDados();
+  const validade=g.fim.toLocaleDateString('pt-BR');
+  let msg;
+  if(g.status==='vencida'){
+    msg=`Olá ${g.cliente_nome}! A garantia do seu ${g.item} (${g.origem} ${g.ref}) da ${emp.nome||'nossa loja'} venceu em ${validade}. Se precisar de uma revisão, estamos à disposição!`;
+  } else {
+    msg=`Olá ${g.cliente_nome}! Lembrete da ${emp.nome||'nossa loja'}: a garantia do seu ${g.item} (${g.origem} ${g.ref}) é válida até ${validade}${g.restante<=GAR_DIAS_ALERTA?` — restam ${g.restante} dia(s)`:''}. Qualquer problema, fale com a gente!`;
+  }
+  const numero = tel ? (tel.length<=11 ? '55'+tel : tel) : '';
+  const url = numero ? `https://wa.me/${numero}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+  window.open(url,'_blank');
+  if(!numero) notify('Cliente sem telefone cadastrado — abri o WhatsApp para você escolher o contato.','info',5000);
+}
 
 /* ── RELATÓRIOS ──────────────────────────────────────── */
 // Aplica filtro de período (de/ate) às vendas (exclui canceladas)
