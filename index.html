@@ -209,6 +209,8 @@ tr:hover td{background:var(--surface)}
 .tag-blu{background:#EFF6FF;color:#1D4ED8}
 .tag-gry{background:var(--surface);color:var(--txt3);border:1px solid var(--border)}
 .tag-cyn{background:#ECFEFF;color:#0E7490}
+.chk-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--txt2);padding:6px 8px;border:1px solid var(--border);border-radius:7px;cursor:pointer}
+.chk-item input{cursor:pointer}
 .tag-inf{background:linear-gradient(135deg,#EDE9FF,#E0F2FE);color:var(--pri);border:1px solid #C7D2FE}
 .fg{margin-bottom:12px}
 .lbl{display:block;font-size:11px;font-weight:700;color:var(--txt2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.6px}
@@ -557,6 +559,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
       <div class="ni" onclick="go('os')" data-p="admin,gerente,tecnico"><i class="ti ti-tools"></i><span class="ni-label">Ordens de Serviço</span><span class="ni-tip">OS</span></div>
       <div class="ni" onclick="go('os-hist')" data-p="admin,gerente,tecnico"><i class="ti ti-history"></i><span class="ni-label">Histórico OS</span><span class="ni-tip">Histórico OS</span></div>
       <div class="ni" onclick="go('garantias')" data-p="admin,gerente,tecnico"><i class="ti ti-shield-check"></i><span class="ni-label">Garantias</span><span class="ni-tip">Garantias</span></div>
+      <div class="ni" onclick="go('troca')" data-p="admin,gerente"><i class="ti ti-arrows-exchange"></i><span class="ni-label">Troca de Aparelhos</span><span class="ni-tip">Troca</span></div>
       <div class="ni" onclick="go('agenda')" data-p="admin,gerente,tecnico,operador"><i class="ti ti-calendar-event"></i><span class="ni-label">Agenda de Entregas</span><span class="ni-tip">Agenda</span></div>
       <div class="ni" onclick="go('comissoes')" data-p="admin,gerente"><i class="ti ti-award"></i><span class="ni-label">Comissão Técnicos</span><span class="ni-tip">Comissões</span></div>
       <div class="nav-sec">Estoque & Produtos</div>
@@ -672,6 +675,8 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
               <div class="cr"><span style="color:var(--txt2)">Desconto</span><div style="display:flex;align-items:center;gap:4px"><input type="number" id="c-desc" min="0" max="100" value="0" style="width:48px;padding:2px 6px;font-size:11.5px;text-align:center;border-radius:5px" oninput="renderCart()"><span style="font-size:11.5px;color:var(--txt3)">%</span></div></div>
               <div class="cr"><span style="color:var(--txt2)">Acréscimo</span><div style="display:flex;align-items:center;gap:4px"><input type="number" id="c-acr" min="0" value="0" step="0.01" style="width:70px;padding:2px 6px;font-size:11.5px;border-radius:5px" oninput="renderCart()" placeholder="R$"></div></div>
               <div class="cr"><span style="color:var(--txt2)">Garantia</span><div style="display:flex;align-items:center;gap:4px"><input type="number" id="c-garantia" min="0" value="0" style="width:48px;padding:2px 6px;font-size:11.5px;text-align:center;border-radius:5px" title="Dias de garantia da venda"><span style="font-size:11.5px;color:var(--txt3)">dias</span></div></div>
+              <div class="cr" id="troca-row" style="display:none;align-items:center;gap:6px"><span style="color:var(--txt2);white-space:nowrap"><i class="ti ti-arrows-exchange" style="font-size:12px;color:var(--pri)"></i> Troca</span><span id="c-troca-desc" style="flex:1;font-size:11px;color:var(--txt3);text-align:right"></span><span id="c-troca-val" style="font-weight:700;color:#dc2626">- R$ 0,00</span><button class="btn btn-out btn-xs" onclick="removerTrocaPDV()" title="Remover troca" style="padding:1px 5px"><i class="ti ti-x"></i></button></div>
+              <button class="btn btn-out btn-sm" id="btn-add-troca" onclick="abrirSelecaoTrocaPDV()" style="width:100%;justify-content:center;margin:4px 0;font-size:11.5px"><i class="ti ti-arrows-exchange"></i> Abater aparelho usado (troca)</button>
               <div class="cg"><span class="cg-lbl">Total</span><span class="cg-val" id="c-tot">R$ 0,00</span></div>
               <div style="font-size:10.5px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px">Pagamento</div>
               <div class="pay-grid">
@@ -957,6 +962,33 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
         <div class="card" style="padding:0"><div class="tw"><table>
           <thead><tr><th>Origem</th><th>Cliente</th><th>Item/Aparelho</th><th>Início</th><th>Validade</th><th>Restante</th><th>Situação</th><th>Ações</th></tr></thead>
           <tbody id="gar-table"></tbody>
+        </table></div></div>
+      </div>
+
+      <!-- TROCA DE APARELHOS -->
+      <div class="page" id="page-troca">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
+          <div>
+            <div class="sec-title" style="margin-bottom:2px"><i class="ti ti-arrows-exchange" style="color:var(--pri)"></i>Troca de Aparelhos</div>
+            <div style="font-size:12.5px;color:var(--txt2)">Avalie aparelhos usados, registre a proposta e converta em estoque quando aceito.</div>
+          </div>
+          <button class="btn btn-pri" onclick="abrirAvaliacaoTroca()"><i class="ti ti-plus"></i>Nova Avaliação</button>
+        </div>
+        <div id="troca-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:14px 0"></div>
+        <div class="filter-bar" style="align-items:center;gap:8px;flex-wrap:wrap">
+          <div id="troca-seg" style="display:flex;gap:4px;flex-wrap:wrap">
+            <button class="btn btn-pri btn-xs" data-f="todas" onclick="setTrocaFiltro('todas',this)">Todas</button>
+            <button class="btn btn-out btn-xs" data-f="rascunho" onclick="setTrocaFiltro('rascunho',this)">Rascunho</button>
+            <button class="btn btn-out btn-xs" data-f="ofertado" onclick="setTrocaFiltro('ofertado',this)">Ofertadas</button>
+            <button class="btn btn-out btn-xs" data-f="aceito" onclick="setTrocaFiltro('aceito',this)">Aceitas</button>
+            <button class="btn btn-out btn-xs" data-f="convertido" onclick="setTrocaFiltro('convertido',this)">No estoque</button>
+            <button class="btn btn-out btn-xs" data-f="recusado" onclick="setTrocaFiltro('recusado',this)">Recusadas</button>
+          </div>
+          <input type="text" id="troca-busca" placeholder="Buscar cliente, modelo, IMEI..." oninput="renderTroca()" style="flex:1;min-width:160px;padding:7px 10px;border-radius:8px;border:1px solid var(--border)">
+        </div>
+        <div class="card" style="padding:0"><div class="tw"><table>
+          <thead><tr><th>#</th><th>Cliente</th><th>Aparelho</th><th>Bateria</th><th>Oferecido</th><th>Revenda</th><th>Lucro</th><th>Status</th><th>Ações</th></tr></thead>
+          <tbody id="troca-table"></tbody>
         </table></div></div>
       </div>
 
@@ -2717,6 +2749,84 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
 </div>
 
 
+<!-- MODAL SELECIONAR TROCA NO PDV -->
+<div class="modal-overlay" id="modal-sel-troca">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-title"><i class="ti ti-arrows-exchange"></i><span>Abater aparelho usado</span></div>
+    <div style="font-size:12.5px;color:var(--txt2);margin-bottom:12px">Selecione uma avaliação <b>aceita</b> para abater o valor do aparelho usado nesta venda. O usado entra como parte do pagamento.</div>
+    <div id="sel-troca-list" style="max-height:50vh;overflow-y:auto"></div>
+    <div class="modal-foot">
+      <button class="btn btn-out" onclick="closeModal('modal-sel-troca')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL AVALIAÇÃO DE TROCA -->
+<div class="modal-overlay" id="modal-troca">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-title"><i class="ti ti-arrows-exchange"></i><span id="troca-ttl">Nova Avaliação de Troca</span></div>
+    <input type="hidden" id="tr-id">
+    <div style="max-height:62vh;overflow-y:auto;padding-right:4px">
+      <div class="sec-sub" style="font-weight:700;font-size:12.5px;color:var(--pri);margin:4px 0 8px">Cliente</div>
+      <div class="fg"><label class="lbl">Cliente</label><select id="tr-cli"></select></div>
+
+      <div class="sec-sub" style="font-weight:700;font-size:12.5px;color:var(--pri);margin:14px 0 8px">Aparelho</div>
+      <div class="g2">
+        <div class="fg"><label class="lbl">Marca</label><input type="text" id="tr-marca" placeholder="Apple, Samsung..."></div>
+        <div class="fg"><label class="lbl">Modelo</label><input type="text" id="tr-modelo" placeholder="iPhone 13, Galaxy S22..."></div>
+      </div>
+      <div class="g2">
+        <div class="fg"><label class="lbl">Armazenamento</label><input type="text" id="tr-arm" placeholder="128GB"></div>
+        <div class="fg"><label class="lbl">Cor</label><input type="text" id="tr-cor" placeholder="Preto"></div>
+      </div>
+      <div class="fg"><label class="lbl">IMEI</label>
+        <div style="display:flex;gap:6px">
+          <input type="text" id="tr-imei" placeholder="IMEI" style="flex:1">
+          <button type="button" class="btn btn-out btn-sm" onclick="consultarImeiAnatel(document.getElementById('tr-imei').value)" title="Consultar situação na Anatel"><i class="ti ti-shield-search"></i></button>
+        </div>
+      </div>
+
+      <div class="sec-sub" style="font-weight:700;font-size:12.5px;color:var(--pri);margin:14px 0 8px">Checklist de Diagnóstico</div>
+      <div class="g2">
+        <div class="fg"><label class="lbl">Saúde da bateria (%)</label><input type="number" id="tr-bateria" min="0" max="100" placeholder="Ex: 87"></div>
+        <div class="fg"><label class="lbl">Estado físico</label><select id="tr-fisico"><option value="excelente">Excelente</option><option value="bom" selected>Bom</option><option value="regular">Regular</option><option value="ruim">Ruim</option></select></div>
+      </div>
+      <div class="g2">
+        <div class="fg"><label class="lbl">Tela</label><select id="tr-tela"><option value="ok" selected>OK</option><option value="riscada">Riscada</option><option value="trincada">Trincada</option><option value="mancha">Com mancha</option><option value="nao_funciona">Não funciona</option></select></div>
+        <div class="fg"><label class="lbl">Câmera</label><select id="tr-camera"><option value="ok" selected>OK</option><option value="defeito">Com defeito</option></select></div>
+      </div>
+      <div class="g2">
+        <div class="fg"><label class="lbl">Biometria (Face/Touch ID)</label><select id="tr-biometria"><option value="ok" selected>OK</option><option value="defeito">Com defeito</option><option value="nao_possui">Não possui</option></select></div>
+        <div class="fg"><label class="lbl">Acessórios inclusos</label><input type="text" id="tr-acessorios" placeholder="caixa, carregador..."></div>
+      </div>
+      <div class="fg"><label class="lbl">Itens testados (marque os OK)</label>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;margin-top:4px">
+          <label class="chk-item"><input type="checkbox" class="tr-chk" value="Alto-falante" checked> Alto-falante</label>
+          <label class="chk-item"><input type="checkbox" class="tr-chk" value="Microfone" checked> Microfone</label>
+          <label class="chk-item"><input type="checkbox" class="tr-chk" value="Wi-Fi" checked> Wi-Fi</label>
+          <label class="chk-item"><input type="checkbox" class="tr-chk" value="Carregamento" checked> Carregamento</label>
+          <label class="chk-item"><input type="checkbox" class="tr-chk" value="Botões" checked> Botões</label>
+          <label class="chk-item"><input type="checkbox" class="tr-chk" value="Sensores" checked> Sensores</label>
+        </div>
+      </div>
+
+      <div class="sec-sub" style="font-weight:700;font-size:12.5px;color:var(--pri);margin:14px 0 8px">Valores</div>
+      <div class="g2">
+        <div class="fg"><label class="lbl">Valor oferecido (paga ao cliente)</label><input type="number" id="tr-oferecido" min="0" step="0.01" placeholder="R$" oninput="calcLucroTroca()"></div>
+        <div class="fg"><label class="lbl">Revenda estimada</label><input type="number" id="tr-revenda" min="0" step="0.01" placeholder="R$" oninput="calcLucroTroca()"></div>
+      </div>
+      <div style="background:var(--pri-light);border-radius:9px;padding:10px 12px;display:flex;justify-content:space-between;font-size:14px;font-weight:800;color:var(--pri)"><span>Lucro previsto</span><span id="tr-lucro">R$ 0,00</span></div>
+
+      <div class="fg" style="margin-top:12px"><label class="lbl">Observações</label><textarea id="tr-obs" rows="2" placeholder="Detalhes adicionais..."></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-out" onclick="closeModal('modal-troca')">Cancelar</button>
+      <button class="btn btn-out" onclick="salvarAvaliacaoTroca('rascunho')">Salvar rascunho</button>
+      <button class="btn btn-pri" onclick="salvarAvaliacaoTroca('ofertado')"><i class="ti ti-check"></i>Registrar proposta</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL RESULTADO CONSULTA IMEI -->
 <div class="modal-overlay" id="modal-imei-result">
   <div class="modal" style="max-width:460px">
@@ -3077,7 +3187,7 @@ let G = {
   produtos:[], clientes:[], os:[], vendas:[], usuarios:[],
   movs:[], fornecedores:[], orcamentos:[], devolucoes:[],
   receber:[], pagar:[], caixas:[], caixaAtual:null,
-  cart:[], payMethod:'dinheiro', payMisto:[],
+  cart:[], payMethod:'dinheiro', payMisto:[], trocaPDV:null,
   osCounter:1, prodFotos:[], orcItems:[],
   charts: {}
 };
@@ -3137,12 +3247,12 @@ const PAGINAS_CONFIG = {
   os:'Ordens de Serviço', agenda:'Agenda', comissoes:'Comissões', produtos:'Produtos',
   estoque:'Estoque', fornecedores:'Fornecedores', financeiro:'Financeiro',
   clientes:'Clientes', relatorios:'Relatórios', inteligencia:'Inteligência (IA)',
-  garantias:'Garantias'
+  garantias:'Garantias', troca:'Troca de Aparelhos'
 };
 
 // Padrões embutidos (usados quando a empresa não configurou nada)
 const ROLE_PERMS_DEFAULT = {
-  gerente:['dashboard','pdv','caixas','crediario','orcamentos','os-hist','devolucoes','os','agenda','comissoes','produtos','estoque','fornecedores','financeiro','clientes','relatorios','inteligencia','garantias'],
+  gerente:['dashboard','pdv','caixas','crediario','orcamentos','os-hist','devolucoes','os','agenda','comissoes','produtos','estoque','fornecedores','financeiro','clientes','relatorios','inteligencia','garantias','troca'],
   operador:['pdv','crediario','orcamentos','agenda','clientes'],
   tecnico:['os-hist','os','agenda','clientes','garantias']
 };
@@ -3543,6 +3653,7 @@ function go(page){
     usuarios:()=>{renderUsuarios();carregarAuditLog();renderAuditLog();},
     permissoes:renderPermissoes,
     garantias:()=>{_garCache=[];renderGarantias();},
+    troca:()=>{G_TROCAS=[];renderTroca();},
     inteligencia:()=>{initIntel();renderAlertasIntel();popPrecoEspSelects();},
     caixas:()=>{initCaixas();go_caixas();},
     crediario:()=>{initCredario();renderContratos();popSelects();},
@@ -3836,7 +3947,23 @@ function renderCart(){
   const sub=G.cart.reduce((s,i)=>s+i.preco*i.qty,0);
   const desc=parseFloat(document.getElementById('c-desc')?.value)||0;
   const acr=parseFloat(document.getElementById('c-acr')?.value)||0;
-  const total=sub*(1-desc/100)+acr;
+  const totalBruto=sub*(1-desc/100)+acr;
+  // Abatimento de troca (aparelho usado)
+  const valTroca=G.trocaPDV?(G.trocaPDV.valor_oferecido||0):0;
+  const total=Math.max(0, totalBruto - valTroca);
+  // Mostra/atualiza a linha de troca
+  const trocaRow2=document.getElementById('troca-row');
+  const btnAddTroca=document.getElementById('btn-add-troca');
+  if(G.trocaPDV){
+    if(trocaRow2){trocaRow2.style.display='flex';
+      document.getElementById('c-troca-desc').textContent=`${G.trocaPDV.marca||''} ${G.trocaPDV.modelo||''}`.trim();
+      document.getElementById('c-troca-val').textContent='- '+fmt(valTroca);
+    }
+    if(btnAddTroca)btnAddTroca.style.display='none';
+  } else {
+    if(trocaRow2)trocaRow2.style.display='none';
+    if(btnAddTroca)btnAddTroca.style.display=G.cart.length>0?'':'none';
+  }
   document.getElementById('c-sub').textContent=fmt(sub);
   document.getElementById('c-tot').textContent=fmt(total);
   // Campo "valor recebido" e troco só fazem sentido para dinheiro
@@ -3858,7 +3985,7 @@ function renderCart(){
 
 function cQty(id,d){const p=G.produtos.find(x=>x.id===id);const ci=G.cart.find(x=>x.id===id);if(!ci)return;ci.qty+=d;if(!ci.inf&&p&&ci.qty>p.estoque){ci.qty=p.estoque;notify('Limite!','warn');return;}if(ci.qty<1)G.cart=G.cart.filter(x=>x.id!==id);renderCart();}
 function rmCart(id){G.cart=G.cart.filter(x=>x.id!==id);renderCart();}
-function clearCart(){G.cart=[];document.getElementById('c-desc').value=0;document.getElementById('c-acr').value=0;var r=document.getElementById('c-recebido');if(r)r.value='';var g=document.getElementById('c-garantia');if(g)g.value=0;renderCart();}
+function clearCart(){G.cart=[];G.trocaPDV=null;document.getElementById('c-desc').value=0;document.getElementById('c-acr').value=0;var r=document.getElementById('c-recebido');if(r)r.value='';var g=document.getElementById('c-garantia');if(g)g.value=0;renderCart();}
 
 function selPay(btn,m){
   document.querySelectorAll('.pb').forEach(b=>b.classList.remove('sel'));
@@ -3899,7 +4026,9 @@ async function finalizeSale(){
   const sub=G.cart.reduce((s,i)=>s+i.preco*i.qty,0);
   const desc=parseFloat(document.getElementById('c-desc').value)||0;
   const acr=parseFloat(document.getElementById('c-acr').value)||0;
-  const total=sub*(1-desc/100)+acr;
+  const totalBruto=sub*(1-desc/100)+acr;
+  const trocaVal=G.trocaPDV?(G.trocaPDV.valor_oferecido||0):0;
+  const total=Math.max(0, totalBruto - trocaVal);
   const custo=G.cart.reduce((s,i)=>s+(i.custo||0)*i.qty,0);
   const cli=document.getElementById('cart-cli');
   const cliId=cli?.value||null;
@@ -3913,7 +4042,7 @@ async function finalizeSale(){
     const continuar = window.confirm('Este cliente possui parcelas em atraso no crediário. Deseja continuar com a venda assim mesmo?');
     if (!continuar) return;
   }
-  const venda={empresa_id:EID(),caixa_id:G.caixaAtual.id,cliente_id:cliId||null,cliente_nome:cliNome,operador_id:G.profile.id,operador_nome:G.profile.nome,itens:G.cart,subtotal:sub,desconto_pct:desc,desconto_valor:sub*desc/100,acrescimo_valor:acr,total,custo_total:custo,lucro:total-custo,pagamentos,pagamento:G.payMethod==='misto'?'misto':G.payMethod,troco,garantia_dias:parseInt(document.getElementById('c-garantia')?.value)||0};
+  const venda={empresa_id:EID(),caixa_id:G.caixaAtual.id,cliente_id:cliId||null,cliente_nome:cliNome,operador_id:G.profile.id,operador_nome:G.profile.nome,itens:G.cart,subtotal:sub,desconto_pct:desc,desconto_valor:sub*desc/100,acrescimo_valor:acr,troca_valor:trocaVal,troca_id:G.trocaPDV?.id||null,total,custo_total:custo,lucro:total-custo,pagamentos,pagamento:G.payMethod==='misto'?'misto':G.payMethod,troco,garantia_dias:parseInt(document.getElementById('c-garantia')?.value)||0};
 
   if(!navigator.onLine){
     // ── MODO OFFLINE: guarda venda na fila local, baixa estoque só na memória local ──
@@ -3962,6 +4091,11 @@ async function finalizeSale(){
     return;
   }
   setLoad(false);
+  // Vincula a troca à venda (marca como convertida) se houve abatimento
+  if(G.trocaPDV){
+    try{ await db.from('avaliacoes_troca').update({status:'convertido',venda_id:venda.id||null,atualizado_em:new Date().toISOString()}).eq('id',G.trocaPDV.id); }catch(e){}
+    G.trocaPDV=null;
+  }
   G.vendas.unshift({...venda,criado_em:new Date().toISOString()});
   document.getElementById('vok-info').textContent=`${G.cart.length} item(s) · ${cliNome}`;
   document.getElementById('vok-total').textContent=fmt(total);
@@ -5225,6 +5359,7 @@ function limparFiltrosOS(){['hf-de','hf-ate'].forEach(i=>{const el=document.getE
    o cliente por WhatsApp. Sem tabela separada (evita dessincronização). */
 let GAR_FILTRO = 'todas';
 let _garCache = [];
+let _garRender = [];
 const GAR_DIAS_ALERTA = 15; // "vencendo" quando faltam <= 15 dias
 
 function setGarFiltro(f, btn){
@@ -5240,7 +5375,8 @@ async function carregarGarantias(){
   const hoje = new Date(); hoje.setHours(0,0,0,0);
 
   const calc = (inicioISO, dias) => {
-    const ini = new Date(inicioISO);
+    let ini = new Date(inicioISO);
+    if(isNaN(ini.getTime())) ini = new Date(); // fallback se data inválida
     const fim = new Date(ini); fim.setDate(fim.getDate()+ (parseInt(dias)||0));
     const restante = Math.ceil((fim - hoje)/86400000);
     let status='ativa';
@@ -5312,6 +5448,7 @@ async function renderGarantias(){
   const lblStatus={ativa:'Ativa',vencendo:'Vencendo',vencida:'Vencida'};
   const tb=document.getElementById('gar-table');
   if(!tb) return;
+  _garRender = list; // a lista efetivamente renderizada (filtrada) — o índice do botão aponta aqui
   tb.innerHTML = list.length===0
     ? '<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--txt3)">Nenhuma garantia encontrada</td></tr>'
     : list.map((g,idx)=>`<tr>
@@ -5335,7 +5472,7 @@ function garCard(label, val, cor, icone){
 
 // Avisa o cliente sobre a garantia via WhatsApp
 function avisarClienteGarantia(idx){
-  const g=_garCache[idx]; if(!g){return;}
+  const g=(_garRender||[])[idx]; if(!g){return;}
   const cli=(G.clientes||[]).find(c=>c.id===g.cliente_id);
   const tel=(cli?.telefone||cli?.whatsapp||'').replace(/\D/g,'');
   const emp=getEmpDados();
@@ -5350,6 +5487,275 @@ function avisarClienteGarantia(idx){
   const url = numero ? `https://wa.me/${numero}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
   window.open(url,'_blank');
   if(!numero) notify('Cliente sem telefone cadastrado — abri o WhatsApp para você escolher o contato.','info',5000);
+}
+
+/* ── TROCA DE APARELHOS (avaliação de usados) ──────────────────────── */
+let TROCA_FILTRO='todas';
+let G_TROCAS=[];
+let _trocasDisponiveis=[];
+
+function calcLucroTroca(){
+  const of=parseFloat(document.getElementById('tr-oferecido')?.value)||0;
+  const rev=parseFloat(document.getElementById('tr-revenda')?.value)||0;
+  const el=document.getElementById('tr-lucro');
+  if(el) el.textContent=fmt(rev-of);
+}
+
+function abrirAvaliacaoTroca(){
+  document.getElementById('tr-id').value='';
+  document.getElementById('troca-ttl').textContent='Nova Avaliação de Troca';
+  ['tr-marca','tr-modelo','tr-arm','tr-cor','tr-imei','tr-bateria','tr-acessorios','tr-oferecido','tr-revenda','tr-obs'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
+  document.getElementById('tr-fisico').value='bom';
+  document.getElementById('tr-tela').value='ok';
+  document.getElementById('tr-camera').value='ok';
+  document.getElementById('tr-biometria').value='ok';
+  document.querySelectorAll('.tr-chk').forEach(c=>c.checked=true);
+  document.getElementById('tr-lucro').textContent='R$ 0,00';
+  // popula clientes
+  const cli=document.getElementById('tr-cli');
+  if(cli) cli.innerHTML='<option value="">Consumidor / não cadastrado</option>'+(G.clientes||[]).map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+  openModal('modal-troca');
+}
+
+async function salvarAvaliacaoTroca(status){
+  const modelo=document.getElementById('tr-modelo').value.trim();
+  if(!modelo){notify('Informe ao menos o modelo do aparelho.','warn');return;}
+  const cliSel=document.getElementById('tr-cli');
+  const cli=(G.clientes||[]).find(c=>c.id===cliSel.value);
+  const of=parseFloat(document.getElementById('tr-oferecido').value)||0;
+  const rev=parseFloat(document.getElementById('tr-revenda').value)||0;
+  const checklist=Array.from(document.querySelectorAll('.tr-chk')).map(c=>({item:c.value,ok:c.checked}));
+  const editId=document.getElementById('tr-id').value;
+
+  const payload={
+    empresa_id:EID(),
+    cliente_id:cliSel.value||null,
+    cliente_nome:cli?.nome||'Consumidor',
+    cliente_telefone:cli?.telefone||cli?.whatsapp||null,
+    marca:document.getElementById('tr-marca').value||null,
+    modelo,
+    armazenamento:document.getElementById('tr-arm').value||null,
+    cor:document.getElementById('tr-cor').value||null,
+    imei:document.getElementById('tr-imei').value||null,
+    bateria_pct:parseInt(document.getElementById('tr-bateria').value)||null,
+    estado_fisico:document.getElementById('tr-fisico').value,
+    tela_status:document.getElementById('tr-tela').value,
+    camera_status:document.getElementById('tr-camera').value,
+    biometria_status:document.getElementById('tr-biometria').value,
+    acessorios:document.getElementById('tr-acessorios').value||null,
+    checklist,
+    valor_oferecido:of,
+    valor_revenda_estim:rev,
+    lucro_previsto:rev-of,
+    status,
+    observacoes:document.getElementById('tr-obs').value||null,
+    atualizado_em:new Date().toISOString()
+  };
+
+  setLoad(true);
+  if(editId){
+    const {data,error}=await db.from('avaliacoes_troca').update(payload).eq('id',editId).select().single();
+    setLoad(false);
+    if(error){notify('Erro: '+error.message,'error');return;}
+    const idx=G_TROCAS.findIndex(t=>t.id===editId); if(idx>=0)G_TROCAS[idx]=data;
+  } else {
+    payload.numero=(G_TROCAS.reduce((m,t)=>Math.max(m,t.numero||0),0))+1;
+    payload.criado_por=G.profile?.id||null;
+    const {data,error}=await db.from('avaliacoes_troca').insert(payload).select().single();
+    setLoad(false);
+    if(error){notify('Erro: '+error.message,'error');return;}
+    G_TROCAS.unshift(data);
+  }
+  closeModal('modal-troca');
+  renderTroca();
+  notify(status==='rascunho'?'Rascunho salvo.':'Proposta registrada!','success');
+}
+
+function setTrocaFiltro(f,btn){
+  TROCA_FILTRO=f;
+  document.querySelectorAll('#troca-seg .btn').forEach(b=>{b.classList.remove('btn-pri');b.classList.add('btn-out');});
+  if(btn){btn.classList.remove('btn-out');btn.classList.add('btn-pri');}
+  renderTroca();
+}
+
+async function carregarTrocas(){
+  try{
+    const {data}=await db.from('avaliacoes_troca').select('*').order('criado_em',{ascending:false}).limit(300);
+    G_TROCAS=data||[];
+  }catch(e){G_TROCAS=[];}
+}
+
+async function renderTroca(){
+  if(!G_TROCAS.length) await carregarTrocas();
+  const busca=(document.getElementById('troca-busca')?.value||'').toLowerCase();
+  let list=G_TROCAS.slice();
+  if(TROCA_FILTRO!=='todas') list=list.filter(t=>t.status===TROCA_FILTRO);
+  if(busca) list=list.filter(t=>
+    (t.cliente_nome||'').toLowerCase().includes(busca)||
+    (t.modelo||'').toLowerCase().includes(busca)||
+    (t.marca||'').toLowerCase().includes(busca)||
+    (t.imei||'').toLowerCase().includes(busca)
+  );
+
+  // Cards de resumo
+  const c=document.getElementById('troca-cards');
+  if(c){
+    const ofertadas=G_TROCAS.filter(t=>t.status==='ofertado').length;
+    const aceitas=G_TROCAS.filter(t=>t.status==='aceito').length;
+    const noEstoque=G_TROCAS.filter(t=>t.status==='convertido').length;
+    const lucroPot=G_TROCAS.filter(t=>['aceito','convertido'].includes(t.status)).reduce((s,t)=>s+(t.lucro_previsto||0),0);
+    c.innerHTML=`
+      ${garCard('Ofertadas',ofertadas,'var(--pri)','ti-discount-check')}
+      ${garCard('Aceitas',aceitas,'#16a34a','ti-circle-check')}
+      ${garCard('No estoque',noEstoque,'#0891b2','ti-package')}
+      ${garCard('Lucro potencial',fmt(lucroPot),'#d97706','ti-trending-up')}`;
+  }
+
+  const stTag={rascunho:'tag-gry',ofertado:'tag-amb',aceito:'tag-grn',recusado:'tag-red',convertido:'tag-cyn'};
+  const stLbl={rascunho:'Rascunho',ofertado:'Ofertada',aceito:'Aceita',recusado:'Recusada',convertido:'No estoque'};
+  const tb=document.getElementById('troca-table');
+  if(!tb) return;
+  tb.innerHTML=list.length===0
+    ? '<tr><td colspan="9" style="text-align:center;padding:28px;color:var(--txt3)">Nenhuma avaliação encontrada</td></tr>'
+    : list.map(t=>`<tr>
+        <td style="font-weight:700;color:var(--pri)">#${pad(t.numero||0)}</td>
+        <td>${t.cliente_nome||'—'}</td>
+        <td style="font-size:12.5px">${[t.marca,t.modelo,t.armazenamento].filter(Boolean).join(' ')||'—'}${t.imei?`<div style="font-size:10.5px;color:var(--txt3);font-family:monospace">${t.imei}</div>`:''}</td>
+        <td>${t.bateria_pct!=null?t.bateria_pct+'%':'—'}</td>
+        <td>${fmt(t.valor_oferecido)}</td>
+        <td>${fmt(t.valor_revenda_estim)}</td>
+        <td style="color:${(t.lucro_previsto||0)>=0?'#16a34a':'#dc2626'};font-weight:700">${fmt(t.lucro_previsto)}</td>
+        <td><span class="tag ${stTag[t.status]||'tag-gry'}">${stLbl[t.status]||t.status}</span></td>
+        <td><div style="display:flex;gap:4px;flex-wrap:wrap">
+          ${t.status!=='convertido'?`<button class="btn btn-out btn-xs" onclick="editarTroca('${t.id}')" title="Editar"><i class="ti ti-edit"></i></button>`:''}
+          ${t.status==='ofertado'?`<button class="btn btn-success btn-xs" onclick="mudarStatusTroca('${t.id}','aceito')" title="Marcar como aceita"><i class="ti ti-check"></i></button>`:''}
+          ${t.status==='ofertado'?`<button class="btn btn-danger btn-xs" onclick="mudarStatusTroca('${t.id}','recusado')" title="Recusar"><i class="ti ti-x"></i></button>`:''}
+          ${t.status==='aceito'?`<button class="btn btn-pri btn-xs" onclick="converterTrocaEstoque('${t.id}')" title="Adicionar ao estoque"><i class="ti ti-package-import"></i> Estoque</button>`:''}
+        </div></td>
+      </tr>`).join('');
+}
+
+function editarTroca(id){
+  const t=G_TROCAS.find(x=>x.id===id); if(!t)return;
+  abrirAvaliacaoTroca();
+  document.getElementById('tr-id').value=t.id;
+  document.getElementById('troca-ttl').textContent='Editar Avaliação #'+pad(t.numero||0);
+  document.getElementById('tr-marca').value=t.marca||'';
+  document.getElementById('tr-modelo').value=t.modelo||'';
+  document.getElementById('tr-arm').value=t.armazenamento||'';
+  document.getElementById('tr-cor').value=t.cor||'';
+  document.getElementById('tr-imei').value=t.imei||'';
+  document.getElementById('tr-bateria').value=t.bateria_pct??'';
+  document.getElementById('tr-fisico').value=t.estado_fisico||'bom';
+  document.getElementById('tr-tela').value=t.tela_status||'ok';
+  document.getElementById('tr-camera').value=t.camera_status||'ok';
+  document.getElementById('tr-biometria').value=t.biometria_status||'ok';
+  document.getElementById('tr-acessorios').value=t.acessorios||'';
+  document.getElementById('tr-oferecido').value=t.valor_oferecido||'';
+  document.getElementById('tr-revenda').value=t.valor_revenda_estim||'';
+  document.getElementById('tr-obs').value=t.observacoes||'';
+  if(t.cliente_id) document.getElementById('tr-cli').value=t.cliente_id;
+  // restaura checklist
+  if(Array.isArray(t.checklist)){
+    document.querySelectorAll('.tr-chk').forEach(c=>{const found=t.checklist.find(i=>i.item===c.value);c.checked=found?!!found.ok:false;});
+  }
+  calcLucroTroca();
+}
+
+async function mudarStatusTroca(id,novo){
+  const t=G_TROCAS.find(x=>x.id===id); if(!t)return;
+  const lbl=novo==='aceito'?'aceitar':'recusar';
+  confirmAct(`Confirmar`,`Deseja ${lbl} a proposta de troca do ${t.modelo}?`,async()=>{
+    setLoad(true);
+    const {error}=await db.from('avaliacoes_troca').update({status:novo,atualizado_em:new Date().toISOString()}).eq('id',id);
+    setLoad(false);
+    if(error){notify('Erro: '+error.message,'error');return;}
+    t.status=novo; renderTroca();
+    notify(novo==='aceito'?'Proposta aceita! Agora você pode adicionar ao estoque.':'Proposta recusada.', novo==='aceito'?'success':'info');
+  });
+}
+
+// Converte a avaliação aceita em um produto no estoque (origem: troca)
+async function converterTrocaEstoque(id){
+  const t=G_TROCAS.find(x=>x.id===id); if(!t)return;
+  const nome=[t.marca,t.modelo,t.armazenamento,t.cor].filter(Boolean).join(' ')+' (usado)';
+  const msg=`Adicionar "${nome}" ao estoque?\n\nCusto: ${fmt(t.valor_oferecido)} (valor pago ao cliente)\nPreço de venda sugerido: ${fmt(t.valor_revenda_estim)}`;
+  confirmAct('Adicionar ao estoque', msg, async()=>{
+    setLoad(true);
+    const prod={
+      empresa_id:EID(),
+      nome,
+      sku:'USADO-'+(t.imei||Date.now()),
+      barcode:t.imei||'',
+      categoria:'Celular',
+      subcategoria:'Seminovo',
+      marca:t.marca||null,
+      custo:t.valor_oferecido||0,
+      preco:t.valor_revenda_estim||0,
+      estoque_infinito:false,
+      estoque:1,
+      estoque_minimo:0,
+      status:'ativo',
+      origem:'troca',
+      fotos:[]
+    };
+    const {data:novoProd,error}=await db.from('produtos').insert(prod).select().single();
+    if(error){setLoad(false);notify('Erro ao criar produto: '+error.message,'error');return;}
+    // Atualiza a avaliação como convertida e vincula o produto
+    const {error:e2}=await db.from('avaliacoes_troca').update({status:'convertido',produto_id:novoProd.id,atualizado_em:new Date().toISOString()}).eq('id',id);
+    setLoad(false);
+    if(e2){notify('Produto criado, mas falhou ao vincular: '+e2.message,'warn');}
+    t.status='convertido'; t.produto_id=novoProd.id;
+    if(G.produtos) G.produtos.unshift(novoProd);
+    // registra movimentação de entrada se a função existir
+    if(typeof regMov==='function'){ try{ await regMov(novoProd.id, nome, 'entrada', 1, 1, 'Entrada por troca de aparelho'); }catch(e){} }
+    renderTroca();
+    notify('✅ Aparelho adicionado ao estoque! Já pode ser vendido.','success',5000);
+  });
+}
+
+// ── ABATER TROCA NO PDV (Fase 3) ──────────────────────────────
+async function abrirSelecaoTrocaPDV(){
+  if(G.cart.length===0){notify('Adicione produtos ao carrinho primeiro.','warn');return;}
+  const list=document.getElementById('sel-troca-list');
+  list.innerHTML='<div style="text-align:center;padding:18px;color:var(--txt3)">Carregando avaliações...</div>';
+  openModal('modal-sel-troca');
+  // Carrega avaliações aceitas e ainda não usadas em venda
+  let trocas=[];
+  try{
+    const {data}=await db.from('avaliacoes_troca').select('*').eq('status','aceito').is('venda_id',null).order('criado_em',{ascending:false}).limit(100);
+    trocas=data||[];
+  }catch(e){}
+  if(!trocas.length){
+    list.innerHTML='<div style="text-align:center;padding:24px;color:var(--txt3)">Nenhuma avaliação aceita disponível.<br><span style="font-size:12px">Aceite uma proposta em "Troca de Aparelhos" primeiro.</span></div>';
+    return;
+  }
+  _trocasDisponiveis = trocas; // cache para seleção por id (evita JSON inline frágil)
+  list.innerHTML=trocas.map(t=>`
+    <div class="card" style="padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:10px;cursor:pointer" onclick="aplicarTrocaPDV('${t.id}')">
+      <div>
+        <div style="font-weight:600;font-size:13.5px">${[t.marca,t.modelo,t.armazenamento].filter(Boolean).join(' ')||'Aparelho'}</div>
+        <div style="font-size:11.5px;color:var(--txt3)">#${pad(t.numero||0)} · ${t.cliente_nome||'—'}${t.imei?' · IMEI '+t.imei:''}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-weight:800;color:var(--pri)">${fmt(t.valor_oferecido)}</div>
+        <div style="font-size:10.5px;color:var(--txt3)">abater</div>
+      </div>
+    </div>`).join('');
+}
+
+function aplicarTrocaPDV(id){
+  const t=(_trocasDisponiveis||[]).find(x=>x.id===id);
+  if(!t){notify('Avaliação não encontrada.','error');return;}
+  G.trocaPDV=t;
+  closeModal('modal-sel-troca');
+  renderCart();
+  notify(`Troca de ${fmt(t.valor_oferecido)} aplicada à venda.`,'success');
+}
+
+function removerTrocaPDV(){
+  G.trocaPDV=null;
+  renderCart();
 }
 
 /* ── RELATÓRIOS ──────────────────────────────────────── */
