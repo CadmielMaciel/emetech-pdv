@@ -3791,7 +3791,7 @@ function go(page){
     diagnostico:renderDiagnostico,
     inteligencia:()=>{initIntel();renderAlertasIntel();popPrecoEspSelects();},
     caixas:()=>{initCaixas();go_caixas();},
-    crediario:()=>{initCredario();renderContratos();popSelects();},
+    crediario:async()=>{await initCredario();renderContratos();popSelects();},
   };
   R[page]?.();
 }
@@ -4050,7 +4050,10 @@ function addToCart(id){
   const p=G.produtos.find(x=>x.id===id);if(!p)return;
   const ci=G.cart.find(x=>x.id===id);
   if(ci){if(!p.estoque_infinito&&ci.qty>=p.estoque){somErro();notify('Estoque máximo!','warn');return;}ci.qty++;}
-  else{G.cart.push({id,nome:p.nome,preco:p.preco,custo:p.custo||0,qty:1,inf:!!p.estoque_infinito});}
+  else{
+    if(!p.estoque_infinito&&(p.estoque||0)<=0){somErro();notify(`${p.nome} sem estoque!`,'warn');return;}
+    G.cart.push({id,nome:p.nome,preco:p.preco,custo:p.custo||0,qty:1,inf:!!p.estoque_infinito});
+  }
   somAddItem();
   renderCart();
   // Atualiza sugestões após adicionar item
@@ -4169,6 +4172,16 @@ async function finalizeSale(){
   const cliId=cli?.value||null;
   const cliNome=cli?.options[cli.selectedIndex]?.text||'Consumidor Final';
   const pagamentos=G.payMethod==='misto'?G.payMisto:[{forma:G.payMethod,valor:total}];
+  // Validação do pagamento misto: a soma deve cobrir o total
+  if(G.payMethod==='misto'){
+    if(!G.payMisto.length){somErro();notify('Adicione ao menos uma forma de pagamento.','warn');return;}
+    const somaMisto=G.payMisto.reduce((s,p)=>s+(parseFloat(p.valor)||0),0);
+    if(somaMisto + 0.005 < total){
+      somErro();
+      notify(`Pagamento insuficiente: faltam ${fmt(total-somaMisto)} para fechar a venda.`,'warn',5000);
+      return;
+    }
+  }
   const recebidoDin=parseFloat(document.getElementById('c-recebido')?.value)||0;
   const troco=G.payMethod==='dinheiro'?Math.max(0,recebidoDin-total):0;
   // Verifica inadimplência do cliente antes de finalizar (somente online)
@@ -4199,13 +4212,19 @@ async function finalizeSale(){
 
   setLoad(true);
   try{
-    // Baixar estoque
+    // Baixar estoque (lê o valor atual do servidor para evitar sobrescrever
+    // vendas concorrentes — não confia no cache local)
     for(const ci of G.cart){
       const p=G.produtos.find(x=>x.id===ci.id);
       if(p&&!p.estoque_infinito){
-        const ne=Math.max(0,p.estoque-ci.qty);
-        await db.from('produtos').update({estoque:ne}).eq('id',p.id);
-        await regMov(p.id,p.nome,'saida',ci.qty,ne,'Venda PDV');
+        let atual=p.estoque;
+        try{
+          const {data:srv}=await db.from('produtos').select('estoque,estoque_infinito').eq('id',ci.id).single();
+          if(srv){ if(srv.estoque_infinito){continue;} atual=srv.estoque; }
+        }catch(_){}
+        const ne=Math.max(0,atual-ci.qty);
+        await db.from('produtos').update({estoque:ne}).eq('id',ci.id);
+        await regMov(ci.id,p.nome,'saida',ci.qty,ne,'Venda PDV');
         p.estoque=ne;
       }
     }
@@ -7521,18 +7540,81 @@ function popPrecoEspSelects() {
   if (prod) { prod.innerHTML = G.produtos.filter(p=>p.status==='ativo').map(p=>`<option value="${p.id}">${p.nome} — ${fmt(p.preco)}</option>`).join(''); preencherPrecoNormal(); }
 }
 
-let G_CONTRATOS  = [];  // contratos de crediário
+let G_CONTRATOS  = [];  // contratos de crediário (em memória; persistidos no Supabase)
 let G_COBRANCAS  = [];  // histórico de cobranças enviadas
 let _credContratoAtual = null; // contrato sendo visualizado
 
-function initCredario() {
-  try { G_CONTRATOS = JSON.parse(localStorage.getItem('emetech_contratos') || '[]'); } catch(e){ G_CONTRATOS=[]; }
+// Mapeia contrato (memória camelCase) -> linha do banco (snake_case)
+function _contratoParaDb(c){
+  return {
+    id: c.id, empresa_id: EID(),
+    numero: c.numero, cliente_id: c.clienteId||null, cliente_nome: c.clienteNome||null,
+    descricao: c.descricao||null, observacoes: c.observacoes||null,
+    valor_total: c.valorTotal||0, entrada: c.entrada||0, saldo: c.saldo||0,
+    parcelas: c.parcelas||[], cobrancas: c.cobrancas||[],
+    status: c.status||'aberto', operador: c.operador||null,
+    criado_em: c.criado_em||new Date().toISOString(),
+    atualizado_em: new Date().toISOString()
+  };
+}
+// Mapeia linha do banco -> contrato (memória)
+function _contratoDeDb(r){
+  return {
+    id: r.id, numero: r.numero, clienteId: r.cliente_id, clienteNome: r.cliente_nome,
+    descricao: r.descricao, observacoes: r.observacoes,
+    valorTotal: parseFloat(r.valor_total)||0, entrada: parseFloat(r.entrada)||0, saldo: parseFloat(r.saldo)||0,
+    parcelas: Array.isArray(r.parcelas)?r.parcelas:[], cobrancas: Array.isArray(r.cobrancas)?r.cobrancas:[],
+    status: r.status, operador: r.operador, criado_em: r.criado_em
+  };
+}
+
+async function initCredario() {
+  try {
+    const { data, error } = await db.from('contratos_crediario').select('*').order('criado_em',{ascending:false});
+    if (error) throw error;
+    G_CONTRATOS = (data||[]).map(_contratoDeDb);
+
+    // ── MIGRAÇÃO: se o banco está vazio mas há contratos no localStorage, sobe-os ──
+    if (G_CONTRATOS.length === 0) {
+      let antigos = [];
+      try { antigos = JSON.parse(localStorage.getItem('emetech_contratos') || '[]'); } catch(e){}
+      if (antigos.length) {
+        const rows = antigos.map(c => _contratoParaDb({...c, id: c.id || ('CRED-'+Date.now()+'-'+Math.random().toString(36).slice(2,7))}));
+        const { error: migErr } = await db.from('contratos_crediario').upsert(rows, { onConflict:'id' });
+        if (!migErr) {
+          G_CONTRATOS = antigos;
+          localStorage.setItem('emetech_contratos_migrado', '1');
+          notify('Carnês de crediário migrados para a nuvem com sucesso!', 'success', 5000);
+        } else {
+          console.error('Falha ao migrar crediário:', migErr);
+          G_CONTRATOS = antigos; // continua funcionando em memória ao menos nesta sessão
+        }
+      }
+    }
+  } catch (e) {
+    console.error('Erro ao carregar crediário do banco:', e);
+    // fallback: usa localStorage para não travar a tela
+    try { G_CONTRATOS = JSON.parse(localStorage.getItem('emetech_contratos') || '[]'); } catch(_) { G_CONTRATOS=[]; }
+    notify('Não foi possível carregar os carnês da nuvem agora. Rode a migração L01 se ainda não rodou.', 'warn', 6000);
+  }
+  // cobranças continuam locais (histórico de envios), sem dado crítico
   try { G_COBRANCAS = JSON.parse(localStorage.getItem('emetech_cobrancas') || '[]'); } catch(e){ G_COBRANCAS=[]; }
 }
 
-function saveCredario() {
-  localStorage.setItem('emetech_contratos', JSON.stringify(G_CONTRATOS));
-  localStorage.setItem('emetech_cobrancas', JSON.stringify(G_COBRANCAS));
+// Salva um contrato específico no banco (upsert). Se não passar, salva todos.
+async function saveCredario(contrato) {
+  try {
+    if (contrato) {
+      await db.from('contratos_crediario').upsert(_contratoParaDb(contrato), { onConflict:'id' });
+    } else if (G_CONTRATOS.length) {
+      await db.from('contratos_crediario').upsert(G_CONTRATOS.map(_contratoParaDb), { onConflict:'id' });
+    }
+  } catch (e) {
+    console.error('Erro ao salvar crediário:', e);
+    notify('Erro ao salvar no banco: ' + (e.message||e), 'error');
+  }
+  // mantém backup local das cobranças
+  try { localStorage.setItem('emetech_cobrancas', JSON.stringify(G_COBRANCAS)); } catch(e){}
 }
 
 // ── CÁLCULO DE PARCELAS ──────────────────────────────
@@ -7614,13 +7696,12 @@ function renderContratos(q = '') {
   const f = q.toLowerCase();
   const fs = document.getElementById('cred-filter-status')?.value || '';
   const hoje = new Date().toISOString().split('T')[0];
-  // Atualiza status dos contratos
+  // Atualiza status dos contratos (derivado — não precisa gravar a cada render)
   G_CONTRATOS.forEach(c => {
     const inadimplente = c.parcelas.some(p => p.status === 'aberta' && p.vencimento < hoje);
     const quitado = c.parcelas.every(p => p.status === 'paga');
     c.status = quitado ? 'quitado' : inadimplente ? 'inadimplente' : 'aberto';
   });
-  saveCredario();
   let list = G_CONTRATOS.filter(c =>
     (!f || c.clienteNome.toLowerCase().includes(f) || c.numero.toLowerCase().includes(f)) &&
     (!fs || c.status === fs)
