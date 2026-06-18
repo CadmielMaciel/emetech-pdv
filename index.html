@@ -559,7 +559,9 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
       <div class="ni" onclick="go('os')" data-p="admin,gerente,tecnico"><i class="ti ti-tools"></i><span class="ni-label">Ordens de Serviço</span><span class="ni-tip">OS</span></div>
       <div class="ni" onclick="go('os-hist')" data-p="admin,gerente,tecnico"><i class="ti ti-history"></i><span class="ni-label">Histórico OS</span><span class="ni-tip">Histórico OS</span></div>
       <div class="ni" onclick="go('garantias')" data-p="admin,gerente,tecnico"><i class="ti ti-shield-check"></i><span class="ni-label">Garantias</span><span class="ni-tip">Garantias</span></div>
+      <div class="ni" onclick="go('diagnostico')" data-p="admin,gerente,tecnico"><i class="ti ti-stethoscope"></i><span class="ni-label">Diagnóstico (Panic)</span><span class="ni-tip">Diagnóstico</span></div>
       <div class="ni" onclick="go('troca')" data-p="admin,gerente"><i class="ti ti-arrows-exchange"></i><span class="ni-label">Troca de Aparelhos</span><span class="ni-tip">Troca</span></div>
+      <div class="ni" onclick="go('crm')" data-p="admin,gerente"><i class="ti ti-heart-handshake"></i><span class="ni-label">Relacionamento (CRM)</span><span class="ni-tip">CRM</span></div>
       <div class="ni" onclick="go('agenda')" data-p="admin,gerente,tecnico,operador"><i class="ti ti-calendar-event"></i><span class="ni-label">Agenda de Entregas</span><span class="ni-tip">Agenda</span></div>
       <div class="ni" onclick="go('comissoes')" data-p="admin,gerente"><i class="ti ti-award"></i><span class="ni-label">Comissão Técnicos</span><span class="ni-tip">Comissões</span></div>
       <div class="nav-sec">Estoque & Produtos</div>
@@ -963,6 +965,117 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
           <thead><tr><th>Origem</th><th>Cliente</th><th>Item/Aparelho</th><th>Início</th><th>Validade</th><th>Restante</th><th>Situação</th><th>Ações</th></tr></thead>
           <tbody id="gar-table"></tbody>
         </table></div></div>
+      </div>
+
+      <!-- DIAGNÓSTICO (PANIC) -->
+      <div class="page" id="page-diagnostico">
+        <div style="margin-bottom:4px">
+          <div class="sec-title" style="margin-bottom:2px"><i class="ti ti-stethoscope" style="color:var(--pri)"></i>Análise de Diagnóstico</div>
+          <div style="font-size:12.5px;color:var(--txt2)">Analise arquivos de panic/diagnóstico do iPhone (.ips) e construa sua base de soluções.</div>
+        </div>
+        <div class="fin-tabs" style="margin:12px 0">
+          <button class="fin-tab active" onclick="diagTab('analisar',this)"><i class="ti ti-file-search" style="font-size:13px"></i> Analisar</button>
+          <button class="fin-tab" onclick="diagTab('historico',this)"><i class="ti ti-history" style="font-size:13px"></i> Histórico</button>
+          <button class="fin-tab" onclick="diagTab('solucoes',this)"><i class="ti ti-bulb" style="font-size:13px"></i> Minhas Soluções</button>
+        </div>
+
+        <!-- ANALISAR -->
+        <div id="diag-analisar">
+          <div class="card">
+            <div style="font-size:12.5px;color:var(--txt2);margin-bottom:10px">Cole o conteúdo do arquivo de panic (ou envie o arquivo .ips). No iPhone: <b>Ajustes → Privacidade → Análise → Dados de Análise</b> → procure por arquivos que começam com <b>panic-full</b>.</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+              <input type="file" id="diag-file" accept=".ips,.txt,.json,.log,.crash" style="display:none" onchange="diagCarregarArquivo(event)">
+              <button class="btn btn-out" onclick="document.getElementById('diag-file').click()"><i class="ti ti-upload"></i> Enviar arquivo .ips</button>
+              <select id="diag-os-vinc" style="padding:7px 10px;font-size:12.5px;border-radius:8px;flex:1;min-width:160px">
+                <option value="">Vincular a uma OS (opcional)</option>
+              </select>
+            </div>
+            <textarea id="diag-conteudo" rows="7" placeholder="Ou cole aqui o conteúdo do arquivo de panic..." style="width:100%;font-family:monospace;font-size:11px;padding:10px;border-radius:8px;border:1px solid var(--border)"></textarea>
+            <div style="display:flex;gap:8px;margin-top:10px">
+              <button class="btn btn-pri" onclick="analisarPanic()"><i class="ti ti-microscope"></i> Analisar</button>
+              <button class="btn btn-out" onclick="document.getElementById('diag-conteudo').value='';document.getElementById('diag-result').style.display='none'"><i class="ti ti-x"></i> Limpar</button>
+            </div>
+          </div>
+          <div class="card" id="diag-result" style="display:none;margin-top:12px"></div>
+        </div>
+
+        <!-- HISTÓRICO -->
+        <div id="diag-historico" style="display:none">
+          <div class="card" style="padding:0"><div class="tw"><table>
+            <thead><tr><th>Arquivo</th><th>Causa provável</th><th>OS</th><th>Status</th><th>Data</th><th>Ações</th></tr></thead>
+            <tbody id="diag-hist-table"></tbody>
+          </table></div></div>
+        </div>
+
+        <!-- MINHAS SOLUÇÕES -->
+        <div id="diag-solucoes" style="display:none">
+          <div style="display:flex;gap:8px;margin-bottom:10px">
+            <div class="ig" style="flex:1"><i class="ti ti-search"></i><input type="text" id="sol-busca" placeholder="Buscar por aparelho, problema, causa..." oninput="renderSolucoes()"></div>
+            <button class="btn btn-pri" onclick="abrirNovaSolucao()"><i class="ti ti-plus"></i> Nova Solução</button>
+          </div>
+          <div id="sol-list"></div>
+        </div>
+      </div>
+
+      <!-- RELACIONAMENTO / CRM -->
+      <div class="page" id="page-crm">
+        <div style="margin-bottom:4px">
+          <div class="sec-title" style="margin-bottom:2px"><i class="ti ti-heart-handshake" style="color:var(--pri)"></i>Relacionamento com Clientes</div>
+          <div style="font-size:12.5px;color:var(--txt2)">Aniversariantes, clientes para reativar e pós-venda — com aviso por WhatsApp.</div>
+        </div>
+        <div class="fin-tabs" style="margin:12px 0">
+          <button class="fin-tab active" onclick="crmTab('aniversario',this)"><i class="ti ti-cake" style="font-size:13px"></i> Aniversariantes</button>
+          <button class="fin-tab" onclick="crmTab('inativos',this)"><i class="ti ti-user-off" style="font-size:13px"></i> Reativar</button>
+          <button class="fin-tab" onclick="crmTab('posvenda',this)"><i class="ti ti-thumb-up" style="font-size:13px"></i> Pós-venda</button>
+        </div>
+
+        <div id="crm-aniversario">
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
+            <select id="crm-aniv-per" onchange="renderCrmAniversario()" style="padding:7px 10px;font-size:12.5px;border-radius:8px;width:auto">
+              <option value="hoje">Hoje</option>
+              <option value="semana">Próximos 7 dias</option>
+              <option value="mes" selected>Este mês</option>
+            </select>
+            <span style="font-size:12px;color:var(--txt3)" id="crm-aniv-count"></span>
+          </div>
+          <div class="card" style="padding:0"><div class="tw"><table>
+            <thead><tr><th>Cliente</th><th>Aniversário</th><th>Telefone</th><th>Ação</th></tr></thead>
+            <tbody id="crm-aniv-table"></tbody>
+          </table></div></div>
+        </div>
+
+        <div id="crm-inativos" style="display:none">
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
+            <span style="font-size:12.5px;color:var(--txt2)">Sem comprar há mais de</span>
+            <select id="crm-inativo-dias" onchange="renderCrmInativos()" style="padding:7px 10px;font-size:12.5px;border-radius:8px;width:auto">
+              <option value="60">60 dias</option>
+              <option value="90" selected>90 dias</option>
+              <option value="180">180 dias</option>
+              <option value="365">1 ano</option>
+            </select>
+            <span style="font-size:12px;color:var(--txt3)" id="crm-inativo-count"></span>
+          </div>
+          <div class="card" style="padding:0"><div class="tw"><table>
+            <thead><tr><th>Cliente</th><th>Última compra</th><th>Dias sem comprar</th><th>Telefone</th><th>Ação</th></tr></thead>
+            <tbody id="crm-inativo-table"></tbody>
+          </table></div></div>
+        </div>
+
+        <div id="crm-posvenda" style="display:none">
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
+            <span style="font-size:12.5px;color:var(--txt2)">Compras dos últimos</span>
+            <select id="crm-pv-dias" onchange="renderCrmPosVenda()" style="padding:7px 10px;font-size:12.5px;border-radius:8px;width:auto">
+              <option value="7" selected>7 dias</option>
+              <option value="15">15 dias</option>
+              <option value="30">30 dias</option>
+            </select>
+            <span style="font-size:12px;color:var(--txt3)" id="crm-pv-count"></span>
+          </div>
+          <div class="card" style="padding:0"><div class="tw"><table>
+            <thead><tr><th>Cliente</th><th>Compra</th><th>Data</th><th>Telefone</th><th>Ação</th></tr></thead>
+            <tbody id="crm-pv-table"></tbody>
+          </table></div></div>
+        </div>
       </div>
 
       <!-- TROCA DE APARELHOS -->
@@ -2749,6 +2862,26 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
 </div>
 
 
+<!-- MODAL SOLUÇÃO (base de conhecimento) -->
+<div class="modal-overlay" id="modal-solucao">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-title"><i class="ti ti-bulb"></i><span id="sol-ttl">Nova Solução</span></div>
+    <input type="hidden" id="sol-id">
+    <div class="fg"><label class="lbl">Título *</label><input type="text" id="sol-titulo" placeholder="Ex: Panic SMC no iPhone 11 após troca de tela"></div>
+    <div class="g2">
+      <div class="fg"><label class="lbl">Aparelho</label><input type="text" id="sol-aparelho" placeholder="iPhone 11"></div>
+      <div class="fg"><label class="lbl">Peças usadas</label><input type="text" id="sol-pecas" placeholder="Ex: flex de carga"></div>
+    </div>
+    <div class="fg"><label class="lbl">Padrão do panic (assinatura/trecho)</label><input type="text" id="sol-padrao" placeholder="Ex: SMC / power / WDT timeout"></div>
+    <div class="fg"><label class="lbl">Causa real *</label><input type="text" id="sol-causa" placeholder="O que era de fato"></div>
+    <div class="fg"><label class="lbl">Como resolveu *</label><textarea id="sol-como" rows="3" placeholder="Descreva a solução aplicada..."></textarea></div>
+    <div class="modal-foot">
+      <button class="btn btn-out" onclick="closeModal('modal-solucao')">Cancelar</button>
+      <button class="btn btn-pri" onclick="salvarSolucao()"><i class="ti ti-check"></i> Salvar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL SELECIONAR TROCA NO PDV -->
 <div class="modal-overlay" id="modal-sel-troca">
   <div class="modal" style="max-width:480px">
@@ -3247,14 +3380,14 @@ const PAGINAS_CONFIG = {
   os:'Ordens de Serviço', agenda:'Agenda', comissoes:'Comissões', produtos:'Produtos',
   estoque:'Estoque', fornecedores:'Fornecedores', financeiro:'Financeiro',
   clientes:'Clientes', relatorios:'Relatórios', inteligencia:'Inteligência (IA)',
-  garantias:'Garantias', troca:'Troca de Aparelhos'
+  garantias:'Garantias', troca:'Troca de Aparelhos', crm:'Relacionamento (CRM)', diagnostico:'Diagnóstico (Panic)'
 };
 
 // Padrões embutidos (usados quando a empresa não configurou nada)
 const ROLE_PERMS_DEFAULT = {
-  gerente:['dashboard','pdv','caixas','crediario','orcamentos','os-hist','devolucoes','os','agenda','comissoes','produtos','estoque','fornecedores','financeiro','clientes','relatorios','inteligencia','garantias','troca'],
+  gerente:['dashboard','pdv','caixas','crediario','orcamentos','os-hist','devolucoes','os','agenda','comissoes','produtos','estoque','fornecedores','financeiro','clientes','relatorios','inteligencia','garantias','troca','crm','diagnostico'],
   operador:['pdv','crediario','orcamentos','agenda','clientes'],
-  tecnico:['os-hist','os','agenda','clientes','garantias']
+  tecnico:['os-hist','os','agenda','clientes','garantias','diagnostico']
 };
 
 // Config atual (carregada do banco; null = usar padrões)
@@ -3654,6 +3787,8 @@ function go(page){
     permissoes:renderPermissoes,
     garantias:()=>{_garCache=[];renderGarantias();},
     troca:()=>{G_TROCAS=[];renderTroca();},
+    crm:renderCrm,
+    diagnostico:renderDiagnostico,
     inteligencia:()=>{initIntel();renderAlertasIntel();popPrecoEspSelects();},
     caixas:()=>{initCaixas();go_caixas();},
     crediario:()=>{initCredario();renderContratos();popSelects();},
@@ -5756,6 +5891,387 @@ function aplicarTrocaPDV(id){
 function removerTrocaPDV(){
   G.trocaPDV=null;
   renderCart();
+}
+
+/* ── CRM / RELACIONAMENTO ──────────────────────────────────────────
+   Tudo derivado de clientes + vendas existentes (sem tabela nova). */
+function crmTab(tab,btn){
+  document.querySelectorAll('#page-crm .fin-tab').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  ['aniversario','inativos','posvenda'].forEach(t=>{const el=document.getElementById('crm-'+t);if(el)el.style.display=t===tab?'':'none';});
+  if(tab==='aniversario')renderCrmAniversario();
+  else if(tab==='inativos')renderCrmInativos();
+  else if(tab==='posvenda')renderCrmPosVenda();
+}
+
+function renderCrm(){ renderCrmAniversario(); }
+
+function _crmTel(cli){ return (cli?.telefone||cli?.whatsapp||'').replace(/\D/g,''); }
+function _crmWhats(cli,msg){
+  const tel=_crmTel(cli);
+  const numero=tel?(tel.length<=11?'55'+tel:tel):'';
+  const url=numero?`https://wa.me/${numero}?text=${encodeURIComponent(msg)}`:`https://wa.me/?text=${encodeURIComponent(msg)}`;
+  window.open(url,'_blank');
+  if(!numero)notify('Cliente sem telefone — abri o WhatsApp para escolher o contato.','info',4000);
+}
+
+// ── ANIVERSARIANTES ──
+function renderCrmAniversario(){
+  const per=document.getElementById('crm-aniv-per')?.value||'mes';
+  const hoje=new Date(); hoje.setHours(0,0,0,0);
+  const list=(G.clientes||[]).filter(c=>c.data_nascimento).map(c=>{
+    const dn=new Date(c.data_nascimento+'T12:00');
+    if(isNaN(dn.getTime()))return null;
+    // próximo aniversário a partir de hoje
+    const prox=new Date(hoje.getFullYear(), dn.getMonth(), dn.getDate());
+    if(prox<hoje) prox.setFullYear(prox.getFullYear()+1);
+    const dias=Math.round((prox-hoje)/86400000);
+    return {cli:c, dn, prox, dias, mesDia:dn.getDate()+'/'+(dn.getMonth()+1)};
+  }).filter(Boolean);
+
+  let filt;
+  if(per==='hoje') filt=list.filter(x=>x.dias===0);
+  else if(per==='semana') filt=list.filter(x=>x.dias>=0&&x.dias<=7);
+  else filt=list.filter(x=>x.dn.getMonth()===hoje.getMonth());
+  filt.sort((a,b)=>a.dias-b.dias);
+
+  const cnt=document.getElementById('crm-aniv-count'); if(cnt)cnt.textContent=`${filt.length} cliente(s)`;
+  const tb=document.getElementById('crm-aniv-table');
+  if(!tb)return;
+  tb.innerHTML=filt.length===0
+    ?'<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--txt3)">Nenhum aniversariante no período</td></tr>'
+    :filt.map((x,i)=>`<tr>
+      <td style="font-weight:600">${x.cli.nome}</td>
+      <td>${x.mesDia} ${x.dias===0?'<span class="tag tag-pur" style="font-size:10px">Hoje! 🎉</span>':x.dias<=7?`<span style="font-size:11px;color:var(--txt3)">em ${x.dias}d</span>`:''}</td>
+      <td style="font-size:12px;color:var(--txt3)">${x.cli.telefone||'—'}</td>
+      <td><button class="btn btn-out btn-xs" onclick="crmFelicitar('${x.cli.id}')"><i class="ti ti-brand-whatsapp"></i> Parabenizar</button></td>
+    </tr>`).join('');
+}
+function crmFelicitar(cliId){
+  const cli=(G.clientes||[]).find(c=>c.id===cliId); if(!cli)return;
+  const emp=getEmpDados();
+  const msg=`Olá ${cli.nome}! 🎉 A equipe da ${emp.nome||'nossa loja'} deseja um feliz aniversário! Passe aqui para conferir nossas ofertas especiais pra você. 🎁`;
+  _crmWhats(cli,msg);
+}
+
+// ── CLIENTES INATIVOS (reativar) ──
+function ultimaCompraCliente(cliId){
+  const compras=(G.vendas||[]).filter(v=>v.cliente_id===cliId&&v.status!=='cancelada');
+  if(!compras.length)return null;
+  return compras.reduce((max,v)=>{const d=new Date(v.criado_em||v.data);return (!max||d>max)?d:max;},null);
+}
+function renderCrmInativos(){
+  const dias=parseInt(document.getElementById('crm-inativo-dias')?.value)||90;
+  const hoje=new Date();
+  const list=(G.clientes||[]).map(c=>{
+    const ult=ultimaCompraCliente(c.id);
+    if(!ult)return null; // só considera quem já comprou ao menos uma vez
+    const semComprar=Math.round((hoje-ult)/86400000);
+    return {cli:c, ult, semComprar};
+  }).filter(x=>x&&x.semComprar>=dias).sort((a,b)=>b.semComprar-a.semComprar);
+
+  const cnt=document.getElementById('crm-inativo-count'); if(cnt)cnt.textContent=`${list.length} cliente(s)`;
+  const tb=document.getElementById('crm-inativo-table');
+  if(!tb)return;
+  tb.innerHTML=list.length===0
+    ?'<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--txt3)">Nenhum cliente inativo nesse período</td></tr>'
+    :list.map(x=>`<tr>
+      <td style="font-weight:600">${x.cli.nome}</td>
+      <td style="font-size:12px;color:var(--txt3)">${x.ult.toLocaleDateString('pt-BR')}</td>
+      <td style="font-weight:700;color:var(--warn)">${x.semComprar}d</td>
+      <td style="font-size:12px;color:var(--txt3)">${x.cli.telefone||'—'}</td>
+      <td><button class="btn btn-out btn-xs" onclick="crmReativar('${x.cli.id}')"><i class="ti ti-brand-whatsapp"></i> Reativar</button></td>
+    </tr>`).join('');
+}
+function crmReativar(cliId){
+  const cli=(G.clientes||[]).find(c=>c.id===cliId); if(!cli)return;
+  const emp=getEmpDados();
+  const msg=`Olá ${cli.nome}! Sentimos sua falta na ${emp.nome||'nossa loja'}. 😊 Temos novidades e condições especiais. Passa pra dar uma olhada?`;
+  _crmWhats(cli,msg);
+}
+
+// ── PÓS-VENDA ──
+function renderCrmPosVenda(){
+  const dias=parseInt(document.getElementById('crm-pv-dias')?.value)||7;
+  const limite=new Date(); limite.setDate(limite.getDate()-dias);
+  const list=(G.vendas||[]).filter(v=>v.status!=='cancelada'&&v.cliente_id&&new Date(v.criado_em||v.data)>=limite)
+    .sort((a,b)=>new Date(b.criado_em)-new Date(a.criado_em));
+  const cnt=document.getElementById('crm-pv-count'); if(cnt)cnt.textContent=`${list.length} venda(s)`;
+  const tb=document.getElementById('crm-pv-table');
+  if(!tb)return;
+  tb.innerHTML=list.length===0
+    ?'<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--txt3)">Nenhuma venda recente com cliente identificado</td></tr>'
+    :list.map(v=>{
+      const itens=(v.itens||[]).map(i=>i.nome).slice(0,2).join(', ')+((v.itens||[]).length>2?'...':'');
+      return `<tr>
+        <td style="font-weight:600">${v.cliente_nome||'—'}</td>
+        <td style="font-size:12.5px">${itens||'Compra'}</td>
+        <td style="font-size:12px;color:var(--txt3)">${new Date(v.criado_em||v.data).toLocaleDateString('pt-BR')}</td>
+        <td style="font-size:12px;color:var(--txt3)">${(G.clientes||[]).find(c=>c.id===v.cliente_id)?.telefone||'—'}</td>
+        <td><button class="btn btn-out btn-xs" onclick="crmPosVenda('${v.cliente_id}','${(itens||'sua compra').replace(/'/g,'')}')"><i class="ti ti-brand-whatsapp"></i> Acompanhar</button></td>
+      </tr>`;
+    }).join('');
+}
+function crmPosVenda(cliId,itens){
+  const cli=(G.clientes||[]).find(c=>c.id===cliId); if(!cli)return;
+  const emp=getEmpDados();
+  const msg=`Olá ${cli.nome}! Aqui é da ${emp.nome||'nossa loja'}. Tudo certo com ${itens||'sua compra'}? Qualquer dúvida ou suporte, estamos à disposição! 😊`;
+  _crmWhats(cli,msg);
+}
+
+/* ── DIAGNÓSTICO (PANIC / .ips) ─────────────────────────────────────
+   Faz parsing do arquivo de panic do iPhone e sugere a causa provável a
+   partir de um dicionário de assinaturas conhecidas. Guarda na OS e alimenta
+   a base "Minhas Soluções". Importante: a sugestão é HEURÍSTICA — não é um
+   laudo oficial da Apple. A base de soluções da própria loja é o que dá
+   confiabilidade crescente. */
+let G_DIAG=[];      // diagnósticos
+let G_SOLUCOES=[];  // base de conhecimento
+let _diagAtual=null;
+
+// Dicionário de assinaturas conhecidas → causa provável (comunidade de reparo)
+const PANIC_ASSINATURAS=[
+  {re:/(smc|power|pmic|tristar|hydra|chestnut|usb.?c|charge)/i, causa:'Energia / carga (PMIC, Tristar/U2, flex de carga)', dica:'Verificar CI de carga (Tristar/U2), PMIC e flex de carga.'},
+  {re:/(gpu|sgx|graphics|agx)/i, causa:'GPU / vídeo', dica:'Possível falha de GPU — comum após queda ou superaquecimento.'},
+  {re:/(nand|nvme|apfs|storage|disk)/i, causa:'Armazenamento (NAND)', dica:'NAND com falha — verificar/reballar memória.'},
+  {re:/(wifi|wlan|bcm|broadcom|bluetooth|\bbt\b)/i, causa:'Wi-Fi / Bluetooth', dica:'CI de Wi-Fi/BT — comum em iPhone 7/7+ (baseband/wifi).'},
+  {re:/(baseband|cellular|modem|radio)/i, causa:'Baseband / sinal', dica:'Falha de baseband — verificar CI de baseband e RF.'},
+  {re:/(audio|codec|cs35|speaker)/i, causa:'Áudio', dica:'CI de áudio (audio IC) — comum no iPhone 7/7+.'},
+  {re:/(touch|digitizer|display|panel|backlight)/i, causa:'Tela / touch / backlight', dica:'Verificar tela, conector e CI de backlight.'},
+  {re:/(battery|gas.?gauge|bms)/i, causa:'Bateria', dica:'Bateria degradada/com falha — testar com bateria nova.'},
+  {re:/(thermal|temperature|overheat)/i, causa:'Superaquecimento', dica:'Curto ou componente esquentando — inspecionar placa.'},
+  {re:/(watchdog|wdt|hang|cpu|soc|ane)/i, causa:'Travamento de sistema (watchdog/CPU)', dica:'Pode ser solda fria (BGA) do SoC ou linha de alimentação.'},
+  {re:/(face.?id|biometr|pearl|dfr)/i, causa:'Face ID / biometria', dica:'Módulo Face ID/dot projector — geralmente não recuperável se trocado.'},
+];
+
+function analisarConteudoPanic(txt){
+  const out={panic_string:'',detalhes:{},causa:'',dica:''};
+  if(!txt)return out;
+  // Tenta JSON (formato .ips moderno tem cabeçalho JSON + corpo)
+  let body=txt;
+  try{
+    // .ips: primeira linha às vezes é JSON do header; o resto pode ser JSON também
+    const j=JSON.parse(txt.trim().split('\n').slice(-1)[0]||txt);
+    if(j){
+      out.detalhes.produto=j.product||j.modelo||j.hardware||'';
+      out.detalhes.versao=j.os_version||j.build||j.kernel||'';
+      out.panic_string=j.panicString||j.bug_type||j.description||'';
+    }
+  }catch(e){
+    // texto puro — extrai panicString por regex
+    const m=txt.match(/panicString"?\s*[:=]\s*"?([^"\n]+)/i)||txt.match(/panic\(cpu[^\n]*\n([^\n]+)/i);
+    if(m)out.panic_string=m[1].trim();
+  }
+  if(!out.panic_string){
+    // pega as primeiras linhas relevantes
+    out.panic_string=(txt.split('\n').find(l=>/panic|fault|crash|exception/i.test(l))||txt.slice(0,160)).trim();
+  }
+  // Casa com o dicionário (busca no texto inteiro)
+  for(const a of PANIC_ASSINATURAS){
+    if(a.re.test(txt)){ out.causa=a.causa; out.dica=a.dica; break; }
+  }
+  if(!out.causa){ out.causa='Não identificado automaticamente'; out.dica='Padrão não reconhecido. Registre a causa real ao resolver para alimentar sua base.'; }
+  return out;
+}
+
+function diagTab(tab,btn){
+  document.querySelectorAll('#page-diagnostico .fin-tab').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  ['analisar','historico','solucoes'].forEach(t=>{const el=document.getElementById('diag-'+t);if(el)el.style.display=t===tab?'':'none';});
+  if(tab==='historico')renderDiagHistorico();
+  else if(tab==='solucoes')renderSolucoes();
+  else popDiagOS();
+}
+
+function renderDiagnostico(){ popDiagOS(); }
+
+// popula o select de OS para vincular
+function popDiagOS(){
+  const sel=document.getElementById('diag-os-vinc');
+  if(sel) sel.innerHTML='<option value="">Vincular a uma OS (opcional)</option>'+(G.os||[]).map(o=>`<option value="${o.id}">OS ${o.numero} · ${o.aparelho}</option>`).join('');
+}
+
+function diagCarregarArquivo(ev){
+  const f=ev.target.files[0]; if(!f)return;
+  if(f.size>2*1024*1024){notify('Arquivo muito grande (máx 2MB para panic).','warn');return;}
+  const r=new FileReader();
+  r.onload=()=>{ document.getElementById('diag-conteudo').value=r.result; notify('Arquivo carregado. Clique em Analisar.','info'); };
+  r.readAsText(f);
+}
+
+function analisarPanic(){
+  const txt=document.getElementById('diag-conteudo').value.trim();
+  if(!txt){notify('Cole ou envie o conteúdo do panic.','warn');return;}
+  const a=analisarConteudoPanic(txt);
+  _diagAtual={conteudo:txt, ...a, os_id:document.getElementById('diag-os-vinc').value||null};
+
+  // Casa com soluções anteriores da loja
+  let casadas=[];
+  if(G_SOLUCOES.length){
+    const low=txt.toLowerCase();
+    casadas=G_SOLUCOES.filter(s=> s.padrao_panic && low.includes(s.padrao_panic.toLowerCase()) );
+  }
+
+  const box=document.getElementById('diag-result');
+  box.style.display='';
+  box.innerHTML=`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <div style="width:42px;height:42px;border-radius:11px;background:var(--pri-light);display:flex;align-items:center;justify-content:center"><i class="ti ti-microscope" style="color:var(--pri);font-size:22px"></i></div>
+      <div><div style="font-weight:800;font-size:16px">Causa provável: ${a.causa}</div><div style="font-size:12px;color:var(--txt3)">Análise heurística — confirme ao reparar</div></div>
+    </div>
+    <div style="background:var(--bg3);border-radius:9px;padding:12px;font-size:12.5px;margin-bottom:10px">
+      <div style="margin-bottom:6px"><b>💡 Dica técnica:</b> ${a.dica}</div>
+      ${a.panic_string?`<div style="margin-bottom:4px"><b>Panic:</b> <span style="font-family:monospace;font-size:11px">${a.panic_string.slice(0,200)}</span></div>`:''}
+      ${a.detalhes.produto?`<div><b>Aparelho:</b> ${a.detalhes.produto} ${a.detalhes.versao||''}</div>`:''}
+    </div>
+    ${casadas.length?`<div style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.3);border-radius:9px;padding:12px;margin-bottom:10px">
+      <div style="font-weight:700;color:#16a34a;margin-bottom:6px">✅ Você já resolveu casos parecidos (${casadas.length}):</div>
+      ${casadas.slice(0,3).map(s=>`<div style="font-size:12.5px;padding:5px 0;border-top:1px solid rgba(34,197,94,.15)"><b>${s.titulo}</b> — ${s.causa_real}<br><span style="color:var(--txt3)">Solução: ${s.como_resolveu}</span></div>`).join('')}
+    </div>`:''}
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-pri" onclick="salvarDiagnostico('aberto')"><i class="ti ti-device-floppy"></i> Salvar diagnóstico</button>
+      <button class="btn btn-success" onclick="resolverDiagnostico()"><i class="ti ti-check"></i> Marcar como resolvido + salvar solução</button>
+    </div>`;
+}
+
+async function salvarDiagnostico(status){
+  if(!_diagAtual)return;
+  const payload={
+    empresa_id:EID(), os_id:_diagAtual.os_id||null,
+    nome_arquivo:'panic-'+Date.now()+'.ips', tipo:'panic',
+    conteudo:_diagAtual.conteudo.slice(0,50000),
+    panic_string:_diagAtual.panic_string||null,
+    causa_provavel:_diagAtual.causa||null,
+    detalhes:_diagAtual.detalhes||{},
+    status:status||'aberto', criado_por:G.profile?.id||null
+  };
+  setLoad(true);
+  const {data,error}=await db.from('diagnosticos_os').insert(payload).select().single();
+  setLoad(false);
+  if(error){notify('Erro: '+error.message,'error');return null;}
+  G_DIAG.unshift(data);
+  notify('Diagnóstico salvo no histórico.','success');
+  return data;
+}
+
+async function resolverDiagnostico(){
+  if(!_diagAtual)return;
+  // primeiro salva o diagnóstico, depois abre a solução pré-preenchida
+  const d=await salvarDiagnostico('em_analise');
+  abrirNovaSolucao();
+  document.getElementById('sol-titulo').value=(_diagAtual.detalhes?.produto?_diagAtual.detalhes.produto+' — ':'')+_diagAtual.causa;
+  document.getElementById('sol-aparelho').value=_diagAtual.detalhes?.produto||'';
+  document.getElementById('sol-padrao').value=(_diagAtual.panic_string||'').slice(0,80);
+  document.getElementById('sol-causa').value=_diagAtual.causa!=='Não identificado automaticamente'?_diagAtual.causa:'';
+  if(d) document.getElementById('sol-id').dataset.diagId=d.id;
+}
+
+async function carregarDiag(){
+  try{ const {data}=await db.from('diagnosticos_os').select('*').order('criado_em',{ascending:false}).limit(200); G_DIAG=data||[]; }catch(e){G_DIAG=[];}
+}
+async function renderDiagHistorico(){
+  if(!G_DIAG.length) await carregarDiag();
+  const tb=document.getElementById('diag-hist-table'); if(!tb)return;
+  const stTag={aberto:'tag-amb',em_analise:'tag-blu',resolvido:'tag-grn'};
+  const stLbl={aberto:'Aberto',em_analise:'Em análise',resolvido:'Resolvido'};
+  tb.innerHTML=G_DIAG.length===0
+    ?'<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--txt3)">Nenhum diagnóstico salvo</td></tr>'
+    :G_DIAG.map(d=>{
+      const os=(G.os||[]).find(o=>o.id===d.os_id);
+      return `<tr>
+        <td style="font-size:12px">${d.nome_arquivo||'panic'}</td>
+        <td style="font-weight:600">${d.causa_provavel||'—'}</td>
+        <td style="font-size:12px;color:var(--txt3)">${os?('OS '+os.numero):'—'}</td>
+        <td><span class="tag ${stTag[d.status]||'tag-gry'}">${stLbl[d.status]||d.status}</span></td>
+        <td style="font-size:12px;color:var(--txt3)">${new Date(d.criado_em).toLocaleDateString('pt-BR')}</td>
+        <td><button class="btn btn-out btn-xs" onclick="verDiag('${d.id}')"><i class="ti ti-eye"></i></button></td>
+      </tr>`;
+    }).join('');
+}
+function verDiag(id){
+  const d=G_DIAG.find(x=>x.id===id); if(!d)return;
+  _diagAtual={conteudo:d.conteudo||'', panic_string:d.panic_string, causa:d.causa_provavel, dica:'', detalhes:d.detalhes||{}, os_id:d.os_id};
+  diagTab('analisar', document.querySelector('#page-diagnostico .fin-tab'));
+  document.getElementById('diag-conteudo').value=d.conteudo||'';
+  analisarPanic();
+}
+
+// ── MINHAS SOLUÇÕES ──
+function abrirNovaSolucao(){
+  document.getElementById('sol-id').value='';
+  document.getElementById('sol-id').dataset.diagId='';
+  document.getElementById('sol-ttl').textContent='Nova Solução';
+  ['sol-titulo','sol-aparelho','sol-pecas','sol-padrao','sol-causa','sol-como'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
+  openModal('modal-solucao');
+}
+async function salvarSolucao(){
+  const titulo=document.getElementById('sol-titulo').value.trim();
+  const causa=document.getElementById('sol-causa').value.trim();
+  const como=document.getElementById('sol-como').value.trim();
+  if(!titulo||!causa||!como){notify('Preencha título, causa real e como resolveu.','warn');return;}
+  const editId=document.getElementById('sol-id').value;
+  const payload={
+    empresa_id:EID(), titulo, aparelho:document.getElementById('sol-aparelho').value||null,
+    padrao_panic:document.getElementById('sol-padrao').value||null,
+    causa_real:causa, como_resolveu:como, pecas_usadas:document.getElementById('sol-pecas').value||null,
+    atualizado_em:new Date().toISOString()
+  };
+  setLoad(true);
+  if(editId){
+    const {data,error}=await db.from('solucoes_diagnostico').update(payload).eq('id',editId).select().single();
+    setLoad(false);
+    if(error){notify('Erro: '+error.message,'error');return;}
+    const i=G_SOLUCOES.findIndex(s=>s.id===editId); if(i>=0)G_SOLUCOES[i]=data;
+  }else{
+    payload.criado_por=G.profile?.id||null;
+    const {data,error}=await db.from('solucoes_diagnostico').insert(payload).select().single();
+    setLoad(false);
+    if(error){notify('Erro: '+error.message,'error');return;}
+    G_SOLUCOES.unshift(data);
+    // se veio de um diagnóstico, marca como resolvido
+    const diagId=document.getElementById('sol-id').dataset.diagId;
+    if(diagId){ try{ await db.from('diagnosticos_os').update({status:'resolvido',causa_real:causa,como_resolveu:como,resolvido_em:new Date().toISOString()}).eq('id',diagId); const dd=G_DIAG.find(x=>x.id===diagId); if(dd){dd.status='resolvido';dd.causa_real=causa;} }catch(e){} }
+  }
+  closeModal('modal-solucao');
+  renderSolucoes();
+  notify('✅ Solução salva na sua base de conhecimento!','success');
+}
+async function carregarSolucoes(){
+  try{ const {data}=await db.from('solucoes_diagnostico').select('*').order('criado_em',{ascending:false}).limit(300); G_SOLUCOES=data||[]; }catch(e){G_SOLUCOES=[];}
+}
+async function renderSolucoes(){
+  if(!G_SOLUCOES.length) await carregarSolucoes();
+  const busca=(document.getElementById('sol-busca')?.value||'').toLowerCase();
+  let list=G_SOLUCOES.slice();
+  if(busca)list=list.filter(s=>(s.titulo+' '+(s.aparelho||'')+' '+(s.causa_real||'')+' '+(s.como_resolveu||'')).toLowerCase().includes(busca));
+  const cont=document.getElementById('sol-list'); if(!cont)return;
+  cont.innerHTML=list.length===0
+    ?'<div class="card" style="text-align:center;padding:30px;color:var(--txt3)"><i class="ti ti-bulb" style="font-size:32px;opacity:.4"></i><p style="margin-top:8px">Nenhuma solução ainda. Resolva um diagnóstico para começar sua base de conhecimento.</p></div>'
+    :list.map(s=>`<div class="card" style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:14px">${s.titulo}</div>
+          ${s.aparelho?`<div style="font-size:11.5px;color:var(--txt3)">${s.aparelho}</div>`:''}
+        </div>
+        <button class="btn btn-out btn-xs" onclick="editarSolucao('${s.id}')"><i class="ti ti-edit"></i></button>
+      </div>
+      <div style="font-size:12.5px;margin-top:8px"><b style="color:var(--pri)">Causa:</b> ${s.causa_real}</div>
+      <div style="font-size:12.5px;margin-top:3px"><b style="color:var(--success)">Solução:</b> ${s.como_resolveu}</div>
+      ${s.pecas_usadas?`<div style="font-size:11.5px;color:var(--txt3);margin-top:3px">Peças: ${s.pecas_usadas}</div>`:''}
+      ${s.padrao_panic?`<div style="font-size:10.5px;color:var(--txt3);margin-top:5px;font-family:monospace">🔍 ${s.padrao_panic}</div>`:''}
+    </div>`).join('');
+}
+function editarSolucao(id){
+  const s=G_SOLUCOES.find(x=>x.id===id); if(!s)return;
+  abrirNovaSolucao();
+  document.getElementById('sol-ttl').textContent='Editar Solução';
+  document.getElementById('sol-id').value=s.id;
+  document.getElementById('sol-titulo').value=s.titulo||'';
+  document.getElementById('sol-aparelho').value=s.aparelho||'';
+  document.getElementById('sol-pecas').value=s.pecas_usadas||'';
+  document.getElementById('sol-padrao').value=s.padrao_panic||'';
+  document.getElementById('sol-causa').value=s.causa_real||'';
+  document.getElementById('sol-como').value=s.como_resolveu||'';
 }
 
 /* ── RELATÓRIOS ──────────────────────────────────────── */
