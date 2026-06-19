@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Catálogo</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{--pri:#5B47E0;--bg:#f4f4f8;--surface:#fff;--txt:#1A0F3C;--txt2:#555;--txt3:#999;--border:#e6e6ee}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'DM Sans',Arial,sans-serif;background:var(--bg);color:var(--txt);-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1100px;margin:0 auto;padding:0 16px}
+  /* Header */
+  header.cat-head{background:linear-gradient(135deg,var(--pri),var(--pri-2,#7C3AED));color:#fff;padding:34px 0 30px}
+  .cat-head-inner{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .cat-logo{width:64px;height:64px;border-radius:16px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-family:'Syne';font-weight:800;font-size:26px;flex-shrink:0}
+  .cat-nome{font-family:'Syne',sans-serif;font-weight:800;font-size:26px;line-height:1.1}
+  .cat-desc{font-size:13.5px;opacity:.9;margin-top:3px;max-width:560px}
+  .cat-actions{margin-left:auto;display:flex;gap:8px}
+  .cat-btn{background:rgba(255,255,255,.16);color:#fff;border:0;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;transition:background .15s}
+  .cat-btn:hover{background:rgba(255,255,255,.28)}
+  /* Toolbar */
+  .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:22px 0 8px}
+  .search{flex:1;min-width:200px;display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 14px}
+  .search input{border:0;outline:0;flex:1;font-size:14px;font-family:inherit;background:transparent;color:var(--txt)}
+  .cats{display:flex;gap:7px;flex-wrap:wrap;margin:6px 0 16px}
+  .cat-chip{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:7px 15px;font-size:12.5px;cursor:pointer;transition:all .15s;font-weight:500}
+  .cat-chip.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+  /* Grid */
+  .sec-title{font-family:'Syne',sans-serif;font-weight:800;font-size:16px;margin:18px 0 12px;display:flex;align-items:center;gap:7px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px;padding-bottom:40px}
+  .pcard{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;transition:transform .18s,box-shadow .18s;display:flex;flex-direction:column}
+  .pcard:hover{transform:translateY(-4px);box-shadow:0 14px 34px rgba(0,0,0,.1)}
+  .pcard.dest{border-color:var(--pri);box-shadow:0 6px 20px rgba(91,71,224,.12)}
+  .pimg{width:100%;aspect-ratio:1;object-fit:cover;background:#f0f0f5;display:flex;align-items:center;justify-content:center;color:#ccc;font-size:40px}
+  .pimg img{width:100%;height:100%;object-fit:cover}
+  .pbody{padding:13px 14px;display:flex;flex-direction:column;flex:1}
+  .pcat{font-size:10.5px;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+  .pnome{font-size:14px;font-weight:600;margin:3px 0 6px;line-height:1.25;flex:1}
+  .pdest{position:absolute;margin:8px;background:var(--pri);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px}
+  .preco{font-family:'Syne',sans-serif;font-weight:800;font-size:19px;color:var(--pri)}
+  .indisp{font-size:11px;color:var(--txt3)}
+  .pbtn{margin-top:10px;background:#25D366;color:#fff;border:0;border-radius:9px;padding:9px;font-size:12.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;width:100%}
+  .pbtn:hover{filter:brightness(.95)}
+  .empty{text-align:center;padding:60px 20px;color:var(--txt3)}
+  .empty i{font-size:48px;opacity:.4}
+  footer{text-align:center;padding:24px;font-size:11.5px;color:var(--txt3)}
+  .loading{text-align:center;padding:70px 20px;color:var(--txt3)}
+  .spin{width:34px;height:34px;border:3px solid var(--border);border-top-color:var(--pri);border-radius:50%;animation:sp 1s linear infinite;margin:0 auto 12px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  @media(max-width:600px){.cat-actions{margin-left:0;width:100%}.cat-nome{font-size:22px}.grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}}
+</style>
+</head>
+<body>
+  <div id="app">
+    <div class="loading"><div class="spin"></div>Carregando catálogo...</div>
+  </div>
+
+<script>
+const SURL='https://icgfpfwcnhkjglrmnuca.supabase.co';
+const SKEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljZ2ZwZndjbmhramdscm1udWNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwODA2OTEsImV4cCI6MjA5NTY1NjY5MX0.xDGiGCIlqXaqdWhWo0NoNi_XUdlw5raCogO_Jnc0ezw';
+const db=supabase.createClient(SURL,SKEY);
+
+const params=new URLSearchParams(location.search);
+const slug=(params.get('loja')||params.get('slug')||'').trim().toLowerCase();
+
+let PRODUTOS=[], LOJA=null, CAT_ATUAL='', BUSCA='';
+const fmt=v=>'R$ '+(Number(v)||0).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+async function init(){
+  if(!slug){ render(`<div class="empty"><i class="ti ti-link-off"></i><p style="margin-top:10px">Link de catálogo inválido.<br>Use: ...catalogo.html?loja=<b>nome-da-loja</b></p></div>`); return; }
+  try{
+    const {data,error}=await db.from('catalogo_publico').select('*').eq('loja_slug',slug);
+    if(error)throw error;
+    if(!data||!data.length){
+      render(`<div class="empty"><i class="ti ti-shopping-bag-x"></i><p style="margin-top:10px">Catálogo não encontrado ou indisponível.</p></div>`);
+      return;
+    }
+    PRODUTOS=data;
+    LOJA={
+      nome:data[0].loja_nome||'Loja', descricao:data[0].loja_descricao||'',
+      whatsapp:(data[0].loja_whatsapp||'').replace(/\D/g,''), instagram:data[0].loja_instagram||'',
+      cor:data[0].loja_cor||'#5B47E0', mostrarPreco:data[0].mostrar_preco
+    };
+    document.documentElement.style.setProperty('--pri',LOJA.cor);
+    document.documentElement.style.setProperty('--pri-2',LOJA.cor);
+    document.title=LOJA.nome+' — Catálogo';
+    desenhar();
+  }catch(e){
+    render(`<div class="empty"><i class="ti ti-alert-triangle"></i><p style="margin-top:10px">Erro ao carregar o catálogo.</p></div>`);
+  }
+}
+
+function render(html){ document.getElementById('app').innerHTML=html; }
+
+function desenhar(){
+  const cats=[...new Set(PRODUTOS.map(p=>p.categoria).filter(Boolean))].sort();
+  const wnum=LOJA.whatsapp?(LOJA.whatsapp.length<=11?'55'+LOJA.whatsapp:LOJA.whatsapp):'';
+  render(`
+    <header class="cat-head">
+      <div class="wrap cat-head-inner">
+        <div class="cat-logo">${esc(LOJA.nome.slice(0,2).toUpperCase())}</div>
+        <div>
+          <div class="cat-nome">${esc(LOJA.nome)}</div>
+          ${LOJA.descricao?`<div class="cat-desc">${esc(LOJA.descricao)}</div>`:''}
+        </div>
+        <div class="cat-actions">
+          ${wnum?`<a class="cat-btn" target="_blank" href="https://wa.me/${wnum}?text=${encodeURIComponent('Olá! Vi o catálogo de '+LOJA.nome)}"><i class="ti ti-brand-whatsapp"></i> WhatsApp</a>`:''}
+          ${LOJA.instagram?`<a class="cat-btn" target="_blank" href="${esc(LOJA.instagram.startsWith('http')?LOJA.instagram:'https://instagram.com/'+LOJA.instagram.replace('@',''))}"><i class="ti ti-brand-instagram"></i></a>`:''}
+        </div>
+      </div>
+    </header>
+    <div class="wrap">
+      <div class="toolbar">
+        <div class="search"><i class="ti ti-search" style="color:var(--txt3)"></i><input id="q" placeholder="Buscar produto..." oninput="onBusca(this.value)"></div>
+      </div>
+      <div class="cats" id="cats">
+        <span class="cat-chip on" onclick="setCat('')">Todos</span>
+        ${cats.map(c=>`<span class="cat-chip" onclick="setCat('${esc(c)}')">${esc(c)}</span>`).join('')}
+      </div>
+      <div id="lista"></div>
+    </div>
+    <footer>Catálogo gerado por EMETech · ${esc(LOJA.nome)}</footer>
+  `);
+  renderLista();
+}
+
+function onBusca(v){ BUSCA=v.toLowerCase(); renderLista(); }
+function setCat(c){
+  CAT_ATUAL=c;
+  document.querySelectorAll('.cat-chip').forEach(ch=>ch.classList.remove('on'));
+  event.target.classList.add('on');
+  renderLista();
+}
+
+function cardHtml(p){
+  const wnum=LOJA.whatsapp?(LOJA.whatsapp.length<=11?'55'+LOJA.whatsapp:LOJA.whatsapp):'';
+  const foto=(p.fotos&&p.fotos.length)?`<img src="${esc(p.fotos[0])}" alt="${esc(p.nome)}" loading="lazy">`:'<i class="ti ti-device-mobile"></i>';
+  const msg=encodeURIComponent(`Olá! Tenho interesse no produto: ${p.nome}${p.preco?(' ('+fmt(p.preco)+')'):''}`);
+  return `<div class="pcard ${p.destaque?'dest':''}">
+    ${p.destaque?'<span class="pdest">★ Destaque</span>':''}
+    <div class="pimg">${foto}</div>
+    <div class="pbody">
+      <div class="pcat">${esc(p.categoria||'')}</div>
+      <div class="pnome">${esc(p.nome)}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        ${p.preco!=null?`<span class="preco">${fmt(p.preco)}</span>`:'<span class="indisp">Consulte</span>'}
+        ${p.disponivel?'':'<span class="indisp">Indisponível</span>'}
+      </div>
+      ${wnum?`<a class="pbtn" target="_blank" href="https://wa.me/${wnum}?text=${msg}"><i class="ti ti-brand-whatsapp"></i> Pedir no WhatsApp</a>`:''}
+    </div>
+  </div>`;
+}
+
+function renderLista(){
+  let list=PRODUTOS.slice();
+  if(CAT_ATUAL) list=list.filter(p=>p.categoria===CAT_ATUAL);
+  if(BUSCA) list=list.filter(p=>(p.nome+' '+(p.categoria||'')+' '+(p.marca||'')).toLowerCase().includes(BUSCA));
+
+  const cont=document.getElementById('lista');
+  if(!list.length){ cont.innerHTML=`<div class="empty"><i class="ti ti-search-off"></i><p style="margin-top:10px">Nenhum produto encontrado.</p></div>`; return; }
+
+  const destaques=list.filter(p=>p.destaque);
+  const normais=list.filter(p=>!p.destaque);
+  let html='';
+  if(destaques.length && !CAT_ATUAL && !BUSCA){
+    html+=`<div class="sec-title"><i class="ti ti-star" style="color:var(--pri)"></i> Destaques</div><div class="grid">${destaques.map(cardHtml).join('')}</div>`;
+    html+=`<div class="sec-title"><i class="ti ti-apps" style="color:var(--pri)"></i> Todos os produtos</div><div class="grid">${normais.map(cardHtml).join('')}</div>`;
+  } else {
+    html+=`<div class="grid">${list.map(cardHtml).join('')}</div>`;
+  }
+  cont.innerHTML=html;
+}
+
+init();
+</script>
+</body>
+</html>
