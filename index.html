@@ -322,6 +322,8 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
 /* FINANCEIRO */
 .fin-tabs{display:flex;gap:0;margin-bottom:16px;background:var(--surface);border-radius:10px;padding:3px;border:1px solid var(--border)}
 .fin-tab{flex:1;padding:8px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;color:var(--txt3);text-align:center;transition:var(--trans);border:none;background:transparent;font-family:'DM Sans',sans-serif}
+.sim-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:3px 0}
+.sim-row span{color:var(--txt2)}
 .fin-tab.active{background:var(--bg2);color:var(--pri);box-shadow:var(--shadow)}
 .venc-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:5px;font-size:11px;font-weight:700}
 .venc-ok{background:#ECFDF5;color:#059669}
@@ -553,6 +555,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
       <div class="nav-sec">Gestão</div>
       <div class="ni" onclick="go('caixas')" data-p="admin,gerente" id="nav-caixas"><i class="ti ti-device-desktop-analytics"></i><span class="ni-label">Caixas</span><span class="ni-tip">Gestão de Caixas</span></div>
       <div class="ni" onclick="go('orcamentos')" data-p="admin,gerente,operador"><i class="ti ti-file-invoice"></i><span class="ni-label">Orçamentos</span><span class="ni-tip">Orçamentos</span></div>
+      <div class="ni" onclick="go('simulador')" data-p="admin,gerente,operador"><i class="ti ti-calculator"></i><span class="ni-label">Simulador de Cartão</span><span class="ni-tip">Simulador</span></div>
       <div class="ni" onclick="go('crediario')" data-p="admin,gerente,operador"><i class="ti ti-credit-card"></i><span class="ni-label">Crediário</span><span class="ni-tip">Crediário</span></div>
       <div class="ni" onclick="go('devolucoes')" data-p="admin,gerente"><i class="ti ti-arrow-back-up"></i><span class="ni-label">Devoluções</span><span class="ni-tip">Devoluções</span></div>
       <div class="nav-sec">Serviços</div>
@@ -862,7 +865,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
       <div class="page" id="page-os">
         <div class="os-grid">
           <div style="overflow-y:auto">
-            <div class="card">
+            <div class="card" id="os-nova-card">
               <div class="sec-title"><i class="ti ti-file-plus"></i>Nova OS</div>
               <div class="g2">
                 <div class="fg"><label class="lbl">Cliente</label><select id="os-cli"></select></div>
@@ -966,6 +969,54 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
           <thead><tr><th>Origem</th><th>Cliente</th><th>Item/Aparelho</th><th>Início</th><th>Validade</th><th>Restante</th><th>Situação</th><th>Ações</th></tr></thead>
           <tbody id="gar-table"></tbody>
         </table></div></div>
+      </div>
+
+      <!-- SIMULADOR DE TAXA DE CARTÃO -->
+      <div class="page" id="page-simulador">
+        <div style="margin-bottom:4px">
+          <div class="sec-title" style="margin-bottom:2px"><i class="ti ti-calculator" style="color:var(--pri)"></i>Simulador de Taxa de Cartão</div>
+          <div style="font-size:12.5px;color:var(--txt2)">Calcule o valor das parcelas e quanto a loja recebe líquido depois da taxa da maquininha.</div>
+        </div>
+        <div class="fin-tabs" style="margin:12px 0">
+          <button class="fin-tab active" onclick="simTab('calc',this)"><i class="ti ti-calculator" style="font-size:13px"></i> Simular</button>
+          <button class="fin-tab" onclick="simTab('taxas',this)"><i class="ti ti-percentage" style="font-size:13px"></i> Minhas taxas</button>
+        </div>
+
+        <!-- SIMULAR -->
+        <div id="sim-calc">
+          <div class="g2" style="gap:14px;align-items:start">
+            <div class="card">
+              <div class="fg"><label class="lbl">Valor da venda (R$)</label><input type="number" id="sim-valor" step="0.01" min="0" placeholder="0,00" oninput="simularCartao()"></div>
+              <div class="fg"><label class="lbl">Forma</label>
+                <select id="sim-forma" onchange="simParcelasUI();simularCartao()">
+                  <option value="debito">Débito</option>
+                  <option value="credito" selected>Crédito</option>
+                </select>
+              </div>
+              <div class="fg" id="sim-parc-wrap"><label class="lbl">Parcelas</label>
+                <select id="sim-parcelas" onchange="simularCartao()"></select>
+              </div>
+            </div>
+            <div id="sim-resultado"></div>
+          </div>
+        </div>
+
+        <!-- MINHAS TAXAS -->
+        <div id="sim-taxas" style="display:none">
+          <div class="card">
+            <div style="font-size:12.5px;color:var(--txt2);margin-bottom:12px">Informe as taxas que a sua maquininha cobra (em %). Esses valores ficam salvos para os próximos cálculos.</div>
+            <div class="g2">
+              <div class="fg"><label class="lbl">Taxa do Débito (%)</label><input type="number" id="tx-debito" step="0.01" min="0" placeholder="ex: 1.99"></div>
+              <div class="fg"><label class="lbl">Crédito à vista — 1x (%)</label><input type="number" id="tx-credito-1" step="0.01" min="0" placeholder="ex: 3.99"></div>
+            </div>
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--txt3);margin:14px 0 8px">Crédito parcelado (% por nº de parcelas)</div>
+            <div id="tx-credito-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px"></div>
+            <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+              <button class="btn btn-pri" onclick="salvarTaxasCartao()"><i class="ti ti-device-floppy"></i> Salvar taxas</button>
+              <button class="btn btn-out" onclick="preencherTaxasPadrao()"><i class="ti ti-wand"></i> Preencher com média de mercado</button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- CATÁLOGO ONLINE (config admin) -->
@@ -1081,12 +1132,50 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
           <div style="font-size:12.5px;color:var(--txt2)">Aniversariantes, clientes para reativar e pós-venda — com aviso por WhatsApp.</div>
         </div>
         <div class="fin-tabs" style="margin:12px 0">
-          <button class="fin-tab active" onclick="crmTab('aniversario',this)"><i class="ti ti-cake" style="font-size:13px"></i> Aniversariantes</button>
+          <button class="fin-tab active" onclick="crmTab('funil',this)"><i class="ti ti-layout-kanban" style="font-size:13px"></i> Funil de Leads</button>
+          <button class="fin-tab" onclick="crmTab('aniversario',this)"><i class="ti ti-cake" style="font-size:13px"></i> Aniversariantes</button>
           <button class="fin-tab" onclick="crmTab('inativos',this)"><i class="ti ti-user-off" style="font-size:13px"></i> Reativar</button>
           <button class="fin-tab" onclick="crmTab('posvenda',this)"><i class="ti ti-thumb-up" style="font-size:13px"></i> Pós-venda</button>
+          <button class="fin-tab" onclick="crmTab('campanhas',this)"><i class="ti ti-speakerphone" style="font-size:13px"></i> Campanhas</button>
         </div>
 
-        <div id="crm-aniversario">
+        <!-- FUNIL DE LEADS (kanban) -->
+        <div id="crm-funil">
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+            <button class="btn btn-pri" onclick="abrirLead()"><i class="ti ti-plus"></i> Novo Lead</button>
+            <div class="ig" style="flex:1;min-width:160px"><i class="ti ti-search"></i><input type="text" id="lead-busca" placeholder="Buscar lead..." oninput="renderFunil()"></div>
+            <span id="lead-followup-alerta" style="font-size:12px;color:#d97706;display:none"></span>
+          </div>
+          <div id="funil-board" style="display:grid;grid-template-columns:repeat(5,minmax(180px,1fr));gap:10px;overflow-x:auto;padding-bottom:8px"></div>
+        </div>
+
+        <!-- CAMPANHAS / CHAMADOS PARA AÇÃO -->
+        <div id="crm-campanhas" style="display:none">
+          <div class="card" style="margin-bottom:12px">
+            <div style="font-weight:700;font-size:14px;margin-bottom:4px"><i class="ti ti-speakerphone" style="color:var(--pri)"></i> Disparar campanha por WhatsApp</div>
+            <div style="font-size:12.5px;color:var(--txt2);margin-bottom:12px">Escolha um público e a mensagem. O sistema abre o WhatsApp para cada contato (um por vez), com a mensagem pronta.</div>
+            <div class="fg"><label class="lbl">Público</label>
+              <select id="camp-publico" onchange="renderCampanhaPreview()">
+                <option value="compraram">Quem já comprou (clientes)</option>
+                <option value="inativos90">Clientes inativos (90+ dias)</option>
+                <option value="aniversariantes">Aniversariantes do mês</option>
+                <option value="leads_negociando">Leads em negociação</option>
+                <option value="todos">Todos os clientes</option>
+              </select>
+            </div>
+            <div class="fg"><label class="lbl">Mensagem</label>
+              <textarea id="camp-msg" rows="4" placeholder="Ex: Novidades chegando na loja! 📱 Vem conferir os lançamentos com condição especial.">Novidades chegando na loja! 📱 Passe para conferir nossos lançamentos e ofertas especiais. Use {nome} para personalizar.</textarea>
+              <div style="font-size:11px;color:var(--txt3);margin-top:4px">Dica: use <b>{nome}</b> na mensagem para inserir o nome do cliente automaticamente.</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <button class="btn btn-pri" onclick="iniciarCampanha()"><i class="ti ti-send"></i> Iniciar disparo</button>
+              <span id="camp-count" style="font-size:12.5px;color:var(--txt2)"></span>
+            </div>
+          </div>
+          <div id="camp-lista"></div>
+        </div>
+
+        <div id="crm-aniversario" style="display:none">
           <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
             <select id="crm-aniv-per" onchange="renderCrmAniversario()" style="padding:7px 10px;font-size:12.5px;border-radius:8px;width:auto">
               <option value="hoje">Hoje</option>
@@ -1817,14 +1906,21 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
           <div class="sc"><div class="sc-icon" style="background:#EFF6FF"><i class="ti ti-trending-up" style="color:var(--info)"></i></div><div class="sc-val" id="intel-conv">0%</div><div class="sc-lbl">Taxa Sugestão Aceita</div></div>
         </div>
         <div class="fin-tabs" style="margin-bottom:14px">
-          <button class="fin-tab active" onclick="intelTab('alertas',this)"><i class="ti ti-alert-triangle" style="font-size:13px"></i> Alertas</button>
+          <button class="fin-tab active" onclick="intelTab('operacional',this)"><i class="ti ti-radar" style="font-size:13px"></i> Operacional</button>
+          <button class="fin-tab" onclick="intelTab('alertas',this)"><i class="ti ti-alert-triangle" style="font-size:13px"></i> Suspeitas</button>
           <button class="fin-tab" onclick="intelTab('coocorrencia',this)"><i class="ti ti-git-branch" style="font-size:13px"></i> Co-ocorrência</button>
           <button class="fin-tab" onclick="intelTab('precos',this)"><i class="ti ti-tag" style="font-size:13px"></i> Preços Especiais</button>
           <button class="fin-tab" onclick="intelTab('config',this)"><i class="ti ti-settings" style="font-size:13px"></i> Configurações</button>
         </div>
 
+        <!-- Alertas operacionais -->
+        <div id="intel-tab-operacional">
+          <div id="intel-op-resumo" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px"></div>
+          <div id="intel-op-list"></div>
+        </div>
+
         <!-- Alertas suspeitos -->
-        <div id="intel-tab-alertas">
+        <div id="intel-tab-alertas" style="display:none">
           <div class="card" style="margin-bottom:12px">
             <div class="card-hdr"><div class="card-title">🚨 Padrões Suspeitos Detectados</div><button class="btn btn-out btn-sm" onclick="limparAlertas()"><i class="ti ti-trash"></i>Limpar</button></div>
             <div id="alertas-list"><div class="empty-st"><i class="ti ti-shield-check"></i><h3>Nenhum alerta</h3><p>O sistema monitora em tempo real</p></div></div>
@@ -2284,7 +2380,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
       </div>
     </div>
     <div style="flex:1;overflow:hidden;background:#666;padding:12px;display:flex;align-items:flex-start;justify-content:center">
-      <iframe id="pdf-preview-frame" style="width:210mm;height:100%;border:none;border-radius:4px;box-shadow:0 4px 24px rgba(0,0,0,.4)" sandbox="allow-same-origin"></iframe>
+      <iframe id="pdf-preview-frame" style="width:210mm;height:100%;border:none;border-radius:4px;box-shadow:0 4px 24px rgba(0,0,0,.4)" sandbox="allow-same-origin allow-scripts allow-modals"></iframe>
     </div>
   </div>
 </div>
@@ -2951,6 +3047,59 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
   </div>
 </div>
 
+<!-- MODAL LEAD (CRM) -->
+<div class="modal-overlay" id="modal-lead">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-title"><i class="ti ti-user-plus"></i><span id="lead-ttl">Novo Lead</span></div>
+    <input type="hidden" id="lead-id">
+    <div class="fg"><label class="lbl">Cliente existente (opcional)</label>
+      <select id="lead-cliente" onchange="leadPreencherCliente()"><option value="">— Lead novo (não cadastrado) —</option></select>
+    </div>
+    <div class="g2">
+      <div class="fg"><label class="lbl">Nome *</label><input type="text" id="lead-nome" placeholder="Nome do interessado"></div>
+      <div class="fg"><label class="lbl">Telefone</label><input type="text" id="lead-tel" placeholder="DDD + número"></div>
+    </div>
+    <div class="g2">
+      <div class="fg"><label class="lbl">Origem</label><select id="lead-origem"><option>WhatsApp</option><option>Instagram</option><option>Indicação</option><option>Loja física</option><option>Outro</option></select></div>
+      <div class="fg"><label class="lbl">Valor estimado</label><input type="number" id="lead-valor" step="0.01" min="0" placeholder="R$"></div>
+    </div>
+    <div class="fg"><label class="lbl">Interesse</label><input type="text" id="lead-interesse" placeholder="Ex: iPhone 13 128GB usado"></div>
+    <div class="g2">
+      <div class="fg"><label class="lbl">Etapa</label><select id="lead-etapa"><option value="novo">Novo</option><option value="contatado">Contatado</option><option value="negociando">Negociando</option><option value="ganho">Ganho</option><option value="perdido">Perdido</option></select></div>
+      <div class="fg"><label class="lbl">Próximo follow-up</label><input type="date" id="lead-followup"></div>
+    </div>
+    <div class="fg"><label class="lbl">Observações</label><textarea id="lead-obs" rows="2"></textarea></div>
+    <div class="modal-foot">
+      <button class="btn btn-out" onclick="closeModal('modal-lead')">Cancelar</button>
+      <button class="btn btn-pri" onclick="salvarLead()"><i class="ti ti-check"></i> Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DETALHE DO LEAD + INTERAÇÕES -->
+<div class="modal-overlay" id="modal-lead-det">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-title"><i class="ti ti-user-circle"></i><span id="lead-det-nome">Lead</span></div>
+    <div id="lead-det-info" style="font-size:12.5px;color:var(--txt2);margin-bottom:12px"></div>
+    <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
+      <button class="btn btn-success btn-sm" onclick="leadWhats()"><i class="ti ti-brand-whatsapp"></i> WhatsApp</button>
+      <button class="btn btn-out btn-sm" onclick="abrirLead(_leadDetId)"><i class="ti ti-edit"></i> Editar</button>
+    </div>
+    <div class="fg"><label class="lbl">Registrar interação</label>
+      <div style="display:flex;gap:6px">
+        <select id="int-canal" style="width:auto"><option value="whatsapp">WhatsApp</option><option value="telefone">Telefone</option><option value="presencial">Presencial</option><option value="instagram">Instagram</option></select>
+        <input type="text" id="int-msg" placeholder="O que foi conversado..." style="flex:1">
+        <button class="btn btn-pri btn-sm" onclick="salvarInteracao()"><i class="ti ti-plus"></i></button>
+      </div>
+    </div>
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--txt3);margin:14px 0 6px">Histórico</div>
+    <div id="lead-historico" style="max-height:30vh;overflow-y:auto"></div>
+    <div class="modal-foot">
+      <button class="btn btn-out" onclick="closeModal('modal-lead-det')">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL AVALIAÇÃO DE TROCA -->
 <div class="modal-overlay" id="modal-troca">
   <div class="modal" style="max-width:600px">
@@ -3036,7 +3185,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
       <span id="modal-docs-titulo">Documentos da OS</span>
     </div>
     <div style="font-size:13px;color:var(--txt2);margin-bottom:18px" id="modal-docs-sub">
-      Gere documentos A4 em PDF para impressão ou envio digital.
+      Gere documentos em A4 (PDF) ou cupom térmico (58/80mm) para a maquininha.
     </div>
 
     <!-- Grid de tipos de documento -->
@@ -3075,6 +3224,12 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
 
     <!-- Opções extras -->
     <div style="background:var(--surface);border-radius:10px;padding:12px 14px;margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--txt3);margin-bottom:10px">Formato de impressão</div>
+      <div style="display:flex;gap:6px;margin-bottom:12px">
+        <button type="button" class="btn btn-pri btn-xs doc-fmt-btn" data-fmt="a4" onclick="setDocFormato('a4',this)" style="flex:1">📄 A4 / PDF</button>
+        <button type="button" class="btn btn-out btn-xs doc-fmt-btn" data-fmt="58" onclick="setDocFormato('58',this)" style="flex:1">🧾 58mm</button>
+        <button type="button" class="btn btn-out btn-xs doc-fmt-btn" data-fmt="80" onclick="setDocFormato('80',this)" style="flex:1">🧾 80mm</button>
+      </div>
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--txt3);margin-bottom:10px">Opções</div>
       <div style="display:flex;flex-direction:column;gap:8px">
         <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;color:var(--txt2)">
@@ -3437,13 +3592,13 @@ const PAGINAS_CONFIG = {
   os:'Ordens de Serviço', agenda:'Agenda', comissoes:'Comissões', produtos:'Produtos',
   estoque:'Estoque', fornecedores:'Fornecedores', financeiro:'Financeiro',
   clientes:'Clientes', relatorios:'Relatórios', inteligencia:'Inteligência (IA)',
-  garantias:'Garantias', troca:'Troca de Aparelhos', crm:'Relacionamento (CRM)', diagnostico:'Diagnóstico (Panic)', catalogo:'Catálogo Online'
+  garantias:'Garantias', troca:'Troca de Aparelhos', crm:'Relacionamento (CRM)', diagnostico:'Diagnóstico (Panic)', catalogo:'Catálogo Online', simulador:'Simulador de Cartão'
 };
 
 // Padrões embutidos (usados quando a empresa não configurou nada)
 const ROLE_PERMS_DEFAULT = {
-  gerente:['dashboard','pdv','caixas','crediario','orcamentos','os-hist','devolucoes','os','agenda','comissoes','produtos','estoque','fornecedores','financeiro','clientes','relatorios','inteligencia','garantias','troca','crm','diagnostico','catalogo'],
-  operador:['pdv','crediario','orcamentos','agenda','clientes'],
+  gerente:['dashboard','pdv','caixas','crediario','orcamentos','simulador','os-hist','devolucoes','os','agenda','comissoes','produtos','estoque','fornecedores','financeiro','clientes','relatorios','inteligencia','garantias','troca','crm','diagnostico','catalogo'],
+  operador:['pdv','crediario','orcamentos','simulador','agenda','clientes'],
   tecnico:['os-hist','os','agenda','clientes','garantias','diagnostico']
 };
 
@@ -3846,8 +4001,9 @@ function go(page){
     troca:()=>{G_TROCAS=[];renderTroca();},
     crm:renderCrm,
     catalogo:renderCatalogo,
+    simulador:renderSimulador,
     diagnostico:renderDiagnostico,
-    inteligencia:()=>{initIntel();renderAlertasIntel();popPrecoEspSelects();},
+    inteligencia:()=>{initIntel();renderAlertasOperacionais();popPrecoEspSelects();},
     caixas:()=>{initCaixas();go_caixas();},
     crediario:async()=>{await initCredario();renderContratos();popSelects();},
   };
@@ -4508,7 +4664,7 @@ function imprimirComprovanteDevolucao(devId){
   const d=(G.devolucoes||[]).find(x=>x.id===devId);
   if(!d){notify('Devolução não encontrada.','error');return;}
   const emp=getEmpDados();
-  const cor=(getMarca&&getMarca().paleta?.c1)||'#5B47E0';
+  const cor=(typeof paletaAtual==="object"&&paletaAtual.c1)||(getMarca&&getMarca().paleta?.c1)||"#5B47E0";
   const hoje=new Date().toLocaleString('pt-BR');
   const itens=(d.itens||[]).map(i=>`<tr>
     <td style="padding:5px 0">${i.nome}</td>
@@ -5054,7 +5210,7 @@ function imprimirHistoricoMov(){
   const list=G.movs.filter(m=>(!fp||m.produto_id===fp)&&(!ft||m.tipo===ft));
   if(!list.length){notify('Nenhuma movimentação para imprimir.','warn');return;}
   const emp=getEmpDados();
-  const cor=(getMarca&&getMarca().paleta?.c1)||'#5B47E0';
+  const cor=(typeof paletaAtual==="object"&&paletaAtual.c1)||(getMarca&&getMarca().paleta?.c1)||"#5B47E0";
   const hoje=new Date().toLocaleString('pt-BR');
   const prodNome=fp?(G.produtos.find(p=>p.id===fp)?.nome||''):'Todos os produtos';
   const tipoLbl=ft?ft.charAt(0).toUpperCase()+ft.slice(1):'Todos os tipos';
@@ -5558,6 +5714,7 @@ function abrirDocumentosOSHist(osId){
   let os=(G.os||[]).find(x=>x.id===osId) || (G._osHist||[]).find(x=>x.id===osId);
   if(!os){notify('OS não encontrada.','error');return;}
   _docOsAtual=os;
+  if(typeof resetDocFormato==='function')resetDocFormato();
   document.getElementById('modal-docs-titulo').textContent=`Documentos — OS ${os.numero}`;
   document.getElementById('modal-docs-sub').textContent=`${os.aparelho} · ${os.cliente_nome} · Status: ${os.status}`;
   openModal('modal-docs-os');
@@ -5975,13 +6132,15 @@ function removerTrocaPDV(){
 function crmTab(tab,btn){
   document.querySelectorAll('#page-crm .fin-tab').forEach(b=>b.classList.remove('active'));
   if(btn)btn.classList.add('active');
-  ['aniversario','inativos','posvenda'].forEach(t=>{const el=document.getElementById('crm-'+t);if(el)el.style.display=t===tab?'':'none';});
-  if(tab==='aniversario')renderCrmAniversario();
+  ['funil','campanhas','aniversario','inativos','posvenda'].forEach(t=>{const el=document.getElementById('crm-'+t);if(el)el.style.display=t===tab?'':'none';});
+  if(tab==='funil')renderFunil();
+  else if(tab==='campanhas')renderCampanhaPreview();
+  else if(tab==='aniversario')renderCrmAniversario();
   else if(tab==='inativos')renderCrmInativos();
   else if(tab==='posvenda')renderCrmPosVenda();
 }
 
-function renderCrm(){ renderCrmAniversario(); }
+function renderCrm(){ renderFunil(); }
 
 function _crmTel(cli){ return (cli?.telefone||cli?.whatsapp||'').replace(/\D/g,''); }
 function _crmWhats(cli,msg){
@@ -5990,6 +6149,223 @@ function _crmWhats(cli,msg){
   const url=numero?`https://wa.me/${numero}?text=${encodeURIComponent(msg)}`:`https://wa.me/?text=${encodeURIComponent(msg)}`;
   window.open(url,'_blank');
   if(!numero)notify('Cliente sem telefone — abri o WhatsApp para escolher o contato.','info',4000);
+}
+
+/* ── FUNIL DE LEADS (kanban) ──────────────────────────────────────── */
+let G_LEADS=[];
+let _leadDetId=null;
+const ETAPAS_FUNIL=[['novo','Novo','#64748b'],['contatado','Contatado','#0891b2'],['negociando','Negociando','#d97706'],['ganho','Ganho','#16a34a'],['perdido','Perdido','#dc2626']];
+
+async function carregarLeads(){
+  try{ const {data}=await db.from('crm_leads').select('*').order('atualizado_em',{ascending:false}); G_LEADS=data||[]; }catch(e){G_LEADS=[];}
+}
+
+async function renderFunil(){
+  if(!G_LEADS.length) await carregarLeads();
+  const busca=(document.getElementById('lead-busca')?.value||'').toLowerCase();
+  let list=G_LEADS.slice();
+  if(busca)list=list.filter(l=>(l.nome+' '+(l.interesse||'')+' '+(l.telefone||'')).toLowerCase().includes(busca));
+
+  const hojeISO=new Date().toISOString().split('T')[0];
+  const follows=G_LEADS.filter(l=>l.proximo_followup&&l.proximo_followup<=hojeISO&&!['ganho','perdido'].includes(l.etapa));
+  const al=document.getElementById('lead-followup-alerta');
+  if(al){ if(follows.length){al.style.display='';al.innerHTML=`<i class="ti ti-bell-ringing"></i> ${follows.length} follow-up(s) para hoje/atrasados`;} else al.style.display='none'; }
+
+  const board=document.getElementById('funil-board');
+  if(!board)return;
+  board.innerHTML=ETAPAS_FUNIL.map(([ek,elabel,ecor])=>{
+    const leads=list.filter(l=>l.etapa===ek);
+    const total=leads.reduce((s,l)=>s+(l.valor_estimado||0),0);
+    return `<div style="background:var(--bg2,rgba(0,0,0,.02));border-radius:12px;padding:8px;min-height:120px">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 6px 8px;border-bottom:2px solid ${ecor}">
+        <span style="font-weight:700;font-size:12.5px;color:${ecor}">${elabel}</span>
+        <span style="font-size:11px;color:var(--txt3);background:#fff;border-radius:10px;padding:1px 7px">${leads.length}</span>
+      </div>
+      ${total>0?`<div style="font-size:10.5px;color:var(--txt3);padding:4px 6px">${fmt(total)}</div>`:''}
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:6px">
+        ${leads.map(l=>leadCard(l)).join('')||'<div style="font-size:11px;color:var(--txt3);text-align:center;padding:10px">—</div>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function leadCard(l){
+  const venc=l.proximo_followup&&l.proximo_followup<=new Date().toISOString().split('T')[0];
+  return `<div onclick="abrirLeadDet('${l.id}')" style="background:#fff;border:1px solid var(--border);border-radius:9px;padding:9px 10px;cursor:pointer;${venc?'border-left:3px solid #d97706':''}">
+    <div style="font-weight:600;font-size:12.5px">${l.nome}</div>
+    ${l.interesse?`<div style="font-size:11px;color:var(--txt3);margin-top:2px">${l.interesse}</div>`:''}
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:5px">
+      ${l.valor_estimado?`<span style="font-size:11px;font-weight:700;color:var(--pri)">${fmt(l.valor_estimado)}</span>`:'<span></span>'}
+      ${venc?'<span style="font-size:9.5px;color:#d97706"><i class="ti ti-bell"></i> follow-up</span>':''}
+    </div>
+  </div>`;
+}
+
+function abrirLead(id){
+  const lead=id?G_LEADS.find(l=>l.id===id):null;
+  document.getElementById('lead-id').value=lead?lead.id:'';
+  document.getElementById('lead-ttl').textContent=lead?'Editar Lead':'Novo Lead';
+  const sel=document.getElementById('lead-cliente');
+  sel.innerHTML='<option value="">— Lead novo (não cadastrado) —</option>'+(G.clientes||[]).map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+  sel.value=lead?.cliente_id||'';
+  document.getElementById('lead-nome').value=lead?.nome||'';
+  document.getElementById('lead-tel').value=lead?.telefone||'';
+  document.getElementById('lead-origem').value=lead?.origem||'WhatsApp';
+  document.getElementById('lead-valor').value=lead?.valor_estimado||'';
+  document.getElementById('lead-interesse').value=lead?.interesse||'';
+  document.getElementById('lead-etapa').value=lead?.etapa||'novo';
+  document.getElementById('lead-followup').value=lead?.proximo_followup||'';
+  document.getElementById('lead-obs').value=lead?.observacoes||'';
+  if(document.getElementById('modal-lead-det').classList.contains('open')) closeModal('modal-lead-det');
+  openModal('modal-lead');
+}
+function leadPreencherCliente(){
+  const cid=document.getElementById('lead-cliente').value;
+  const c=(G.clientes||[]).find(x=>x.id===cid);
+  if(c){ document.getElementById('lead-nome').value=c.nome||''; document.getElementById('lead-tel').value=c.telefone||''; }
+}
+async function salvarLead(){
+  const nome=document.getElementById('lead-nome').value.trim();
+  if(!nome){notify('Informe o nome do lead.','warn');return;}
+  const editId=document.getElementById('lead-id').value;
+  const payload={
+    empresa_id:EID(), cliente_id:document.getElementById('lead-cliente').value||null,
+    nome, telefone:document.getElementById('lead-tel').value||null,
+    origem:document.getElementById('lead-origem').value, valor_estimado:parseFloat(document.getElementById('lead-valor').value)||0,
+    interesse:document.getElementById('lead-interesse').value||null, etapa:document.getElementById('lead-etapa').value,
+    proximo_followup:document.getElementById('lead-followup').value||null, observacoes:document.getElementById('lead-obs').value||null,
+    atualizado_em:new Date().toISOString()
+  };
+  setLoad(true);
+  if(editId){
+    const {data,error}=await db.from('crm_leads').update(payload).eq('id',editId).select().single();
+    setLoad(false); if(error){notify('Erro: '+error.message,'error');return;}
+    const i=G_LEADS.findIndex(l=>l.id===editId); if(i>=0)G_LEADS[i]=data;
+  }else{
+    payload.criado_por=G.profile?.id||null;
+    const {data,error}=await db.from('crm_leads').insert(payload).select().single();
+    setLoad(false); if(error){notify('Erro: '+error.message,'error');return;}
+    G_LEADS.unshift(data);
+  }
+  closeModal('modal-lead'); renderFunil(); notify('Lead salvo!','success');
+}
+
+async function abrirLeadDet(id){
+  const l=G_LEADS.find(x=>x.id===id); if(!l)return;
+  _leadDetId=id;
+  document.getElementById('lead-det-nome').textContent=l.nome;
+  const etapaLbl=(ETAPAS_FUNIL.find(e=>e[0]===l.etapa)||[])[1]||l.etapa;
+  document.getElementById('lead-det-info').innerHTML=`
+    ${l.telefone?`<div>📱 ${l.telefone}</div>`:''}
+    ${l.interesse?`<div>🎯 ${l.interesse}</div>`:''}
+    ${l.valor_estimado?`<div>💰 ${fmt(l.valor_estimado)}</div>`:''}
+    <div>📊 Etapa: <b>${etapaLbl}</b> · Origem: ${l.origem||'—'}</div>
+    ${l.proximo_followup?`<div>📅 Follow-up: ${new Date(l.proximo_followup+'T12:00').toLocaleDateString('pt-BR')}</div>`:''}
+    ${l.observacoes?`<div style="margin-top:6px;color:var(--txt3)">${l.observacoes}</div>`:''}
+    <div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap">${ETAPAS_FUNIL.map(([ek,el])=>`<button class="btn btn-xs ${l.etapa===ek?'btn-pri':'btn-out'}" onclick="moverEtapaLead('${l.id}','${ek}')">${el}</button>`).join('')}</div>`;
+  openModal('modal-lead-det');
+  carregarInteracoes(id);
+}
+async function moverEtapaLead(id,etapa){
+  const l=G_LEADS.find(x=>x.id===id); if(!l)return;
+  const {error}=await db.from('crm_leads').update({etapa,atualizado_em:new Date().toISOString()}).eq('id',id);
+  if(error){notify('Erro: '+error.message,'error');return;}
+  l.etapa=etapa; abrirLeadDet(id); renderFunil();
+  if(etapa==='ganho')notify('🎉 Lead ganho! Parabéns!','success');
+}
+function leadWhats(){
+  const l=G_LEADS.find(x=>x.id===_leadDetId); if(!l)return;
+  const tel=(l.telefone||'').replace(/\D/g,'');
+  const num=tel?(tel.length<=11?'55'+tel:tel):'';
+  const emp=getEmpDados();
+  const msg=`Olá ${l.nome}! Aqui é da ${emp.nome||'nossa loja'}.`;
+  window.open(num?`https://wa.me/${num}?text=${encodeURIComponent(msg)}`:`https://wa.me/?text=${encodeURIComponent(msg)}`,'_blank');
+}
+async function carregarInteracoes(leadId){
+  const cont=document.getElementById('lead-historico');
+  cont.innerHTML='<div style="font-size:12px;color:var(--txt3);text-align:center;padding:10px">Carregando...</div>';
+  let list=[];
+  try{ const {data}=await db.from('crm_interacoes').select('*').eq('lead_id',leadId).order('criado_em',{ascending:false}); list=data||[]; }catch(e){}
+  cont.innerHTML=list.length===0
+    ?'<div style="font-size:12px;color:var(--txt3);text-align:center;padding:10px">Nenhuma interação ainda.</div>'
+    :list.map(it=>`<div style="border-left:2px solid var(--pri);padding:4px 10px;margin-bottom:8px">
+      <div style="font-size:12.5px">${it.mensagem||''}</div>
+      <div style="font-size:10.5px;color:var(--txt3)">${it.canal||''} · ${new Date(it.criado_em).toLocaleString('pt-BR')} · ${it.criado_por_nome||''}</div>
+    </div>`).join('');
+}
+async function salvarInteracao(){
+  const msg=document.getElementById('int-msg').value.trim();
+  if(!msg||!_leadDetId)return;
+  const payload={empresa_id:EID(),lead_id:_leadDetId,canal:document.getElementById('int-canal').value,tipo:'contato',mensagem:msg,criado_por:G.profile?.id||null,criado_por_nome:G.profile?.nome||''};
+  const {error}=await db.from('crm_interacoes').insert(payload);
+  if(error){notify('Erro: '+error.message,'error');return;}
+  document.getElementById('int-msg').value='';
+  const l=G_LEADS.find(x=>x.id===_leadDetId);
+  if(l&&l.etapa==='novo'){ await db.from('crm_leads').update({etapa:'contatado',atualizado_em:new Date().toISOString()}).eq('id',l.id); l.etapa='contatado'; renderFunil(); }
+  carregarInteracoes(_leadDetId);
+  notify('Interação registrada.','success');
+}
+
+/* ── CAMPANHAS / CHAMADOS PARA AÇÃO ───────────────────────────────── */
+function _campPublico(tipo){
+  const hoje=new Date();
+  if(tipo==='compraram'){
+    const ids=new Set((G.vendas||[]).filter(v=>v.cliente_id&&v.status!=='cancelada').map(v=>v.cliente_id));
+    return (G.clientes||[]).filter(c=>ids.has(c.id));
+  }
+  if(tipo==='inativos90'){
+    return (G.clientes||[]).filter(c=>{const u=ultimaCompraCliente(c.id);return u&&Math.round((hoje-u)/86400000)>=90;});
+  }
+  if(tipo==='aniversariantes'){
+    return (G.clientes||[]).filter(c=>{if(!c.data_nascimento)return false;const d=new Date(c.data_nascimento+'T12:00');return !isNaN(d)&&d.getMonth()===hoje.getMonth();});
+  }
+  if(tipo==='leads_negociando'){
+    return (G_LEADS||[]).filter(l=>l.etapa==='negociando').map(l=>({nome:l.nome,telefone:l.telefone}));
+  }
+  return (G.clientes||[]);
+}
+function renderCampanhaPreview(){
+  if(!G_LEADS.length) carregarLeads();
+  const tipo=document.getElementById('camp-publico')?.value||'compraram';
+  const pub=_campPublico(tipo).filter(p=>p.telefone);
+  const cnt=document.getElementById('camp-count');
+  if(cnt)cnt.textContent=`${pub.length} contato(s) com telefone`;
+  const lista=document.getElementById('camp-lista');
+  if(lista){
+    lista.innerHTML=pub.length?`<div class="card" style="padding:0"><div class="tw"><table><thead><tr><th>Nome</th><th>Telefone</th></tr></thead><tbody>`+
+      pub.slice(0,50).map(p=>`<tr><td>${p.nome}</td><td style="font-size:12px;color:var(--txt3)">${p.telefone}</td></tr>`).join('')+
+      `</tbody></table></div>${pub.length>50?`<div style="padding:8px;font-size:11px;color:var(--txt3);text-align:center">+${pub.length-50} outros</div>`:''}</div>`
+      :'<div class="card" style="text-align:center;padding:20px;color:var(--txt3)">Nenhum contato com telefone nesse público.</div>';
+  }
+}
+let _campFila=[]; let _campIdx=0; let _campMsg='';
+function iniciarCampanha(){
+  const tipo=document.getElementById('camp-publico').value;
+  _campMsg=document.getElementById('camp-msg').value.trim();
+  if(!_campMsg){notify('Escreva a mensagem da campanha.','warn');return;}
+  _campFila=_campPublico(tipo).filter(p=>p.telefone);
+  if(!_campFila.length){notify('Nenhum contato com telefone nesse público.','warn');return;}
+  _campIdx=0;
+  if(!confirm(`Disparar para ${_campFila.length} contato(s)? O WhatsApp abrirá um por vez. Após enviar cada um, volte e clique em "Próximo".`))return;
+  dispararProximoCamp();
+}
+function dispararProximoCamp(){
+  if(_campIdx>=_campFila.length){notify('✅ Campanha concluída!','success');renderCampanhaPreview();return;}
+  const p=_campFila[_campIdx];
+  const tel=(p.telefone||'').replace(/\D/g,'');
+  const num=tel?(tel.length<=11?'55'+tel:tel):'';
+  const msg=_campMsg.replace(/{nome}/g,(p.nome||'').split(' ')[0]);
+  if(num) window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`,'_blank');
+  _campIdx++;
+  const lista=document.getElementById('camp-lista');
+  if(lista){
+    lista.innerHTML=`<div class="card" style="text-align:center;padding:20px">
+      <div style="font-size:14px;font-weight:700;margin-bottom:6px">Enviando ${_campIdx} de ${_campFila.length}</div>
+      <div style="font-size:12.5px;color:var(--txt2);margin-bottom:12px">Enviou para <b>${p.nome}</b>? Clique em próximo para o próximo contato.</div>
+      ${_campIdx<_campFila.length?`<button class="btn btn-pri" onclick="dispararProximoCamp()"><i class="ti ti-arrow-right"></i> Próximo (${_campFila[_campIdx].nome})</button>`:'<div style="color:var(--success);font-weight:700">✅ Último enviado!</div>'}
+      <button class="btn btn-out" onclick="renderCampanhaPreview()" style="margin-left:8px">Encerrar</button>
+    </div>`;
+  }
 }
 
 // ── ANIVERSARIANTES ──
@@ -6101,6 +6477,133 @@ function crmPosVenda(cliId,itens){
    para catalogo_config / produtos.catalogo_visivel. A página pública
    (catalogo.html) lê só a VIEW segura catalogo_publico. */
 let _catConfig=null;
+
+/* ── SIMULADOR DE TAXA DE CARTÃO ──────────────────────────────────────
+   Calcula valor de parcelas e quanto a loja recebe líquido. Taxas por
+   empresa salvas em config_taxas_cartao. Pura matemática, sem dependência. */
+let _taxasCartao = null; // {taxa_debito, taxas_credito:{1:..,2:..}}
+const SIM_MAX_PARC = 18;
+function _taxasPadrao(){
+  // médias de mercado (editáveis pela loja) — só um ponto de partida
+  const cred = {};
+  for(let n=1;n<=SIM_MAX_PARC;n++){
+    if(n===1) cred[n]=3.99;
+    else if(n<=6) cred[n]=+(3.99+ (n-1)*0.55).toFixed(2);
+    else cred[n]=+(7.5 + (n-6)*0.45).toFixed(2);
+  }
+  return { taxa_debito:1.99, taxas_credito:cred };
+}
+
+async function renderSimulador(){
+  if(!_taxasCartao){
+    try{
+      const {data}=await db.from('config_taxas_cartao').select('*').eq('empresa_id',EID()).maybeSingle();
+      if(data){ _taxasCartao={taxa_debito:data.taxa_debito??1.99, taxas_credito:data.taxas_credito||{}}; }
+    }catch(e){}
+    if(!_taxasCartao || !Object.keys(_taxasCartao.taxas_credito||{}).length) _taxasCartao=_taxasPadrao();
+  }
+  simParcelasUI();
+  preencherFormTaxas();
+  simularCartao();
+}
+
+function simTab(tab,btn){
+  document.querySelectorAll('#page-simulador .fin-tab').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  ['calc','taxas'].forEach(t=>{const el=document.getElementById('sim-'+t);if(el)el.style.display=t===tab?'':'none';});
+  if(tab==='taxas')preencherFormTaxas();
+}
+
+function simParcelasUI(){
+  const forma=document.getElementById('sim-forma')?.value||'credito';
+  const wrap=document.getElementById('sim-parc-wrap');
+  const sel=document.getElementById('sim-parcelas');
+  if(!sel)return;
+  if(forma==='debito'){ if(wrap)wrap.style.display='none'; return; }
+  if(wrap)wrap.style.display='';
+  sel.innerHTML='';
+  for(let n=1;n<=SIM_MAX_PARC;n++){ const o=document.createElement('option'); o.value=n; o.textContent=n+'x'; sel.appendChild(o); }
+}
+
+function _taxaParaForma(forma,parcelas){
+  if(!_taxasCartao)_taxasCartao=_taxasPadrao();
+  if(forma==='debito')return Number(_taxasCartao.taxa_debito)||0;
+  const t=_taxasCartao.taxas_credito||{};
+  return Number(t[parcelas]??t[String(parcelas)])||0;
+}
+
+function simularCartao(){
+  const valor=parseFloat(document.getElementById('sim-valor')?.value)||0;
+  const forma=document.getElementById('sim-forma')?.value||'credito';
+  const parcelas=forma==='debito'?1:(parseInt(document.getElementById('sim-parcelas')?.value)||1);
+  const out=document.getElementById('sim-resultado');
+  if(!out)return;
+  if(valor<=0){ out.innerHTML='<div class="card" style="text-align:center;padding:30px;color:var(--txt3)">Informe o valor da venda para simular.</div>'; return; }
+
+  const taxa=_taxaParaForma(forma,parcelas);
+  const taxaDec=taxa/100;
+
+  // Cenário A — loja absorve a taxa (cliente paga o valor cheio, sem juros)
+  const recebeAbsorve = valor*(1-taxaDec);
+  const custoTaxaAbsorve = valor - recebeAbsorve;
+  const parcelaAbsorve = valor/parcelas;
+
+  // Cenário B — repassa a taxa ao cliente (juros embutido): para receber o valor cheio
+  const totalRepasse = taxaDec<1 ? valor/(1-taxaDec) : valor;
+  const parcelaRepasse = totalRepasse/parcelas;
+  const acrescimoRepasse = totalRepasse - valor;
+
+  out.innerHTML=`
+    <div class="card" style="margin-bottom:12px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--txt3)">Taxa aplicada</div>
+      <div style="font-size:22px;font-weight:800;color:var(--pri)">${taxa.toFixed(2).replace('.',',')}%</div>
+      <div style="font-size:11.5px;color:var(--txt3)">${forma==='debito'?'Débito':parcelas+'x no crédito'}</div>
+    </div>
+    <div class="card" style="margin-bottom:12px;border-left:3px solid var(--success)">
+      <div style="font-weight:700;font-size:13.5px;margin-bottom:8px">📥 Loja absorve a taxa <span style="font-weight:400;color:var(--txt3);font-size:11.5px">(cliente paga o valor cheio)</span></div>
+      <div class="sim-row"><span>Cliente paga</span><b>${fmt(valor)}</b></div>
+      ${parcelas>1?`<div class="sim-row"><span>${parcelas}x de</span><b>${fmt(parcelaAbsorve)}</b></div>`:''}
+      <div class="sim-row"><span>Taxa da maquininha</span><b style="color:var(--danger)">- ${fmt(custoTaxaAbsorve)}</b></div>
+      <div class="sim-row" style="border-top:1px solid var(--border);padding-top:6px;margin-top:4px"><span style="font-weight:700">Você recebe</span><b style="color:var(--success);font-size:16px">${fmt(recebeAbsorve)}</b></div>
+    </div>
+    <div class="card" style="border-left:3px solid var(--pri)">
+      <div style="font-weight:700;font-size:13.5px;margin-bottom:8px">📤 Repassar a taxa ao cliente <span style="font-weight:400;color:var(--txt3);font-size:11.5px">(juros embutido)</span></div>
+      <div class="sim-row"><span>Cliente paga</span><b>${fmt(totalRepasse)}</b></div>
+      ${parcelas>1?`<div class="sim-row"><span>${parcelas}x de</span><b>${fmt(parcelaRepasse)}</b></div>`:''}
+      <div class="sim-row"><span>Acréscimo p/ o cliente</span><b style="color:var(--warn)">+ ${fmt(acrescimoRepasse)}</b></div>
+      <div class="sim-row" style="border-top:1px solid var(--border);padding-top:6px;margin-top:4px"><span style="font-weight:700">Você recebe</span><b style="color:var(--success);font-size:16px">${fmt(valor)}</b></div>
+    </div>`;
+}
+
+function preencherFormTaxas(){
+  if(!_taxasCartao)_taxasCartao=_taxasPadrao();
+  const d=document.getElementById('tx-debito'); if(d)d.value=_taxasCartao.taxa_debito??'';
+  const c1=document.getElementById('tx-credito-1'); if(c1)c1.value=(_taxasCartao.taxas_credito||{})[1]??(_taxasCartao.taxas_credito||{})['1']??'';
+  const grid=document.getElementById('tx-credito-grid');
+  if(grid){
+    let h='';
+    for(let n=2;n<=SIM_MAX_PARC;n++){
+      const v=(_taxasCartao.taxas_credito||{})[n]??(_taxasCartao.taxas_credito||{})[String(n)]??'';
+      h+=`<div class="fg" style="margin:0"><label class="lbl" style="font-size:11px">${n}x (%)</label><input type="number" step="0.01" min="0" id="tx-cred-${n}" value="${v}"></div>`;
+    }
+    grid.innerHTML=h;
+  }
+}
+function preencherTaxasPadrao(){ _taxasCartao=_taxasPadrao(); preencherFormTaxas(); notify('Taxas preenchidas com a média de mercado. Ajuste e salve.','info',5000); }
+
+async function salvarTaxasCartao(){
+  const cred={};
+  cred[1]=parseFloat(document.getElementById('tx-credito-1')?.value)||0;
+  for(let n=2;n<=SIM_MAX_PARC;n++){ const el=document.getElementById('tx-cred-'+n); cred[n]=parseFloat(el?.value)||0; }
+  const payload={ empresa_id:EID(), taxa_debito:parseFloat(document.getElementById('tx-debito')?.value)||0, taxas_credito:cred, atualizado_em:new Date().toISOString() };
+  setLoad(true);
+  const {error}=await db.from('config_taxas_cartao').upsert(payload,{onConflict:'empresa_id'});
+  setLoad(false);
+  if(error){notify('Erro ao salvar: '+error.message,'error');return;}
+  _taxasCartao={taxa_debito:payload.taxa_debito, taxas_credito:cred};
+  simParcelasUI(); simularCartao();
+  notify('Taxas salvas!','success');
+}
 
 function catTab(tab,btn){
   document.querySelectorAll('#page-catalogo .fin-tab').forEach(b=>b.classList.remove('active'));
@@ -7536,13 +8039,124 @@ function emitirAlerta(id, msg, icon, tipo) {
 function intelTab(tab, btn) {
   document.querySelectorAll('#page-inteligencia .fin-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  ['alertas','coocorrencia','precos','config'].forEach(t => {
+  ['operacional','alertas','coocorrencia','precos','config'].forEach(t => {
     const el = document.getElementById('intel-tab-' + t); if (el) el.style.display = t === tab ? '' : 'none';
   });
-  if (tab === 'alertas') renderAlertasIntel();
+  if (tab === 'operacional') renderAlertasOperacionais();
+  else if (tab === 'alertas') renderAlertasIntel();
   else if (tab === 'coocorrencia') renderCoocorrencia();
   else if (tab === 'precos') renderPrecosEsp();
   else renderIntelConfig();
+}
+
+// ── ALERTAS OPERACIONAIS ────────────────────────────────────────────
+// Cruza dados já existentes (OS, garantias, estoque, financeiro, clientes)
+// e mostra o que precisa de atenção. Sem tabela nova, sem dependência externa.
+async function renderAlertasOperacionais(){
+  const resumo=document.getElementById('intel-op-resumo');
+  const cont=document.getElementById('intel-op-list');
+  if(!cont)return;
+  cont.innerHTML='<div style="text-align:center;padding:30px;color:var(--txt3)"><div class="spinner" style="margin:0 auto 10px;border-color:rgba(91,71,224,.2);border-top-color:var(--pri)"></div>Analisando...</div>';
+
+  const hoje=new Date(); hoje.setHours(0,0,0,0);
+  const alertas=[];
+  const dia=86400000;
+
+  // 1) OS atrasadas (prazo de entrega vencido e não entregue/cancelada)
+  (G.os||[]).forEach(o=>{
+    const st=(o.status||'').toLowerCase();
+    if(['entregue','cancelada','finalizada'].includes(st))return;
+    if(o.prazo){
+      const prazo=new Date(o.prazo+'T12:00');
+      if(!isNaN(prazo)&&prazo<hoje){
+        const dias=Math.round((hoje-prazo)/dia);
+        alertas.push({cat:'OS',prio:'alta',icone:'ti-tool',cor:'#dc2626',titulo:`OS ${o.numero} atrasada`,desc:`${o.aparelho||''} · ${o.cliente_nome||''} — ${dias}d além do prazo`,acao:()=>go('os-hist')});
+      }
+    }
+    // OS aguardando aprovação/orçamento há muito tempo (>3 dias)
+    if(st.includes('aprova')||st.includes('orça')||st.includes('orca')){
+      const ini=new Date(o.criado_em||hoje);
+      const dias=Math.round((hoje-ini)/dia);
+      if(dias>=3) alertas.push({cat:'OS',prio:'media',icone:'ti-clock-pause',cor:'#d97706',titulo:`OS ${o.numero} parada há ${dias}d`,desc:`${o.cliente_nome||''} — ${o.status} (talvez precise de um lembrete)`,acao:()=>go('os-hist')});
+    }
+  });
+
+  // 2) Garantias vencendo (<=15d) e vencidas recentes — deriva de vendas+OS
+  try{
+    if(typeof carregarGarantias==='function'){ await carregarGarantias(); }
+    (_garCache||[]).forEach(g=>{
+      if(g.status==='vencendo') alertas.push({cat:'Garantia',prio:'media',icone:'ti-shield-exclamation',cor:'#d97706',titulo:`Garantia vencendo: ${g.item}`,desc:`${g.cliente_nome} — faltam ${g.restante}d (${g.origem} ${g.ref})`,acao:()=>go('garantias')});
+    });
+  }catch(e){}
+
+  // 3) Estoque baixo / zerado
+  (G.produtos||[]).forEach(p=>{
+    if(p.estoque_infinito||(p.status&&p.status!=='ativo'))return;
+    const min=p.estoque_minimo||3;
+    if((p.estoque||0)<=0) alertas.push({cat:'Estoque',prio:'alta',icone:'ti-package-off',cor:'#dc2626',titulo:`${p.nome} ZERADO`,desc:'Sem estoque para venda',acao:()=>go('produtos')});
+    else if(p.estoque<=min) alertas.push({cat:'Estoque',prio:'media',icone:'ti-package',cor:'#d97706',titulo:`${p.nome} com estoque baixo`,desc:`Restam ${p.estoque} (mínimo ${min})`,acao:()=>go('produtos')});
+  });
+
+  // 4) Contas a pagar vencendo/vencidas e a receber atrasadas
+  const hojeISO=hoje.toISOString().split('T')[0];
+  (G.pagar||[]).forEach(c=>{
+    if(c.status==='pago')return;
+    if(c.data_vencimento){
+      if(c.data_vencimento<hojeISO) alertas.push({cat:'Financeiro',prio:'alta',icone:'ti-cash-banknote',cor:'#dc2626',titulo:`Conta a pagar vencida: ${c.descricao||''}`,desc:`${fmt(c.valor_original)} — venceu ${new Date(c.data_vencimento+'T12:00').toLocaleDateString('pt-BR')}`,acao:()=>go('financeiro')});
+      else { const d=Math.round((new Date(c.data_vencimento+'T12:00')-hoje)/dia); if(d<=5) alertas.push({cat:'Financeiro',prio:'media',icone:'ti-cash-banknote',cor:'#d97706',titulo:`Conta a pagar vence em ${d}d`,desc:`${c.descricao||''} — ${fmt(c.valor_original)}`,acao:()=>go('financeiro')}); }
+    }
+  });
+  (G.receber||[]).forEach(c=>{
+    if(c.status==='pago')return;
+    if(c.data_vencimento&&c.data_vencimento<hojeISO) alertas.push({cat:'Financeiro',prio:'media',icone:'ti-receipt',cor:'#d97706',titulo:`A receber atrasado: ${c.descricao||''}`,desc:`${fmt(c.valor_original)} — venceu ${new Date(c.data_vencimento+'T12:00').toLocaleDateString('pt-BR')}`,acao:()=>go('financeiro')});
+  });
+
+  // 5) Crediário: parcelas vencidas (inadimplência)
+  (G_CONTRATOS||[]).forEach(ct=>{
+    const vencidas=(ct.parcelas||[]).filter(p=>p.status==='aberta'&&p.vencimento<hojeISO);
+    if(vencidas.length) alertas.push({cat:'Crediário',prio:'alta',icone:'ti-credit-card-off',cor:'#dc2626',titulo:`${ct.clienteNome}: ${vencidas.length} parcela(s) em atraso`,desc:`Carnê ${ct.numero} — ${fmt(vencidas.reduce((s,p)=>s+(p.valor||0),0))} em atraso`,acao:()=>go('crediario')});
+  });
+
+  // Ordena por prioridade
+  const ordem={alta:0,media:1,baixa:2};
+  alertas.sort((a,b)=>ordem[a.prio]-ordem[b.prio]);
+  _alertasOp=alertas;
+
+  // Resumo por categoria
+  const porCat={};
+  alertas.forEach(a=>{porCat[a.cat]=(porCat[a.cat]||0)+1;});
+  const totalAlta=alertas.filter(a=>a.prio==='alta').length;
+  if(resumo){
+    resumo.innerHTML=`
+      ${opCard('Atenção total',alertas.length,'var(--pri)','ti-radar')}
+      ${opCard('Urgentes',totalAlta,'#dc2626','ti-alert-octagon')}
+      ${Object.entries(porCat).slice(0,4).map(([cat,n])=>opCard(cat,n,'#64748b','ti-point')).join('')}`;
+  }
+
+  if(alertas.length===0){
+    cont.innerHTML='<div class="card"><div class="empty-st"><i class="ti ti-circle-check" style="color:var(--success)"></i><h3>Tudo em ordem!</h3><p>Nenhum alerta operacional no momento.</p></div></div>';
+    return;
+  }
+  const prioTag={alta:'tag-red',media:'tag-amb',baixa:'tag-blu'};
+  const prioLbl={alta:'Urgente',media:'Atenção',baixa:'Info'};
+  cont.innerHTML=`<div class="card" style="padding:0"><div style="padding:4px 0">`+
+    alertas.map((a,i)=>`<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer" onclick="_acaoAlertaOp(${i})">
+      <div style="width:38px;height:38px;border-radius:10px;background:${a.cor}1a;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ${a.icone}" style="color:${a.cor};font-size:19px"></i></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:13.5px">${a.titulo}</div>
+        <div style="font-size:12px;color:var(--txt3)">${a.desc}</div>
+      </div>
+      <span class="tag ${prioTag[a.prio]}" style="flex-shrink:0">${prioLbl[a.prio]}</span>
+      <i class="ti ti-chevron-right" style="color:var(--txt3);flex-shrink:0"></i>
+    </div>`).join('')+`</div></div>`;
+}
+let _alertasOp=[];
+function _acaoAlertaOp(i){ const a=_alertasOp[i]; if(a&&a.acao)a.acao(); }
+function opCard(label,val,cor,icone){
+  return `<div class="card" style="padding:12px 14px;display:flex;align-items:center;gap:10px">
+    <div style="width:34px;height:34px;border-radius:9px;background:${cor}1a;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ${icone}" style="color:${cor};font-size:17px"></i></div>
+    <div><div style="font-size:20px;font-weight:800;line-height:1;color:${cor}">${val}</div><div style="font-size:11px;color:var(--txt3)">${label}</div></div>
+  </div>`;
 }
 
 function renderAlertasIntel() {
@@ -7927,7 +8541,7 @@ function verContrato(id) {
       <div style="font-size:12px;color:${isVenc?'var(--danger)':isHoje?'var(--warn)':'var(--txt3)'}">${fmtD(p.vencimento+'T12:00')}</div>
       <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:var(--pri)">${fmt(p.valor)}</div>
       ${p.status === 'paga' ? `<span class="tag tag-grn" style="font-size:10px">Paga</span>` :
-        `<button class="btn btn-success btn-xs" onclick="baixarParcela('${id}',${i})"><i class="ti ti-check"></i>Baixar</button>`}
+        `<div style="display:flex;gap:4px"><button class="btn btn-success btn-xs" onclick="baixarParcela('${id}',${i})"><i class="ti ti-check"></i>Baixar</button><button class="btn btn-out btn-xs" onclick="gerarCobrancaParcela('${id}',${i})" title="Gerar boleto/PIX (Asaas)"><i class="ti ti-qrcode"></i></button></div>`}
     </div>`;
   }).join('');
   document.getElementById('os-det-content').innerHTML = `
@@ -7964,6 +8578,43 @@ function baixarParcela(contratoId, parcIdx) {
   verContrato(contratoId);
   renderContratos();
   notify(`Parcela ${c.parcelas[parcIdx].num} baixada!`, 'success');
+}
+
+// ── GATEWAY DE PAGAMENTO (Asaas) — gerar boleto/PIX de uma parcela ──────
+// Estrutura pronta. Só funciona após configurar a chave do Asaas na Edge
+// Function (ver supabase/functions/gerar-cobranca + GUIA_ASAAS.txt). Se não
+// estiver configurado, avisa o usuário com honestidade (não finge funcionar).
+async function gerarCobrancaParcela(contratoId, parcIdx){
+  const c = G_CONTRATOS.find(x => x.id === contratoId); if(!c) return;
+  const p = c.parcelas[parcIdx]; if(!p) return;
+  const cli = (G.clientes||[]).find(x=>x.id===c.clienteId);
+  setLoad(true);
+  try{
+    const { data, error } = await db.functions.invoke('gerar-cobranca', {
+      body: {
+        cliente: { nome: c.clienteNome, asaasId: cli?.asaas_id||null, cpfCnpj: cli?.doc||cli?.cpf||'', telefone: cli?.telefone||'' },
+        valor: p.valor, vencimento: p.vencimento, descricao: `Parcela ${p.num} - Carnê ${c.numero}`, tipo: 'UNDEFINED'
+      }
+    });
+    setLoad(false);
+    if(error) throw error;
+    if(data && data.configured===false){
+      notify('Gateway de pagamento não configurado. Configure o Asaas para gerar boletos/PIX automáticos (ver guia).','info',7000);
+      return;
+    }
+    if(data && data.error){ notify('Erro: '+data.error,'error',6000); return; }
+    // Sucesso: mostra o link de pagamento e copia
+    if(data.invoiceUrl){
+      try{ await navigator.clipboard.writeText(data.invoiceUrl); }catch(e){}
+      window.open(data.invoiceUrl,'_blank');
+      notify('Cobrança gerada! Link copiado e aberto. Envie ao cliente.','success',6000);
+      // guarda o id da cobrança na parcela para rastreio
+      p.cobranca_id = data.id; saveCredario();
+    }
+  }catch(e){
+    setLoad(false);
+    notify('Não foi possível gerar a cobrança agora. Verifique a configuração do gateway.','warn',6000);
+  }
 }
 
 // ── PARCELAS GLOBAL ──────────────────────────────────
@@ -8480,7 +9131,7 @@ function gerarCarneGraficaFromContrato(c){
   // Abre em janela dedicada (impressão limpa do formato 21x10, sem o modal interno)
   const w = window.open('', '_blank');
   if (w) { w.document.write(html); w.document.close(); }
-  else { abrirPDFModal(html, 'Carne-Grafica-'+c.numero); } // fallback se popup bloqueado
+  else { abrirPDFModal(html, 'Carne-Grafica-'+c.numero); } // fallback se popup bloqueado: mostra no visualizador
 }
 
 // Verifica inadimplência ao abrir PDV
@@ -11333,10 +11984,32 @@ function pdfAssinatura(nome1, cargo1, nome2 = 'Cliente', cargo2 = 'Solicitante')
 
 // ── AÇÕES: IMPRIMIR / BAIXAR ──────────────────────────
 function pdfImprimir(html) {
-  const area = document.getElementById('pdf-print-area');
-  area.innerHTML = html;
-  area.style.display = 'block';
-  setTimeout(() => { window.print(); setTimeout(() => { area.style.display = 'none'; area.innerHTML = ''; }, 800); }, 300);
+  // Imprime de forma confiável e independente de qual modal está aberto:
+  // injeta o HTML completo do documento num iframe oculto dedicado e imprime
+  // apenas esse iframe (não o app). Funciona para A4, cupom, carnê, etiqueta.
+  try{
+    let fr = document.getElementById('print-iframe');
+    if(!fr){
+      fr = document.createElement('iframe');
+      fr.id = 'print-iframe';
+      fr.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden';
+      document.body.appendChild(fr);
+    }
+    const doc = fr.contentWindow.document;
+    doc.open(); doc.write(html); doc.close();
+    // espera o conteúdo (e imagens/fontes) carregar antes de imprimir
+    setTimeout(()=>{
+      try{ fr.contentWindow.focus(); fr.contentWindow.print(); }
+      catch(e){ _printNovaAba(html); }
+    }, 450);
+  }catch(e){ _printNovaAba(html); }
+}
+function _printNovaAba(html){
+  try{
+    const win = window.open('', '_blank');
+    if(win){ win.document.open(); win.document.write(html); win.document.close(); setTimeout(()=>{win.focus();win.print();},400); }
+    else notify('Permita pop-ups para imprimir, ou use "Baixar HTML".','warn',5000);
+  }catch(e){ notify('Não foi possível imprimir. Use "Baixar HTML".','warn',5000); }
 }
 
 function pdfBaixar(html, nomeArq) {
@@ -13199,9 +13872,19 @@ function osMobileTab(aba) {
 }
 
 function osMobileAbrirNova() {
-  if (window.innerWidth > 768) return;
-  // Rolar para o formulário de nova OS no desktop, ou abrir modal no mobile
-  openModal('modal-nova-os-mobile');
+  // Revela e rola até o formulário de Nova OS (que já existe na página).
+  document.querySelectorAll('.os-mtab').forEach(t => t.classList.remove('active'));
+  document.getElementById('os-mtab-nova')?.classList.add('active');
+  const lista = document.getElementById('os-mobile-list');
+  const busca = document.getElementById('os-mobile-busca');
+  if (lista) lista.style.display = 'none';
+  if (busca) busca.style.display = 'none';
+  const card = document.getElementById('os-nova-card');
+  if (card) {
+    card.style.display = '';
+    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setTimeout(() => document.getElementById('os-ap')?.focus(), 300);
+  }
 }
 
 function osFiltraMobile(status, btn) {
@@ -13809,13 +14492,161 @@ function abrirDocumentosOS(osId) {
   const os = (G.os || []).find(x => x.id === osId);
   if (!os) return;
   _docOsAtual = os;
+  resetDocFormato();
   document.getElementById('modal-docs-titulo').textContent = `Documentos — OS ${os.numero}`;
   document.getElementById('modal-docs-sub').textContent =
     `${os.aparelho} · ${os.cliente_nome} · Status: ${os.status}`;
   openModal('modal-docs-os');
 }
+function resetDocFormato(){
+  _docFormato='a4';
+  document.querySelectorAll('.doc-fmt-btn').forEach(b=>{
+    const isA4=b.dataset.fmt==='a4';
+    b.classList.toggle('btn-pri',isA4); b.classList.toggle('btn-out',!isA4);
+  });
+}
 
 /* ── DADOS COMUNS ──────────────────────────────────────────────── */
+/* ── FORMATO DE DOCUMENTO (A4 x cupom térmico 58/80mm) ───────────── */
+let _docFormato = 'a4';
+function setDocFormato(fmt, btn){
+  _docFormato = fmt;
+  document.querySelectorAll('.doc-fmt-btn').forEach(b=>{b.classList.remove('btn-pri');b.classList.add('btn-out');});
+  if(btn){btn.classList.remove('btn-out');btn.classList.add('btn-pri');}
+}
+
+// CSS do cupom térmico (largura 58 ou 80mm)
+function getCssCupom(corPrimaria, larguraMM){
+  const cor = corPrimaria || '#5B47E0';
+  const w = larguraMM===58 ? 58 : 80;
+  const fs = larguraMM===58 ? 10 : 11;
+  return `
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Inter',Arial,sans-serif;background:#666;color:#000}
+    .cupom{width:${w}mm;background:#fff;margin:10px auto;padding:5mm 4mm;font-size:${fs}px;line-height:1.4}
+    @media print{body{background:#fff}.cupom{margin:0;padding:2mm 1.5mm;width:auto}.print-bar{display:none}@page{size:${w}mm auto;margin:0}}
+    .cup-center{text-align:center}
+    .cup-logo{max-width:${w-20}mm;max-height:16mm;object-fit:contain;display:block;margin:0 auto 4px}
+    .cup-emp{font-weight:800;font-size:${fs+3}px;text-align:center}
+    .cup-emp-sub{font-size:${fs-1}px;text-align:center;color:#333;margin-bottom:2px}
+    .cup-tipo{text-align:center;font-weight:700;font-size:${fs+1}px;background:${cor};color:#fff;padding:3px;border-radius:3px;margin:6px 0}
+    .cup-hr{border:none;border-top:1px dashed #000;margin:6px 0}
+    .cup-row{display:flex;justify-content:space-between;gap:6px;margin:2px 0}
+    .cup-row span:first-child{color:#444}
+    .cup-row b{text-align:right}
+    .cup-sec{font-weight:700;margin:6px 0 3px;font-size:${fs}px;border-bottom:1px solid #000}
+    .cup-box{border:1px solid #000;border-radius:4px;padding:5px;margin:5px 0}
+    .cup-total{display:flex;justify-content:space-between;font-weight:800;font-size:${fs+4}px;margin:6px 0}
+    .cup-txt{font-size:${fs-1}px;color:#222;text-align:justify;margin:4px 0}
+    .cup-assin{margin-top:18px;text-align:center}
+    .cup-assin-line{border-top:1px solid #000;margin:0 4mm;padding-top:3px;font-size:${fs-1}px}
+    .print-bar{background:#1a1a2e;padding:10px;display:flex;gap:8px;justify-content:center;position:sticky;top:0}
+    .print-btn{padding:7px 14px;border-radius:7px;border:none;cursor:pointer;font-size:12px;font-weight:700}
+    .print-btn-pri{background:${cor};color:#fff}.print-btn-out{background:#444;color:#fff}
+  `;
+}
+
+// Gera o cupom térmico para qualquer tipo de documento da OS
+function gerarCupomOS(tipo){
+  const { os, emp, cli, tec, usaAssin, dual, hoje, cor } = getDocDados();
+  const m = getMarca ? getMarca() : {};
+  const larg = _docFormato==='58' ? 58 : 80;
+  const logo = (document.getElementById('doc-opt-logo')?.checked!==false) && (m.logoSidebar||m.logoLogin||emp.logo);
+  const titulos = {
+    entrada:'TERMO DE ENTRADA', retirada:'TERMO DE RETIRADA', orcamento:'ORÇAMENTO',
+    os:'ORDEM DE SERVIÇO', recebimento:'COMPROVANTE DE RECEBIMENTO', laudo:'LAUDO DE ENTREGA'
+  };
+  const fmtData = os.criado_em ? new Date(os.criado_em).toLocaleDateString('pt-BR') : hoje;
+  const prazo = os.prazo ? new Date(os.prazo+'T12:00').toLocaleDateString('pt-BR') : '—';
+
+  // peças (se houver)
+  const pecas = (os.pecas||[]);
+  const pecasTotal = pecas.reduce((s,p)=>s+((p.preco||0)*(p.qty||1)),0);
+  const valor = os.valor || os.orcamento || pecasTotal || 0;
+
+  let secoes = `
+    <div class="cup-row"><span>OS</span><b>${os.numero}</b></div>
+    <div class="cup-row"><span>Data</span><b>${fmtData}</b></div>
+    <div class="cup-row"><span>Cliente</span><b>${esc(os.cliente_nome||'—')}</b></div>
+    ${cli.telefone?`<div class="cup-row"><span>Telefone</span><b>${esc(cli.telefone)}</b></div>`:''}
+    <hr class="cup-hr">
+    <div class="cup-sec">Aparelho</div>
+    <div class="cup-row"><span>Modelo</span><b>${esc(os.aparelho||'—')}</b></div>
+    ${os.imei?`<div class="cup-row"><span>IMEI/Série</span><b>${esc(os.imei)}</b></div>`:''}
+    <div class="cup-row"><span>Status</span><b>${esc(os.status||'')}</b></div>
+  `;
+
+  // Seção de defeito/serviço conforme o tipo
+  if(['entrada','os','orcamento','recebimento'].includes(tipo)){
+    secoes += `<div class="cup-sec">Defeito relatado</div><div class="cup-txt">${esc(os.defeito||os.problema||'—')}</div>`;
+  }
+  if(['os','laudo','retirada'].includes(tipo) && (os.diagnostico||os.laudo)){
+    secoes += `<div class="cup-sec">Serviço / Laudo</div><div class="cup-txt">${esc(os.diagnostico||os.laudo)}</div>`;
+  }
+  if(['entrada','os','recebimento'].includes(tipo)){
+    secoes += `<div class="cup-row"><span>Prazo previsto</span><b>${prazo}</b></div>`;
+    if(tec.nome||os.tecnico_nome) secoes += `<div class="cup-row"><span>Técnico</span><b>${esc(tec.nome||os.tecnico_nome)}</b></div>`;
+  }
+  // peças no cupom
+  if(['os','orcamento','laudo'].includes(tipo) && pecas.length){
+    secoes += `<div class="cup-sec">Peças / Serviços</div>`;
+    secoes += pecas.map(p=>`<div class="cup-row"><span>${esc(p.nome)} x${p.qty||1}</span><b>${fmt((p.preco||0)*(p.qty||1))}</b></div>`).join('');
+  }
+  // valor
+  if(['orcamento','os','laudo','retirada'].includes(tipo) && valor){
+    secoes += `<hr class="cup-hr"><div class="cup-total"><span>TOTAL</span><span>${fmt(valor)}</span></div>`;
+  }
+  // garantia no laudo/retirada
+  if(['laudo','retirada'].includes(tipo) && os.garantia_dias){
+    const g=new Date(); g.setDate(g.getDate()+(os.garantia_dias||0));
+    secoes += `<div class="cup-row"><span>Garantia</span><b>${os.garantia_dias} dias (até ${g.toLocaleDateString('pt-BR')})</b></div>`;
+  }
+
+  // termo legal curto
+  const termos = {
+    entrada:'Declaro ter entregue o aparelho acima para avaliação/reparo nas condições descritas.',
+    retirada:'Declaro ter retirado o aparelho em perfeito funcionamento e ciente da garantia.',
+    recebimento:'Comprovante de recebimento do aparelho para análise técnica.',
+    laudo:'Serviço concluído e conferido. Cliente ciente da garantia aplicável.',
+    orcamento:'Orçamento válido por 7 dias. Sujeito a alteração após análise técnica.',
+    os:'Documento de acompanhamento da ordem de serviço.'
+  };
+  const assinHtml = (usaAssin!==false && tipo!=='orcamento') ? `<div class="cup-assin"><div class="cup-assin-line">Assinatura do cliente</div></div>` : '';
+
+  const corpoCupom = `
+    <div class="cupom">
+      ${logo?`<img class="cup-logo" src="${logo}">`:''}
+      <div class="cup-emp">${esc(emp.nome||'Assistência Técnica')}</div>
+      ${emp.cnpj?`<div class="cup-emp-sub">CNPJ: ${esc(emp.cnpj)}</div>`:''}
+      ${emp.tel?`<div class="cup-emp-sub">${esc(emp.tel)}</div>`:''}
+      ${emp.end?`<div class="cup-emp-sub">${esc(emp.end)}</div>`:''}
+      <div class="cup-tipo">${titulos[tipo]||'DOCUMENTO'}</div>
+      ${secoes}
+      <hr class="cup-hr">
+      <div class="cup-txt">${termos[tipo]||''}</div>
+      ${assinHtml}
+      <div class="cup-center" style="margin-top:8px;font-size:9px;color:#555">${esc(emp.nome||'')} · ${hoje}</div>
+    </div>`;
+
+  const conteudoFinal = dual ? (corpoCupom + '<div style="page-break-after:always"></div>' + corpoCupom) : corpoCupom;
+
+  const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+    <title>${titulos[tipo]||'Documento'} — ${os.numero}</title>
+    <style>${getCssCupom(cor,larg)}</style></head><body>
+    <div class="print-bar">
+      <button class="print-btn print-btn-out" onclick="window.close()">Fechar</button>
+      <button class="print-btn print-btn-pri" onclick="window.print()">🖨️ Imprimir</button>
+    </div>
+    ${conteudoFinal}
+  </body></html>`;
+  closeModal('modal-docs-os');
+  abrirPDFModal(html, `${tipo}-cupom-${os.numero}`);
+}
+
+// helper de escape para o cupom
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
 function getDocDados() {
   const os  = _docOsAtual;
   const m   = getMarca ? getMarca() : {};
@@ -13827,11 +14658,16 @@ function getDocDados() {
   const dual = document.getElementById('doc-opt-2via')?.checked === true;
 
   const hoje = new Date().toLocaleDateString('pt-BR', {day:'2-digit',month:'long',year:'numeric'});
+  // Cor do documento = cor do tema escolhido no app (paletaAtual). Antes usava
+  // m.paleta (inexistente) e caía sempre no roxo padrão.
+  const pal = (typeof paletaAtual==='object' && paletaAtual) ? paletaAtual : {};
+  const cor  = pal.c1 || (m.paleta && m.paleta.c1) || '#5B47E0';
+  const cor2 = pal.c2 || (m.paleta && m.paleta.c2) || cor;
   const logoHtml = usaLogo && m.logoSidebar
     ? `<img src="${m.logoSidebar}" style="height:52px;object-fit:contain">`
     : `<div style="font-family:'Arial Black',sans-serif;font-weight:900;font-size:22px;color:#fff">${(emp.nome||'EMETech').slice(0,2).toUpperCase()}</div>`;
 
-  return { os, m, emp, cli, tec, usaLogo, usaAssin, dual, hoje, logoHtml };
+  return { os, m, emp, cli, tec, usaLogo, usaAssin, dual, hoje, logoHtml, cor, cor2 };
 }
 
 /* ── CSS BASE DOS DOCUMENTOS A4 ────────────────────────────────── */
@@ -13914,9 +14750,9 @@ function docVia(conteudo, viaLabel) {
    TERMO DE ENTRADA DE APARELHO
    ══════════════════════════════════════════════════ */
 function gerarTermoEntrada() {
-  const { os, m, emp, cli, tec, usaAssin, dual, hoje, logoHtml } = getDocDados();
-  const cor = m.paleta?.c1 || '#5B47E0';
-
+  if(_docFormato==='58'||_docFormato==='80'){ return gerarCupomOS('entrada'); }
+  const { os, m, emp, cli, tec, usaAssin, dual, hoje, logoHtml, cor, cor2 } = getDocDados();
+  
   const statusCor = { 'Aguardando':'#f59e0b','Em Análise':'#3b82f6','Em Reparo':'#8b5cf6','Pronto':'#10b981','Entregue':'#6b7280','Cancelada':'#ef4444' };
 
   const corpo = `
@@ -13977,11 +14813,11 @@ function gerarTermoEntrada() {
         <div class="doc-grid doc-grid-3" style="margin-bottom:10px">
           <div class="doc-field">
             <div class="doc-field-label">Data de entrada</div>
-            <div class="doc-field-value">${os.created_at ? new Date(os.created_at).toLocaleDateString('pt-BR') : hoje}</div>
+            <div class="doc-field-value">${os.criado_em ? new Date(os.criado_em).toLocaleDateString('pt-BR') : hoje}</div>
           </div>
           <div class="doc-field">
             <div class="doc-field-label">Prazo previsto</div>
-            <div class="doc-field-value">${os.prazo_entrega ? new Date(os.prazo_entrega).toLocaleDateString('pt-BR') : '—'}</div>
+            <div class="doc-field-value">${os.prazo ? new Date(os.prazo).toLocaleDateString('pt-BR') : '—'}</div>
           </div>
           <div class="doc-field">
             <div class="doc-field-label">Técnico responsável</div>
@@ -14056,9 +14892,9 @@ function gerarTermoEntrada() {
    TERMO DE RETIRADA / ENTREGA AO CLIENTE
    ══════════════════════════════════════════════════ */
 function gerarTermoRetirada() {
-  const { os, m, emp, cli, tec, usaAssin, dual, hoje, logoHtml } = getDocDados();
-  const cor = m.paleta?.c1 || '#5B47E0';
-
+  if(_docFormato==='58'||_docFormato==='80'){ return gerarCupomOS('retirada'); }
+  const { os, m, emp, cli, tec, usaAssin, dual, hoje, logoHtml, cor, cor2 } = getDocDados();
+  
   const corpo = `
     <div class="doc-header">
       <div class="doc-header-logo">
@@ -14117,7 +14953,7 @@ function gerarTermoRetirada() {
         <div class="doc-grid doc-grid-3" style="margin-bottom:10px">
           <div class="doc-field">
             <div class="doc-field-label">Data de entrada</div>
-            <div class="doc-field-value">${os.created_at ? new Date(os.created_at).toLocaleDateString('pt-BR') : '—'}</div>
+            <div class="doc-field-value">${os.criado_em ? new Date(os.criado_em).toLocaleDateString('pt-BR') : '—'}</div>
           </div>
           <div class="doc-field">
             <div class="doc-field-label">Data de entrega</div>
@@ -14204,9 +15040,9 @@ function gerarTermoRetirada() {
    ORÇAMENTO PDF
    ══════════════════════════════════════════════════ */
 function gerarOrcamentoPDF() {
-  const { os, m, emp, cli, tec, usaAssin, dual, hoje, logoHtml } = getDocDados();
-  const cor = m.paleta?.c1 || '#5B47E0';
-
+  if(_docFormato==='58'||_docFormato==='80'){ return gerarCupomOS('orcamento'); }
+  const { os, m, emp, cli, tec, usaAssin, dual, hoje, logoHtml, cor, cor2 } = getDocDados();
+  
   const corpo = `
     <div class="doc-header">
       <div class="doc-header-logo">
@@ -14270,7 +15106,7 @@ function gerarOrcamentoPDF() {
         </table>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
-        <div class="doc-field"><div class="doc-field-label">Prazo de execução</div><div class="doc-field-value">${os.prazo_entrega ? new Date(os.prazo_entrega).toLocaleDateString('pt-BR') : 'A confirmar'}</div></div>
+        <div class="doc-field"><div class="doc-field-label">Prazo de execução</div><div class="doc-field-value">${os.prazo ? new Date(os.prazo).toLocaleDateString('pt-BR') : 'A confirmar'}</div></div>
         <div class="doc-field"><div class="doc-field-label">Garantia do serviço</div><div class="doc-field-value">${os.garantia_dias || 90} dias</div></div>
       </div>
       <div class="doc-termos" style="margin-bottom:${usaAssin?'16px':'0'}">
@@ -14306,9 +15142,9 @@ function gerarOrcamentoPDF() {
    ORDEM DE SERVIÇO COMPLETA PDF
    ══════════════════════════════════════════════════ */
 function gerarOrdemServicoPDF() {
-  const { os, m, emp, cli, tec, usaAssin, dual, hoje, logoHtml } = getDocDados();
-  const cor = m.paleta?.c1 || '#5B47E0';
-
+  if(_docFormato==='58'||_docFormato==='80'){ return gerarCupomOS('os'); }
+  const { os, m, emp, cli, tec, usaAssin, dual, hoje, logoHtml, cor, cor2 } = getDocDados();
+  
   const statusCor = { 'Aguardando':'#f59e0b','Em Análise':'#3b82f6','Em Reparo':'#8b5cf6','Pronto':'#10b981','Entregue':'#6b7280','Cancelada':'#ef4444' };
 
   const corpo = `
@@ -14349,8 +15185,8 @@ function gerarOrdemServicoPDF() {
         <div class="doc-sec">
           <div class="doc-sec-title">Informações</div>
           <div style="display:flex;flex-direction:column;gap:8px">
-            <div class="doc-field"><div class="doc-field-label">Data de entrada</div><div class="doc-field-value">${os.created_at?new Date(os.created_at).toLocaleDateString('pt-BR'):hoje}</div></div>
-            <div class="doc-field"><div class="doc-field-label">Prazo</div><div class="doc-field-value">${os.prazo_entrega?new Date(os.prazo_entrega).toLocaleDateString('pt-BR'):'—'}</div></div>
+            <div class="doc-field"><div class="doc-field-label">Data de entrada</div><div class="doc-field-value">${os.criado_em?new Date(os.criado_em).toLocaleDateString('pt-BR'):hoje}</div></div>
+            <div class="doc-field"><div class="doc-field-label">Prazo</div><div class="doc-field-value">${os.prazo?new Date(os.prazo).toLocaleDateString('pt-BR'):'—'}</div></div>
             <div class="doc-field"><div class="doc-field-label">Técnico</div><div class="doc-field-value">${tec.nome||os.tecnico_nome||'—'}</div></div>
           </div>
         </div>
@@ -14408,9 +15244,9 @@ function gerarOrdemServicoPDF() {
    Imprime em A4, 2 vias (empresa e cliente)
    ══════════════════════════════════════════════════════════════════ */
 function gerarComprovanteRecebimento() {
-  const { os, m, emp, cli, tec, usaAssin, dual, hoje, logoHtml } = getDocDados();
-  const cor = m.paleta?.c1 || '#5B47E0';
-
+  if(_docFormato==='58'||_docFormato==='80'){ return gerarCupomOS('recebimento'); }
+  const { os, m, emp, cli, tec, usaAssin, dual, hoje, logoHtml, cor, cor2 } = getDocDados();
+  
   // Bloco de uma via
   const via = (titulo) => `
     <div class="doc-page" style="page-break-after:always">
@@ -14501,7 +15337,7 @@ function gerarComprovanteRecebimento() {
         <div class="doc-sec">
           <div class="doc-grid doc-grid-3">
             <div class="doc-field"><div class="doc-field-label">Técnico responsável</div><div class="doc-field-value">${os.tecnico_nome || '—'}</div></div>
-            <div class="doc-field"><div class="doc-field-label">Prazo previsto</div><div class="doc-field-value">${os.prazo_entrega ? new Date(os.prazo_entrega).toLocaleDateString('pt-BR') : '—'}</div></div>
+            <div class="doc-field"><div class="doc-field-label">Prazo previsto</div><div class="doc-field-value">${os.prazo ? new Date(os.prazo).toLocaleDateString('pt-BR') : '—'}</div></div>
             <div class="doc-field"><div class="doc-field-label">Valor estimado</div><div class="doc-field-value">${os.total ? 'R$ '+Number(os.total).toFixed(2).replace('.',',') : 'A definir'}</div></div>
           </div>
         </div>
@@ -14538,7 +15374,7 @@ function gerarComprovanteRecebimento() {
     </div>`;
 
   const html = dual ? via('1ª Via — Empresa') + via('2ª Via — Cliente') : via('Via Única');
-  abrirPDFModal(`<!DOCTYPE html><html><head><meta charset="UTF-8">${getDocCSS(cor)}</head><body>${html}</body></html>`, 'Comprovante-'+os.numero);
+  abrirPDFModal(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${getCssDocA4(cor)}</style></head><body>${html}</body></html>`, 'Comprovante-'+os.numero);
 }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -14546,9 +15382,9 @@ function gerarComprovanteRecebimento() {
    Com serviço realizado, valor cobrado e garantia
    ══════════════════════════════════════════════════════════════════ */
 function gerarLaudoEntrega() {
-  const { os, m, emp, cli, tec, usaAssin, dual, hoje, logoHtml } = getDocDados();
-  const cor = m.paleta?.c1 || '#5B47E0';
-
+  if(_docFormato==='58'||_docFormato==='80'){ return gerarCupomOS('laudo'); }
+  const { os, m, emp, cli, tec, usaAssin, dual, hoje, logoHtml, cor, cor2 } = getDocDados();
+  
   const via = (titulo) => `
     <div class="doc-page" style="page-break-after:always">
       <div class="doc-header">
@@ -14682,7 +15518,7 @@ function gerarLaudoEntrega() {
     </div>`;
 
   const html = dual ? via('1ª Via — Empresa') + via('2ª Via — Cliente') : via('Via Única');
-  abrirPDFModal(`<!DOCTYPE html><html><head><meta charset="UTF-8">${getDocCSS(cor)}</head><body>${html}</body></html>`, 'Laudo-Entrega-'+os.numero);
+  abrirPDFModal(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${getCssDocA4(cor)}</style></head><body>${html}</body></html>`, 'Laudo-Entrega-'+os.numero);
 }
 
 </script>
