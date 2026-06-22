@@ -1137,6 +1137,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
           <button class="fin-tab" onclick="crmTab('inativos',this)"><i class="ti ti-user-off" style="font-size:13px"></i> Reativar</button>
           <button class="fin-tab" onclick="crmTab('posvenda',this)"><i class="ti ti-thumb-up" style="font-size:13px"></i> Pós-venda</button>
           <button class="fin-tab" onclick="crmTab('campanhas',this)"><i class="ti ti-speakerphone" style="font-size:13px"></i> Campanhas</button>
+          <button class="fin-tab" onclick="crmTab('modelos',this)"><i class="ti ti-message-2-bolt" style="font-size:13px"></i> Modelos WhatsApp</button>
         </div>
 
         <!-- FUNIL DE LEADS (kanban) -->
@@ -1164,6 +1165,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
               </select>
             </div>
             <div class="fg"><label class="lbl">Mensagem</label>
+              <select id="camp-modelo" onchange="campUsarModelo()" style="margin-bottom:6px"><option value="">— Usar um modelo salvo (opcional) —</option></select>
               <textarea id="camp-msg" rows="4" placeholder="Ex: Novidades chegando na loja! 📱 Vem conferir os lançamentos com condição especial.">Novidades chegando na loja! 📱 Passe para conferir nossos lançamentos e ofertas especiais. Use {nome} para personalizar.</textarea>
               <div style="font-size:11px;color:var(--txt3);margin-top:4px">Dica: use <b>{nome}</b> na mensagem para inserir o nome do cliente automaticamente.</div>
             </div>
@@ -1173,6 +1175,15 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
             </div>
           </div>
           <div id="camp-lista"></div>
+        </div>
+
+        <!-- MODELOS DE WHATSAPP -->
+        <div id="crm-modelos" style="display:none">
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+            <button class="btn btn-pri" onclick="abrirModeloWts()"><i class="ti ti-plus"></i> Novo modelo</button>
+            <div style="font-size:12px;color:var(--txt3)">Mensagens prontas para reutilizar. Use variáveis como <b>{nome}</b>, <b>{loja}</b>.</div>
+          </div>
+          <div id="wts-lista"></div>
         </div>
 
         <div id="crm-aniversario" style="display:none">
@@ -3043,6 +3054,58 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
     <div id="sel-troca-list" style="max-height:50vh;overflow-y:auto"></div>
     <div class="modal-foot">
       <button class="btn btn-out" onclick="closeModal('modal-sel-troca')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL MODELO WHATSAPP (criar/editar) -->
+<div class="modal-overlay" id="modal-modelo-wts">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-title"><i class="ti ti-message-2-bolt"></i><span id="wts-ttl">Novo modelo</span></div>
+    <input type="hidden" id="wts-id">
+    <div class="g2">
+      <div class="fg"><label class="lbl">Nome do modelo *</label><input type="text" id="wts-nome" placeholder="Ex: Aparelho pronto"></div>
+      <div class="fg"><label class="lbl">Categoria</label>
+        <select id="wts-categoria">
+          <option value="geral">Geral</option>
+          <option value="pos_venda">Pós-venda</option>
+          <option value="cobranca">Cobrança</option>
+          <option value="garantia">Garantia</option>
+          <option value="promo">Promoção</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg"><label class="lbl">Mensagem *</label>
+      <textarea id="wts-msg" rows="5" placeholder="Olá {nome}! Aqui é da {loja}..."></textarea>
+      <div style="font-size:11px;color:var(--txt3);margin-top:5px">Variáveis: <b>{nome}</b> (cliente), <b>{loja}</b> (sua loja). Toque para inserir:
+        <span style="display:inline-flex;gap:5px;margin-left:4px">
+          <button type="button" class="btn btn-out btn-xs" onclick="wtsInserirVar('{nome}')">{nome}</button>
+          <button type="button" class="btn btn-out btn-xs" onclick="wtsInserirVar('{loja}')">{loja}</button>
+        </span>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-danger" id="wts-del" style="display:none" onclick="excluirModeloWts()"><i class="ti ti-trash"></i> Excluir</button>
+      <button class="btn btn-out" onclick="closeModal('modal-modelo-wts')">Cancelar</button>
+      <button class="btn btn-pri" onclick="salvarModeloWts()"><i class="ti ti-check"></i> Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ENVIAR MODELO -->
+<div class="modal-overlay" id="modal-enviar-wts">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-title"><i class="ti ti-send"></i>Enviar modelo</div>
+    <input type="hidden" id="wts-env-id">
+    <div class="fg"><label class="lbl">Cliente</label>
+      <select id="wts-env-cliente" onchange="wtsPreview()"><option value="">— Escolher na hora (sem cliente) —</option></select>
+    </div>
+    <div class="fg"><label class="lbl">Prévia</label>
+      <div id="wts-env-preview" style="background:var(--bg3);border-radius:9px;padding:12px;font-size:13px;white-space:pre-wrap;min-height:60px"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-out" onclick="closeModal('modal-enviar-wts')">Fechar</button>
+      <button class="btn btn-success" onclick="wtsEnviar()"><i class="ti ti-brand-whatsapp"></i> Abrir no WhatsApp</button>
     </div>
   </div>
 </div>
@@ -6132,9 +6195,10 @@ function removerTrocaPDV(){
 function crmTab(tab,btn){
   document.querySelectorAll('#page-crm .fin-tab').forEach(b=>b.classList.remove('active'));
   if(btn)btn.classList.add('active');
-  ['funil','campanhas','aniversario','inativos','posvenda'].forEach(t=>{const el=document.getElementById('crm-'+t);if(el)el.style.display=t===tab?'':'none';});
+  ['funil','campanhas','modelos','aniversario','inativos','posvenda'].forEach(t=>{const el=document.getElementById('crm-'+t);if(el)el.style.display=t===tab?'':'none';});
   if(tab==='funil')renderFunil();
   else if(tab==='campanhas')renderCampanhaPreview();
+  else if(tab==='modelos')renderModelosWts();
   else if(tab==='aniversario')renderCrmAniversario();
   else if(tab==='inativos')renderCrmInativos();
   else if(tab==='posvenda')renderCrmPosVenda();
@@ -6326,6 +6390,12 @@ function _campPublico(tipo){
 }
 function renderCampanhaPreview(){
   if(!G_LEADS.length) carregarLeads();
+  // popula modelos no seletor de campanha (se ainda não populou)
+  const selM=document.getElementById('camp-modelo');
+  if(selM && selM.options.length<=1){
+    if(!G_WTS.length){ carregarModelosWts().then(()=>{ if(G_WTS.length) selM.innerHTML='<option value="">— Usar um modelo salvo (opcional) —</option>'+G_WTS.map(t=>`<option value="${t.id}">${esc(t.nome)}</option>`).join(''); }); }
+    else { selM.innerHTML='<option value="">— Usar um modelo salvo (opcional) —</option>'+G_WTS.map(t=>`<option value="${t.id}">${esc(t.nome)}</option>`).join(''); }
+  }
   const tipo=document.getElementById('camp-publico')?.value||'compraram';
   const pub=_campPublico(tipo).filter(p=>p.telefone);
   const cnt=document.getElementById('camp-count');
@@ -6339,6 +6409,11 @@ function renderCampanhaPreview(){
   }
 }
 let _campFila=[]; let _campIdx=0; let _campMsg='';
+function campUsarModelo(){
+  const id=document.getElementById('camp-modelo')?.value;
+  const t=G_WTS.find(x=>x.id===id);
+  if(t){ const ta=document.getElementById('camp-msg'); if(ta)ta.value=t.mensagem; }
+}
 function iniciarCampanha(){
   const tipo=document.getElementById('camp-publico').value;
   _campMsg=document.getElementById('camp-msg').value.trim();
@@ -6366,6 +6441,103 @@ function dispararProximoCamp(){
       <button class="btn btn-out" onclick="renderCampanhaPreview()" style="margin-left:8px">Encerrar</button>
     </div>`;
   }
+}
+
+/* ── MODELOS DE WHATSAPP ──────────────────────────────────────────────
+   Mensagens reutilizáveis com variáveis {nome} e {loja}. CRUD + envio
+   direto para um cliente. Também alimenta o seletor nas Campanhas. */
+let G_WTS=[];
+const WTS_CAT={geral:'Geral',pos_venda:'Pós-venda',cobranca:'Cobrança',garantia:'Garantia',promo:'Promoção'};
+
+async function carregarModelosWts(){
+  try{ const {data}=await db.from('whatsapp_templates').select('*').order('criado_em',{ascending:false}); G_WTS=data||[]; }catch(e){G_WTS=[];}
+}
+async function renderModelosWts(){
+  await carregarModelosWts();
+  const cont=document.getElementById('wts-lista');
+  if(!cont)return;
+  if(!G_WTS.length){ cont.innerHTML='<div class="card" style="text-align:center;padding:30px;color:var(--txt3)"><i class="ti ti-message-2-off" style="font-size:34px;opacity:.4"></i><p style="margin-top:8px">Nenhum modelo ainda. Crie o primeiro!</p></div>'; return; }
+  cont.innerHTML=G_WTS.map(t=>`<div class="card" style="margin-bottom:10px">
+    <div style="display:flex;justify-content:space-between;align-items:start;gap:10px">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:13.5px">${esc(t.nome)} <span class="tag tag-blu" style="font-size:10px;margin-left:4px">${WTS_CAT[t.categoria]||'Geral'}</span></div>
+        <div style="font-size:12.5px;color:var(--txt2);margin-top:5px;white-space:pre-wrap">${esc(t.mensagem)}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0">
+        <button class="btn btn-success btn-xs" onclick="abrirEnviarWts('${t.id}')"><i class="ti ti-send"></i> Enviar</button>
+        <button class="btn btn-out btn-xs" onclick="abrirModeloWts('${t.id}')"><i class="ti ti-edit"></i> Editar</button>
+      </div>
+    </div>
+  </div>`).join('');
+}
+
+function abrirModeloWts(id){
+  const t=id?G_WTS.find(x=>x.id===id):null;
+  document.getElementById('wts-id').value=t?t.id:'';
+  document.getElementById('wts-ttl').textContent=t?'Editar modelo':'Novo modelo';
+  document.getElementById('wts-nome').value=t?.nome||'';
+  document.getElementById('wts-categoria').value=t?.categoria||'geral';
+  document.getElementById('wts-msg').value=t?.mensagem||'';
+  document.getElementById('wts-del').style.display=t?'':'none';
+  openModal('modal-modelo-wts');
+}
+function wtsInserirVar(v){
+  const ta=document.getElementById('wts-msg'); if(!ta)return;
+  const s=ta.selectionStart||ta.value.length, e=ta.selectionEnd||ta.value.length;
+  ta.value=ta.value.slice(0,s)+v+ta.value.slice(e);
+  ta.focus(); ta.selectionStart=ta.selectionEnd=s+v.length;
+}
+async function salvarModeloWts(){
+  const nome=document.getElementById('wts-nome').value.trim();
+  const mensagem=document.getElementById('wts-msg').value.trim();
+  if(!nome||!mensagem){notify('Preencha nome e mensagem.','warn');return;}
+  const editId=document.getElementById('wts-id').value;
+  const payload={empresa_id:EID(),nome,categoria:document.getElementById('wts-categoria').value,mensagem};
+  setLoad(true);
+  let err;
+  if(editId){ ({error:err}=await db.from('whatsapp_templates').update(payload).eq('id',editId)); }
+  else { ({error:err}=await db.from('whatsapp_templates').insert(payload)); }
+  setLoad(false);
+  if(err){notify('Erro: '+err.message,'error');return;}
+  closeModal('modal-modelo-wts'); renderModelosWts(); notify('Modelo salvo!','success');
+}
+async function excluirModeloWts(){
+  const id=document.getElementById('wts-id').value; if(!id)return;
+  confirmAct('Excluir modelo','Tem certeza que deseja excluir este modelo?',async()=>{
+    const {error}=await db.from('whatsapp_templates').delete().eq('id',id);
+    if(error){notify('Erro: '+error.message,'error');return;}
+    closeModal('modal-modelo-wts'); renderModelosWts(); notify('Modelo excluído.','info');
+  });
+}
+
+// Substitui variáveis na mensagem
+function _wtsAplicar(msg,cli){
+  const emp=getEmpDados();
+  const nome=cli?(cli.nome||'').split(' ')[0]:'';
+  return (msg||'').replace(/{nome}/g,nome).replace(/{loja}/g,emp.nome||'nossa loja');
+}
+function abrirEnviarWts(id){
+  const t=G_WTS.find(x=>x.id===id); if(!t)return;
+  document.getElementById('wts-env-id').value=id;
+  const sel=document.getElementById('wts-env-cliente');
+  sel.innerHTML='<option value="">— Escolher na hora (sem cliente) —</option>'+(G.clientes||[]).filter(c=>c.telefone).map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+  sel.value='';
+  wtsPreview();
+  openModal('modal-enviar-wts');
+}
+function wtsPreview(){
+  const t=G_WTS.find(x=>x.id===document.getElementById('wts-env-id').value); if(!t)return;
+  const cli=(G.clientes||[]).find(c=>c.id===document.getElementById('wts-env-cliente').value);
+  document.getElementById('wts-env-preview').textContent=_wtsAplicar(t.mensagem,cli);
+}
+function wtsEnviar(){
+  const t=G_WTS.find(x=>x.id===document.getElementById('wts-env-id').value); if(!t)return;
+  const cli=(G.clientes||[]).find(c=>c.id===document.getElementById('wts-env-cliente').value);
+  const msg=_wtsAplicar(t.mensagem,cli);
+  const tel=(cli?.telefone||'').replace(/\D/g,'');
+  const num=tel?(tel.length<=11?'55'+tel:tel):'';
+  window.open(num?`https://wa.me/${num}?text=${encodeURIComponent(msg)}`:`https://wa.me/?text=${encodeURIComponent(msg)}`,'_blank');
+  closeModal('modal-enviar-wts');
 }
 
 // ── ANIVERSARIANTES ──
