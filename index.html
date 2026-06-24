@@ -2275,7 +2275,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
                   </button>
                 </div><div class="fg"><label class="lbl">Est. Mínimo</label><input type="number" id="p-estmin" value="3" min="0"></div></div>
       </div>
-      <div class="fg"><label class="lbl">Status</label><select id="p-status"><option value="ativo">Ativo</option><option value="inativo">Inativo</option></select></div>
+      <div class="fg"><label class="lbl">Status</label><select id="p-status"><option value="ativo">Ativo (à venda)</option><option value="novo">Novo</option><option value="seminovo">Seminovo</option><option value="usado">Usado</option><option value="recondicionado">Recondicionado</option><option value="troca">Troca</option><option value="vitrine">Vitrine</option><option value="defeito">Defeito</option><option value="manutencao">Em manutenção</option><option value="fora_linha">Fora de linha</option><option value="inativo">Inativo</option></select></div>
       <div class="ms">Fotos</div>
       <div class="img-up" onclick="document.getElementById('p-fotos-inp').click()">
         <i class="ti ti-camera-plus" style="font-size:24px;color:var(--txt3);margin-bottom:4px;display:block"></i>
@@ -2283,6 +2283,44 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
         <input type="file" id="p-fotos-inp" accept="image/*" multiple style="display:none" onchange="handleFotos(event)">
       </div>
       <div class="img-thumbs" id="p-thumbs"></div>
+
+      <!-- Dados fiscais (preparação — emissão fiscal é módulo à parte) -->
+      <div class="ms" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="var f=document.getElementById('p-fiscal-box');f.style.display=f.style.display==='none'?'':'none'">
+        <span>Dados fiscais (opcional)</span><i class="ti ti-chevron-down" style="font-size:14px;color:var(--txt3)"></i>
+      </div>
+      <div id="p-fiscal-box" style="display:none">
+        <div style="font-size:11px;color:var(--txt3);margin-bottom:8px">Preencha se for usar emissão fiscal no futuro. Não emite nota — apenas guarda os dados.</div>
+        <div class="g2">
+          <div class="fg"><label class="lbl">NCM</label><input type="text" id="p-ncm" placeholder="0000.00.00" maxlength="10"></div>
+          <div class="fg"><label class="lbl">CEST</label><input type="text" id="p-cest" placeholder="00.000.00" maxlength="9"></div>
+        </div>
+        <div class="g2">
+          <div class="fg"><label class="lbl">CFOP</label><input type="text" id="p-cfop" placeholder="5102" maxlength="4"></div>
+          <div class="fg"><label class="lbl">CST / CSOSN</label><input type="text" id="p-cst" placeholder="102" maxlength="4"></div>
+        </div>
+        <div class="g2">
+          <div class="fg"><label class="lbl">Origem</label>
+            <select id="p-origem">
+              <option value="">—</option>
+              <option value="0">0 - Nacional</option>
+              <option value="1">1 - Importação direta</option>
+              <option value="2">2 - Adquirida no mercado interno (importada)</option>
+              <option value="3">3 - Nacional c/ +40% importação</option>
+            </select>
+          </div>
+          <div class="fg"><label class="lbl">Unidade</label>
+            <select id="p-unidade">
+              <option value="UN">UN - Unidade</option>
+              <option value="PC">PC - Peça</option>
+              <option value="CX">CX - Caixa</option>
+              <option value="KG">KG - Quilograma</option>
+              <option value="MT">MT - Metro</option>
+              <option value="SV">SV - Serviço</option>
+            </select>
+          </div>
+        </div>
+        <div class="fg"><label class="lbl">GTIN / EAN</label><input type="text" id="p-gtin" placeholder="Código global do produto (igual ao cód. de barras, se houver)"></div>
+      </div>
     </div>
   </div>
   <div class="modal-footer">
@@ -4345,7 +4383,9 @@ function fotoFull(s){document.getElementById('foto-full-img').src=s;document.get
 
 /* ── PRODUTOS ────────────────────────────────────────── */
 function clearProdForm(){
-  ['p-id','p-nome','p-sku','p-bc','p-marca','p-custo','p-preco','p-subcat'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
+  ['p-id','p-nome','p-sku','p-bc','p-marca','p-custo','p-preco','p-subcat','p-ncm','p-cest','p-cfop','p-cst','p-gtin'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
+  const po=document.getElementById('p-origem');if(po)po.value='';
+  const pu=document.getElementById('p-unidade');if(pu)pu.value='UN';
   const pf=document.getElementById('p-forn');if(pf)pf.value='';
   document.getElementById('p-est').value='1';document.getElementById('p-estmin').value='3';
   document.getElementById('p-cat').value='Celular';document.getElementById('p-status').value='ativo';
@@ -4361,6 +4401,17 @@ async function saveProd(){
   const id=document.getElementById('p-id').value;
   const custo=parseFloat(document.getElementById('p-custo').value)||0;
   const payload={nome,sku:document.getElementById('p-sku').value||'SKU-'+Date.now(),barcode:document.getElementById('p-bc').value,categoria:document.getElementById('p-cat').value,subcategoria:document.getElementById('p-subcat').value||null,fornecedor_id:document.getElementById('p-forn').value||null,marca:document.getElementById('p-marca').value,custo,preco,estoque_infinito:inf,estoque:inf?null:parseInt(document.getElementById('p-est').value)||0,estoque_minimo:inf?0:parseInt(document.getElementById('p-estmin').value)||0,status:document.getElementById('p-status').value,fotos:G.prodFotos};
+  // Dados fiscais (opcionais) — só se preenchidos
+  const fiscal={
+    ncm:document.getElementById('p-ncm')?.value||null,
+    cest:document.getElementById('p-cest')?.value||null,
+    cfop:document.getElementById('p-cfop')?.value||null,
+    cst:document.getElementById('p-cst')?.value||null,
+    origem_fiscal:document.getElementById('p-origem')?.value||null,
+    unidade:document.getElementById('p-unidade')?.value||null,
+    gtin:document.getElementById('p-gtin')?.value||null
+  };
+  Object.assign(payload,fiscal);
   setLoad(true);
   let err,data;
   // Detecta mudança de preço/custo ANTES de salvar (para registrar histórico)
@@ -4373,6 +4424,14 @@ async function saveProd(){
   }
   if(id){({error:err,data}=await db.from('produtos').update(payload).eq('id',id).select().single());}
   else{({error:err,data}=await db.from('produtos').insert({...payload,empresa_id:EID()}).select().single());}
+  // Inserção defensiva: se as colunas fiscais ainda não existem (migração T01 não rodada),
+  // refaz sem elas para não bloquear o cadastro do produto.
+  if(err && /ncm|cest|cfop|cst|origem_fiscal|unidade|gtin|column|schema/i.test(err.message||'')){
+    Object.keys(fiscal).forEach(k=>delete payload[k]);
+    if(id){({error:err,data}=await db.from('produtos').update(payload).eq('id',id).select().single());}
+    else{({error:err,data}=await db.from('produtos').insert({...payload,empresa_id:EID()}).select().single());}
+    if(!err) notify('Produto salvo. (Rode a migração T01 para guardar os dados fiscais.)','warn',6000);
+  }
   setLoad(false);
   if(err){notify('Erro: '+err.message,'error');return;}
   if(id){const i=G.produtos.findIndex(x=>x.id===id);if(i>=0)G.produtos[i]={...G.produtos[i],...payload};}
@@ -4401,6 +4460,10 @@ function editProd(id){
   document.getElementById('p-inf').checked=!!p.estoque_infinito;toggleInf();
   if(!p.estoque_infinito){document.getElementById('p-est').value=p.estoque;document.getElementById('p-estmin').value=p.estoque_minimo||3;}
   document.getElementById('p-status').value=p.status||'ativo';
+  // dados fiscais
+  const sv=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v||'';};
+  sv('p-ncm',p.ncm);sv('p-cest',p.cest);sv('p-cfop',p.cfop);sv('p-cst',p.cst);
+  sv('p-origem',p.origem_fiscal);sv('p-unidade',p.unidade||'UN');sv('p-gtin',p.gtin);
   G.prodFotos=Array.isArray(p.fotos)?[...p.fotos]:[];renderThumbs();
   document.getElementById('prod-ttl').textContent='Editar Produto';
   openModal('modal-prod');
