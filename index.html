@@ -92,6 +92,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);min-
   height:0;padding:0;margin:0;
 }
 .sidebar:hover .nav-sec{opacity:1;height:auto;padding:10px 10px 4px}
+/* Grupos recolhíveis */
+.nav-sec.nav-sec-toggle{cursor:pointer;display:flex;align-items:center;justify-content:space-between}
+.sidebar:hover .nav-sec-toggle{padding-right:10px}
+.nav-sec-chev{font-size:13px;opacity:.55;transition:transform .2s;flex-shrink:0}
+.nav-sec.collapsed .nav-sec-chev{transform:rotate(-90deg)}
+.nav-group-items{overflow:hidden;max-height:1400px;transition:max-height .26s ease}
+.nav-sec.collapsed + .nav-group-items{max-height:0}
 .ni{
   display:flex;align-items:center;gap:9px;
   padding:9px 10px;border-radius:9px;cursor:pointer;
@@ -572,6 +579,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
       <div class="ni" onclick="go('produtos')" data-p="admin,gerente"><i class="ti ti-device-mobile"></i><span class="ni-label">Produtos</span><span class="ni-tip">Produtos</span></div>
       <div class="ni" onclick="go('estoque')" data-p="admin,gerente"><i class="ti ti-package"></i><span class="ni-label">Movimentações</span><span class="ni-tip">Movimentações</span></div>
       <div class="ni" onclick="go('fornecedores')" data-p="admin,gerente"><i class="ti ti-truck"></i><span class="ni-label">Fornecedores</span><span class="ni-tip">Fornecedores</span></div>
+      <div class="ni" onclick="go('reposicao')" data-p="admin,gerente"><i class="ti ti-shopping-cart-plus"></i><span class="ni-label">Reposição</span><span class="ni-tip">Central de Reposição</span></div>
       <div class="nav-sec">Financeiro</div>
       <div class="ni" onclick="go('financeiro')" data-p="admin,gerente"><i class="ti ti-wallet"></i><span class="ni-label">Contas & Fluxo</span><span class="ni-tip">Financeiro</span></div>
       <div class="nav-sec">Cadastros</div>
@@ -1401,6 +1409,31 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
           <thead><tr><th>Razão Social</th><th>CNPJ</th><th>Telefone</th><th>Cidade</th><th>Status</th><th>Ações</th></tr></thead>
           <tbody id="forn-table"></tbody>
         </table></div></div>
+      </div>
+
+      <!-- CENTRAL DE REPOSIÇÃO -->
+      <div class="page" id="page-reposicao">
+        <div class="sg" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px">
+          <div class="sc"><div class="sc-icon" style="background:#FEF2F2"><i class="ti ti-circle-x" style="color:var(--danger)"></i></div><div class="sc-val" id="rep-zerado">0</div><div class="sc-lbl">Zerados</div></div>
+          <div class="sc"><div class="sc-icon" style="background:#FFF7ED"><i class="ti ti-alert-triangle" style="color:#e8590c"></i></div><div class="sc-val" id="rep-critico">0</div><div class="sc-lbl">Crítico</div></div>
+          <div class="sc"><div class="sc-icon" style="background:#FFFBEB"><i class="ti ti-trending-down" style="color:var(--warn)"></i></div><div class="sc-val" id="rep-baixo">0</div><div class="sc-lbl">Baixo</div></div>
+          <div class="sc"><div class="sc-icon" style="background:#ECFDF5"><i class="ti ti-checks" style="color:var(--success)"></i></div><div class="sc-val" id="rep-ok">0</div><div class="sc-lbl">Normal</div></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+          <div class="ig" style="flex:1;min-width:180px"><i class="ti ti-search"></i><input type="text" id="rep-busca" placeholder="Buscar produto..." oninput="renderReposicao()"></div>
+          <select id="rep-filtro" onchange="renderReposicao()" style="padding:7px 10px;font-size:12.5px;border-radius:8px;width:auto">
+            <option value="repor">Precisam de reposição</option>
+            <option value="zerado">Só zerados</option>
+            <option value="critico">Zerado + crítico</option>
+            <option value="todos">Todos os produtos</option>
+          </select>
+          <button class="btn btn-out" onclick="exportarReposicao()"><i class="ti ti-file-text"></i> Lista de compra</button>
+        </div>
+        <div class="card" style="padding:0"><div class="tw"><table>
+          <thead><tr><th>Produto</th><th>Status</th><th style="text-align:center">Atual</th><th style="text-align:center">Mínimo</th><th style="text-align:center">Ideal</th><th style="text-align:center">Comprar</th><th>Fornecedor</th></tr></thead>
+          <tbody id="reposicao-table"></tbody>
+        </table></div></div>
+        <div style="font-size:11.5px;color:var(--txt3);margin-top:10px"><i class="ti ti-info-circle"></i> A quantidade <b>Ideal</b> é estimada como o dobro do estoque mínimo. A <b>sugestão de compra</b> é o que falta para chegar ao ideal. Defina o estoque mínimo de cada produto no cadastro de Produtos.</div>
       </div>
 
       <!-- FINANCEIRO -->
@@ -2956,6 +2989,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
         <button class="wpp-tpl-btn" onclick="usarTemplateWpp('pronta')">✅ OS Pronta</button>
         <button class="wpp-tpl-btn" onclick="usarTemplateWpp('peca')">⏳ Aguard. Peça</button>
         <button class="wpp-tpl-btn" onclick="usarTemplateWpp('status')">📊 Status atual</button>
+        <button class="wpp-tpl-btn" onclick="abrirModelosSalvosOS()" style="background:var(--pri);color:#fff">⭐ Modelos salvos</button>
       </div>
 
       <!-- Área do chat -->
@@ -2981,6 +3015,16 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
 
 
 
+
+<!-- MODAL: Modelos salvos para inserir na OS -->
+<div class="modal-overlay" id="modal-modelos-os">
+  <div class="modal sm">
+    <div class="modal-title"><i class="ti ti-star" style="color:var(--pri)"></i> Modelos salvos</div>
+    <div style="font-size:12.5px;color:var(--txt2);margin-bottom:12px">Escolha um modelo para inserir na mensagem. As variáveis {nome} e {loja} são preenchidas automaticamente.</div>
+    <div id="modelos-os-list" style="max-height:50vh;overflow:auto"></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:10px"><button class="btn btn-out" onclick="closeModal('modal-modelos-os')">Fechar</button></div>
+  </div>
+</div>
 
 <!-- MODAL PLANOS -->
 <div class="modal-overlay" id="modal-planos">
@@ -3692,7 +3736,7 @@ const PAGINAS_CONFIG = {
   dashboard:'Dashboard', pdv:'PDV (Venda)', caixas:'Caixas', crediario:'Crediário',
   orcamentos:'Orçamentos', 'os-hist':'Histórico de OS', devolucoes:'Devoluções',
   os:'Ordens de Serviço', agenda:'Agenda', comissoes:'Comissões', produtos:'Produtos',
-  estoque:'Estoque', fornecedores:'Fornecedores', financeiro:'Financeiro',
+  estoque:'Estoque', fornecedores:'Fornecedores', reposicao:'Central de Reposição', financeiro:'Financeiro',
   clientes:'Clientes', relatorios:'Relatórios', inteligencia:'Inteligência (IA)',
   garantias:'Garantias', troca:'Troca de Aparelhos', crm:'Relacionamento (CRM)', diagnostico:'Diagnóstico (Panic)', catalogo:'Catálogo Online', simulador:'Simulador de Cartão'
 };
@@ -3728,7 +3772,7 @@ function canAccess(role,page){
 }
 
 function _canAccessLegado(role,page){
-  const P={dashboard:['admin','gerente'],pdv:['admin','gerente','operador'],caixas:['admin','gerente'],crediario:['admin','gerente','operador'],orcamentos:['admin','gerente','operador'],'os-hist':['admin','gerente','tecnico'],devolucoes:['admin','gerente'],os:['admin','gerente','tecnico'],agenda:['admin','gerente','tecnico','operador'],comissoes:['admin','gerente'],produtos:['admin','gerente'],estoque:['admin','gerente'],fornecedores:['admin','gerente'],financeiro:['admin','gerente'],clientes:['admin','gerente','operador','tecnico'],relatorios:['admin','gerente'],inteligencia:['admin','gerente'],usuarios:['admin'],aparencia:['admin']};
+  const P={dashboard:['admin','gerente'],pdv:['admin','gerente','operador'],caixas:['admin','gerente'],crediario:['admin','gerente','operador'],orcamentos:['admin','gerente','operador'],'os-hist':['admin','gerente','tecnico'],devolucoes:['admin','gerente'],os:['admin','gerente','tecnico'],agenda:['admin','gerente','tecnico','operador'],comissoes:['admin','gerente'],produtos:['admin','gerente'],estoque:['admin','gerente'],fornecedores:['admin','gerente'],reposicao:['admin','gerente'],financeiro:['admin','gerente'],clientes:['admin','gerente','operador','tecnico'],relatorios:['admin','gerente'],inteligencia:['admin','gerente'],usuarios:['admin'],aparencia:['admin']};
   return (P[page]||[]).includes(role);
 }
 
@@ -3782,6 +3826,7 @@ function restaurarPermissoesPadrao(){
 }
 
 function applyRoleUI(){
+  initSidebarGroups();
   document.querySelectorAll('.ni[data-p]').forEach(el=>{el.style.display=el.dataset.p.split(',').includes(G.role)?'':'none';});
   document.querySelectorAll('.nav-adm-sec,.nav-adm').forEach(el=>{el.style.display=G.role==='admin'?'':'none';});
   // Esconde também itens cujo acesso a config de permissões não permite ao role atual.
@@ -3797,6 +3842,42 @@ function applyRoleUI(){
   document.getElementById('urole').textContent=RL[G.role]||G.role;
   document.getElementById('uav').textContent=(G.profile?.nome||'?').slice(0,2).toUpperCase();
   document.getElementById('tb-date').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
+  updateNavGroupVisibility();
+}
+
+/* ── SIDEBAR AGRUPADA / RECOLHÍVEL (item 9) ───────────────────────────
+   Aditivo: agrupa os .ni sob cada cabeçalho .nav-sec num container
+   recolhível e torna o cabeçalho clicável. Preserva data-p, onclick e
+   o comportamento de hover. Estado salvo em localStorage. */
+function initSidebarGroups(){
+  const nav=document.getElementById('nav'); if(!nav||nav.dataset.grouped)return;
+  let collapsed={}; try{collapsed=JSON.parse(localStorage.getItem('navGroups')||'{}');}catch(e){}
+  const secs=[...nav.querySelectorAll('.nav-sec')];
+  secs.forEach(sec=>{
+    const label=sec.textContent.replace(/\s+/g,' ').trim();
+    const wrap=document.createElement('div'); wrap.className='nav-group-items';
+    let n=sec.nextElementSibling;
+    while(n && !n.classList.contains('nav-sec')){ const next=n.nextElementSibling; wrap.appendChild(n); n=next; }
+    sec.after(wrap);
+    sec.insertAdjacentHTML('beforeend','<i class="ti ti-chevron-down nav-sec-chev"></i>');
+    sec.classList.add('nav-sec-toggle');
+    if(collapsed[label]) sec.classList.add('collapsed');
+    sec.addEventListener('click',(e)=>{ e.stopPropagation(); sec.classList.toggle('collapsed'); saveNavGroups(); });
+  });
+  nav.dataset.grouped='1';
+}
+function saveNavGroups(){
+  const o={}; document.querySelectorAll('#nav .nav-sec').forEach(s=>{ o[s.textContent.replace(/\s+/g,' ').trim()]=s.classList.contains('collapsed')?1:0; });
+  try{localStorage.setItem('navGroups',JSON.stringify(o));}catch(e){}
+}
+function updateNavGroupVisibility(){
+  document.querySelectorAll('#nav .nav-group-items').forEach(wrap=>{
+    const items=[...wrap.querySelectorAll('.ni')];
+    const visible=items.some(it=>it.style.display!=='none');
+    const header=wrap.previousElementSibling;
+    if(header&&header.classList.contains('nav-sec')) header.style.display=visible?'':'none';
+    wrap.style.display=visible?'':'none';
+  });
 }
 
 
@@ -4058,7 +4139,7 @@ function iniciarVerificacaoBloqueio(){
 }
 
 /* ── NAVEGAÇÃO ───────────────────────────────────────── */
-const PT={dashboard:'Dashboard',pdv:'PDV / Caixa',orcamentos:'Orçamentos',devolucoes:'Devoluções',os:'Ordens de Serviço','os-hist':'Histórico OS',agenda:'Agenda de Entregas',comissoes:'Comissão por Técnico',produtos:'Produtos',estoque:'Movimentações de Estoque',fornecedores:'Fornecedores',financeiro:'Financeiro',clientes:'Clientes',relatorios:'Relatórios',usuarios:'Usuários & Acesso',aparencia:'Aparência & Marca',inteligencia:'Inteligência Operacional',caixas:'Gestão de Caixas',crediario:'Crediário'};
+const PT={dashboard:'Dashboard',pdv:'PDV / Caixa',orcamentos:'Orçamentos',devolucoes:'Devoluções',os:'Ordens de Serviço','os-hist':'Histórico OS',agenda:'Agenda de Entregas',comissoes:'Comissão por Técnico',produtos:'Produtos',estoque:'Movimentações de Estoque',fornecedores:'Fornecedores',financeiro:'Financeiro',reposicao:'Central de Reposição',clientes:'Clientes',relatorios:'Relatórios',usuarios:'Usuários & Acesso',aparencia:'Aparência & Marca',inteligencia:'Inteligência Operacional',caixas:'Gestão de Caixas',crediario:'Crediário'};
 
 function go(page){
   if(!canAccess(G.role,page)){notify('Acesso não permitido.','error');return;}
@@ -4090,9 +4171,9 @@ function go(page){
     'os-hist':()=>{popOSFiltros();renderOSHist();},
     agenda:renderAgenda,
     comissoes:renderComissoes,
-    produtos:renderProdTable,
-    estoque:()=>{popMovFiltros();renderMov();},
+    produtos:renderProdTable,    estoque:()=>{popMovFiltros();renderMov();},
     fornecedores:renderFornecedores,
+    reposicao:renderReposicao,
     financeiro:()=>{renderFinanceiro();popLancCli();},
     clientes:renderClientes,
     relatorios:renderRelatorios,
@@ -4928,6 +5009,68 @@ function renderFornecedores(q=''){
     <td><button class="btn btn-out btn-xs" onclick="editForn('${f.id}')"><i class="ti ti-edit"></i></button></td>
   </tr>`).join('');
 }
+
+/* ── CENTRAL DE REPOSIÇÃO (item 3.3) — derivada de G.produtos ────────── */
+function _repoClassificar(p){
+  const atual=Number(p.estoque)||0;
+  const min=Number(p.estoque_minimo)||0;
+  if(atual<=0) return {key:'zerado',label:'Zerado',tag:'tag-red'};
+  if(min>0 && atual<=Math.ceil(min*0.5)) return {key:'critico',label:'Crítico',tag:'tag-amb'};
+  if(min>0 && atual<=min) return {key:'baixo',label:'Baixo',tag:'tag-amb'};
+  return {key:'ok',label:'Normal',tag:'tag-grn'};
+}
+function _repoIdeal(p){ const min=Number(p.estoque_minimo)||0; return min>0?min*2:Math.max(1,(Number(p.estoque)||0)); }
+function _repoComprar(p){ const ideal=_repoIdeal(p); const atual=Number(p.estoque)||0; return Math.max(0, ideal-atual); }
+function _fornNome(id){ const f=(G.fornecedores||[]).find(x=>x.id===id); return f?(f.nome_fantasia||f.razao_social):''; }
+
+function renderReposicao(){
+  const prods=G.produtos||[];
+  // contadores
+  let z=0,c=0,b=0,ok=0;
+  prods.forEach(p=>{const k=_repoClassificar(p).key; if(k==='zerado')z++;else if(k==='critico')c++;else if(k==='baixo')b++;else ok++;});
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  set('rep-zerado',z);set('rep-critico',c);set('rep-baixo',b);set('rep-ok',ok);
+
+  const filtro=document.getElementById('rep-filtro')?.value||'repor';
+  const busca=(document.getElementById('rep-busca')?.value||'').toLowerCase();
+  let list=prods.map(p=>({p,cls:_repoClassificar(p)}));
+  if(filtro==='repor') list=list.filter(x=>x.cls.key!=='ok');
+  else if(filtro==='zerado') list=list.filter(x=>x.cls.key==='zerado');
+  else if(filtro==='critico') list=list.filter(x=>x.cls.key==='zerado'||x.cls.key==='critico');
+  if(busca) list=list.filter(x=>(x.p.nome||'').toLowerCase().includes(busca));
+  // ordena por gravidade (zerado>critico>baixo>ok) e depois por sugestão de compra
+  const ordem={zerado:0,critico:1,baixo:2,ok:3};
+  list.sort((a,b2)=>ordem[a.cls.key]-ordem[b2.cls.key] || _repoComprar(b2.p)-_repoComprar(a.p));
+
+  const tb=document.getElementById('reposicao-table');
+  if(!tb)return;
+  if(!list.length){ tb.innerHTML='<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--txt3)">Nenhum produto neste filtro. 🎉</td></tr>'; return; }
+  tb.innerHTML=list.map(({p,cls})=>{
+    const comprar=_repoComprar(p);
+    return `<tr>
+      <td style="font-weight:600">${esc(p.nome||'—')}<div style="font-size:11px;color:var(--txt3)">${esc(p.categoria||'')}</div></td>
+      <td><span class="tag ${cls.tag}">${cls.label}</span></td>
+      <td style="text-align:center;font-weight:700">${Number(p.estoque)||0}</td>
+      <td style="text-align:center;color:var(--txt2)">${Number(p.estoque_minimo)||0}</td>
+      <td style="text-align:center;color:var(--txt2)">${_repoIdeal(p)}</td>
+      <td style="text-align:center">${comprar>0?`<b style="color:var(--pri)">${comprar}</b>`:'—'}</td>
+      <td style="color:var(--txt2);font-size:12px">${esc(_fornNome(p.fornecedor_id)||'—')}</td>
+    </tr>`;
+  }).join('');
+}
+
+function exportarReposicao(){
+  const prods=(G.produtos||[]).map(p=>({p,cls:_repoClassificar(p)})).filter(x=>x.cls.key!=='ok');
+  if(!prods.length){ notify('Nenhum produto precisa de reposição agora.','info'); return; }
+  const ordem={zerado:0,critico:1,baixo:2};
+  prods.sort((a,b)=>ordem[a.cls.key]-ordem[b.cls.key]);
+  let txt='LISTA DE COMPRA / REPOSIÇÃO\n'+new Date().toLocaleString('pt-BR')+'\n'+'='.repeat(40)+'\n\n';
+  prods.forEach(({p,cls})=>{ txt+=`[${cls.label}] ${p.nome}\n   Atual: ${Number(p.estoque)||0}  |  Mínimo: ${Number(p.estoque_minimo)||0}  |  Comprar: ${_repoComprar(p)}\n\n`; });
+  const blob=new Blob([txt],{type:'text/plain;charset=utf-8'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='lista-compra.txt'; a.click();
+  notify('Lista de compra gerada.','success');
+}
+
 
 function editForn(id){
   const f=G.fornecedores.find(x=>x.id===id);if(!f)return;
@@ -14068,6 +14211,27 @@ async function usarTemplateWpp(tipo) {
     input.style.height = Math.min(input.scrollHeight, 80) + 'px';
     input.focus();
   }
+}
+
+/* Modelos de WhatsApp salvos (whatsapp_templates) acessíveis dentro da OS.
+   Aplica {nome} (cliente da OS) e {loja}, e insere no campo de mensagem. */
+async function abrirModelosSalvosOS(){
+  if(!G_WTS.length) await carregarModelosWts();
+  if(!G_WTS.length){ notify('Você ainda não criou modelos. Crie em CRM → Modelos WhatsApp.','info',5000); return; }
+  const os=_wppOsAtual;
+  const cli=(G.clientes||[]).find(c=>c.id===os?.cliente_id || c.nome===os?.cliente_nome);
+  const opts=G_WTS.map(t=>`<button class="btn btn-out" style="text-align:left;justify-content:flex-start;width:100%;margin-bottom:6px" onclick='_inserirModeloOS(${JSON.stringify(t.id)})'><b>${esc(t.nome)}</b> <span style="color:var(--txt3);font-size:11px;margin-left:6px">${esc(t.categoria||'')}</span></button>`).join('');
+  const box=document.getElementById('modelos-os-list');
+  if(box){ box.innerHTML=opts; openModal('modal-modelos-os'); }
+}
+function _inserirModeloOS(id){
+  const t=G_WTS.find(x=>x.id===id); if(!t)return;
+  const os=_wppOsAtual;
+  const cli=(G.clientes||[]).find(c=>c.id===os?.cliente_id || c.nome===os?.cliente_nome);
+  const texto=_wtsAplicar(t.mensagem, cli);
+  const input=document.getElementById('wpp-input-msg');
+  if(input){ input.value=texto; input.style.height='auto'; input.style.height=Math.min(input.scrollHeight,80)+'px'; input.focus(); }
+  closeModal('modal-modelos-os');
 }
 
 function abrirTemplatesWpp() {
