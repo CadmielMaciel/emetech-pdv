@@ -656,6 +656,7 @@ select option { background: var(--bg2); }
       <div class="sb-sec">Gestão</div>
       <div class="sb-item active" onclick="go('dashboard')"><i class="ti ti-layout-dashboard"></i> Dashboard</div>
       <div class="sb-item" onclick="go('empresas')"><i class="ti ti-building-store"></i> Empresas</div>
+      <div class="sb-item" onclick="go('saude')"><i class="ti ti-heart-rate-monitor"></i> Saúde dos Clientes</div>
       <div class="sb-item" onclick="go('cobrancas')"><i class="ti ti-receipt"></i> Cobranças</div>
       <div class="sb-item" onclick="go('planos')"><i class="ti ti-credit-card"></i> Planos</div>
       <div class="sb-sec">Operações</div>
@@ -801,6 +802,21 @@ select option { background: var(--bg2); }
         <div id="empresas-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px">
           <div style="color:var(--txt3);font-size:13px;padding:20px">Carregando...</div>
         </div>
+      </div>
+
+      <!-- ══ PAGE: SAÚDE DOS CLIENTES (Health Score) ══ -->
+      <div class="page" id="page-saude">
+        <div class="kpi-grid" id="saude-cards" style="margin-bottom:16px"></div>
+        <div class="sec-hdr"><div class="sec-title">Empresas por nível de saúde</div>
+          <select id="saude-filtro" onchange="renderSaude()" style="padding:7px 10px;font-size:12.5px;border-radius:8px;width:auto">
+            <option value="">Todas</option>
+            <option value="risco">Só risco de cancelamento</option>
+            <option value="atencao">Só atenção</option>
+            <option value="saudavel">Só saudáveis</option>
+          </select>
+        </div>
+        <div style="font-size:12px;color:var(--txt3);margin-bottom:10px">O Health Score é estimado a partir do status, plano e situação de pagamento de cada empresa. (Sinais como último acesso e frequência de uso podem ser somados quando esses dados estiverem disponíveis.)</div>
+        <div id="saude-lista"></div>
       </div>
 
       <!-- ══ PAGE: COBRANÇAS (NOVO) ══ -->
@@ -2110,6 +2126,7 @@ async function refreshDados() {
 const PAGE_TITLES = {
   dashboard: { title:'Dashboard',    icon:'ti-layout-dashboard' },
   empresas:  { title:'Empresas',     icon:'ti-building-store'   },
+  saude:     { title:'Saúde dos Clientes', icon:'ti-heart-rate-monitor' },
   cobrancas: { title:'Cobranças',    icon:'ti-receipt'          },
   planos:    { title:'Planos',       icon:'ti-credit-card'      },
   whatsapp:  { title:'WhatsApp',     icon:'ti-brand-whatsapp'   },
@@ -2134,9 +2151,73 @@ function go(page) {
   document.getElementById('topbar-icon').style.color = 'var(--pri)';
 
   if (page === 'logs') carregarLogs();
+  if (page === 'saude') renderSaude();
   if (page === 'cobrancas') renderCobrancas();
   if (page === 'whatsapp') renderWhatsapp();
   if (page === 'suporte') carregarSuporteConfig();
+}
+
+/* ── HEALTH SCORE (Saúde dos Clientes) — item 11.3 ───────────────────
+   Estima a saúde de cada empresa a partir do status, plano e situação.
+   Heurística honesta: pode somar "último acesso/uso" quando esses dados
+   estiverem disponíveis. */
+function _healthEmpresa(e){
+  let score=70; const fatores=[];
+  const st=(e.status||'').toLowerCase();
+  if(st==='ativa'||st==='ativo'){score+=20;}
+  else if(st==='trial'||st==='teste'){score-=5;fatores.push('Em teste');}
+  else if(st==='bloqueada'){score-=45;fatores.push('Bloqueada');}
+  else if(st==='cancelada'){score-=70;fatores.push('Cancelada');}
+  if(e.inadimplente===true||e.status==='inadimplente'){score-=30;fatores.push('Inadimplente');}
+  if(e.plano && /pro|premium|enterprise|avan/i.test(e.plano)){score+=10;fatores.push('Plano superior');}
+  // último acesso, se existir no registro
+  const ua=e.ultimo_acesso||e.ultima_atividade||e.last_access;
+  if(ua){ const dias=Math.floor((Date.now()-new Date(ua).getTime())/86400000); if(dias>30){score-=25;fatores.push(`Sem acesso há ${dias}d`);} else if(dias<=7){score+=10;} }
+  score=Math.max(0,Math.min(100,score));
+  let nivel,cor;
+  if(score>=70){nivel='Saudável';cor='green';}
+  else if(score>=45){nivel='Atenção';cor='gold';}
+  else {nivel='Risco de cancelamento';cor='red';}
+  return {score,nivel,cor,fatores};
+}
+function renderSaude(){
+  const emp=(G.empresas||[]).filter(e=>e.status!=='cancelada');
+  const avaliadas=emp.map(e=>({e,h:_healthEmpresa(e)}));
+  const cont={saudavel:0,atencao:0,risco:0};
+  avaliadas.forEach(({h})=>{ if(h.nivel==='Saudável')cont.saudavel++; else if(h.nivel==='Atenção')cont.atencao++; else cont.risco++; });
+  const cards=document.getElementById('saude-cards');
+  if(cards)cards.innerHTML=`
+    <div class="kpi-card"><div class="kpi-val" style="color:#16a34a">${cont.saudavel}</div><div class="kpi-lbl">Saudáveis</div></div>
+    <div class="kpi-card"><div class="kpi-val" style="color:var(--gold)">${cont.atencao}</div><div class="kpi-lbl">Atenção</div></div>
+    <div class="kpi-card"><div class="kpi-val" style="color:#dc2626">${cont.risco}</div><div class="kpi-lbl">Risco de cancelamento</div></div>
+    <div class="kpi-card"><div class="kpi-val">${emp.length}</div><div class="kpi-lbl">Empresas avaliadas</div></div>`;
+
+  const filtro=document.getElementById('saude-filtro')?.value||'';
+  let list=avaliadas;
+  if(filtro==='risco')list=list.filter(x=>x.h.nivel==='Risco de cancelamento');
+  else if(filtro==='atencao')list=list.filter(x=>x.h.nivel==='Atenção');
+  else if(filtro==='saudavel')list=list.filter(x=>x.h.nivel==='Saudável');
+  const ordem={'Risco de cancelamento':0,'Atenção':1,'Saudável':2};
+  list.sort((a,b)=>ordem[a.h.nivel]-ordem[b.h.nivel]||a.h.score-b.h.score);
+
+  const cont2=document.getElementById('saude-lista');
+  if(!cont2)return;
+  if(!list.length){ cont2.innerHTML='<div style="color:var(--txt3);font-size:13px;padding:20px;text-align:center">Nenhuma empresa neste filtro.</div>'; return; }
+  cont2.innerHTML=list.map(({e,h})=>{
+    const ini=(e.nome||'?').slice(0,2).toUpperCase();
+    const cor=typeof stringToColor==='function'?stringToColor(e.id||e.nome):'#5B47E0';
+    return `<div style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px">
+      <div style="width:38px;height:38px;border-radius:9px;background:${cor};display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:#fff;flex-shrink:0">${ini}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:13.5px;color:var(--txt)">${e.nome||'—'}</div>
+        <div style="font-size:11.5px;color:var(--txt3)">${e.plano||'sem plano'} · ${e.cidade||'—'}${h.fatores.length?' · '+h.fatores.join(', '):''}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-weight:800;font-size:18px;color:${h.cor==='green'?'#16a34a':h.cor==='gold'?'var(--gold)':'#dc2626'}">${h.score}</div>
+        <span class="badge badge-${h.cor}" style="font-size:10px">${h.nivel}</span>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ── BUSCA GLOBAL (Ctrl+K) (NOVO) ──
