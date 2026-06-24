@@ -799,6 +799,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
           <button class="fin-tab" onclick="credTab('parcelas',this)"><i class="ti ti-list" style="font-size:13px"></i> Parcelas</button>
           <button class="fin-tab" onclick="credTab('inadimplentes',this)"><i class="ti ti-alert-triangle" style="font-size:13px"></i> Inadimplentes</button>
           <button class="fin-tab" onclick="credTab('historico',this)"><i class="ti ti-send" style="font-size:13px"></i> Cobranças</button>
+          <button class="fin-tab" onclick="credTab('pagamento',this)" data-p-tab="admin,gerente"><i class="ti ti-credit-card-pay" style="font-size:13px"></i> Pagamento (Asaas)</button>
         </div>
 
         <!-- Contratos -->
@@ -844,6 +845,34 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
             <div class="card-hdr"><div class="card-title">Histórico de Cobranças Enviadas</div></div>
             <div id="cobrancas-hist-list">
               <div class="empty-st"><i class="ti ti-send"></i><h3>Nenhuma cobrança enviada</h3></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pagamento (Asaas) — config por loja -->
+        <div id="cred-tab-pagamento" style="display:none">
+          <div class="card" style="max-width:640px">
+            <div style="font-weight:700;font-size:15px;margin-bottom:4px"><i class="ti ti-credit-card-pay" style="color:var(--pri)"></i> Gateway de pagamento (Asaas)</div>
+            <div style="font-size:12.5px;color:var(--txt2);margin-bottom:14px">Conecte a conta Asaas <b>desta loja</b> para gerar boleto/PIX automáticos nas parcelas. A chave fica protegida no servidor — depois de salva, ela não é exibida de volta por segurança.</div>
+
+            <div id="pag-status" style="margin-bottom:14px"></div>
+
+            <div class="fg"><label class="lbl">Chave de API do Asaas</label>
+              <input type="password" id="pag-key" placeholder="Cole aqui a chave (começa com $aact_...)" autocomplete="off">
+              <div style="font-size:11px;color:var(--txt3);margin-top:4px">No Asaas: Integrações → API → copie a chave. Deixe em branco para manter a atual.</div>
+            </div>
+            <div class="fg"><label class="lbl">Ambiente</label>
+              <select id="pag-env">
+                <option value="producao">Produção (cobrança real)</option>
+                <option value="sandbox">Sandbox (teste)</option>
+              </select>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+              <button class="btn btn-pri" onclick="salvarChaveAsaas()"><i class="ti ti-device-floppy"></i> Salvar conexão</button>
+              <a class="btn btn-out" href="https://www.asaas.com" target="_blank"><i class="ti ti-external-link"></i> Abrir Asaas</a>
+            </div>
+            <div style="font-size:11.5px;color:var(--txt3);margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+              <i class="ti ti-shield-lock"></i> O dinheiro das cobranças cai direto na conta Asaas <b>desta loja</b>. O sistema não intermedia o pagamento.
             </div>
           </div>
         </div>
@@ -979,13 +1008,16 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
         </div>
         <div class="fin-tabs" style="margin:12px 0">
           <button class="fin-tab active" onclick="simTab('calc',this)"><i class="ti ti-calculator" style="font-size:13px"></i> Simular</button>
-          <button class="fin-tab" onclick="simTab('taxas',this)"><i class="ti ti-percentage" style="font-size:13px"></i> Minhas taxas</button>
+          <button class="fin-tab" onclick="simTab('taxas',this)"><i class="ti ti-device-mobile-dollar" style="font-size:13px"></i> Maquininhas</button>
         </div>
 
         <!-- SIMULAR -->
         <div id="sim-calc">
           <div class="g2" style="gap:14px;align-items:start">
             <div class="card">
+              <div class="fg"><label class="lbl">Maquininha</label>
+                <select id="sim-maquina" onchange="simularCartao()"></select>
+              </div>
               <div class="fg"><label class="lbl">Valor da venda (R$)</label><input type="number" id="sim-valor" step="0.01" min="0" placeholder="0,00" oninput="simularCartao()"></div>
               <div class="fg"><label class="lbl">Forma</label>
                 <select id="sim-forma" onchange="simParcelasUI();simularCartao()">
@@ -1001,19 +1033,26 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
           </div>
         </div>
 
-        <!-- MINHAS TAXAS -->
+        <!-- MAQUININHAS (gerenciar) -->
         <div id="sim-taxas" style="display:none">
-          <div class="card">
-            <div style="font-size:12.5px;color:var(--txt2);margin-bottom:12px">Informe as taxas que a sua maquininha cobra (em %). Esses valores ficam salvos para os próximos cálculos.</div>
-            <div class="g2">
-              <div class="fg"><label class="lbl">Taxa do Débito (%)</label><input type="number" id="tx-debito" step="0.01" min="0" placeholder="ex: 1.99"></div>
-              <div class="fg"><label class="lbl">Crédito à vista — 1x (%)</label><input type="number" id="tx-credito-1" step="0.01" min="0" placeholder="ex: 3.99"></div>
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+            <div class="fg" style="margin:0;flex:1;min-width:180px"><label class="lbl">Maquininha em edição</label>
+              <select id="maq-sel" onchange="selecionarMaquina(this.value)"></select>
             </div>
+            <button class="btn btn-pri" style="align-self:flex-end" onclick="novaMaquina()"><i class="ti ti-plus"></i> Nova maquininha</button>
+          </div>
+          <div class="card" id="maq-form">
+            <div class="g2">
+              <div class="fg"><label class="lbl">Nome da maquininha *</label><input type="text" id="maq-nome" placeholder="Ex: PagBank, Cielo, InfinitePay"></div>
+              <div class="fg"><label class="lbl">Taxa do Débito (%)</label><input type="number" id="tx-debito" step="0.01" min="0" placeholder="ex: 1.99"></div>
+            </div>
+            <div class="fg" style="max-width:50%"><label class="lbl">Crédito à vista — 1x (%)</label><input type="number" id="tx-credito-1" step="0.01" min="0" placeholder="ex: 3.99"></div>
             <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--txt3);margin:14px 0 8px">Crédito parcelado (% por nº de parcelas)</div>
             <div id="tx-credito-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px"></div>
             <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
-              <button class="btn btn-pri" onclick="salvarTaxasCartao()"><i class="ti ti-device-floppy"></i> Salvar taxas</button>
+              <button class="btn btn-pri" onclick="salvarMaquina()"><i class="ti ti-device-floppy"></i> Salvar maquininha</button>
               <button class="btn btn-out" onclick="preencherTaxasPadrao()"><i class="ti ti-wand"></i> Preencher com média de mercado</button>
+              <button class="btn btn-danger" id="maq-del" style="display:none" onclick="excluirMaquina()"><i class="ti ti-trash"></i> Excluir</button>
             </div>
           </div>
         </div>
@@ -6650,13 +6689,13 @@ function crmPosVenda(cliId,itens){
    (catalogo.html) lê só a VIEW segura catalogo_publico. */
 let _catConfig=null;
 
-/* ── SIMULADOR DE TAXA DE CARTÃO ──────────────────────────────────────
-   Calcula valor de parcelas e quanto a loja recebe líquido. Taxas por
-   empresa salvas em config_taxas_cartao. Pura matemática, sem dependência. */
-let _taxasCartao = null; // {taxa_debito, taxas_credito:{1:..,2:..}}
+/* ── SIMULADOR DE TAXA DE CARTÃO (múltiplas maquininhas) ──────────────
+   Cada empresa pode ter várias maquininhas (maquininhas_cartao), cada uma
+   com suas taxas. Pura matemática, sem dependência externa. */
+let G_MAQUINAS = [];        // lista de maquininhas da empresa
+let _maqEditId = null;      // id da maquininha em edição na aba Maquininhas
 const SIM_MAX_PARC = 18;
 function _taxasPadrao(){
-  // médias de mercado (editáveis pela loja) — só um ponto de partida
   const cred = {};
   for(let n=1;n<=SIM_MAX_PARC;n++){
     if(n===1) cred[n]=3.99;
@@ -6666,24 +6705,39 @@ function _taxasPadrao(){
   return { taxa_debito:1.99, taxas_credito:cred };
 }
 
+async function carregarMaquinas(){
+  try{ const {data}=await db.from('maquininhas_cartao').select('*').order('criado_em'); G_MAQUINAS=data||[]; }
+  catch(e){ G_MAQUINAS=[]; }
+}
+
 async function renderSimulador(){
-  if(!_taxasCartao){
-    try{
-      const {data}=await db.from('config_taxas_cartao').select('*').eq('empresa_id',EID()).maybeSingle();
-      if(data){ _taxasCartao={taxa_debito:data.taxa_debito??1.99, taxas_credito:data.taxas_credito||{}}; }
-    }catch(e){}
-    if(!_taxasCartao || !Object.keys(_taxasCartao.taxas_credito||{}).length) _taxasCartao=_taxasPadrao();
-  }
+  await carregarMaquinas();
+  popMaquinaSelects();
   simParcelasUI();
-  preencherFormTaxas();
   simularCartao();
+}
+
+function popMaquinaSelects(){
+  // seletor da aba Simular
+  const s1=document.getElementById('sim-maquina');
+  if(s1){
+    if(!G_MAQUINAS.length){ s1.innerHTML='<option value="">Nenhuma maquininha cadastrada</option>'; }
+    else s1.innerHTML=G_MAQUINAS.map(m=>`<option value="${m.id}">${m.nome}</option>`).join('');
+  }
+  // seletor da aba Maquininhas
+  const s2=document.getElementById('maq-sel');
+  if(s2){
+    s2.innerHTML=(G_MAQUINAS.length?G_MAQUINAS.map(m=>`<option value="${m.id}">${m.nome}</option>`).join(''):'')+'<option value="__nova">+ Nova maquininha</option>';
+    if(!_maqEditId && G_MAQUINAS.length) _maqEditId=G_MAQUINAS[0].id;
+    if(_maqEditId) s2.value=_maqEditId;
+  }
 }
 
 function simTab(tab,btn){
   document.querySelectorAll('#page-simulador .fin-tab').forEach(b=>b.classList.remove('active'));
   if(btn)btn.classList.add('active');
   ['calc','taxas'].forEach(t=>{const el=document.getElementById('sim-'+t);if(el)el.style.display=t===tab?'':'none';});
-  if(tab==='taxas')preencherFormTaxas();
+  if(tab==='taxas'){ popMaquinaSelects(); selecionarMaquina(_maqEditId|| (G_MAQUINAS[0]&&G_MAQUINAS[0].id) || '__nova'); }
 }
 
 function simParcelasUI(){
@@ -6697,37 +6751,39 @@ function simParcelasUI(){
   for(let n=1;n<=SIM_MAX_PARC;n++){ const o=document.createElement('option'); o.value=n; o.textContent=n+'x'; sel.appendChild(o); }
 }
 
-function _taxaParaForma(forma,parcelas){
-  if(!_taxasCartao)_taxasCartao=_taxasPadrao();
-  if(forma==='debito')return Number(_taxasCartao.taxa_debito)||0;
-  const t=_taxasCartao.taxas_credito||{};
+function _maquinaSimAtual(){
+  const id=document.getElementById('sim-maquina')?.value;
+  return G_MAQUINAS.find(m=>m.id===id)||G_MAQUINAS[0]||null;
+}
+function _taxaParaForma(maq,forma,parcelas){
+  if(!maq)return 0;
+  if(forma==='debito')return Number(maq.taxa_debito)||0;
+  const t=maq.taxas_credito||{};
   return Number(t[parcelas]??t[String(parcelas)])||0;
 }
 
 function simularCartao(){
+  const out=document.getElementById('sim-resultado');
+  if(!out)return;
+  const maq=_maquinaSimAtual();
+  if(!maq){ out.innerHTML='<div class="card" style="text-align:center;padding:30px;color:var(--txt3)">Cadastre uma maquininha na aba <b>Maquininhas</b> para simular.</div>'; return; }
   const valor=parseFloat(document.getElementById('sim-valor')?.value)||0;
   const forma=document.getElementById('sim-forma')?.value||'credito';
   const parcelas=forma==='debito'?1:(parseInt(document.getElementById('sim-parcelas')?.value)||1);
-  const out=document.getElementById('sim-resultado');
-  if(!out)return;
   if(valor<=0){ out.innerHTML='<div class="card" style="text-align:center;padding:30px;color:var(--txt3)">Informe o valor da venda para simular.</div>'; return; }
 
-  const taxa=_taxaParaForma(forma,parcelas);
+  const taxa=_taxaParaForma(maq,forma,parcelas);
   const taxaDec=taxa/100;
-
-  // Cenário A — loja absorve a taxa (cliente paga o valor cheio, sem juros)
   const recebeAbsorve = valor*(1-taxaDec);
   const custoTaxaAbsorve = valor - recebeAbsorve;
   const parcelaAbsorve = valor/parcelas;
-
-  // Cenário B — repassa a taxa ao cliente (juros embutido): para receber o valor cheio
   const totalRepasse = taxaDec<1 ? valor/(1-taxaDec) : valor;
   const parcelaRepasse = totalRepasse/parcelas;
   const acrescimoRepasse = totalRepasse - valor;
 
   out.innerHTML=`
     <div class="card" style="margin-bottom:12px">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--txt3)">Taxa aplicada</div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--txt3)">${esc(maq.nome)} · Taxa aplicada</div>
       <div style="font-size:22px;font-weight:800;color:var(--pri)">${taxa.toFixed(2).replace('.',',')}%</div>
       <div style="font-size:11.5px;color:var(--txt3)">${forma==='debito'?'Débito':parcelas+'x no crédito'}</div>
     </div>
@@ -6747,34 +6803,69 @@ function simularCartao(){
     </div>`;
 }
 
-function preencherFormTaxas(){
-  if(!_taxasCartao)_taxasCartao=_taxasPadrao();
-  const d=document.getElementById('tx-debito'); if(d)d.value=_taxasCartao.taxa_debito??'';
-  const c1=document.getElementById('tx-credito-1'); if(c1)c1.value=(_taxasCartao.taxas_credito||{})[1]??(_taxasCartao.taxas_credito||{})['1']??'';
+// ── Aba Maquininhas (gerenciar) ──
+function selecionarMaquina(id){
+  _maqEditId = id;
+  const del=document.getElementById('maq-del');
+  let maq = (id && id!=='__nova') ? G_MAQUINAS.find(m=>m.id===id) : null;
+  const taxas = maq ? {taxa_debito:maq.taxa_debito, taxas_credito:maq.taxas_credito||{}} : _taxasPadrao();
+  document.getElementById('maq-nome').value = maq ? maq.nome : '';
+  if(del) del.style.display = maq ? '' : 'none';
+  _preencherGradeTaxas(taxas);
+  const sel=document.getElementById('maq-sel'); if(sel && id) sel.value=id;
+}
+function _preencherGradeTaxas(taxas){
+  const d=document.getElementById('tx-debito'); if(d)d.value=taxas.taxa_debito??'';
+  const c1=document.getElementById('tx-credito-1'); if(c1)c1.value=(taxas.taxas_credito||{})[1]??(taxas.taxas_credito||{})['1']??'';
   const grid=document.getElementById('tx-credito-grid');
   if(grid){
     let h='';
     for(let n=2;n<=SIM_MAX_PARC;n++){
-      const v=(_taxasCartao.taxas_credito||{})[n]??(_taxasCartao.taxas_credito||{})[String(n)]??'';
+      const v=(taxas.taxas_credito||{})[n]??(taxas.taxas_credito||{})[String(n)]??'';
       h+=`<div class="fg" style="margin:0"><label class="lbl" style="font-size:11px">${n}x (%)</label><input type="number" step="0.01" min="0" id="tx-cred-${n}" value="${v}"></div>`;
     }
     grid.innerHTML=h;
   }
 }
-function preencherTaxasPadrao(){ _taxasCartao=_taxasPadrao(); preencherFormTaxas(); notify('Taxas preenchidas com a média de mercado. Ajuste e salve.','info',5000); }
+function novaMaquina(){ _maqEditId='__nova'; const s=document.getElementById('maq-sel'); if(s)s.value='__nova'; selecionarMaquina('__nova'); document.getElementById('maq-nome').focus(); }
+function preencherTaxasPadrao(){ _preencherGradeTaxas(_taxasPadrao()); notify('Taxas preenchidas com a média de mercado. Ajuste e salve.','info',5000); }
 
-async function salvarTaxasCartao(){
+function _lerGradeTaxas(){
   const cred={};
   cred[1]=parseFloat(document.getElementById('tx-credito-1')?.value)||0;
   for(let n=2;n<=SIM_MAX_PARC;n++){ const el=document.getElementById('tx-cred-'+n); cred[n]=parseFloat(el?.value)||0; }
-  const payload={ empresa_id:EID(), taxa_debito:parseFloat(document.getElementById('tx-debito')?.value)||0, taxas_credito:cred, atualizado_em:new Date().toISOString() };
+  return { taxa_debito:parseFloat(document.getElementById('tx-debito')?.value)||0, taxas_credito:cred };
+}
+async function salvarMaquina(){
+  const nome=document.getElementById('maq-nome').value.trim();
+  if(!nome){notify('Dê um nome para a maquininha.','warn');return;}
+  const t=_lerGradeTaxas();
   setLoad(true);
-  const {error}=await db.from('config_taxas_cartao').upsert(payload,{onConflict:'empresa_id'});
+  let err, novo;
+  if(_maqEditId && _maqEditId!=='__nova'){
+    ({error:err}=await db.from('maquininhas_cartao').update({nome,taxa_debito:t.taxa_debito,taxas_credito:t.taxas_credito}).eq('id',_maqEditId));
+  } else {
+    const r=await db.from('maquininhas_cartao').insert({empresa_id:EID(),nome,taxa_debito:t.taxa_debito,taxas_credito:t.taxas_credito}).select().single();
+    err=r.error; novo=r.data;
+  }
   setLoad(false);
-  if(error){notify('Erro ao salvar: '+error.message,'error');return;}
-  _taxasCartao={taxa_debito:payload.taxa_debito, taxas_credito:cred};
-  simParcelasUI(); simularCartao();
-  notify('Taxas salvas!','success');
+  if(err){notify('Erro ao salvar: '+err.message,'error');return;}
+  await carregarMaquinas();
+  _maqEditId = novo ? novo.id : _maqEditId;
+  popMaquinaSelects(); selecionarMaquina(_maqEditId);
+  notify('Maquininha salva!','success');
+}
+async function excluirMaquina(){
+  if(!_maqEditId || _maqEditId==='__nova')return;
+  confirmAct('Excluir maquininha','Tem certeza que deseja excluir esta maquininha?',async()=>{
+    const {error}=await db.from('maquininhas_cartao').delete().eq('id',_maqEditId);
+    if(error){notify('Erro: '+error.message,'error');return;}
+    _maqEditId=null;
+    await carregarMaquinas();
+    popMaquinaSelects();
+    selecionarMaquina((G_MAQUINAS[0]&&G_MAQUINAS[0].id)||'__nova');
+    notify('Maquininha excluída.','info');
+  });
 }
 
 function catTab(tab,btn){
@@ -9029,13 +9120,60 @@ function renderHistoricoCobrancas() {
 function credTab(tab, btn) {
   document.querySelectorAll('#page-crediario .fin-tab').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  ['contratos','parcelas','inadimplentes','historico'].forEach(t => {
+  ['contratos','parcelas','inadimplentes','historico','pagamento'].forEach(t => {
     const el = document.getElementById('cred-tab-'+t); if(el) el.style.display = t===tab?'':'none';
   });
   if (tab==='contratos') renderContratos();
   else if (tab==='parcelas') { renderParcelasGlobal(); popParcelaCli(); }
   else if (tab==='inadimplentes') renderInadimplentes();
+  else if (tab==='pagamento') renderConfigPagamento();
   else renderHistoricoCobrancas();
+}
+
+/* ── CONFIG DE PAGAMENTO (Asaas por loja) ─────────────────────────────
+   A chave NUNCA é lida de volta pelo frontend. Só consultamos o status
+   (configurado? ambiente?) via RPC status_pagamento(). A chave é gravada
+   por upsert e lida apenas pela Edge Function (service_role). */
+async function renderConfigPagamento(){
+  const box=document.getElementById('pag-status');
+  const envSel=document.getElementById('pag-env');
+  if(box)box.innerHTML='<div style="font-size:12.5px;color:var(--txt3)">Verificando conexão...</div>';
+  try{
+    const {data,error}=await db.rpc('status_pagamento');
+    if(error)throw error;
+    const st=Array.isArray(data)?data[0]:data;
+    if(st&&st.configurado){
+      if(envSel)envSel.value=st.asaas_env||'producao';
+      if(box)box.innerHTML=`<div style="background:#ECFDF5;border:1px solid #A7F3D0;border-radius:9px;padding:10px 12px;font-size:13px;color:#065F46"><i class="ti ti-circle-check"></i> Conta Asaas conectada · ambiente <b>${st.asaas_env==='producao'?'Produção':'Sandbox'}</b>. Para trocar a chave, cole uma nova e salve.</div>`;
+    } else {
+      if(box)box.innerHTML='<div style="background:#FFF7ED;border:1px solid #FED7AA;border-radius:9px;padding:10px 12px;font-size:13px;color:#9A3412"><i class="ti ti-alert-circle"></i> Ainda não conectado. Cole a chave do Asaas desta loja e salve.</div>';
+    }
+  }catch(e){
+    if(box)box.innerHTML='<div style="background:#FFF7ED;border:1px solid #FED7AA;border-radius:9px;padding:10px 12px;font-size:13px;color:#9A3412"><i class="ti ti-alert-circle"></i> Não foi possível verificar agora (rode a migração R01 se ainda não rodou).</div>';
+  }
+}
+
+async function salvarChaveAsaas(){
+  const key=document.getElementById('pag-key').value.trim();
+  const env=document.getElementById('pag-env').value;
+  // Monta o payload: se a chave veio em branco, atualiza só o ambiente.
+  const payload={ empresa_id:EID(), asaas_env:env, atualizado_em:new Date().toISOString() };
+  if(key) payload.asaas_key=key;
+  if(!key){
+    // sem chave nova: só atualiza ambiente (precisa já existir registro)
+    setLoad(true);
+    const {error}=await db.from('config_pagamento').update({asaas_env:env,atualizado_em:new Date().toISOString()}).eq('empresa_id',EID());
+    setLoad(false);
+    if(error){notify('Cole a chave do Asaas para conectar pela primeira vez.','warn',5000);return;}
+    notify('Ambiente atualizado.','success'); renderConfigPagamento(); return;
+  }
+  setLoad(true);
+  const {error}=await db.from('config_pagamento').upsert(payload,{onConflict:'empresa_id'});
+  setLoad(false);
+  if(error){notify('Erro ao salvar: '+error.message,'error',6000);return;}
+  document.getElementById('pag-key').value='';
+  notify('Conexão com o Asaas salva!','success');
+  renderConfigPagamento();
 }
 
 function popParcelaCli() {
