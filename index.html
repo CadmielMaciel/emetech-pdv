@@ -919,6 +919,28 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
               </div>
               <div class="fg"><label class="lbl">Defeito *</label><textarea id="os-def" rows="2" placeholder="Defeito relatado..."></textarea></div>
               <div class="fg"><label class="lbl">Diagnóstico</label><textarea id="os-diag" rows="2" placeholder="Laudo técnico..."></textarea></div>
+
+              <!-- Checklist de entrada -->
+              <div style="border:1px solid var(--border);border-radius:10px;padding:11px 13px;margin-bottom:12px;background:var(--surface)">
+                <div style="font-size:12px;font-weight:700;color:var(--txt2);margin-bottom:8px"><i class="ti ti-clipboard-check" style="color:var(--pri)"></i> Checklist de entrada</div>
+                <div class="g2">
+                  <div class="fg" style="margin-bottom:8px"><label class="lbl">Estado visual</label>
+                    <select id="os-estado">
+                      <option value="Ótimo">Ótimo</option>
+                      <option value="Bom" selected>Bom</option>
+                      <option value="Regular">Regular (marcas de uso)</option>
+                      <option value="Ruim">Ruim (avarias visíveis)</option>
+                    </select>
+                  </div>
+                  <div class="fg" style="margin-bottom:8px"><label class="lbl">Senha / Padrão</label><input type="text" id="os-senha" placeholder="Senha de desbloqueio (se houver)"></div>
+                </div>
+                <div style="font-size:11px;color:var(--txt3);margin:4px 0 6px">Condição na entrada (marque o que se aplica):</div>
+                <div id="os-chk-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:4px 12px;font-size:12.5px"></div>
+                <div style="font-size:11px;color:var(--txt3);margin:10px 0 6px">Acessórios recebidos:</div>
+                <div id="os-acess-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:4px 12px;font-size:12.5px"></div>
+                <label style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--txt2);margin-top:10px;cursor:pointer"><input type="checkbox" id="os-termo" style="width:auto"> Cliente ciente do termo de responsabilidade de entrada</label>
+              </div>
+
               <div class="g3">
                 <div class="fg"><label class="lbl">Valor R$</label><input type="number" id="os-val" placeholder="0,00" step="0.01"></div>
                 <div class="fg"><label class="lbl">Garantia (dias)</label><input type="number" id="os-gar" value="90"></div>
@@ -4188,7 +4210,7 @@ function go(page){
     pdv:()=>{ setTimeout(initPDVMobile, 80);renderPDVGrid();popSelects();checkCaixaStatus();},
     orcamentos:()=>{ setTimeout(initOSMobile, 80);renderOrcamentos();popSelects();popProdSel();},
     devolucoes:renderDevolucoes,
-    os:()=>{renderOSList();popSelects();popTecSel();},
+    os:()=>{renderOSList();popSelects();popTecSel();popOSChecklist();},
     'os-hist':()=>{popOSFiltros();renderOSHist();},
     agenda:renderAgenda,
     comissoes:renderComissoes,
@@ -5711,15 +5733,44 @@ async function createOS(){
   const tecSel=document.getElementById('os-tec');
   const num='OS-'+pad(G.osCounter++);
   const tl=[{status:'Aguardando',data:new Date().toISOString()}];
-  const payload={empresa_id:EID(),numero:num,cliente_id:cliSel?.value||null,cliente_nome:cliSel?.options[cliSel.selectedIndex]?.text||'Consumidor Final',tecnico_id:tecSel?.value||null,tecnico_nome:tecSel?.value?tecSel.options[tecSel.selectedIndex].text:null,aparelho:ap,imei:document.getElementById('os-imei').value,defeito:def,diagnostico:document.getElementById('os-diag').value,valor_servico:parseFloat(document.getElementById('os-val').value)||0,total:parseFloat(document.getElementById('os-val').value)||0,garantia_dias:parseInt(document.getElementById('os-gar').value)||90,prazo:document.getElementById('os-prazo').value||null,observacoes:document.getElementById('os-obs').value,status:'Aguardando',progresso:8,timeline:tl};
+  // Checklist de entrada (estruturado)
+  const condicao=Array.from(document.querySelectorAll('.os-chk:checked')).map(c=>c.value);
+  const acessorios=Array.from(document.querySelectorAll('.os-acess:checked')).map(c=>c.value);
+  const checklist_entrada={
+    estado_visual:document.getElementById('os-estado')?.value||'',
+    senha:document.getElementById('os-senha')?.value||'',
+    condicao, acessorios,
+    termo_aceito:!!document.getElementById('os-termo')?.checked,
+    registrado_em:new Date().toISOString()
+  };
+  const base={empresa_id:EID(),numero:num,cliente_id:cliSel?.value||null,cliente_nome:cliSel?.options[cliSel.selectedIndex]?.text||'Consumidor Final',tecnico_id:tecSel?.value||null,tecnico_nome:tecSel?.value?tecSel.options[tecSel.selectedIndex].text:null,aparelho:ap,imei:document.getElementById('os-imei').value,defeito:def,diagnostico:document.getElementById('os-diag').value,valor_servico:parseFloat(document.getElementById('os-val').value)||0,total:parseFloat(document.getElementById('os-val').value)||0,garantia_dias:parseInt(document.getElementById('os-gar').value)||90,prazo:document.getElementById('os-prazo').value||null,observacoes:document.getElementById('os-obs').value,status:'Aguardando',progresso:8,timeline:tl};
+  const payload={...base, checklist_entrada};
   setLoad(true);
-  const {data,error}=await db.from('ordens_servico').insert(payload).select().single();
+  let {data,error}=await db.from('ordens_servico').insert(payload).select().single();
+  // Inserção defensiva: se a coluna checklist_entrada ainda não existe (migração S01 não rodada),
+  // refaz sem ela para não bloquear a criação da OS.
+  if(error && /checklist_entrada|column|schema/i.test(error.message||'')){
+    ({data,error}=await db.from('ordens_servico').insert(base).select().single());
+    if(!error) notify('OS criada. (Rode a migração S01 para salvar o checklist estruturado.)','warn',6000);
+  }
   setLoad(false);
   if(error){notify('Erro: '+error.message,'error');return;}
   G.os.unshift(data);
-  ['os-ap','os-imei','os-def','os-diag','os-val','os-prazo','os-obs'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
+  ['os-ap','os-imei','os-def','os-diag','os-val','os-prazo','os-obs','os-senha'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
   document.getElementById('os-gar').value=90;
+  const termo=document.getElementById('os-termo'); if(termo)termo.checked=false;
+  document.querySelectorAll('.os-chk:checked,.os-acess:checked').forEach(c=>c.checked=false);
   renderOSList();renderDashboard();notify(num+' criada!');
+}
+
+// Popula o checklist de entrada da OS (condição + acessórios)
+const OS_COND_ITENS=['Liga normalmente','Tela trincada','Tela com manchas','Touch funciona','Carrega','Botões OK','Câmera OK','Alto-falante OK','Biometria OK','Molhado/oxidado','Riscos na carcaça','Chip presente'];
+const OS_ACESS_ITENS=['Capa','Película','Carregador','Cabo','Fone','Caixa','Cartão SIM','Cartão SD'];
+function popOSChecklist(){
+  const g=document.getElementById('os-chk-grid');
+  if(g && !g.dataset.done){ g.innerHTML=OS_COND_ITENS.map(it=>`<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" class="os-chk" value="${esc(it)}" style="width:auto">${esc(it)}</label>`).join(''); g.dataset.done='1'; }
+  const a=document.getElementById('os-acess-grid');
+  if(a && !a.dataset.done){ a.innerHTML=OS_ACESS_ITENS.map(it=>`<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" class="os-acess" value="${esc(it)}" style="width:auto">${esc(it)}</label>`).join(''); a.dataset.done='1'; }
 }
 
 function renderOSList(q=''){
