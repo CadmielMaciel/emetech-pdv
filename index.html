@@ -1407,11 +1407,21 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
       <!-- MOVIMENTAÇÕES -->
       <div class="page" id="page-estoque">
         <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
-          <div class="card-title" style="flex:1">Histórico de Movimentações</div>
-          <select id="mf-prod" onchange="renderMov()" style="padding:7px 10px;font-size:12.5px;border-radius:8px;width:auto;min-width:170px"><option value="">Todos os produtos</option></select>
+          <div class="card-title" style="flex:1;min-width:160px">Histórico de Movimentações</div>
+          <input type="date" id="mf-de" onchange="renderMov()" title="De" style="padding:6px 9px;font-size:12.5px;border-radius:8px;width:auto">
+          <span style="color:var(--txt3);font-size:12px">até</span>
+          <input type="date" id="mf-ate" onchange="renderMov()" title="Até" style="padding:6px 9px;font-size:12.5px;border-radius:8px;width:auto">
+          <select id="mf-prod" onchange="renderMov()" style="padding:7px 10px;font-size:12.5px;border-radius:8px;width:auto;min-width:150px"><option value="">Todos os produtos</option></select>
+          <select id="mf-user" onchange="renderMov()" style="padding:7px 10px;font-size:12.5px;border-radius:8px;width:auto"><option value="">Todos os usuários</option></select>
           <select id="mf-tipo" onchange="renderMov()" style="padding:7px 10px;font-size:12.5px;border-radius:8px;width:auto">
-            <option value="">Todos os tipos</option><option value="entrada">Entrada</option><option value="saida">Saída</option><option value="ajuste">Ajuste</option>
+            <option value="">Todos os tipos</option>
+            <option value="entrada">Entrada</option><option value="saida">Saída</option>
+            <option value="venda">Venda</option><option value="devolucao">Devolução</option>
+            <option value="troca">Troca</option><option value="ajuste">Ajuste manual</option>
+            <option value="cancelamento">Cancelamento</option><option value="perda">Perda/quebra</option>
+            <option value="inventario">Inventário</option>
           </select>
+          <button class="btn btn-out" onclick="exportarMovCSV()"><i class="ti ti-file-spreadsheet"></i>CSV</button>
           <button class="btn btn-out" onclick="imprimirHistoricoMov()"><i class="ti ti-printer"></i>Documento</button>
           <button class="btn btn-pri" onclick="openModal('modal-ajuste')"><i class="ti ti-adjustments"></i>Ajuste Manual</button>
         </div>
@@ -5514,7 +5524,25 @@ async function regMov(prodId,prodNome,tipo,qty,estoqueApos,motivo=''){
 
 function popMovFiltros(){
   const sel=document.getElementById('mf-prod');
-  sel.innerHTML='<option value="">Todos os produtos</option>'+G.produtos.map(p=>`<option value="${p.id}">${p.nome}</option>`).join('');
+  if(sel)sel.innerHTML='<option value="">Todos os produtos</option>'+G.produtos.map(p=>`<option value="${p.id}">${esc(p.nome)}</option>`).join('');
+  const us=document.getElementById('mf-user');
+  if(us){ const nomes=[...new Set((G.movs||[]).map(m=>m.usuario_nome).filter(Boolean))].sort(); us.innerHTML='<option value="">Todos os usuários</option>'+nomes.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join(''); }
+}
+
+// Filtro compartilhado (produto, tipo, usuário, período) — usado por render/print/CSV
+function _movFiltradas(){
+  const fp=document.getElementById('mf-prod')?.value||'';
+  const ft=document.getElementById('mf-tipo')?.value||'';
+  const fu=document.getElementById('mf-user')?.value||'';
+  const de=document.getElementById('mf-de')?.value||'';
+  const ate=document.getElementById('mf-ate')?.value||'';
+  return (G.movs||[]).filter(m=>
+    (!fp||m.produto_id===fp) &&
+    (!ft||m.tipo===ft) &&
+    (!fu||m.usuario_nome===fu) &&
+    (!de||(m.criado_em||'')>=de+'T00:00:00') &&
+    (!ate||(m.criado_em||'')<=ate+'T23:59:59')
+  );
 }
 
 async function salvarAjuste(){
@@ -5539,14 +5567,12 @@ async function salvarAjuste(){
 }
 
 function renderMov(){
-  const fp=document.getElementById('mf-prod')?.value||'';
-  const ft=document.getElementById('mf-tipo')?.value||'';
-  const list=G.movs.filter(m=>(!fp||m.produto_id===fp)&&(!ft||m.tipo===ft));
-  const bC={entrada:'mov-e',saida:'mov-s',ajuste:'mov-a'};
+  const list=_movFiltradas();
+  const bC={entrada:'mov-e',saida:'mov-s',ajuste:'mov-a',venda:'mov-s',devolucao:'mov-e',troca:'mov-e',cancelamento:'mov-a',perda:'mov-s',inventario:'mov-a'};
   document.getElementById('mov-table').innerHTML=list.length===0?'<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--txt3)">Nenhuma movimentação</td></tr>':list.map(m=>`<tr>
     <td style="font-size:11.5px;color:var(--txt3)">${fmtDT(m.criado_em)}</td>
     <td style="font-weight:600;font-size:13px">${m.produto_nome}</td>
-    <td><span class="mov-badge ${bC[m.tipo]||''}">${m.tipo}</span></td>
+    <td><span class="mov-badge ${bC[m.tipo]||''}" style="text-transform:capitalize">${m.tipo}</span></td>
     <td style="font-weight:700">${m.quantidade}</td>
     <td>${m.estoque_apos!=null?m.estoque_apos:'∞'}</td>
     <td style="color:var(--txt2)">${m.usuario_nome||'—'}</td>
@@ -5554,11 +5580,24 @@ function renderMov(){
   </tr>`).join('');
 }
 
+// Exporta as movimentações filtradas para CSV (abre no Excel)
+function exportarMovCSV(){
+  const list=_movFiltradas();
+  if(!list.length){notify('Nenhuma movimentação para exportar.','warn');return;}
+  const esc2=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+  const head=['Data/Hora','Produto','Tipo','Quantidade','Estoque após','Usuário','Motivo'];
+  const linhas=list.map(m=>[fmtDT(m.criado_em),m.produto_nome||'',m.tipo||'',m.quantidade,(m.estoque_apos!=null?m.estoque_apos:''),m.usuario_nome||'',m.motivo||''].map(esc2).join(';'));
+  const csv='\uFEFF'+[head.map(esc2).join(';'),...linhas].join('\r\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='movimentacoes.csv'; a.click();
+  notify('CSV gerado.','success');
+}
+
 // Gera documento (A4) do histórico de movimentações conforme o filtro atual
 function imprimirHistoricoMov(){
   const fp=document.getElementById('mf-prod')?.value||'';
   const ft=document.getElementById('mf-tipo')?.value||'';
-  const list=G.movs.filter(m=>(!fp||m.produto_id===fp)&&(!ft||m.tipo===ft));
+  const list=_movFiltradas();
   if(!list.length){notify('Nenhuma movimentação para imprimir.','warn');return;}
   const emp=getEmpDados();
   const cor=(typeof paletaAtual==="object"&&paletaAtual.c1)||(getMarca&&getMarca().paleta?.c1)||"#5B47E0";
