@@ -1599,6 +1599,27 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
               <tbody id="rel-prod-table"></tbody>
             </table></div>
           </div>
+          <div class="gdash" style="margin-top:12px">
+            <div class="card" style="padding:0">
+              <div style="padding:12px 16px;border-bottom:1px solid var(--border)"><div class="card-title">Curva ABC (por faturamento)</div></div>
+              <div class="tw"><table>
+                <thead><tr><th>Produto</th><th style="text-align:center">Classe</th><th style="text-align:right">Faturamento</th><th style="text-align:right">% acum.</th></tr></thead>
+                <tbody id="rel-abc-table"></tbody>
+              </table></div>
+              <div style="font-size:11px;color:var(--txt3);padding:8px 16px">A = 80% do faturamento · B = próximos 15% · C = últimos 5%.</div>
+            </div>
+            <div class="card" style="padding:0">
+              <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center"><div class="card-title">Produtos sem giro</div>
+                <select id="rel-giro-dias" onchange="renderRelProdutos()" style="padding:5px 8px;font-size:12px;border-radius:7px;width:auto">
+                  <option value="30">30 dias</option><option value="60">60 dias</option><option value="90" selected>90 dias</option>
+                </select>
+              </div>
+              <div class="tw"><table>
+                <thead><tr><th>Produto</th><th style="text-align:center">Estoque</th><th style="text-align:right">Parado há</th></tr></thead>
+                <tbody id="rel-giro-table"></tbody>
+              </table></div>
+            </div>
+          </div>
         </div>
 
         <!-- ── OS / TÉCNICOS ── -->
@@ -7412,7 +7433,206 @@ function relTab(tab,btnEl){
   });
   if(tab==='vendas')renderRelVendas();
   if(tab==='estoque')renderRelEstoque();
-  // Demais abas (operadores/produtos/os/clientes/pagamentos): em desenvolvimento
+  if(tab==='produtos')renderRelProdutos();
+  if(tab==='pagamentos')renderRelPagamentos();
+  if(tab==='operadores')renderRelOperadores();
+  if(tab==='os')renderRelOS();
+  if(tab==='clientes')renderRelClientes();
+}
+
+function _getRelOS(){
+  const de=document.getElementById('r-de')?.value, ate=document.getElementById('r-ate')?.value;
+  let list=(G.os||[]).slice();
+  if(de)list=list.filter(o=>(o.criado_em||'')>=de+'T00:00:00');
+  if(ate)list=list.filter(o=>(o.criado_em||'')<=ate+'T23:59:59');
+  return list;
+}
+
+// ── ABA OPERADORES ───────────────────────────────────────────────────
+function renderRelOperadores(){
+  const vendas=getRelVendas();
+  const agg={};
+  vendas.forEach(v=>{ const k=v.operador_nome||'—'; if(!agg[k])agg[k]={qtd:0,total:0,lucro:0,dias:{}}; agg[k].qtd++; agg[k].total+=v.total||0; agg[k].lucro+=v.lucro||0; const d=(v.criado_em||'').slice(0,10); if(d)agg[k].dias[d]=(agg[k].dias[d]||0)+(v.total||0); });
+  const rows=Object.entries(agg).map(([nome,d])=>{ const melhor=Object.entries(d.dias).sort((a,b)=>b[1]-a[1])[0]; return {nome,...d,ticket:d.qtd?d.total/d.qtd:0,melhorDia:melhor?melhor[0]:null}; }).sort((a,b)=>b.total-a.total);
+  const tb=document.getElementById('rel-op-table');
+  if(tb)tb.innerHTML=rows.length?rows.map((r,i)=>`<tr>
+    <td style="text-align:center;font-weight:700;color:var(--txt3)">${i+1}º</td>
+    <td style="font-weight:600">${i===0?'🏆 ':''}${esc(r.nome)}</td>
+    <td style="text-align:center">${r.qtd}</td>
+    <td style="font-weight:700">${fmt(r.total)}</td>
+    <td style="color:var(--success)">${fmt(r.lucro)}</td>
+    <td>${fmt(r.ticket)}</td>
+    <td style="color:var(--txt2);font-size:12px">${r.melhorDia?new Date(r.melhorDia+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}):'—'}</td>
+  </tr>`).join(''):'<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--txt3)">Sem vendas no período</td></tr>';
+  const labels=rows.map(r=>r.nome);
+  if(G.charts.opFat)G.charts.opFat.destroy();
+  const c1=document.getElementById('chart-op-fat');
+  if(c1&&typeof Chart!=='undefined')G.charts.opFat=new Chart(c1,{type:'bar',data:{labels,datasets:[{data:rows.map(r=>r.total),backgroundColor:'rgba(91,71,224,.75)',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:9}}},y:{ticks:{font:{size:9},callback:v=>'R$'+v}}}}});
+  if(G.charts.opQtd)G.charts.opQtd.destroy();
+  const c2=document.getElementById('chart-op-qtd');
+  if(c2&&typeof Chart!=='undefined')G.charts.opQtd=new Chart(c2,{type:'bar',data:{labels,datasets:[{data:rows.map(r=>r.qtd),backgroundColor:'rgba(16,185,129,.75)',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:9}}},y:{ticks:{font:{size:9}}}}}});
+}
+
+// ── ABA OS / TÉCNICOS ────────────────────────────────────────────────
+function renderRelOS(){
+  const os=_getRelOS();
+  const concl=os.filter(o=>['Entregue','Pronto','Concluída','Concluido'].includes(o.status)).length;
+  const pend=os.filter(o=>!['Entregue','Cancelada','Cancelado'].includes(o.status)).length;
+  const fat=os.filter(o=>o.status==='Entregue').reduce((s,o)=>s+(Number(o.total)||Number(o.valor)||0),0);
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  set('r-os-total',os.length); set('r-os-conc',concl); set('r-os-pend',pend); set('r-os-fat',fmt(fat));
+
+  // OS por status (gráfico)
+  const porStatus={};
+  os.forEach(o=>{const s=o.status||'—';porStatus[s]=(porStatus[s]||0)+1;});
+  if(G.charts.osStatus)G.charts.osStatus.destroy();
+  const c1=document.getElementById('chart-os-status');
+  if(c1&&typeof Chart!=='undefined')G.charts.osStatus=new Chart(c1,{type:'doughnut',data:{labels:Object.keys(porStatus),datasets:[{data:Object.values(porStatus),backgroundColor:['#F59E0B','#3B82F6','#10B981','#5B47E0','#EF4444','#8B5CF6','#6B7280']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10}}}}}});
+
+  // OS por aparelho
+  const porAp={};
+  os.forEach(o=>{const a=(o.aparelho||'—').trim();porAp[a]=(porAp[a]||0)+1;});
+  const apList=Object.entries(porAp).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const elAp=document.getElementById('rel-os-aparelhos');
+  if(elAp)elAp.innerHTML=apList.length?apList.map(([a,n])=>`<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)"><span>${esc(a)}</span><b>${n}</b></div>`).join(''):'<div style="text-align:center;padding:20px;color:var(--txt3)">Sem OS no período</div>';
+
+  // Ranking técnicos
+  const tec={};
+  os.forEach(o=>{const t=o.tecnico_nome||'—';if(!tec[t])tec[t]={concl:0,aberto:0,fat:0};if(o.status==='Entregue'){tec[t].concl++;tec[t].fat+=Number(o.total)||Number(o.valor)||0;}else if(!['Cancelada','Cancelado'].includes(o.status)){tec[t].aberto++;}});
+  const tecRows=Object.entries(tec).map(([nome,d])=>({nome,...d,ticket:d.concl?d.fat/d.concl:0})).sort((a,b)=>b.concl-a.concl);
+  const tt=document.getElementById('rel-tec-table');
+  if(tt)tt.innerHTML=tecRows.length?tecRows.map((r,i)=>`<tr>
+    <td style="text-align:center;font-weight:700;color:var(--txt3)">${i+1}º</td>
+    <td style="font-weight:600">${i===0?'🏆 ':''}${esc(r.nome)}</td>
+    <td style="text-align:center;color:var(--success)">${r.concl}</td>
+    <td style="text-align:center;color:var(--warn)">${r.aberto}</td>
+    <td style="font-weight:700">${fmt(r.fat)}</td>
+    <td>${fmt(r.ticket)}</td>
+  </tr>`).join(''):'<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--txt3)">Sem OS no período</td></tr>';
+}
+
+// ── ABA CLIENTES ─────────────────────────────────────────────────────
+function renderRelClientes(){
+  const vendas=getRelVendas();
+  const agg={};
+  vendas.forEach(v=>{ const k=v.cliente_nome||'Não informado'; if(!agg[k])agg[k]={qtd:0,total:0,ultima:null}; agg[k].qtd++; agg[k].total+=v.total||0; if(!agg[k].ultima||v.criado_em>agg[k].ultima)agg[k].ultima=v.criado_em; });
+  // contagem de OS por cliente (todas as OS)
+  const osCli={};
+  (G.os||[]).forEach(o=>{const k=o.cliente_nome||'Não informado';osCli[k]=(osCli[k]||0)+1;});
+  const rows=Object.entries(agg).map(([nome,d])=>({nome,...d,ticket:d.qtd?d.total/d.qtd:0,os:osCli[nome]||0})).sort((a,b)=>b.total-a.total);
+  const recorrentes=rows.filter(r=>r.qtd>1).length;
+  const ticketGeral=vendas.length?vendas.reduce((s,v)=>s+(v.total||0),0)/vendas.length:0;
+  const de=document.getElementById('r-de')?.value, ate=document.getElementById('r-ate')?.value;
+  let novos=(G.clientes||[]);
+  if(de)novos=novos.filter(c=>(c.criado_em||'')>=de+'T00:00:00');
+  if(ate)novos=novos.filter(c=>(c.criado_em||'')<=ate+'T23:59:59');
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  set('r-cli-total',(G.clientes||[]).length); set('r-cli-novos',novos.length);
+  set('r-cli-recorrentes',recorrentes); set('r-cli-ticket',fmt(ticketGeral));
+
+  const tb=document.getElementById('rel-cli-table');
+  if(tb)tb.innerHTML=rows.length?rows.slice(0,30).map((r,i)=>`<tr>
+    <td style="text-align:center;font-weight:700;color:var(--txt3)">${i+1}º</td>
+    <td style="font-weight:600">${i===0?'🏆 ':''}${esc(r.nome)}</td>
+    <td style="text-align:center">${r.qtd}</td>
+    <td style="text-align:center;color:var(--txt2)">${r.os}</td>
+    <td style="font-weight:700">${fmt(r.total)}</td>
+    <td>${fmt(r.ticket)}</td>
+    <td style="color:var(--txt2);font-size:12px">${r.ultima?new Date(r.ultima).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'}):'—'}</td>
+  </tr>`).join(''):'<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--txt3)">Sem vendas no período</td></tr>';
+}
+
+// ── ABA PRODUTOS: top, margem, Curva ABC e Sem Giro ──────────────────
+function _aggProdutos(vendas){
+  const m={};
+  vendas.forEach(v=>(v.itens||[]).forEach(i=>{
+    const k=i.nome||'—';
+    if(!m[k])m[k]={nome:k,qty:0,fat:0,custo:0};
+    const q=Number(i.qty)||0;
+    m[k].qty+=q; m[k].fat+=(Number(i.preco)||0)*q; m[k].custo+=(Number(i.custo)||0)*q;
+  }));
+  return Object.values(m).map(p=>({...p,lucro:p.fat-p.custo,margem:p.fat>0?(p.fat-p.custo)/p.fat*100:0}));
+}
+function renderRelProdutos(){
+  const vendas=getRelVendas();
+  const prods=_aggProdutos(vendas);
+  // Top 8 por qtd e por faturamento (gráficos)
+  const porQtd=[...prods].sort((a,b)=>b.qty-a.qty).slice(0,8);
+  const porFat=[...prods].sort((a,b)=>b.fat-a.fat).slice(0,8);
+  if(G.charts.prodQtd)G.charts.prodQtd.destroy();
+  const c1=document.getElementById('chart-prod-qtd');
+  if(c1&&typeof Chart!=='undefined')G.charts.prodQtd=new Chart(c1,{type:'bar',data:{labels:porQtd.map(p=>p.nome),datasets:[{data:porQtd.map(p=>p.qty),backgroundColor:'rgba(91,71,224,.75)',borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:9}}},y:{ticks:{font:{size:9}}}}}});
+  if(G.charts.prodFat)G.charts.prodFat.destroy();
+  const c2=document.getElementById('chart-prod-fat');
+  if(c2&&typeof Chart!=='undefined')G.charts.prodFat=new Chart(c2,{type:'bar',data:{labels:porFat.map(p=>p.nome),datasets:[{data:porFat.map(p=>p.fat),backgroundColor:'rgba(16,185,129,.75)',borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:9},callback:v=>'R$'+v}},y:{ticks:{font:{size:9}}}}}});
+
+  // Margem por produto (tabela)
+  const tb=document.getElementById('rel-prod-table');
+  const ordFat=[...prods].sort((a,b)=>b.fat-a.fat);
+  if(tb)tb.innerHTML=ordFat.length?ordFat.map(p=>`<tr>
+    <td style="font-weight:600">${esc(p.nome)}</td>
+    <td style="text-align:center">${p.qty}</td>
+    <td>${fmt(p.fat)}</td>
+    <td style="color:var(--txt2)">${fmt(p.custo)}</td>
+    <td style="font-weight:700;color:var(--success)">${fmt(p.lucro)}</td>
+    <td style="font-weight:700">${p.margem.toFixed(1)}%</td>
+  </tr>`).join(''):'<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--txt3)">Sem vendas no período</td></tr>';
+
+  // Curva ABC (por faturamento acumulado)
+  const totalFat=prods.reduce((s,p)=>s+p.fat,0);
+  let acum=0;
+  const abc=ordFat.map(p=>{ acum+=p.fat; const pct=totalFat>0?acum/totalFat*100:0; const classe=pct<=80?'A':(pct<=95?'B':'C'); return {...p,pctAcum:pct,classe}; });
+  const tag={A:'tag-grn',B:'tag-amb',C:'tag-gry'};
+  const tabc=document.getElementById('rel-abc-table');
+  if(tabc)tabc.innerHTML=abc.length?abc.map(p=>`<tr>
+    <td style="font-weight:600">${esc(p.nome)}</td>
+    <td style="text-align:center"><span class="tag ${tag[p.classe]}">${p.classe}</span></td>
+    <td style="text-align:right">${fmt(p.fat)}</td>
+    <td style="text-align:right;color:var(--txt2)">${p.pctAcum.toFixed(1)}%</td>
+  </tr>`).join(''):'<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--txt3)">Sem vendas no período</td></tr>';
+
+  // Sem giro: produtos ativos não vendidos há X dias (usa TODAS as vendas, não o filtro)
+  const dias=parseInt(document.getElementById('rel-giro-dias')?.value)||90;
+  const limite=Date.now()-dias*86400000;
+  const ultimaVenda={};
+  (G.vendas||[]).forEach(v=>{const t=new Date(v.criado_em).getTime();(v.itens||[]).forEach(i=>{ if(!ultimaVenda[i.nome]||t>ultimaVenda[i.nome])ultimaVenda[i.nome]=t; });});
+  const semGiro=(G.produtos||[]).filter(p=>p.status==='ativo'&&!p.estoque_infinito&&(Number(p.estoque)||0)>0).filter(p=>{const u=ultimaVenda[p.nome];return !u||u<limite;})
+    .map(p=>({p,u:ultimaVenda[p.nome]||null})).sort((a,b)=>(a.u||0)-(b.u||0));
+  const tg=document.getElementById('rel-giro-table');
+  if(tg)tg.innerHTML=semGiro.length?semGiro.map(({p,u})=>{
+    const txt=u?Math.floor((Date.now()-u)/86400000)+' dias':'nunca vendido';
+    return `<tr><td style="font-weight:600">${esc(p.nome)}</td><td style="text-align:center">${Number(p.estoque)||0}</td><td style="text-align:right;color:var(--warn)">${txt}</td></tr>`;
+  }).join(''):'<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--txt3)">Todos os produtos giraram 🎉</td></tr>';
+}
+
+// ── ABA PAGAMENTOS: distribuição por forma ───────────────────────────
+function renderRelPagamentos(){
+  const vendas=getRelVendas();
+  const pL={dinheiro:'Dinheiro',pix:'Pix',cartao:'Cartão',misto:'Misto',fiado:'Fiado',crediario:'Crediário'};
+  const agg={};
+  vendas.forEach(v=>{ const k=v.pagamento||'outro'; if(!agg[k])agg[k]={qtd:0,total:0}; agg[k].qtd++; agg[k].total+=v.total||0; });
+  const totalGeral=vendas.reduce((s,v)=>s+(v.total||0),0);
+  const totalQtd=vendas.length||1;
+  const rows=Object.entries(agg).sort((a,b)=>b[1].total-a[1].total);
+
+  const tb=document.getElementById('rel-pag-table');
+  if(tb)tb.innerHTML=rows.length?rows.map(([k,d])=>`<tr>
+    <td style="font-weight:600">${pL[k]||k}</td>
+    <td style="text-align:center">${d.qtd}</td>
+    <td style="text-align:center;color:var(--txt2)">${(d.qtd/totalQtd*100).toFixed(1)}%</td>
+    <td style="font-weight:700">${fmt(d.total)}</td>
+    <td style="text-align:center;color:var(--txt2)">${totalGeral>0?(d.total/totalGeral*100).toFixed(1):0}%</td>
+    <td>${fmt(d.qtd?d.total/d.qtd:0)}</td>
+  </tr>`).join(''):'<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--txt3)">Sem vendas no período</td></tr>';
+
+  const labels=rows.map(([k])=>pL[k]||k);
+  const cores=['#5B47E0','#10B981','#3B82F6','#F59E0B','#EF4444','#8B5CF6'];
+  if(G.charts.pagDist)G.charts.pagDist.destroy();
+  const c1=document.getElementById('chart-pag-dist');
+  if(c1&&typeof Chart!=='undefined')G.charts.pagDist=new Chart(c1,{type:'doughnut',data:{labels,datasets:[{data:rows.map(([,d])=>d.qtd),backgroundColor:cores}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10}}}}}});
+  if(G.charts.pagFat)G.charts.pagFat.destroy();
+  const c2=document.getElementById('chart-pag-fat');
+  if(c2&&typeof Chart!=='undefined')G.charts.pagFat=new Chart(c2,{type:'doughnut',data:{labels,datasets:[{data:rows.map(([,d])=>d.total),backgroundColor:cores}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10}}}}}});
 }
 
 function renderRelatorios(){
