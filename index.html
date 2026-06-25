@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -706,6 +707,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
               <div class="cr" id="recebido-row" style="display:flex;align-items:center;gap:8px"><span style="color:var(--txt2);white-space:nowrap">Valor recebido</span><input type="number" id="c-recebido" min="0" step="0.01" placeholder="R$" oninput="renderCart()" style="flex:1;text-align:right;padding:6px 8px;border-radius:7px;border:1px solid var(--border);font-weight:700"></div>
               <div class="cr" id="troco-row" style="display:none"><span style="color:var(--txt2)">Troco</span><span id="c-troco" style="font-weight:700;color:var(--success)">R$ 0,00</span></div>
               <button class="fin-btn" id="fin-btn" onclick="finalizeSale()" disabled><i class="ti ti-check"></i>Finalizar Venda</button>
+              <button class="btn btn-out" id="btn-qr-asaas" onclick="cobrarPdvAsaas()" style="width:100%;justify-content:center;margin-top:6px;font-size:12.5px"><i class="ti ti-qrcode"></i> Cobrar com QR (Asaas)</button>
             </div>
           </div>
         </div>
@@ -1454,10 +1456,10 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
         <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
           <div class="ig" style="flex:1;min-width:180px"><i class="ti ti-search"></i><input type="text" id="rep-busca" placeholder="Buscar produto..." oninput="renderReposicao()"></div>
           <select id="rep-filtro" onchange="renderReposicao()" style="padding:7px 10px;font-size:12.5px;border-radius:8px;width:auto">
+            <option value="todos" selected>Todos os produtos</option>
             <option value="repor">Precisam de reposição</option>
             <option value="zerado">Só zerados</option>
             <option value="critico">Zerado + crítico</option>
-            <option value="todos">Todos os produtos</option>
           </select>
           <button class="btn btn-out" onclick="exportarReposicao()"><i class="ti ti-file-text"></i> Lista de compra</button>
         </div>
@@ -2523,6 +2525,19 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
   <p style="font-size:13px;color:var(--success);font-weight:600;margin-top:4px" id="vok-troco"></p>
   <div class="modal-footer" style="justify-content:center;margin-top:18px">
     <button class="btn btn-out" onclick="closeModal('modal-venda-ok')"><i class="ti ti-plus"></i>Nova Venda</button>
+  </div>
+</div></div>
+
+<!-- QR Asaas (PDV) -->
+<div class="modal-overlay" id="modal-qr-asaas"><div class="modal sm" style="text-align:center;padding:28px">
+  <div class="modal-title" style="justify-content:center;font-size:18px"><i class="ti ti-qrcode" style="color:var(--pri)"></i> Pague com PIX, cartão ou boleto</div>
+  <p style="color:var(--txt2);font-size:12.5px;margin:4px 0 14px">Cliente escaneia o QR ou abre o link. Pagamento gerido pelo Asaas.</p>
+  <div id="qr-asaas-box" style="display:flex;justify-content:center;padding:10px;background:#fff;border-radius:12px;width:fit-content;margin:0 auto 14px;min-height:200px;align-items:center"></div>
+  <p style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:var(--pri)" id="qr-asaas-valor"></p>
+  <div style="display:flex;gap:8px;justify-content:center;margin-top:16px;flex-wrap:wrap">
+    <button class="btn btn-pri" id="qr-asaas-link"><i class="ti ti-external-link"></i> Abrir link</button>
+    <button class="btn btn-out" id="qr-asaas-copy"><i class="ti ti-copy"></i> Copiar link</button>
+    <button class="btn btn-out" onclick="closeModal('modal-qr-asaas')">Fechar</button>
   </div>
 </div></div>
 
@@ -5147,7 +5162,7 @@ function renderReposicao(){
   const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
   set('rep-zerado',z);set('rep-critico',c);set('rep-baixo',b);set('rep-ok',ok);
 
-  const filtro=document.getElementById('rep-filtro')?.value||'repor';
+  const filtro=document.getElementById('rep-filtro')?.value||'todos';
   const busca=(document.getElementById('rep-busca')?.value||'').toLowerCase();
   let list=prods.map(p=>({p,cls:_repoClassificar(p)}));
   if(filtro==='repor') list=list.filter(x=>x.cls.key!=='ok');
@@ -5160,7 +5175,10 @@ function renderReposicao(){
 
   const tb=document.getElementById('reposicao-table');
   if(!tb)return;
-  if(!list.length){ tb.innerHTML='<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--txt3)">Nenhum produto neste filtro. 🎉</td></tr>'; return; }
+  if(!list.length){
+    const semProd=!(G.produtos||[]).length;
+    tb.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--txt3)">${semProd?'Nenhum produto cadastrado ainda. Cadastre produtos em <b>Produtos</b>.':'Nenhum produto neste filtro. Defina o <b>estoque mínimo</b> dos produtos para o sistema sugerir reposição.'}</td></tr>`; return;
+  }
   tb.innerHTML=list.map(({p,cls})=>{
     const comprar=_repoComprar(p);
     return `<tr>
@@ -9363,6 +9381,42 @@ function baixarParcela(contratoId, parcIdx) {
 // Estrutura pronta. Só funciona após configurar a chave do Asaas na Edge
 // Function (ver supabase/functions/gerar-cobranca + GUIA_ASAAS.txt). Se não
 // estiver configurado, avisa o usuário com honestidade (não finge funcionar).
+// Cobra o total do carrinho via Asaas e mostra o QR na tela do PDV.
+// Reaproveita a Edge Function gerar-cobranca (cobra na conta da PRÓPRIA loja).
+async function cobrarPdvAsaas(){
+  const total=parseFloat((document.getElementById('c-tot')?.textContent||'').replace(/[^\d,]/g,'').replace(',','.'))||0;
+  if(total<=0){ notify('Adicione itens ao carrinho primeiro.','warn'); return; }
+  const cliSel=document.getElementById('cart-cli');
+  const cliId=cliSel?.value||null;
+  const cliNome=cliSel?.options[cliSel.selectedIndex]?.text||'Cliente PDV';
+  const cli=(G.clientes||[]).find(x=>x.id===cliId);
+  setLoad(true);
+  try{
+    const { data, error } = await db.functions.invoke('gerar-cobranca', {
+      body: {
+        cliente: { nome: cli?.nome||cliNome, asaasId: cli?.asaas_id||null, cpfCnpj: cli?.doc||cli?.cpf||'', telefone: cli?.telefone||'' },
+        valor: total, descricao: 'Venda no balcão', tipo: 'UNDEFINED'
+      }
+    });
+    setLoad(false);
+    if(error) throw error;
+    if(data && data.configured===false){ notify('Asaas não conectado nesta loja. Configure em Crediário → Pagamento (Asaas).','info',7000); return; }
+    if(data && data.error){ notify('Erro: '+data.error,'error',6000); return; }
+    const url=data.invoiceUrl;
+    if(!url){ notify('Não foi possível obter o link de pagamento.','warn'); return; }
+    // monta o QR e o modal
+    const box=document.getElementById('qr-asaas-box');
+    if(box){ box.innerHTML=''; try{ new QRCode(box,{text:url,width:200,height:200,correctLevel:QRCode.CorrectLevel.M}); }catch(e){ box.innerHTML='<div style="font-size:12px;color:var(--txt3)">QR indisponível, use o link abaixo.</div>'; } }
+    document.getElementById('qr-asaas-valor').textContent=fmt(total);
+    const linkBtn=document.getElementById('qr-asaas-link'); if(linkBtn)linkBtn.onclick=()=>window.open(url,'_blank');
+    const copyBtn=document.getElementById('qr-asaas-copy'); if(copyBtn)copyBtn.onclick=async()=>{ try{ await navigator.clipboard.writeText(url); notify('Link copiado!','success'); }catch(e){} };
+    openModal('modal-qr-asaas');
+  }catch(e){
+    setLoad(false);
+    notify('Não foi possível gerar a cobrança. Verifique a conexão do Asaas.','warn',6000);
+  }
+}
+
 async function gerarCobrancaParcela(contratoId, parcIdx){
   const c = G_CONTRATOS.find(x => x.id === contratoId); if(!c) return;
   const p = c.parcelas[parcIdx]; if(!p) return;
