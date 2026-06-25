@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 
@@ -4073,7 +4074,8 @@ async function renderCobrancas() {
       <td>
         <div style="display:flex;gap:4px;flex-wrap:wrap">
           <button class="btn btn-out btn-xs" onclick="enviarLembreteWhatsApp('${e.id}')" title="Enviar lembrete"><i class="ti ti-brand-whatsapp"></i></button>
-          <button class="btn btn-out btn-xs" onclick="gerarBoletoSimulado('${e.id}')" title="Gerar boleto"><i class="ti ti-file-invoice"></i></button>
+          <button class="btn btn-out btn-xs" onclick="gerarBoletoSimulado('${e.id}')" title="Gerar boleto (simulado)"><i class="ti ti-file-invoice"></i></button>
+          <button class="btn btn-pri btn-xs" onclick="cobrarEmpresaAsaas('${e.id}')" title="Cobrar via Asaas (PIX/boleto real)"><i class="ti ti-qrcode"></i></button>
           <button class="btn btn-pri btn-xs" onclick="abrirRegistrarPagamento('${e.id}')" title="Registrar pagamento"><i class="ti ti-cash"></i></button>
           <button class="btn btn-out btn-xs" onclick="abrirDetalhes('${e.id}')" title="Detalhes"><i class="ti ti-eye"></i></button>
         </div>
@@ -4130,6 +4132,48 @@ async function enviarLembreteWhatsApp(id) {
 }
 
 // Geração simulada de boleto (visual + botão "enviar boleto") (NOVO)
+// ── COBRAR EMPRESA via Asaas MASTER (cobrança real na SUA conta) ──────
+async function cobrarEmpresaAsaas(id){
+  const e = await getEmpresaById(id);
+  if (!e) return;
+  const plano = G.planos.find(p => p.id === e.plano);
+  const valor = plano?.preco || 0;
+  if(!e.doc){ notify('Esta empresa não tem CNPJ/CPF cadastrado. Cadastre antes de cobrar.','warn',6000); return; }
+  confirmAct(
+    'Cobrar via Asaas',
+    `Gerar cobrança REAL para "${e.nome}" no valor de R$ ${valor.toLocaleString('pt-BR',{minimumFractionDigits:2})} (plano ${plano?.nome||'—'})?\n\nO pagamento cai na SUA conta Asaas master.`,
+    async () => {
+      try{
+        notify('Gerando cobrança...','info',2500);
+        const { data, error } = await db.functions.invoke('cobrar-empresa', { body: { empresaId: e.id } });
+        if(error) throw error;
+        if(data && data.error){ notify('Erro: '+data.error,'error',7000); return; }
+        if(data && data.ok){
+          mostrarQrEmpresa(data);
+          addLog('cobranca', `Cobrança Asaas gerada para "${e.nome}" — R$ ${(data.valor||valor).toLocaleString('pt-BR',{minimumFractionDigits:2})}`, e.nome);
+        }
+      }catch(err){
+        notify('Não foi possível gerar a cobrança. Verifique o Asaas master (segredo ASAAS_MASTER_KEY).','warn',7000);
+      }
+    },
+    'Gerar cobrança'
+  );
+}
+function mostrarQrEmpresa(data){
+  const box=document.getElementById('qr-emp-box');
+  if(box){
+    box.innerHTML='';
+    if(data.pixQrCode){ const img=document.createElement('img'); img.src='data:image/png;base64,'+data.pixQrCode; img.style.width='210px'; img.style.height='210px'; box.appendChild(img); }
+    else { box.innerHTML='<div style="font-size:12px;color:var(--txt3)">Use o link abaixo para pagar.</div>'; }
+  }
+  document.getElementById('qr-emp-info').textContent = `${data.empresa} · R$ ${(data.valor||0).toLocaleString('pt-BR',{minimumFractionDigits:2})} · vence ${data.vencimento? new Date(data.vencimento+'T00:00:00').toLocaleDateString('pt-BR'):'—'}`;
+  const copyBtn=document.getElementById('qr-emp-copy');
+  if(copyBtn){ const code=data.pixCopiaECola||data.invoiceUrl||''; copyBtn.innerHTML='<i class="ti ti-copy"></i> '+(data.pixCopiaECola?'Copiar código PIX':'Copiar link'); copyBtn.onclick=async()=>{ try{ await navigator.clipboard.writeText(code); notify('Copiado!','success'); }catch(e){} }; }
+  const linkBtn=document.getElementById('qr-emp-link');
+  if(linkBtn){ if(data.invoiceUrl){ linkBtn.style.display=''; linkBtn.onclick=()=>window.open(data.invoiceUrl,'_blank'); } else linkBtn.style.display='none'; }
+  openModal('modal-qr-empresa');
+}
+
 async function gerarBoletoSimulado(id) {
   const e = await getEmpresaById(id);
   if (!e) return;
@@ -4607,5 +4651,17 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
   document.getElementById('login-screen').style.display = 'flex';
 })();
 </script>
+<div class="modal-overlay" id="modal-qr-empresa">
+  <div class="modal" style="max-width:420px;text-align:center">
+    <div class="modal-title" style="justify-content:center"><i class="ti ti-qrcode" style="color:var(--pri)"></i> Cobrança gerada</div>
+    <p id="qr-emp-info" style="font-size:12.5px;color:var(--txt2);margin:4px 0 14px"></p>
+    <div id="qr-emp-box" style="display:flex;justify-content:center;align-items:center;min-height:210px;background:#fff;border-radius:12px;padding:10px;width:fit-content;margin:0 auto 14px"></div>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+      <button class="btn btn-pri" id="qr-emp-link"><i class="ti ti-external-link"></i> Abrir link</button>
+      <button class="btn btn-out" id="qr-emp-copy"><i class="ti ti-copy"></i> Copiar</button>
+      <button class="btn btn-out" onclick="closeModal('modal-qr-empresa')">Fechar</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
