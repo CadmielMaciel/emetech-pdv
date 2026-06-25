@@ -1028,6 +1028,12 @@ select option { background: var(--bg2); }
       <!-- ══ PAGE: CONFIG ══ -->
       <div class="page" id="page-config">
         <div class="sec-hdr"><div class="sec-title">Configurações do painel</div></div>
+        <div style="display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap;border-bottom:1px solid var(--border);padding-bottom:10px">
+          <button class="btn btn-pri btn-xs" id="cfgtab-geral" onclick="cfgTab('geral')"><i class="ti ti-settings"></i> Geral</button>
+          <button class="btn btn-out btn-xs" id="cfgtab-pagamentos" onclick="cfgTab('pagamentos')"><i class="ti ti-credit-card-pay"></i> Pagamentos</button>
+        </div>
+
+        <div id="cfg-sec-geral">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
           <div class="card">
             <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:16px">Segurança do painel</div>
@@ -1067,6 +1073,34 @@ select option { background: var(--bg2); }
             Exclui <b>permanentemente todas as empresas</b> e todos os dados relacionados (produtos, clientes, vendas, OS, financeiro, usuários...). A empresa de sistema (admin_master) <b>não</b> é afetada e seu acesso ao painel é preservado. Esta ação <b>não pode ser desfeita</b>.
           </div>
           <button class="btn btn-danger" onclick="abrirLimparBanco()"><i class="ti ti-database-off"></i> Limpar banco de dados</button>
+        </div>
+        </div><!-- /cfg-sec-geral -->
+
+        <div id="cfg-sec-pagamentos" style="display:none">
+          <div class="card" style="max-width:640px">
+            <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px;margin-bottom:4px"><i class="ti ti-credit-card-pay" style="color:var(--pri)"></i> Asaas Master (cobrança das empresas)</div>
+            <div style="font-size:12.5px;color:var(--txt2);margin-bottom:14px">Conecte a SUA conta Asaas master. É com ela que você gera as cobranças das empresas que gerencia (o dinheiro cai na sua conta). A chave fica protegida no servidor — depois de salva, não é exibida de volta.</div>
+            <div id="cfgm-status" style="margin-bottom:14px"></div>
+            <div class="fg">
+              <label class="lbl">Chave de API do Asaas (master)</label>
+              <input type="password" id="cfgm-key" placeholder="Cole sua chave master (começa com $aact_...)" autocomplete="off">
+              <div style="font-size:11px;color:var(--txt3);margin-top:4px">No Asaas: Integrações → API → copie a chave. Deixe em branco para manter a atual.</div>
+            </div>
+            <div class="fg">
+              <label class="lbl">Ambiente</label>
+              <select id="cfgm-env">
+                <option value="producao">Produção (cobrança real)</option>
+                <option value="sandbox">Sandbox (teste)</option>
+              </select>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+              <button class="btn btn-pri" onclick="salvarChaveMaster()"><i class="ti ti-device-floppy"></i> Salvar conexão</button>
+              <a class="btn btn-out" href="https://www.asaas.com" target="_blank"><i class="ti ti-external-link"></i> Abrir Asaas</a>
+            </div>
+            <div style="font-size:11.5px;color:var(--txt3);margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+              <i class="ti ti-shield-lock"></i> Para gerar PIX direto, cadastre uma <b>chave PIX</b> na sua conta Asaas master.
+            </div>
+          </div>
         </div>
       </div>
 
@@ -4573,6 +4607,45 @@ async function populateSelects() {
 function openModal(id) {
   const m = document.getElementById(id);
   if (m) { m.classList.add('open'); }
+}
+
+// ── Configurações por setor ──
+function cfgTab(tab){
+  ['geral','pagamentos'].forEach(t=>{
+    const sec=document.getElementById('cfg-sec-'+t); if(sec)sec.style.display=(t===tab)?'':'none';
+    const btn=document.getElementById('cfgtab-'+t); if(btn){ btn.classList.toggle('btn-pri',t===tab); btn.classList.toggle('btn-out',t!==tab); }
+  });
+  if(tab==='pagamentos') renderConfigMaster();
+}
+async function renderConfigMaster(){
+  const box=document.getElementById('cfgm-status'); const envSel=document.getElementById('cfgm-env');
+  if(box)box.innerHTML='<div style="font-size:12.5px;color:var(--txt3)">Verificando conexão...</div>';
+  try{
+    const {data,error}=await db.rpc('status_master');
+    if(error)throw error;
+    const st=Array.isArray(data)?data[0]:data;
+    if(st&&st.configurado){
+      if(envSel)envSel.value=st.asaas_env||'producao';
+      if(box)box.innerHTML=`<div style="background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.4);border-radius:9px;padding:10px 12px;font-size:13px;color:#16a34a"><i class="ti ti-circle-check"></i> Conta Asaas master conectada · ambiente <b>${st.asaas_env==='producao'?'Produção':'Sandbox'}</b>. Para trocar a chave, cole uma nova e salve.</div>`;
+    } else {
+      if(box)box.innerHTML='<div style="background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.4);border-radius:9px;padding:10px 12px;font-size:13px;color:#b45309"><i class="ti ti-alert-circle"></i> Ainda não conectado. Cole sua chave Asaas master e salve.</div>';
+    }
+  }catch(e){
+    if(box)box.innerHTML='<div style="background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.4);border-radius:9px;padding:10px 12px;font-size:13px;color:#b45309"><i class="ti ti-alert-circle"></i> Não foi possível verificar (rode a migração U01 se ainda não rodou).</div>';
+  }
+}
+async function salvarChaveMaster(){
+  const key=document.getElementById('cfgm-key').value.trim();
+  const env=document.getElementById('cfgm-env').value;
+  const {data,error}=await db.rpc('salvar_chave_master',{p_key:key||null, p_env:env});
+  if(error){
+    if(/salvar_chave_master|does not exist/i.test(error.message||'')) notify('Rode a migração U01 no Supabase para ativar.','warn',7000);
+    else notify('Erro ao salvar: '+error.message,'error',6000);
+    return;
+  }
+  document.getElementById('cfgm-key').value='';
+  notify(key?'Conexão Asaas master salva!':'Ambiente atualizado.','success');
+  renderConfigMaster();
 }
 function closeModal(id) {
   const m = document.getElementById(id);
