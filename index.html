@@ -2530,8 +2530,8 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
 
 <!-- QR Asaas (PDV) -->
 <div class="modal-overlay" id="modal-qr-asaas"><div class="modal sm" style="text-align:center;padding:28px">
-  <div class="modal-title" style="justify-content:center;font-size:18px"><i class="ti ti-qrcode" style="color:var(--pri)"></i> Pague com PIX, cartão ou boleto</div>
-  <p style="color:var(--txt2);font-size:12.5px;margin:4px 0 14px">Cliente escaneia o QR ou abre o link. Pagamento gerido pelo Asaas.</p>
+  <div class="modal-title" style="justify-content:center;font-size:18px"><i class="ti ti-qrcode" style="color:var(--pri)"></i> Pague com PIX</div>
+  <p style="color:var(--txt2);font-size:12.5px;margin:4px 0 14px">Cliente escaneia o QR Code do PIX, ou usa o "copiar código". Pagamento via Asaas.</p>
   <div id="qr-asaas-box" style="display:flex;justify-content:center;padding:10px;background:#fff;border-radius:12px;width:fit-content;margin:0 auto 14px;min-height:200px;align-items:center"></div>
   <p style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:var(--pri)" id="qr-asaas-valor"></p>
   <div style="display:flex;gap:8px;justify-content:center;margin-top:16px;flex-wrap:wrap">
@@ -9403,13 +9403,32 @@ async function cobrarPdvAsaas(){
     if(data && data.configured===false){ notify('Asaas não conectado nesta loja. Configure em Crediário → Pagamento (Asaas).','info',7000); return; }
     if(data && data.error){ notify('Erro: '+data.error,'error',6000); return; }
     const url=data.invoiceUrl;
-    if(!url){ notify('Não foi possível obter o link de pagamento.','warn'); return; }
-    // monta o QR e o modal
     const box=document.getElementById('qr-asaas-box');
-    if(box){ box.innerHTML=''; try{ new QRCode(box,{text:url,width:200,height:200,correctLevel:QRCode.CorrectLevel.M}); }catch(e){ box.innerHTML='<div style="font-size:12px;color:var(--txt3)">QR indisponível, use o link abaixo.</div>'; } }
+    // Preferência: QR do PIX direto (imagem do Asaas). Fallback: QR do link.
+    if(box){
+      box.innerHTML='';
+      if(data.pixQrCode){
+        const img=document.createElement('img');
+        img.src='data:image/png;base64,'+data.pixQrCode;
+        img.style.width='210px'; img.style.height='210px';
+        box.appendChild(img);
+      } else if(url){
+        try{ new QRCode(box,{text:url,width:200,height:200,correctLevel:QRCode.CorrectLevel.M}); }
+        catch(e){ box.innerHTML='<div style="font-size:12px;color:var(--txt3)">Use o link abaixo para pagar.</div>'; }
+      } else {
+        box.innerHTML='<div style="font-size:12px;color:var(--txt3)">Não foi possível gerar o QR.</div>';
+      }
+    }
     document.getElementById('qr-asaas-valor').textContent=fmt(total);
-    const linkBtn=document.getElementById('qr-asaas-link'); if(linkBtn)linkBtn.onclick=()=>window.open(url,'_blank');
-    const copyBtn=document.getElementById('qr-asaas-copy'); if(copyBtn)copyBtn.onclick=async()=>{ try{ await navigator.clipboard.writeText(url); notify('Link copiado!','success'); }catch(e){} };
+    // Botão "Copiar PIX" (copia e cola) quando houver; senão copia o link
+    const copyBtn=document.getElementById('qr-asaas-copy');
+    if(copyBtn){
+      const pixCode=data.pixCopiaECola;
+      copyBtn.innerHTML='<i class="ti ti-copy"></i> '+(pixCode?'Copiar código PIX':'Copiar link');
+      copyBtn.onclick=async()=>{ try{ await navigator.clipboard.writeText(pixCode||url||''); notify(pixCode?'Código PIX copiado!':'Link copiado!','success'); }catch(e){} };
+    }
+    const linkBtn=document.getElementById('qr-asaas-link');
+    if(linkBtn){ if(url){ linkBtn.style.display=''; linkBtn.onclick=()=>window.open(url,'_blank'); } else { linkBtn.style.display='none'; } }
     openModal('modal-qr-asaas');
   }catch(e){
     setLoad(false);
