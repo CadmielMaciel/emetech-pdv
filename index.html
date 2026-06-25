@@ -9726,23 +9726,21 @@ async function renderConfigPagamento(){
 async function salvarChaveAsaas(){
   const key=document.getElementById('pag-key').value.trim();
   const env=document.getElementById('pag-env').value;
-  // Monta o payload: se a chave veio em branco, atualiza só o ambiente.
-  const payload={ empresa_id:EID(), asaas_env:env, atualizado_em:new Date().toISOString() };
-  if(key) payload.asaas_key=key;
-  if(!key){
-    // sem chave nova: só atualiza ambiente (precisa já existir registro)
-    setLoad(true);
-    const {error}=await db.from('config_pagamento').update({asaas_env:env,atualizado_em:new Date().toISOString()}).eq('empresa_id',EID());
-    setLoad(false);
-    if(error){notify('Cole a chave do Asaas para conectar pela primeira vez.','warn',5000);return;}
-    notify('Ambiente atualizado.','success'); renderConfigPagamento(); return;
-  }
   setLoad(true);
-  const {error}=await db.from('config_pagamento').upsert(payload,{onConflict:'empresa_id'});
+  // A gravação é feita por uma função no servidor (resolve a empresa sozinha e
+  // ignora o RLS de forma segura). Chave em branco = mantém a atual, só troca o ambiente.
+  const {data,error}=await db.rpc('salvar_chave_asaas',{p_key:key||null, p_env:env});
   setLoad(false);
-  if(error){notify('Erro ao salvar: '+error.message,'error',6000);return;}
+  if(error){
+    if(/function .*salvar_chave_asaas|does not exist/i.test(error.message||'')){
+      notify('Rode a migração R02 no Supabase para ativar a conexão do Asaas.','warn',7000);
+    } else {
+      notify('Erro ao salvar: '+error.message,'error',6000);
+    }
+    return;
+  }
   document.getElementById('pag-key').value='';
-  notify('Conexão com o Asaas salva!','success');
+  notify(key?'Conexão com o Asaas salva!':'Ambiente atualizado.','success');
   renderConfigPagamento();
 }
 
