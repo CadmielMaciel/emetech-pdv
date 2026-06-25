@@ -4161,14 +4161,23 @@ async function cobrarEmpresaAsaas(id){
 }
 function mostrarQrEmpresa(data){
   const box=document.getElementById('qr-emp-box');
+  const pixCode=data.pixCopiaECola;
   if(box){
     box.innerHTML='';
-    if(data.pixQrCode){ const img=document.createElement('img'); img.src='data:image/png;base64,'+data.pixQrCode; img.style.width='210px'; img.style.height='210px'; box.appendChild(img); }
-    else { box.innerHTML='<div style="font-size:12px;color:var(--txt3)">Use o link abaixo para pagar.</div>'; }
+    if(pixCode){
+      // QR a partir do CÓDIGO PIX — aceito por qualquer banco
+      try{ new QRCode(box,{text:pixCode,width:210,height:210,correctLevel:QRCode.CorrectLevel.M}); }
+      catch(e){ box.innerHTML='<div style="font-size:12px;color:var(--txt3)">Use o código PIX abaixo.</div>'; }
+    } else if(data.pixQrCode){
+      const img=document.createElement('img'); img.src='data:image/png;base64,'+data.pixQrCode; img.style.width='210px'; img.style.height='210px'; box.appendChild(img);
+    } else if(data.invoiceUrl){
+      try{ new QRCode(box,{text:data.invoiceUrl,width:200,height:200,correctLevel:QRCode.CorrectLevel.M}); }catch(e){}
+      notify('Sua conta Asaas master ainda não tem PIX configurado — o QR abre a página. Configure uma chave PIX no Asaas para QR direto.','info',8000);
+    } else { box.innerHTML='<div style="font-size:12px;color:var(--txt3)">Use o link abaixo para pagar.</div>'; }
   }
   document.getElementById('qr-emp-info').textContent = `${data.empresa} · R$ ${(data.valor||0).toLocaleString('pt-BR',{minimumFractionDigits:2})} · vence ${data.vencimento? new Date(data.vencimento+'T00:00:00').toLocaleDateString('pt-BR'):'—'}`;
   const copyBtn=document.getElementById('qr-emp-copy');
-  if(copyBtn){ const code=data.pixCopiaECola||data.invoiceUrl||''; copyBtn.innerHTML='<i class="ti ti-copy"></i> '+(data.pixCopiaECola?'Copiar código PIX':'Copiar link'); copyBtn.onclick=async()=>{ try{ await navigator.clipboard.writeText(code); notify('Copiado!','success'); }catch(e){} }; }
+  if(copyBtn){ const code=pixCode||data.invoiceUrl||''; copyBtn.innerHTML='<i class="ti ti-copy"></i> '+(pixCode?'Copiar código PIX':'Copiar link'); copyBtn.onclick=async()=>{ try{ await navigator.clipboard.writeText(code); notify('Copiado!','success'); }catch(e){} }; }
   const linkBtn=document.getElementById('qr-emp-link');
   if(linkBtn){ if(data.invoiceUrl){ linkBtn.style.display=''; linkBtn.onclick=()=>window.open(data.invoiceUrl,'_blank'); } else linkBtn.style.display='none'; }
   openModal('modal-qr-empresa');
