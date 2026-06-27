@@ -668,6 +668,7 @@ select option { background: var(--bg2); }
       <div class="sb-sec">Sistema</div>
       <div class="sb-item" onclick="go('suporte')"><i class="ti ti-headset"></i> Suporte</div>
       <div class="sb-item" onclick="go('config')"><i class="ti ti-settings"></i> Configurações</div>
+      <div class="sb-item" onclick="go('config');setTimeout(()=>cfgTab('admins'),80)"><i class="ti ti-crown"></i> Administradores</div>
     </nav>
     <div class="sb-footer">
       <div class="sb-user">
@@ -1032,6 +1033,7 @@ select option { background: var(--bg2); }
         <div style="display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap;border-bottom:1px solid var(--border);padding-bottom:10px">
           <button class="btn btn-pri btn-xs" id="cfgtab-geral" onclick="cfgTab('geral')"><i class="ti ti-settings"></i> Geral</button>
           <button class="btn btn-out btn-xs" id="cfgtab-pagamentos" onclick="cfgTab('pagamentos')"><i class="ti ti-credit-card-pay"></i> Pagamentos</button>
+          <button class="btn btn-out btn-xs" id="cfgtab-admins" onclick="cfgTab('admins')"><i class="ti ti-crown"></i> Administradores</button>
         </div>
 
         <div id="cfg-sec-geral">
@@ -1103,9 +1105,75 @@ select option { background: var(--bg2); }
             </div>
           </div>
         </div>
-      </div>
 
-      <div class="page" id="page-suporte">
+        <!-- ABA: ADMINISTRADORES DO PAINEL MASTER -->
+        <div id="cfg-sec-admins" style="display:none">
+          <div style="background:linear-gradient(135deg,rgba(91,71,224,.08),rgba(124,58,237,.04));border:1.5px solid rgba(91,71,224,.18);border-radius:12px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:flex-start;gap:12px">
+            <i class="ti ti-crown" style="font-size:22px;color:var(--pri);flex-shrink:0;margin-top:1px"></i>
+            <div>
+              <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:var(--txt);margin-bottom:4px">Administradores do Painel Master</div>
+              <div style="font-size:12px;color:var(--txt2);line-height:1.5">
+                Usuários com acesso irrestrito ao <strong>admin.html</strong> — gerenciam todas as empresas, planos e cobranças.<br>
+                <span style="color:var(--danger);font-weight:600">⚠️ Não confundir com os Admins de cada loja (PDV).</span> Admin Master não acessa o PDV das lojas.
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-bottom:16px">
+            <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:14px;display:flex;align-items:center;gap:8px">
+              <i class="ti ti-user-plus" style="color:var(--pri)"></i> Adicionar Administrador Master
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:flex-end">
+              <div class="fg" style="margin-bottom:0">
+                <label class="lbl">Nome *</label>
+                <input type="text" id="adm-novo-nome" placeholder="Nome completo">
+              </div>
+              <div class="fg" style="margin-bottom:0">
+                <label class="lbl">E-mail *</label>
+                <input type="email" id="adm-novo-email" placeholder="email@exemplo.com">
+              </div>
+              <button class="btn btn-pri" onclick="adicionarAdminMaster()" style="white-space:nowrap">
+                <i class="ti ti-plus"></i> Adicionar
+              </button>
+            </div>
+            <div style="font-size:11px;color:var(--txt3);margin-top:8px">
+              <i class="ti ti-info-circle"></i> Registra o e-mail para controle de acesso. O usuário precisa ter uma conta Supabase Auth com o campo <code>role = 'admin_master'</code> no perfil <code>public.usuarios</code>.
+            </div>
+          </div>
+
+          <div class="card" style="padding:0">
+            <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+              <div style="font-weight:700;font-size:13px;display:flex;align-items:center;gap:7px">
+                <i class="ti ti-shield-lock" style="color:var(--pri)"></i> Administradores cadastrados
+              </div>
+              <button class="btn btn-out btn-sm" onclick="renderAdminMasterListAdmin()"><i class="ti ti-refresh"></i> Atualizar</button>
+            </div>
+            <div class="tw"><table>
+              <thead><tr><th>Nome</th><th>E-mail</th><th>Adicionado em</th><th>Status</th><th>Ações</th></tr></thead>
+              <tbody id="adm-master-table">
+                <tr><td colspan="5" style="text-align:center;padding:28px;color:var(--txt3)">Clique na aba para carregar</td></tr>
+              </tbody>
+            </table></div>
+          </div>
+
+          <div id="adm-sql-hint" style="display:none;margin-top:14px;background:rgba(245,158,11,.08);border:1.5px solid rgba(245,158,11,.25);border-radius:10px;padding:14px 16px">
+            <div style="font-weight:700;font-size:13px;color:#b45309;margin-bottom:8px"><i class="ti ti-alert-triangle"></i> Migração X01 necessária</div>
+            <div style="font-size:12px;color:var(--txt2);margin-bottom:10px">Rode este SQL no Supabase SQL Editor:</div>
+            <pre id="adm-sql-text" style="font-family:'DM Mono',monospace;font-size:11px;background:var(--bg2);border-radius:8px;padding:12px;overflow-x:auto;color:var(--txt);border:1px solid var(--border);white-space:pre-wrap">CREATE TABLE IF NOT EXISTS admin_master (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  nome text NOT NULL,
+  email text UNIQUE NOT NULL,
+  ativo boolean DEFAULT true,
+  criado_em timestamptz DEFAULT now()
+);
+ALTER TABLE admin_master ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "master_all" ON admin_master FOR ALL USING (true) WITH CHECK (true);</pre>
+            <button class="btn btn-out btn-sm" style="margin-top:8px" onclick="navigator.clipboard.writeText(document.getElementById('adm-sql-text').textContent).then(()=>notify('SQL copiado!','success'))">
+              <i class="ti ti-copy"></i> Copiar SQL
+            </button>
+          </div>
+        </div><!-- /cfg-sec-admins -->
+      </div><!-- /page-config -->
         <div class="sec-hdr"><div class="sec-title">Suporte (exibido no app das empresas)</div></div>
         <div class="card" style="max-width:600px">
           <div style="font-size:12.5px;color:var(--txt2);margin-bottom:16px">
@@ -4612,11 +4680,94 @@ function openModal(id) {
 
 // ── Configurações por setor ──
 function cfgTab(tab){
-  ['geral','pagamentos'].forEach(t=>{
+  ['geral','pagamentos','admins'].forEach(t=>{
     const sec=document.getElementById('cfg-sec-'+t); if(sec)sec.style.display=(t===tab)?'':'none';
     const btn=document.getElementById('cfgtab-'+t); if(btn){ btn.classList.toggle('btn-pri',t===tab); btn.classList.toggle('btn-out',t!==tab); }
   });
   if(tab==='pagamentos') renderConfigMaster();
+  if(tab==='admins') renderAdminMasterListAdmin();
+}
+
+// ── ADMIN MASTER — lista e gestão ─────────────────────
+async function renderAdminMasterListAdmin() {
+  const tbody = document.getElementById('adm-master-table'); if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px"><div class="spinner" style="margin:0 auto 8px"></div><div style="font-size:12px;color:var(--txt3)">Carregando...</div></td></tr>';
+  document.getElementById('adm-sql-hint').style.display = 'none';
+  try {
+    const { data, error } = await db.from('admin_master').select('*').order('criado_em', { ascending: false });
+    if (error) throw error;
+    const list = data || [];
+    if (list.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--txt3)"><i class="ti ti-crown" style="font-size:28px;opacity:.3;display:block;margin-bottom:8px"></i>Nenhum administrador cadastrado ainda</td></tr>';
+      return;
+    }
+    tbody.innerHTML = list.map(u => `<tr>
+      <td><div style="font-weight:600;font-size:13px">${u.nome || '—'}</div></td>
+      <td><span style="font-size:12px;color:var(--txt2);font-family:'DM Mono',monospace">${u.email || '—'}</span></td>
+      <td style="font-size:11px;color:var(--txt3)">${u.criado_em ? new Date(u.criado_em).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'}) : '—'}</td>
+      <td>
+        <span class="badge ${u.ativo !== false ? 'badge-ok' : 'badge-warn'}" style="cursor:pointer" onclick="toggleAdminMasterAtivo('${u.id}',${u.ativo !== false})">
+          ${u.ativo !== false ? '✅ Ativo' : '⏸️ Inativo'}
+        </span>
+      </td>
+      <td>
+        <div style="display:flex;gap:4px">
+          <button class="btn btn-out btn-xs" onclick="toggleAdminMasterAtivo('${u.id}',${u.ativo !== false})" title="${u.ativo !== false ? 'Desativar' : 'Ativar'}">
+            <i class="ti ti-${u.ativo !== false ? 'pause' : 'play'}"></i>
+          </button>
+          <button class="btn btn-danger btn-xs" onclick="removerAdminMaster('${u.id}','${u.nome||u.email}')" title="Remover">
+            <i class="ti ti-trash"></i>
+          </button>
+        </div>
+      </td>
+    </tr>`).join('');
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--txt3)">
+      <i class="ti ti-alert-circle" style="font-size:22px;display:block;margin-bottom:8px;color:var(--warn)"></i>
+      Tabela <code>admin_master</code> não encontrada.
+    </td></tr>`;
+    document.getElementById('adm-sql-hint').style.display = '';
+  }
+}
+
+async function adicionarAdminMaster() {
+  const nome = document.getElementById('adm-novo-nome').value.trim();
+  const email = document.getElementById('adm-novo-email').value.trim();
+  if (!nome) { notify('Informe o nome.', 'error'); return; }
+  if (!email || !email.includes('@')) { notify('Informe um e-mail válido.', 'error'); return; }
+  setLoad(true);
+  const { error } = await db.from('admin_master').insert({ nome, email, ativo: true });
+  setLoad(false);
+  if (error) {
+    if (/unique|duplicate/i.test(error.message)) notify('Este e-mail já está cadastrado como Admin Master.', 'warn');
+    else if (/does not exist/i.test(error.message)) { notify('Rode a migração X01 primeiro.', 'warn'); document.getElementById('adm-sql-hint').style.display = ''; }
+    else notify('Erro: ' + error.message, 'error');
+    return;
+  }
+  document.getElementById('adm-novo-nome').value = '';
+  document.getElementById('adm-novo-email').value = '';
+  notify(`${nome} adicionado como Admin Master!`, 'success');
+  renderAdminMasterListAdmin();
+}
+
+async function toggleAdminMasterAtivo(id, ativoAtual) {
+  const novoAtivo = !ativoAtual;
+  setLoad(true);
+  const { error } = await db.from('admin_master').update({ ativo: novoAtivo }).eq('id', id);
+  setLoad(false);
+  if (error) { notify('Erro: ' + error.message, 'error'); return; }
+  notify(novoAtivo ? 'Admin ativado.' : 'Admin desativado.', 'info');
+  renderAdminMasterListAdmin();
+}
+
+async function removerAdminMaster(id, nome) {
+  if (!confirm(`Remover "${nome}" dos Administradores Master?\n\nEsta ação revoga o acesso ao painel.`)) return;
+  setLoad(true);
+  const { error } = await db.from('admin_master').delete().eq('id', id);
+  setLoad(false);
+  if (error) { notify('Erro: ' + error.message, 'error'); return; }
+  notify(`${nome} removido dos Admin Masters.`, 'info');
+  renderAdminMasterListAdmin();
 }
 async function renderConfigMaster(){
   const box=document.getElementById('cfgm-status'); const envSel=document.getElementById('cfgm-env');
