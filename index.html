@@ -1311,10 +1311,33 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
           <div>
             <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:var(--txt)">Contratos & Termos</div>
-            <div style="font-size:12.5px;color:var(--txt3)">Modelos de termo que você pode gerar na venda ou na OS. Use variáveis como {cliente}, {produto}, {valor}, {data}, {loja}.</div>
+            <div style="font-size:12.5px;color:var(--txt3)">Modelos por tipo — gerados na venda, OS ou para funcionários. Use variáveis como {cliente}, {produto}, {valor}, {data}, {loja}.</div>
           </div>
           <button class="btn btn-pri" onclick="novoContrato()"><i class="ti ti-plus"></i> Novo modelo</button>
         </div>
+
+        <!-- Filtro por tipo -->
+        <div class="fin-tabs" style="margin-bottom:16px" id="ct-tipo-tabs">
+          <button class="fin-tab active" onclick="ctFiltroTipo('',this)"><i class="ti ti-files" style="font-size:12px"></i> Todos</button>
+          <button class="fin-tab" onclick="ctFiltroTipo('garantia',this)"><i class="ti ti-shield-check" style="font-size:12px"></i> Garantia</button>
+          <button class="fin-tab" onclick="ctFiltroTipo('servico_os',this)"><i class="ti ti-tools" style="font-size:12px"></i> OS / Serviço</button>
+          <button class="fin-tab" onclick="ctFiltroTipo('venda',this)"><i class="ti ti-shopping-cart" style="font-size:12px"></i> Venda</button>
+          <button class="fin-tab" onclick="ctFiltroTipo('funcionario',this)"><i class="ti ti-id-badge" style="font-size:12px"></i> Funcionário</button>
+          <button class="fin-tab" onclick="ctFiltroTipo('outro',this)"><i class="ti ti-file" style="font-size:12px"></i> Outros</button>
+        </div>
+
+        <!-- Templates prontos (apenas se não tiver modelos) -->
+        <div id="ct-templates-hint" style="display:none;background:var(--pri-light);border:1.5px solid rgba(91,71,224,.15);border-radius:12px;padding:14px 16px;margin-bottom:14px">
+          <div style="font-weight:700;font-size:13px;color:var(--pri);margin-bottom:8px"><i class="ti ti-sparkles"></i> Criar a partir de um template pronto</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px">
+            <button class="btn btn-out btn-sm" onclick="criarDeTemplate('garantia_os')"><i class="ti ti-shield-check"></i> Termo de Garantia OS</button>
+            <button class="btn btn-out btn-sm" onclick="criarDeTemplate('garantia_venda')"><i class="ti ti-shield"></i> Garantia de Produto</button>
+            <button class="btn btn-out btn-sm" onclick="criarDeTemplate('entrada_os')"><i class="ti ti-file-check"></i> Termo de Entrada OS</button>
+            <button class="btn btn-out btn-sm" onclick="criarDeTemplate('funcionario_clt')"><i class="ti ti-id-badge"></i> Contrato de Funcionário</button>
+            <button class="btn btn-out btn-sm" onclick="criarDeTemplate('tecnico_autonomo')"><i class="ti ti-tools"></i> Contrato Técnico Autônomo</button>
+          </div>
+        </div>
+
         <div id="contratos-lista" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px"></div>
       </div>
 
@@ -3715,26 +3738,53 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
 <!-- MODAL DOCUMENTOS OS -->
 <!-- Modal: cadastrar/editar modelo de contrato -->
 <div class="modal-overlay" id="modal-contrato-edit">
-  <div class="modal" style="max-width:680px">
+  <div class="modal" style="max-width:720px">
     <div class="modal-title"><i class="ti ti-file-certificate" style="color:var(--pri)"></i><span id="ct-edit-titulo">Novo modelo de contrato</span></div>
     <input type="hidden" id="ct-id">
     <div class="g2">
-      <div class="fg"><label class="lbl">Nome do modelo *</label><input type="text" id="ct-nome" placeholder="Ex: Termo de venda — iPhone"></div>
-      <div class="fg"><label class="lbl">Sugerir para (marca/categoria)</label><input type="text" id="ct-sugestao" placeholder="Ex: Apple, iPhone, Xiaomi..."></div>
-    </div>
-    <div class="fg">
-      <label class="lbl">Texto do contrato *</label>
-      <div style="font-size:11px;color:var(--txt3);margin-bottom:6px">Variáveis (clique para inserir): 
-        <span class="ct-var" onclick="insVarContrato('{cliente}')">{cliente}</span>
-        <span class="ct-var" onclick="insVarContrato('{cpf}')">{cpf}</span>
-        <span class="ct-var" onclick="insVarContrato('{produto}')">{produto}</span>
-        <span class="ct-var" onclick="insVarContrato('{valor}')">{valor}</span>
-        <span class="ct-var" onclick="insVarContrato('{data}')">{data}</span>
-        <span class="ct-var" onclick="insVarContrato('{loja}')">{loja}</span>
-        <span class="ct-var" onclick="insVarContrato('{numero}')">{numero}</span>
-        <span class="ct-var" onclick="insVarContrato('{garantia}')">{garantia}</span>
+      <div class="fg"><label class="lbl">Nome do modelo *</label><input type="text" id="ct-nome" placeholder="Ex: Termo de Garantia OS — iPhone"></div>
+      <div class="fg"><label class="lbl">Tipo *</label>
+        <select id="ct-tipo" onchange="ctTipoChange()">
+          <option value="garantia">🛡️ Garantia (OS ou Venda)</option>
+          <option value="servico_os">🔧 OS / Serviço</option>
+          <option value="venda">🛒 Venda de Produto</option>
+          <option value="funcionario">👤 Contrato de Funcionário</option>
+          <option value="outro">📄 Outro</option>
+        </select>
       </div>
-      <textarea id="ct-corpo" rows="12" placeholder="Ex: Pelo presente termo, {loja} vende ao cliente {cliente} (CPF {cpf}) o produto {produto}, no valor de {valor}, na data {data}..." style="font-family:'DM Sans',sans-serif;line-height:1.5"></textarea>
+    </div>
+    <div class="fg"><label class="lbl">Sugerir para (marca/categoria)</label><input type="text" id="ct-sugestao" placeholder="Ex: Apple, iPhone, Xiaomi, Todos..."></div>
+    <div class="fg">
+      <label class="lbl">Variáveis disponíveis <span style="font-size:10px;color:var(--txt3)">(clique para inserir)</span></label>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px">
+        <div id="ct-vars-comuns" style="display:flex;flex-wrap:wrap;gap:5px">
+          <span class="ct-var" onclick="insVarContrato('{cliente}')">{cliente}</span>
+          <span class="ct-var" onclick="insVarContrato('{cpf}')">{cpf}</span>
+          <span class="ct-var" onclick="insVarContrato('{produto}')">{produto}</span>
+          <span class="ct-var" onclick="insVarContrato('{valor}')">{valor}</span>
+          <span class="ct-var" onclick="insVarContrato('{data}')">{data}</span>
+          <span class="ct-var" onclick="insVarContrato('{loja}')">{loja}</span>
+          <span class="ct-var" onclick="insVarContrato('{cnpj_loja}')">{cnpj_loja}</span>
+          <span class="ct-var" onclick="insVarContrato('{numero}')">{numero}</span>
+          <span class="ct-var" onclick="insVarContrato('{garantia}')">{garantia}</span>
+          <span class="ct-var" onclick="insVarContrato('{tecnico}')">{tecnico}</span>
+        </div>
+        <div id="ct-vars-func" style="display:none;flex-wrap:wrap;gap:5px;width:100%;margin-top:4px;padding-top:6px;border-top:1px solid var(--border)">
+          <span style="font-size:10px;color:var(--txt3);width:100%;margin-bottom:2px">Específicas de funcionário:</span>
+          <span class="ct-var" onclick="insVarContrato('{funcionario}')">{funcionario}</span>
+          <span class="ct-var" onclick="insVarContrato('{cargo}')">{cargo}</span>
+          <span class="ct-var" onclick="insVarContrato('{carga_horaria}')">{carga_horaria}</span>
+          <span class="ct-var" onclick="insVarContrato('{salario}')">{salario}</span>
+          <span class="ct-var" onclick="insVarContrato('{data_inicio}')">{data_inicio}</span>
+          <span class="ct-var" onclick="insVarContrato('{cpf_func}')">{cpf_func}</span>
+          <span class="ct-var" onclick="insVarContrato('{rg_func}')">{rg_func}</span>
+          <span class="ct-var" onclick="insVarContrato('{endereco_func}')">{endereco_func}</span>
+        </div>
+      </div>
+      <textarea id="ct-corpo" rows="14" placeholder="Digite o texto do contrato..." style="font-family:'DM Sans',sans-serif;line-height:1.6"></textarea>
+    </div>
+    <div id="ct-func-aviso" style="display:none;background:rgba(245,158,11,.08);border:1.5px solid rgba(245,158,11,.2);border-radius:10px;padding:10px 14px;font-size:12px;color:#b45309;margin-bottom:8px">
+      <i class="ti ti-info-circle"></i> Ao <strong>gerar</strong> um contrato de funcionário, você preencherá os dados específicos (cargo, carga horária, salário) na hora.
     </div>
     <div class="modal-footer">
       <button class="btn btn-out" onclick="closeModal('modal-contrato-edit')">Cancelar</button>
@@ -3764,7 +3814,49 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
   </div>
 </div>
 
-<div class="modal-overlay" id="modal-docs-os">
+<!-- Modal: gerar contrato de funcionário -->
+<div class="modal-overlay" id="modal-contrato-func">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-title"><i class="ti ti-id-badge" style="color:var(--pri)"></i>Gerar Contrato de Funcionário</div>
+    <input type="hidden" id="cf-modelo-id">
+    <p style="font-size:12.5px;color:var(--txt2);margin-bottom:12px" id="cf-modelo-nome"></p>
+    <div class="g2">
+      <div class="fg"><label class="lbl">Nome do Funcionário *</label><input type="text" id="cf-funcionario" placeholder="Nome completo"></div>
+      <div class="fg"><label class="lbl">Cargo / Função *</label>
+        <select id="cf-cargo">
+          <option value="Operador de Caixa">Operador de Caixa</option>
+          <option value="Técnico em Celulares">Técnico em Celulares</option>
+          <option value="Técnico Autônomo">Técnico Autônomo (prestador)</option>
+          <option value="Vendedor">Vendedor</option>
+          <option value="Gerente">Gerente</option>
+          <option value="Outro">Outro (digitar abaixo)</option>
+        </select>
+      </div>
+    </div>
+    <div class="g2">
+      <div class="fg"><label class="lbl">Carga Horária</label><input type="text" id="cf-carga" placeholder="Ex: 44h semanais, 8h/dia..."></div>
+      <div class="fg"><label class="lbl">Salário / Remuneração</label><input type="text" id="cf-salario" placeholder="Ex: R$ 1.500,00 mensais"></div>
+    </div>
+    <div class="g2">
+      <div class="fg"><label class="lbl">CPF do Funcionário</label><input type="text" id="cf-cpf" placeholder="000.000.000-00"></div>
+      <div class="fg"><label class="lbl">RG</label><input type="text" id="cf-rg" placeholder="0000000"></div>
+    </div>
+    <div class="fg"><label class="lbl">Endereço do Funcionário</label><input type="text" id="cf-endereco" placeholder="Rua, número, bairro, cidade"></div>
+    <div class="fg"><label class="lbl">Data de Início</label><input type="date" id="cf-inicio"></div>
+    <div style="margin:10px 0">
+      <label class="lbl">Formato de saída</label>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button type="button" class="btn btn-pri btn-xs cf-fmt" data-fmt="a4" onclick="cfSetFmt('a4',this)" style="flex:1">📄 A4 / PDF</button>
+        <button type="button" class="btn btn-out btn-xs cf-fmt" data-fmt="58" onclick="cfSetFmt('58',this)" style="flex:1">🧾 58mm</button>
+        <button type="button" class="btn btn-out btn-xs cf-fmt" data-fmt="80" onclick="cfSetFmt('80',this)" style="flex:1">🧾 80mm</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-out" onclick="closeModal('modal-contrato-func')">Cancelar</button>
+      <button class="btn btn-pri" onclick="emitirContratoFuncionario()"><i class="ti ti-printer"></i> Gerar contrato</button>
+    </div>
+  </div>
+</div>
   <div class="modal" style="max-width:500px">
     <div class="modal-title">
       <i class="ti ti-file-text" style="color:var(--pri)"></i>
@@ -16199,69 +16291,123 @@ async function carregarContratosModelos(){
   }catch(e){ G_CONTRATOS_MODELOS=[]; /* tabela pode não existir ainda (migração W01) */ }
 }
 
-function renderContratos(){
-  carregarContratosModelos().then(()=>{
-    const cont=document.getElementById('contratos-lista');
-    if(!cont)return;
-    if(!G_CONTRATOS_MODELOS.length){
-      cont.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--txt3)">
-        <i class="ti ti-file-certificate" style="font-size:42px;opacity:.4"></i>
-        <p style="margin-top:10px">Nenhum modelo de contrato ainda.<br>Crie um (ex: "Termo de venda — iPhone") e use na venda ou na OS.</p>
-        <p style="font-size:11.5px;margin-top:8px">Se acabou de criar e não apareceu, rode a migração <b>W01</b> no Supabase.</p>
-      </div>`;
-      return;
-    }
-    cont.innerHTML=G_CONTRATOS_MODELOS.map(m=>`
-      <div class="card" style="padding:14px">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
-          <div style="font-weight:700;font-size:14px;color:var(--txt)"><i class="ti ti-file-certificate" style="color:var(--pri)"></i> ${esc(m.nome)}</div>
-        </div>
-        ${m.sugestao?`<div style="font-size:11.5px;color:var(--txt3);margin-top:4px">Sugerido para: <b>${esc(m.sugestao)}</b></div>`:''}
-        <div style="font-size:12px;color:var(--txt2);margin-top:8px;max-height:60px;overflow:hidden;line-height:1.45">${esc((m.corpo||'').slice(0,160))}${(m.corpo||'').length>160?'…':''}</div>
-        <div style="display:flex;gap:6px;margin-top:12px">
-          <button class="btn btn-out btn-xs" onclick="editarContrato('${m.id}')"><i class="ti ti-edit"></i> Editar</button>
-          <button class="btn btn-out btn-xs" onclick="excluirContrato('${m.id}')" style="color:var(--danger)"><i class="ti ti-trash"></i></button>
-        </div>
-      </div>`).join('');
-  });
+// ── TIPO LABELS / ICONS ──────────────────────────────
+const CT_TIPOS = {
+  garantia:   { icon:'ti-shield-check',  label:'Garantia',          cor:'var(--success)' },
+  servico_os: { icon:'ti-tools',         label:'OS / Serviço',      cor:'var(--pri)'     },
+  venda:      { icon:'ti-shopping-cart', label:'Venda',             cor:'var(--warn)'    },
+  funcionario:{ icon:'ti-id-badge',      label:'Funcionário',       cor:'#8b5cf6'        },
+  outro:      { icon:'ti-file',          label:'Outro',             cor:'var(--txt3)'    },
+};
+
+let _ctFiltroTipo = '';
+
+function ctFiltroTipo(tipo, btn) {
+  _ctFiltroTipo = tipo;
+  document.querySelectorAll('#ct-tipo-tabs .fin-tab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderContratosLista();
 }
 
-function novoContrato(){
-  document.getElementById('ct-id').value='';
-  document.getElementById('ct-nome').value='';
-  document.getElementById('ct-sugestao').value='';
-  document.getElementById('ct-corpo').value='';
-  document.getElementById('ct-edit-titulo').textContent='Novo modelo de contrato';
+function ctTipoChange() {
+  const tipo = document.getElementById('ct-tipo').value;
+  const funcVars = document.getElementById('ct-vars-func');
+  const funcAviso = document.getElementById('ct-func-aviso');
+  if (funcVars) funcVars.style.display = tipo === 'funcionario' ? 'flex' : 'none';
+  if (funcAviso) funcAviso.style.display = tipo === 'funcionario' ? '' : 'none';
+}
+
+function renderContratos() {
+  carregarContratosModelos().then(() => renderContratosLista());
+}
+
+function renderContratosLista() {
+  const cont = document.getElementById('contratos-lista'); if (!cont) return;
+  const hint = document.getElementById('ct-templates-hint');
+  const modelos = G.contratoModelos || G_CONTRATOS_MODELOS || [];
+  const list = _ctFiltroTipo ? modelos.filter(m => (m.tipo || 'outro') === _ctFiltroTipo) : modelos;
+
+  // Mostrar hint de templates se não tiver nenhum modelo
+  if (hint) hint.style.display = modelos.length === 0 ? '' : 'none';
+
+  const podeMexer = ['admin','gerente'].includes(G.role);
+
+  if (list.length === 0) {
+    cont.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--txt3)">
+      <i class="ti ti-file-certificate" style="font-size:42px;opacity:.4;display:block;margin-bottom:10px"></i>
+      <div style="font-size:14px;font-weight:600;margin-bottom:6px">${_ctFiltroTipo ? 'Nenhum modelo deste tipo' : 'Nenhum modelo de contrato ainda'}</div>
+      <div style="font-size:12px">${_ctFiltroTipo ? 'Crie um novo ou mude o filtro acima.' : 'Crie um modelo ou use um dos templates prontos acima.'}</div>
+    </div>`;
+    return;
+  }
+
+  cont.innerHTML = list.map(m => {
+    const tp = CT_TIPOS[m.tipo || 'outro'] || CT_TIPOS.outro;
+    const isFuncionario = (m.tipo || 'outro') === 'funcionario';
+    return `<div class="card" style="padding:14px;border-top:3px solid ${tp.cor}">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px">
+        <div>
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+            <i class="ti ${tp.icon}" style="color:${tp.cor};font-size:15px"></i>
+            <span style="font-size:10px;font-weight:700;color:${tp.cor};text-transform:uppercase;letter-spacing:.6px">${tp.label}</span>
+          </div>
+          <div style="font-weight:700;font-size:14px;color:var(--txt)">${esc(m.nome)}</div>
+        </div>
+      </div>
+      ${m.sugestao ? `<div style="font-size:11px;color:var(--txt3);margin-bottom:6px">Para: <b>${esc(m.sugestao)}</b></div>` : ''}
+      <div style="font-size:12px;color:var(--txt2);max-height:52px;overflow:hidden;line-height:1.45;margin-bottom:12px">${esc((m.corpo||'').slice(0,140))}${(m.corpo||'').length>140?'…':''}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${isFuncionario
+          ? `<button class="btn btn-pri btn-xs" onclick="abrirGerarContratoFuncionario('${m.id}')"><i class="ti ti-printer"></i> Gerar</button>`
+          : `<button class="btn btn-pri btn-xs" onclick="abrirGerarContrato({tipo:'contrato',numero:'',cliente:'',produto:'',valor:0,garantia:'',numero:''},'${m.id}')"><i class="ti ti-printer"></i> Gerar</button>`}
+        ${podeMexer ? `<button class="btn btn-out btn-xs" onclick="editarContrato('${m.id}')"><i class="ti ti-edit"></i></button>` : ''}
+        ${podeMexer ? `<button class="btn btn-out btn-xs" style="color:var(--danger)" onclick="excluirContrato('${m.id}')"><i class="ti ti-trash"></i></button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function novoContrato() {
+  if (!['admin','gerente'].includes(G.role)) { notify('Apenas admin e gerente podem criar modelos.','warn'); return; }
+  document.getElementById('ct-id').value = '';
+  document.getElementById('ct-nome').value = '';
+  document.getElementById('ct-sugestao').value = '';
+  document.getElementById('ct-corpo').value = '';
+  document.getElementById('ct-tipo').value = 'garantia';
+  document.getElementById('ct-edit-titulo').textContent = 'Novo modelo de contrato';
+  ctTipoChange();
   openModal('modal-contrato-edit');
 }
-function editarContrato(id){
-  const m=G_CONTRATOS_MODELOS.find(x=>x.id===id); if(!m)return;
-  document.getElementById('ct-id').value=m.id;
-  document.getElementById('ct-nome').value=m.nome||'';
-  document.getElementById('ct-sugestao').value=m.sugestao||'';
-  document.getElementById('ct-corpo').value=m.corpo||'';
-  document.getElementById('ct-edit-titulo').textContent='Editar modelo';
+
+function editarContrato(id) {
+  if (!['admin','gerente'].includes(G.role)) { notify('Apenas admin e gerente podem editar.','warn'); return; }
+  const modelos = G.contratoModelos || G_CONTRATOS_MODELOS || [];
+  const m = modelos.find(x => x.id === id); if (!m) return;
+  document.getElementById('ct-id').value = m.id;
+  document.getElementById('ct-nome').value = m.nome || '';
+  document.getElementById('ct-sugestao').value = m.sugestao || '';
+  document.getElementById('ct-corpo').value = m.corpo || '';
+  document.getElementById('ct-tipo').value = m.tipo || 'garantia';
+  document.getElementById('ct-edit-titulo').textContent = 'Editar modelo';
+  ctTipoChange();
   openModal('modal-contrato-edit');
 }
-function insVarContrato(v){
-  const ta=document.getElementById('ct-corpo'); if(!ta)return;
-  const s=ta.selectionStart||ta.value.length, e=ta.selectionEnd||ta.value.length;
-  ta.value=ta.value.slice(0,s)+v+ta.value.slice(e);
-  ta.focus(); ta.selectionStart=ta.selectionEnd=s+v.length;
-}
-async function salvarContrato(){
-  const nome=document.getElementById('ct-nome').value.trim();
-  const corpo=document.getElementById('ct-corpo').value.trim();
-  const sugestao=document.getElementById('ct-sugestao').value.trim();
-  if(!nome||!corpo){notify('Nome e texto são obrigatórios.','error');return;}
-  const id=document.getElementById('ct-id').value;
+
+async function salvarContrato() {
+  if (!['admin','gerente'].includes(G.role)) { notify('Sem permissão para salvar.','warn'); return; }
+  const nome = document.getElementById('ct-nome').value.trim();
+  const corpo = document.getElementById('ct-corpo').value.trim();
+  const sugestao = document.getElementById('ct-sugestao').value.trim();
+  const tipo = document.getElementById('ct-tipo').value || 'outro';
+  if (!nome || !corpo) { notify('Nome e texto são obrigatórios.','error'); return; }
+  const id = document.getElementById('ct-id').value;
   setLoad(true);
   let err;
-  if(id){ ({error:err}=await db.from('contratos_modelos').update({nome,corpo,sugestao}).eq('id',id)); }
-  else  { ({error:err}=await db.from('contratos_modelos').insert({empresa_id:EID(),nome,corpo,sugestao})); }
+  if (id) { ({error:err} = await db.from('contratos_modelos').update({nome,corpo,sugestao,tipo}).eq('id',id)); }
+  else     { ({error:err} = await db.from('contratos_modelos').insert({empresa_id:EID(),nome,corpo,sugestao,tipo})); }
   setLoad(false);
-  if(err){
-    if(/contratos_modelos|does not exist|schema/i.test(err.message||'')) notify('Rode a migração W01 no Supabase para ativar os contratos.','warn',7000);
+  if (err) {
+    if (/contratos_modelos|does not exist|schema/i.test(err.message||'')) notify('Rode a migração W01 no Supabase.','warn',7000);
     else notify('Erro: '+err.message,'error',6000);
     return;
   }
@@ -16269,16 +16415,228 @@ async function salvarContrato(){
   notify('Modelo salvo!','success');
   renderContratos();
 }
-function excluirContrato(id){
-  const m=G_CONTRATOS_MODELOS.find(x=>x.id===id); if(!m)return;
-  confirmAct('Excluir modelo', `Excluir o modelo "${m.nome}"?`, async()=>{
+
+function excluirContrato(id) {
+  if (!['admin','gerente'].includes(G.role)) { notify('Sem permissão.','warn'); return; }
+  const modelos = G.contratoModelos || G_CONTRATOS_MODELOS || [];
+  const m = modelos.find(x => x.id === id); if (!m) return;
+  confirmAct('Excluir modelo', `Excluir o modelo "${m.nome}"?`, async() => {
     setLoad(true);
-    const {error}=await db.from('contratos_modelos').delete().eq('id',id);
+    const {error} = await db.from('contratos_modelos').delete().eq('id',id);
     setLoad(false);
-    if(error){notify('Erro: '+error.message,'error');return;}
+    if (error) { notify('Erro: '+error.message,'error'); return; }
     notify('Modelo excluído.','success'); renderContratos();
   }, 'Excluir');
 }
+
+// ── GERAR CONTRATO DE FUNCIONÁRIO ────────────────────
+let _cfFmt = 'a4';
+function cfSetFmt(fmt, btn) {
+  _cfFmt = fmt;
+  document.querySelectorAll('.cf-fmt').forEach(b => { b.classList.toggle('btn-pri', b.dataset.fmt === fmt); b.classList.toggle('btn-out', b.dataset.fmt !== fmt); });
+}
+
+function abrirGerarContratoFuncionario(modeloId) {
+  const modelos = G.contratoModelos || G_CONTRATOS_MODELOS || [];
+  const m = modelos.find(x => x.id === modeloId); if (!m) return;
+  document.getElementById('cf-modelo-id').value = modeloId;
+  document.getElementById('cf-modelo-nome').textContent = 'Modelo: ' + m.nome;
+  document.getElementById('cf-inicio').value = new Date().toISOString().slice(0,10);
+  _cfFmt = 'a4';
+  document.querySelectorAll('.cf-fmt').forEach(b => { b.classList.toggle('btn-pri', b.dataset.fmt === 'a4'); b.classList.toggle('btn-out', b.dataset.fmt !== 'a4'); });
+  openModal('modal-contrato-func');
+}
+
+function emitirContratoFuncionario() {
+  const modeloId = document.getElementById('cf-modelo-id').value;
+  const modelos = G.contratoModelos || G_CONTRATOS_MODELOS || [];
+  const m = modelos.find(x => x.id === modeloId); if (!m) return;
+  const funcionario = document.getElementById('cf-funcionario').value.trim();
+  const cargoSel = document.getElementById('cf-cargo').value;
+  const cargo = cargoSel === 'Outro' ? prompt('Digite o cargo:') || cargoSel : cargoSel;
+  const carga = document.getElementById('cf-carga').value.trim() || '44h semanais';
+  const salario = document.getElementById('cf-salario').value.trim() || '—';
+  const cpf_func = document.getElementById('cf-cpf').value.trim() || '—';
+  const rg_func = document.getElementById('cf-rg').value.trim() || '—';
+  const endereco_func = document.getElementById('cf-endereco').value.trim() || '—';
+  const data_inicio = document.getElementById('cf-inicio').value;
+  if (!funcionario) { notify('Informe o nome do funcionário.','error'); return; }
+  const emp = G.empresa || {};
+  const loja = emp.nome || G.empresa?.nome || '';
+  const cnpj_loja = emp.cnpj || '—';
+  const vars = {
+    funcionario, cargo, carga_horaria: carga, salario,
+    cpf_func, rg_func, endereco_func,
+    data_inicio: data_inicio ? new Date(data_inicio+'T12:00').toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR'),
+    loja, cnpj_loja, data: new Date().toLocaleDateString('pt-BR'),
+    cliente: funcionario, cpf: cpf_func
+  };
+  let texto = m.corpo || '';
+  Object.entries(vars).forEach(([k,v]) => { texto = texto.replace(new RegExp(`\\{${k}\\}`,'gi'), v||'—'); });
+  const e = getEmpDados ? getEmpDados() : {};
+  const html = pdfBase({
+    titulo: m.nome, numero: `FUNC-${new Date().getFullYear()}`,
+    tipo: 'CONTRATO DE TRABALHO / PRESTAÇÃO DE SERVIÇOS',
+    conteudo: `<div class="sec"><div style="white-space:pre-wrap;line-height:1.7;font-size:12px;color:#1A0F3C">${texto}</div></div>`,
+    assinatura: pdfAssinatura(loja, 'Empregador / Contratante', funcionario, cargo),
+    wmSrc: e.wmSrc, wmOp: e.wmOp
+  });
+  closeModal('modal-contrato-func');
+  abrirPDFModal(html, 'Contrato-'+funcionario.replace(/\s+/g,'-'));
+}
+
+// ── TEMPLATES PRONTOS ─────────────────────────────────
+const CT_TEMPLATES = {
+  garantia_os: {
+    nome: 'Termo de Garantia — OS',
+    tipo: 'garantia', sugestao: 'Todos',
+    corpo: `TERMO DE GARANTIA — ORDEM DE SERVIÇO Nº {numero}
+
+{loja} garante o serviço realizado no equipamento {produto} do cliente {cliente} (CPF: {cpf}) pelo período de {garantia} a partir de {data}.
+
+A garantia cobre exclusivamente o serviço descrito na OS nº {numero}. São excluídos da garantia:
+• Danos causados por mau uso, quedas, oxidação ou líquidos após a entrega;
+• Problemas em outras peças não relacionadas ao serviço;
+• Dispositivos violados por terceiros após a entrega.
+
+Em caso de acionamento da garantia, o cliente deverá apresentar este documento.
+
+Técnico responsável: {tecnico}
+Data: {data}
+
+_______________________________          _______________________________
+      {loja}                                    {cliente}
+   Responsável pela empresa                        Cliente`
+  },
+  garantia_venda: {
+    nome: 'Garantia de Produto — Venda',
+    tipo: 'garantia', sugestao: 'Todos',
+    corpo: `CERTIFICADO DE GARANTIA — VENDA Nº {numero}
+
+{loja} (CNPJ: {cnpj_loja}) garante o produto {produto}, adquirido em {data} pelo cliente {cliente}, pelo prazo de {garantia}.
+
+CONDIÇÕES:
+• Garantia cobre defeitos de fabricação;
+• Não cobre danos por mau uso, quedas ou líquidos;
+• Apresentar este documento para acionar a garantia.
+
+Valor pago: {valor}
+Data: {data}
+
+_______________________________
+         {loja}`
+  },
+  entrada_os: {
+    nome: 'Termo de Entrada — OS',
+    tipo: 'servico_os', sugestao: 'Todos',
+    corpo: `TERMO DE RESPONSABILIDADE DE ENTRADA — OS Nº {numero}
+
+Cliente: {cliente} | CPF: {cpf}
+Equipamento: {produto}
+Data de entrada: {data}
+
+Declaro estar ciente de que:
+1. A {loja} não se responsabiliza por dados armazenados no dispositivo. Realize backup antes da entrega.
+2. Equipamentos com oxidação ou danos físicos prévios podem apresentar complicações durante o reparo.
+3. O prazo estimado de conclusão será informado pelo técnico.
+4. Aparelhos não retirados em 90 dias poderão ser descartados conforme legislação vigente.
+5. O técnico responsável é: {tecnico}.
+
+Orçamento estimado: {valor}
+
+_______________________________          _______________________________
+         {loja}                                    {cliente}
+   Responsável pela empresa                     Assinatura do cliente`
+  },
+  funcionario_clt: {
+    nome: 'Contrato de Trabalho — CLT',
+    tipo: 'funcionario', sugestao: 'Operador, Técnico',
+    corpo: `CONTRATO INDIVIDUAL DE TRABALHO
+
+Pelo presente instrumento particular, de um lado:
+
+EMPREGADOR: {loja}, CNPJ: {cnpj_loja}, doravante denominado CONTRATANTE;
+
+EMPREGADO: {funcionario}, portador do CPF nº {cpf_func}, RG nº {rg_func}, residente em {endereco_func}, doravante denominado CONTRATADO.
+
+As partes acima qualificadas têm entre si, justo e contratado, o seguinte:
+
+CLÁUSULA 1 — ADMISSÃO
+O CONTRATADO é admitido na função de {cargo}, iniciando suas atividades em {data_inicio}.
+
+CLÁUSULA 2 — JORNADA DE TRABALHO
+A jornada de trabalho será de {carga_horaria}, nos dias úteis, conforme escala definida pelo CONTRATANTE.
+
+CLÁUSULA 3 — REMUNERAÇÃO
+O CONTRATADO receberá remuneração de {salario}, pagos até o 5º dia útil do mês subsequente.
+
+CLÁUSULA 4 — LOCAL DE TRABALHO
+As atividades serão desenvolvidas na sede do CONTRATANTE.
+
+CLÁUSULA 5 — DISPOSIÇÕES GERAIS
+Este contrato rege-se pela Consolidação das Leis do Trabalho (CLT) e legislação complementar vigente.
+
+{loja}, {data}.
+
+_______________________________          _______________________________
+         CONTRATANTE                              CONTRATADO
+           {loja}                                 {funcionario}`
+  },
+  tecnico_autonomo: {
+    nome: 'Contrato Técnico Autônomo',
+    tipo: 'funcionario', sugestao: 'Técnico',
+    corpo: `CONTRATO DE PRESTAÇÃO DE SERVIÇOS — AUTÔNOMO
+
+CONTRATANTE: {loja}, CNPJ: {cnpj_loja}.
+CONTRATADO: {funcionario}, CPF: {cpf_func}, residente em {endereco_func}.
+
+OBJETO: Prestação de serviços técnicos em manutenção e reparo de celulares e eletrônicos, na função de {cargo}.
+
+REMUNERAÇÃO: {salario}, conforme produção/comissão acordada.
+
+CARGA HORÁRIA: {carga_horaria} (flexível, conforme demanda).
+
+INÍCIO: {data_inicio}.
+
+O CONTRATADO reconhece sua condição de autônomo, sem vínculo empregatício, responsabilizando-se pelo recolhimento dos próprios encargos previdenciários.
+
+{loja}, {data}.
+
+_______________________________          _______________________________
+         CONTRATANTE                              CONTRATADO
+           {loja}                                 {funcionario}`
+  }
+};
+
+async function criarDeTemplate(chave) {
+  if (!['admin','gerente'].includes(G.role)) { notify('Apenas admin ou gerente pode criar modelos.','warn'); return; }
+  const t = CT_TEMPLATES[chave]; if (!t) return;
+  setLoad(true);
+  const {error} = await db.from('contratos_modelos').insert({empresa_id:EID(), nome:t.nome, corpo:t.corpo, sugestao:t.sugestao, tipo:t.tipo});
+  setLoad(false);
+  if (error) {
+    if (/does not exist|schema/i.test(error.message||'')) notify('Rode a migração W01 primeiro.','warn',7000);
+    else notify('Erro: '+error.message,'error');
+    return;
+  }
+  notify('Template "'+t.nome+'" criado!','success');
+  renderContratos();
+}
+
+// ── GERAR CONTRATO (venda/OS) — mantido compatível ───
+function abrirGerarContrato(contexto, modeloIdPre) {
+  const modelos = G.contratoModelos || G_CONTRATOS_MODELOS || [];
+  const sel = document.getElementById('cg-modelo');
+  if (!sel) return;
+  const relevantes = modelos.filter(m => m.tipo !== 'funcionario');
+  sel.innerHTML = relevantes.map(m => `<option value="${m.id}" ${m.id===modeloIdPre?'selected':''}>${m.nome}</option>`).join('');
+  if (!relevantes.length) { notify('Nenhum modelo disponível. Crie um em Contratos & Termos.','warn'); return; }
+  _cgCtx = contexto || {};
+  openModal('modal-contrato-gerar');
+}
+
+// Mantém compatibilidade com código legado que usa abrirContratoGerar
+function abrirContratoGerar(contexto, modeloIdPre) { abrirGerarContrato(contexto, modeloIdPre); }
 
 /* —— Gerar contrato a partir de uma VENDA ou OS —— */
 // contexto = { tipo:'venda'|'os', cliente, cpf, produto, valor, numero, garantia, marca }
