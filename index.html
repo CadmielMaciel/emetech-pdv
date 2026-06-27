@@ -74,14 +74,15 @@ button,.btn,.card,.tag,input,select,textarea{transition:var(--trans)}
 /* ── SIDEBAR RECOLHÍVEL ── */
 .sidebar{
   width:var(--sw-mini);
-  background:linear-gradient(170deg,var(--pri-dark),var(--pri) 60%,var(--pri2));
+  background:linear-gradient(170deg,#0f0a1e 0%,#1a1035 40%,#1e1445 100%);
   display:flex;flex-direction:column;flex-shrink:0;
   overflow:hidden;position:relative;
   transition:width .28s cubic-bezier(.4,0,.2,1);
+  box-shadow:2px 0 24px rgba(91,71,224,.18);
   z-index:100;
 }
 .sidebar:hover{ width:var(--sw); }
-.sidebar::before{content:'';position:absolute;top:-80px;right:-80px;width:200px;height:200px;background:rgba(255,255,255,.05);border-radius:50%;pointer-events:none}
+.sidebar::before{content:'';position:absolute;top:-60px;left:-20px;width:180px;height:180px;background:radial-gradient(circle,rgba(91,71,224,.35),transparent 70%);border-radius:50%;pointer-events:none}
 
 /* Logo area */
 .logo-area{padding:14px 10px 12px;border-bottom:1px solid rgba(255,255,255,.12);flex-shrink:0;overflow:hidden}
@@ -96,7 +97,7 @@ button,.btn,.card,.tag,input,select,textarea{transition:var(--trans)}
 .nav{flex:1;padding:10px 8px;overflow-y:auto;overflow-x:hidden}
 .nav::-webkit-scrollbar{width:0}
 .nav-sec{
-  font-size:9px;color:rgba(255,255,255,.3);letter-spacing:1.8px;text-transform:uppercase;
+  font-size:9px;color:rgba(255,255,255,.28);letter-spacing:1.6px;text-transform:uppercase;
   padding:10px 10px 4px;font-weight:700;
   white-space:nowrap;overflow:hidden;
   opacity:0;transition:opacity .15s;
@@ -111,38 +112,40 @@ button,.btn,.card,.tag,input,select,textarea{transition:var(--trans)}
 .nav-group-items{overflow:hidden;max-height:1400px;transition:max-height .26s ease}
 .nav-sec.collapsed + .nav-group-items{max-height:0}
 .ni{
-  display:flex;align-items:center;gap:9px;
-  padding:9px 10px;border-radius:9px;cursor:pointer;
-  color:rgba(255,255,255,.6);font-size:13px;font-weight:500;
-  transition:var(--trans);margin-bottom:1px;
+  display:flex;align-items:center;gap:10px;
+  padding:9px 10px;border-radius:10px;cursor:pointer;
+  color:rgba(255,255,255,.55);font-size:13px;font-weight:500;
+  transition:var(--trans);margin-bottom:2px;
   user-select:none;white-space:nowrap;overflow:hidden;
   position:relative;
 }
-.ni:hover{background:rgba(255,255,255,.1);color:#fff}
-.ni.active{background:rgba(255,255,255,.18);color:#fff;font-weight:600}
-.ni i{font-size:18px;flex-shrink:0;min-width:18px}
+.ni:hover{background:rgba(255,255,255,.09);color:rgba(255,255,255,.92)}
+.ni.active{background:rgba(255,255,255,.15);color:#fff;font-weight:700;box-shadow:inset 3px 0 0 rgba(255,255,255,.45)}
+.ni i{font-size:19px;flex-shrink:0;min-width:19px;opacity:.8}
+.ni.active i{opacity:1}
 .ni-label{opacity:0;transition:opacity .15s .05s;white-space:nowrap}
 .sidebar:hover .ni-label{opacity:1}
 
 /* Tooltip ao minimizar */
 .ni-tip{
   position:absolute;left:calc(var(--sw-mini) + 8px);top:50%;transform:translateY(-50%);
-  background:rgba(30,16,64,.95);color:#fff;font-size:12px;font-weight:600;
-  padding:5px 10px;border-radius:7px;white-space:nowrap;pointer-events:none;
+  background:rgba(20,10,44,.96);color:#fff;font-size:12px;font-weight:600;
+  padding:5px 10px;border-radius:8px;white-space:nowrap;pointer-events:none;
   opacity:0;transition:opacity .15s;z-index:999;
+  border:1px solid rgba(255,255,255,.08);
 }
 .ni:hover .ni-tip{opacity:1}
 .sidebar:hover .ni-tip{display:none}
 
 /* Footer */
-.sidebar-footer{padding:10px 8px;border-top:1px solid rgba(255,255,255,.1);flex-shrink:0;overflow:hidden}
-.user-pill{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:9px;background:rgba(255,255,255,.1);overflow:hidden;white-space:nowrap}
-.user-av{width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
+.sidebar-footer{padding:10px 8px;border-top:1px solid rgba(255,255,255,.08);flex-shrink:0;overflow:hidden}
+.user-pill{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:10px;background:rgba(255,255,255,.08);overflow:hidden;white-space:nowrap}
+.user-av{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
 .user-name{font-size:11.5px;color:#fff;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;opacity:0;transition:opacity .15s .05s}
-.user-role{font-size:9px;color:rgba(255,255,255,.5);text-transform:uppercase}
+.user-role{font-size:9px;color:rgba(255,255,255,.45);text-transform:uppercase}
 .sidebar:hover .user-name{opacity:1}
-.logout-btn{background:none;border:none;color:rgba(255,255,255,.5);cursor:pointer;font-size:16px;padding:3px;border-radius:5px;transition:var(--trans);opacity:0;transition:opacity .15s .05s}
-.logout-btn:hover{color:#fff;background:rgba(255,255,255,.15)}
+.logout-btn{background:none;border:none;color:rgba(255,255,255,.4);cursor:pointer;font-size:16px;padding:3px;border-radius:5px;transition:var(--trans);opacity:0;transition:opacity .15s .05s}
+.logout-btn:hover{color:#fff;background:rgba(255,255,255,.12)}
 .sidebar:hover .logout-btn{opacity:1}
 
 /* MAIN */
@@ -202,13 +205,31 @@ button,.btn,.card,.tag,input,select,textarea{transition:var(--trans)}
 .card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px}
 .card-title{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:var(--txt)}
 .sg{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
-.sc{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;position:relative;overflow:hidden;transition:var(--trans)}
-.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--pri),var(--pri2))}
+.sc{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;position:relative;overflow:hidden;transition:var(--trans);display:flex;align-items:center;justify-content:space-between;gap:12px}
 .sc:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
-.sc-icon{width:40px;height:40px;border-radius:10px;background:var(--pri-light);display:flex;align-items:center;justify-content:center;margin-bottom:10px}
-.sc-icon i{font-size:20px;color:var(--pri)}
-.sc-val{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:var(--txt)}
-.sc-lbl{font-size:11.5px;color:var(--txt3);font-weight:500}
+.sc-body{display:flex;flex-direction:column;gap:2px;min-width:0}
+.sc-icon{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sc-icon i{font-size:22px}
+.sc-val{font-family:'Syne',sans-serif;font-weight:800;font-size:21px;color:var(--txt);line-height:1.1}
+.sc-lbl{font-size:11px;color:var(--txt3);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+/* Dashboard hero */
+.dash-hero{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 24px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.dash-hero-left{display:flex;flex-direction:column;gap:2px}
+.dash-hero-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--txt3)}
+.dash-hero-val{font-family:'Syne',sans-serif;font-weight:800;font-size:34px;color:var(--pri);line-height:1}
+.dash-hero-right{display:flex;align-items:center;gap:8px}
+/* Ações rápidas */
+.dash-quick{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px}
+.dash-quick-title{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:var(--txt);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.dq-btn{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:var(--pri);color:#fff;border:none;cursor:pointer;font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;transition:var(--trans);width:100%;margin-bottom:8px}
+.dq-btn:hover{opacity:.88;transform:translateX(2px)}
+.dq-btn:last-child{margin-bottom:0}
+.dq-btn.dq-out{background:var(--surface);color:var(--txt);border:1.5px solid var(--border)}
+.dq-btn.dq-out:hover{border-color:var(--pri);color:var(--pri);background:var(--pri-light)}
+.dq-btn i{font-size:18px;flex-shrink:0}
+/* Dashboard bottom grid com ações rápidas */
+.gdash3{display:grid;grid-template-columns:1fr 1fr 280px;gap:12px}
+@media(max-width:1100px){.gdash3{grid-template-columns:1fr 1fr}.gdash3 .dash-quick{grid-column:1/-1}}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
 .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
@@ -381,7 +402,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
 .r-operador{background:#ECFDF5;color:#059669}
 .r-tecnico{background:#FFFBEB;color:#B45309}
 
-@media(max-width:900px){.sg{grid-template-columns:1fr 1fr}.pdv-wrap,.os-grid{grid-template-columns:1fr}.g2{grid-template-columns:1fr}}
+@media(max-width:900px){.sg{grid-template-columns:1fr 1fr}.pdv-wrap,.os-grid{grid-template-columns:1fr}.g2{grid-template-columns:1fr}.gdash3{grid-template-columns:1fr!important}.gdash3 .dash-quick{grid-column:unset!important}}
 
 /* ── TELA NETFLIX DE PERFIS ────────────────────────── */
 .nf-screen{position:fixed;inset:0;background:#0a0014;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9998;transition:opacity .4s}
@@ -635,20 +656,56 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
 
       <!-- DASHBOARD -->
       <div class="page active" id="page-dashboard">
+        <!-- Hero: Lucro em destaque (estilo misu-store) -->
+        <div class="dash-hero">
+          <div class="dash-hero-left">
+            <div class="dash-hero-lbl">Lucro Líquido Hoje</div>
+            <div class="dash-hero-val" id="d-lucro">R$ 0,00</div>
+          </div>
+          <div class="dash-hero-right">
+            <div id="net-pill-dash" style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--txt3)">
+              <span id="d-empresa-nome" style="font-weight:600;color:var(--txt2)"></span>
+            </div>
+          </div>
+        </div>
+        <!-- KPI cards estilo misu-store: ícone circular no canto -->
         <div class="sg">
-          <div class="sc"><div class="sc-icon"><i class="ti ti-currency-dollar"></i></div><div class="sc-val" id="d-fat">R$ 0,00</div><div class="sc-lbl">Faturamento Hoje</div></div>
-          <div class="sc"><div class="sc-icon" style="background:#ECFDF5"><i class="ti ti-trending-up" style="color:var(--success)"></i></div><div class="sc-val" id="d-lucro">R$ 0,00</div><div class="sc-lbl">Lucro Hoje</div></div>
-          <div class="sc"><div class="sc-icon" style="background:#FFFBEB"><i class="ti ti-tools" style="color:var(--warn)"></i></div><div class="sc-val" id="d-os">0</div><div class="sc-lbl">OS Abertas</div></div>
-          <div class="sc"><div class="sc-icon" style="background:#FEF2F2"><i class="ti ti-alert-triangle" style="color:var(--danger)"></i></div><div class="sc-val" id="d-venc">0</div><div class="sc-lbl">A Receber Vencido</div></div>
+          <div class="sc" style="cursor:pointer" onclick="go('pdv')">
+            <div class="sc-body"><div class="sc-lbl">Faturamento Hoje</div><div class="sc-val" id="d-fat">R$ 0,00</div></div>
+            <div class="sc-icon" style="background:rgba(91,71,224,.12)"><i class="ti ti-trending-up" style="color:var(--pri)"></i></div>
+          </div>
+          <div class="sc" style="cursor:pointer" onclick="go('os')">
+            <div class="sc-body"><div class="sc-lbl">OS Abertas</div><div class="sc-val" id="d-os">0</div></div>
+            <div class="sc-icon" style="background:rgba(245,158,11,.12)"><i class="ti ti-tools" style="color:var(--warn)"></i></div>
+          </div>
+          <div class="sc" style="cursor:pointer" onclick="go('crediario')">
+            <div class="sc-body"><div class="sc-lbl">A Receber Vencido</div><div class="sc-val" id="d-venc">0</div></div>
+            <div class="sc-icon" style="background:rgba(239,68,68,.1)"><i class="ti ti-cash-off" style="color:var(--danger)"></i></div>
+          </div>
+          <div class="sc" style="cursor:pointer" onclick="go('estoque')">
+            <div class="sc-body"><div class="sc-lbl">Em Estoque</div><div class="sc-val" id="d-estoque">0</div></div>
+            <div class="sc-icon" style="background:rgba(16,185,129,.1)"><i class="ti ti-package" style="color:var(--success)"></i></div>
+          </div>
         </div>
         <div id="d-alerts"></div>
+        <!-- Gráficos lado a lado -->
         <div class="gdash" style="margin-bottom:12px">
           <div class="card"><div class="card-hdr"><div class="card-title">Vendas — 7 dias</div></div><div class="chart-wrap"><canvas id="chart-v7"></canvas></div></div>
           <div class="card"><div class="card-hdr"><div class="card-title">Fluxo de Caixa</div></div><div class="chart-wrap"><canvas id="chart-fc"></canvas></div></div>
         </div>
-        <div class="gdash">
-          <div class="card"><div class="card-hdr"><div class="card-title">Últimas Vendas</div><button class="btn btn-out btn-sm" onclick="go('relatorios')">Relatório</button></div><div id="d-ult-v"></div></div>
-          <div class="card"><div class="card-hdr"><div class="card-title">OS em Aberto</div><button class="btn btn-out btn-sm" onclick="go('os')">Ver todas</button></div><div id="d-ult-os"></div></div>
+        <!-- Últimas vendas + OS + Ações Rápidas -->
+        <div class="gdash3">
+          <div class="card"><div class="card-hdr"><div class="card-title">Últimas Vendas</div><button class="btn btn-out btn-sm" onclick="go('relatorios')">Relatório →</button></div><div id="d-ult-v"></div></div>
+          <div class="card"><div class="card-hdr"><div class="card-title">OS em Aberto</div><button class="btn btn-out btn-sm" onclick="go('os')">Ver todas →</button></div><div id="d-ult-os"></div></div>
+          <div class="dash-quick">
+            <div class="dash-quick-title"><i class="ti ti-bolt" style="color:var(--pri)"></i>Ações Rápidas</div>
+            <button class="dq-btn" onclick="go('pdv')"><i class="ti ti-shopping-cart"></i>Nova Venda</button>
+            <button class="dq-btn" onclick="go('os');setTimeout(()=>openModal('modal-os'),200)"><i class="ti ti-tools"></i>Nova OS</button>
+            <button class="dq-btn dq-out" onclick="go('clientes')"><i class="ti ti-users"></i>Clientes</button>
+            <button class="dq-btn dq-out" onclick="go('produtos')"><i class="ti ti-package"></i>Produtos</button>
+            <button class="dq-btn dq-out" onclick="go('crediario')"><i class="ti ti-credit-card"></i>Crediário</button>
+            <button class="dq-btn dq-out" onclick="go('agenda')"><i class="ti ti-calendar"></i>Agenda</button>
+          </div>
         </div>
       </div>
 
@@ -8053,10 +8110,13 @@ function renderDashboard(){
   const osAb=G.os.filter(o=>o.status!=='Entregue').length;
   const hr=new Date();
   const recVenc=G.receber.filter(r=>r.status!=='pago'&&new Date(r.data_vencimento+'T12:00')<hr).length;
+  const totalEstoque=G.produtos.filter(p=>!p.estoque_infinito).reduce((s,p)=>s+(p.estoque||0),0);
   document.getElementById('d-fat').textContent=fmt(fat);
   document.getElementById('d-lucro').textContent=fmt(lucro);
   document.getElementById('d-os').textContent=osAb;
   document.getElementById('d-venc').textContent=recVenc;
+  const estEl=document.getElementById('d-estoque');if(estEl)estEl.textContent=totalEstoque;
+  const nomeEl=document.getElementById('d-empresa-nome');if(nomeEl)nomeEl.textContent=G.empresa?.nome||'';
   // ── ALERTAS INTELIGENTES ──────────────────────────────
   let alertsHtml='';
   // 1) OS com prazo vencido (não entregues)
