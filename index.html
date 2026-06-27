@@ -782,11 +782,12 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
       <!-- HUB: ADMINISTRAÇÃO -->
       <div class="page hub-page" id="page-hub-admin">
         <div class="hub-title"><i class="ti ti-settings"></i>Administração</div>
-        <div class="hub-sub">Usuários, permissões e aparência do sistema.</div>
+        <div class="hub-sub">Usuários, permissões, aparência e configurações do sistema.</div>
         <div class="hub-grid">
           <div class="hub-card" onclick="go('usuarios')"><div class="hc-icon"><i class="ti ti-shield-lock"></i></div><div><div class="hc-label">Usuários</div><div class="hc-desc">Gestão de usuários e perfis de acesso</div></div></div>
           <div class="hub-card" onclick="go('permissoes')"><div class="hc-icon"><i class="ti ti-key"></i></div><div><div class="hc-label">Permissões</div><div class="hc-desc">Configure o que cada perfil pode acessar</div></div></div>
           <div class="hub-card" onclick="go('aparencia')"><div class="hc-icon"><i class="ti ti-palette"></i></div><div><div class="hc-label">Aparência & Marca</div><div class="hc-desc">Logo, cores e identidade visual da loja</div></div></div>
+          <div class="hub-card" onclick="go('configuracoes')"><div class="hc-icon"><i class="ti ti-adjustments-horizontal"></i></div><div><div class="hc-label">Configurações</div><div class="hc-desc">Gateway de pagamento, impressora térmica e integrações</div></div></div>
         </div>
       </div>
 
@@ -1908,6 +1909,74 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
       </div>
 
       <!-- APARÊNCIA & MARCA -->
+      <!-- CONFIGURAÇÕES (Gateway + Impressora) -->
+      <div class="page" id="page-configuracoes">
+        <!-- Abas -->
+        <div class="fin-tabs" style="margin-bottom:18px">
+          <button class="fin-tab active" onclick="cfgTab('gateway',this)"><i class="ti ti-credit-card-pay" style="font-size:13px"></i> Gateway de Pagamento</button>
+          <button class="fin-tab" onclick="cfgTab('impressora',this)"><i class="ti ti-printer" style="font-size:13px"></i> Impressora Térmica</button>
+          <button class="fin-tab" onclick="cfgTab('integracoes',this)"><i class="ti ti-plug" style="font-size:13px"></i> Integrações</button>
+        </div>
+
+        <!-- ABA: GATEWAY -->
+        <div id="cfg-gateway">
+          <div class="card" style="max-width:640px">
+            <div class="card-hdr" style="margin-bottom:14px"><div class="card-title"><i class="ti ti-credit-card-pay" style="color:var(--pri)"></i> Gateway de Pagamento — Asaas</div></div>
+            <div style="font-size:12.5px;color:var(--txt2);margin-bottom:14px">Conecte a conta Asaas <b>desta loja</b> para gerar boleto/PIX automáticos nas parcelas do crediário. A chave fica protegida no servidor.</div>
+            <div id="pag-status" style="margin-bottom:14px"></div>
+            <div class="fg"><label class="lbl">Chave de API do Asaas</label>
+              <div style="position:relative">
+                <input type="password" id="pag-key" placeholder="Cole aqui a chave (começa com $aact_...)" autocomplete="off">
+                <button onclick="toggleFieldVis('pag-key',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--txt3)"><i class="ti ti-eye"></i></button>
+              </div>
+              <div style="font-size:11px;color:var(--txt3);margin-top:4px">No Asaas: Integrações → API → copie a chave. Deixe em branco para manter a atual.</div>
+            </div>
+            <div class="fg"><label class="lbl">Ambiente</label>
+              <select id="pag-env">
+                <option value="producao">Produção (cobrança real)</option>
+                <option value="sandbox">Sandbox (teste)</option>
+              </select>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+              <button class="btn btn-pri" onclick="salvarChaveAsaas()"><i class="ti ti-device-floppy"></i> Salvar conexão</button>
+              <a class="btn btn-out" href="https://www.asaas.com" target="_blank"><i class="ti ti-external-link"></i> Abrir Asaas</a>
+            </div>
+            <div style="font-size:11.5px;color:var(--txt3);margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+              <i class="ti ti-shield-lock"></i> O dinheiro cai direto na conta Asaas desta loja. O sistema não intermedia o pagamento.
+            </div>
+          </div>
+        </div>
+
+        <!-- ABA: IMPRESSORA -->
+        <div id="cfg-impressora" style="display:none">
+          <div class="card" style="max-width:620px">
+            <div class="card-hdr" style="margin-bottom:14px"><div class="card-title"><i class="ti ti-printer" style="color:var(--pri)"></i> Configuração de Impressora Térmica</div></div>
+            <div class="cupom-config-row"><div><div style="font-weight:600;font-size:13px">Imprimir automaticamente após venda</div><div style="font-size:11px;color:var(--txt3)">Cupom abre ao finalizar cada venda</div></div><label class="toggle"><input type="checkbox" id="cup-auto2" onchange="sincronizarCupomConfig()"><span class="tslider"></span></label></div>
+            <div class="cupom-config-row"><div><div style="font-weight:600;font-size:13px">Largura do cupom</div><div style="font-size:11px;color:var(--txt3)">58mm para impressoras menores, 80mm para padrão</div></div>
+              <select id="cup-largura2" onchange="sincronizarCupomConfig()" style="width:auto;padding:5px 8px;font-size:13px;border-radius:7px"><option value="80">80mm</option><option value="58">58mm</option></select>
+            </div>
+            <div class="cupom-config-row"><div><div style="font-weight:600;font-size:13px">Exibir logo no cupom</div></div><label class="toggle"><input type="checkbox" id="cup-logo2" onchange="sincronizarCupomConfig()"><span class="tslider"></span></label></div>
+            <div class="cupom-config-row"><div><div style="font-weight:600;font-size:13px">Exibir nome do operador</div></div><label class="toggle"><input type="checkbox" id="cup-operador2" onchange="sincronizarCupomConfig()"><span class="tslider"></span></label></div>
+            <div class="cupom-config-row"><div><div style="font-weight:600;font-size:13px">Exibir número do caixa</div></div><label class="toggle"><input type="checkbox" id="cup-caixa2" onchange="sincronizarCupomConfig()"><span class="tslider"></span></label></div>
+            <div style="margin-top:16px;display:flex;gap:8px">
+              <button class="btn btn-pri" onclick="salvarCupomConfigPg()"><i class="ti ti-device-floppy"></i> Salvar configurações</button>
+              <button class="btn btn-out" onclick="openModal('modal-cupom-config')"><i class="ti ti-eye"></i> Pré-visualizar cupom</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ABA: INTEGRAÇÕES -->
+        <div id="cfg-integracoes" style="display:none">
+          <div class="card" style="max-width:640px">
+            <div class="card-hdr" style="margin-bottom:14px"><div class="card-title"><i class="ti ti-brand-whatsapp" style="color:#25D366"></i> WhatsApp (Zapster)</div></div>
+            <div style="font-size:12.5px;color:var(--txt2);margin-bottom:12px">Configure a integração de WhatsApp para envio automático de notificações de OS e cobranças.</div>
+            <div id="wpp-cfg-box" style="margin-top:8px">
+              <div class="empty-st" style="padding:20px"><i class="ti ti-brand-whatsapp"></i><h3>Configure em Aparência & Marca</h3><p style="font-size:12px">As configurações de WhatsApp ficam na aba Aparência & Marca → WhatsApp.</p><button class="btn btn-out btn-sm" onclick="go('aparencia')" style="margin-top:8px"><i class="ti ti-external-link"></i> Ir para Aparência</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="page" id="page-aparencia">
         <div class="sg" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px">
           <div class="sc"><div class="sc-icon"><i class="ti ti-photo"></i></div><div class="sc-val" id="ap-count-logos">2</div><div class="sc-lbl">Logos Configuradas</div></div>
@@ -4458,7 +4527,7 @@ function iniciarVerificacaoBloqueio(){
 }
 
 /* ── NAVEGAÇÃO ───────────────────────────────────────── */
-const PT={dashboard:'Dashboard',pdv:'PDV / Caixa',orcamentos:'Orçamentos',devolucoes:'Devoluções',os:'Ordens de Serviço','os-hist':'Histórico OS',agenda:'Agenda de Entregas',comissoes:'Comissão por Técnico',produtos:'Produtos',estoque:'Movimentações de Estoque',fornecedores:'Fornecedores',financeiro:'Financeiro',reposicao:'Central de Reposição',clientes:'Clientes',relatorios:'Relatórios',usuarios:'Usuários & Acesso',aparencia:'Aparência & Marca',inteligencia:'Inteligência Operacional',caixas:'Gestão de Caixas',crediario:'Crediário',
+const PT={dashboard:'Dashboard',pdv:'PDV / Caixa',orcamentos:'Orçamentos',devolucoes:'Devoluções',os:'Ordens de Serviço','os-hist':'Histórico OS',agenda:'Agenda de Entregas',comissoes:'Comissão por Técnico',produtos:'Produtos',estoque:'Movimentações de Estoque',fornecedores:'Fornecedores',financeiro:'Financeiro',reposicao:'Central de Reposição',clientes:'Clientes',relatorios:'Relatórios',usuarios:'Usuários & Acesso',aparencia:'Aparência & Marca',inteligencia:'Inteligência Operacional',caixas:'Gestão de Caixas',crediario:'Crediário',configuracoes:'Configurações',
   'hub-vendas':'Vendas','hub-servicos':'Serviços','hub-clientes':'Clientes','hub-estoque':'Estoque & Produtos','hub-financeiro':'Financeiro & Gestão','hub-relatorios':'Relatórios','hub-admin':'Administração'};
 
 function goHub(hub){
@@ -4498,7 +4567,7 @@ function go(page){
     produtos:'estoque',estoque:'estoque',fornecedores:'estoque',reposicao:'estoque',
     financeiro:'financeiro',caixas:'financeiro',comissoes:'financeiro',catalogo:'financeiro',
     relatorios:'relatorios',inteligencia:'relatorios',
-    usuarios:'admin',permissoes:'admin',aparencia:'admin'};
+    usuarios:'admin',permissoes:'admin',aparencia:'admin',configuracoes:'admin'};
   const _hubParent=_hubMap[page];
   if(_hubParent){document.querySelectorAll('.ni-group').forEach(el=>{if(el.dataset.hub===_hubParent)el.classList.add('active');});}
   const R={
@@ -4517,6 +4586,7 @@ function go(page){
     clientes:renderClientes,
     relatorios:renderRelatorios,
     aparencia:renderAparencia,
+    configuracoes:renderConfiguracoes,
     usuarios:()=>{renderUsuarios();carregarAuditLog();renderAuditLog();},
     permissoes:renderPermissoes,
     garantias:()=>{_garCache=[];renderGarantias();},
@@ -6292,12 +6362,45 @@ function detOS(id){
       <span class="tag tag-gry"><i class="ti ti-user" style="font-size:10px"></i>${o.cliente_nome}</span>
       ${o.tecnico_nome?`<span class="tag tag-blu"><i class="ti ti-badge" style="font-size:10px"></i>${o.tecnico_nome}</span>`:''}
     </div>
+    <!-- Abas: Dados | Peças | Checklist -->
+    <div class="fin-tabs" style="margin-bottom:14px">
+      <button class="fin-tab active" onclick="osDTab('dados',this)"><i class="ti ti-info-circle" style="font-size:12px"></i> Dados</button>
+      <button class="fin-tab" onclick="osDTab('pecas',this)"><i class="ti ti-tool" style="font-size:12px"></i> Peças <span id="os-pecas-badge" style="background:var(--pri);color:#fff;border-radius:99px;padding:1px 7px;font-size:10px;margin-left:3px">${(o.pecas||[]).length}</span></button>
+      <button class="fin-tab" onclick="osDTab('checklist',this)"><i class="ti ti-clipboard-check" style="font-size:12px"></i> Checklist</button>
+    </div>
+    <!-- ABA DADOS -->
+    <div id="osd-dados">
     <div class="g2" style="gap:14px">
       <div>
-        <table style="min-width:0">${[['Aparelho',o.aparelho],['IMEI',o.imei],['Defeito',o.defeito],['Diagnóstico',o.diagnostico],['Obs.',o.observacoes]].filter(r=>r[1]).map(r=>`<tr><td style="color:var(--txt3);padding:4px 0;font-size:11.5px;width:82px;border-bottom:1px solid var(--border)">${r[0]}</td><td style="padding:4px 7px;font-size:12.5px;border-bottom:1px solid var(--border)">${r[1]}</td></tr>`).join('')}</table>
-        <div style="background:var(--pri-light);border-radius:9px;padding:10px 12px;margin-top:10px"><div style="display:flex;justify-content:space-between;font-size:14px;font-weight:800;color:var(--pri)"><span>Total OS</span><span>${fmt(o.total)}</span></div>${o.garantia_dias?`<div style="font-size:11.5px;color:var(--txt2);margin-top:3px"><i class="ti ti-shield"></i> ${o.garantia_dias} dias de garantia</div>`:''}</div>
+        <table style="min-width:0">${[
+          ['Aparelho',o.aparelho],
+          ['IMEI',o.imei],
+          ['Defeito',o.defeito],
+          ['Diagnóstico',o.diagnostico],
+          ['Senha',o.checklist_entrada?.senha||(o.senha)||''],
+          ['Obs.',o.observacoes]
+        ].filter(r=>r[1]).map(r=>`<tr><td style="color:var(--txt3);padding:4px 0;font-size:11.5px;width:82px;border-bottom:1px solid var(--border)">${r[0]}</td><td style="padding:4px 7px;font-size:12.5px;border-bottom:1px solid var(--border)${r[0]==='Senha'?';font-family:monospace;color:var(--pri);font-weight:700;background:var(--pri-light);border-radius:5px':''}">${r[1]}</td></tr>`).join('')}</table>
+        <div style="background:var(--pri-light);border-radius:9px;padding:10px 12px;margin-top:10px"><div style="display:flex;justify-content:space-between;font-size:14px;font-weight:800;color:var(--pri)"><span>Total OS</span><span>${fmt(o.total)}</span></div>${o.garantia_dias?`<div style="font-size:11.5px;color:var(--txt2);margin-top:3px"><i class="ti ti-shield"></i> ${o.garantia_dias} dias de garantia${o.garantia_termo_id?` · <span style="color:var(--pri);text-decoration:underline;cursor:pointer" onclick="verTermoGarantia('${o.id}')">Ver Termo</span>`:''}</div>`:''}
+        ${o.garantia_produto?`<div style="font-size:11px;color:var(--txt3);margin-top:2px"><i class="ti ti-package" style="font-size:10px"></i> Produto: ${o.garantia_produto}</div>`:''}
+        </div>
       </div>
       <div><div style="font-size:10.5px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Timeline</div><div class="tl">${tl}</div></div>
+    </div>
+    </div>
+    <!-- ABA PEÇAS -->
+    <div id="osd-pecas" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-size:13px;font-weight:700;color:var(--txt)">Peças utilizadas nesta OS</div>
+        <button class="btn btn-pri btn-sm" onclick="abrirAddPecaOS('${o.id}')"><i class="ti ti-plus"></i> Adicionar Peça</button>
+      </div>
+      <div id="osd-pecas-list">${renderPecasOSList(o)}</div>
+      <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);display:flex;justify-content:flex-end">
+        <div style="font-size:14px;font-weight:800;color:var(--pri)">Total peças: ${fmt((o.pecas||[]).reduce((s,p)=>s+p.preco*p.qty,0))}</div>
+      </div>
+    </div>
+    <!-- ABA CHECKLIST -->
+    <div id="osd-checklist" style="display:none">
+      ${renderChecklistOSView(o)}
     </div>`;
   }
 
@@ -6324,6 +6427,165 @@ function detOS(id){
   openModal('modal-os-det');
 }
 
+// ── ABAS DO DETALHE DE OS ──────────────────────────────
+function osDTab(aba, btn) {
+  ['dados','pecas','checklist'].forEach(t => {
+    const el = document.getElementById('osd-' + t);
+    if (el) el.style.display = t === aba ? '' : 'none';
+  });
+  document.querySelectorAll('#os-det-content .fin-tab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+}
+
+// ── RENDERIZA LISTA DE PEÇAS DA OS ────────────────────
+function renderPecasOSList(o) {
+  const pecas = o.pecas || [];
+  if (pecas.length === 0) return `<div class="empty-st" style="padding:20px"><i class="ti ti-tool"></i><h3>Nenhuma peça adicionada</h3><p>Adicione peças utilizadas no reparo.</p></div>`;
+  return `<div class="tw"><table><thead><tr><th>Peça / Material</th><th>Qtd.</th><th>Unit.</th><th>Subtotal</th><th></th></tr></thead><tbody>${pecas.map((p,i)=>`<tr>
+    <td>${p.nome}${p.codigo?`<br><span style="font-size:10px;color:var(--txt3)">${p.codigo}</span>`:''}</td>
+    <td style="text-align:center;font-weight:700">${p.qty}</td>
+    <td>${fmt(p.preco)}</td>
+    <td style="font-weight:800;color:var(--pri)">${fmt(p.preco*p.qty)}</td>
+    <td><button class="btn btn-out btn-sm" style="color:var(--danger);border-color:var(--danger)" onclick="removerPecaOS('${o.id}',${i})"><i class="ti ti-trash"></i></button></td>
+  </tr>`).join('')}</tbody></table></div>`;
+}
+
+// ── RENDERIZA CHECKLIST NO DETALHE ────────────────────
+function renderChecklistOSView(o) {
+  const ck = o.checklist_entrada || {};
+  const cond = ck.condicao || [];
+  const acess = ck.acessorios || [];
+  const todos_cond = ['Liga normalmente','Tela trincada','Tela com manchas','Touch funciona','Carrega','Botões OK','Câmera OK','Alto-falante OK','Biometria OK','Molhado/oxidado','Riscos na carcaça','Chip presente'];
+  const todos_acess = ['Capa','Película','Carregador','Cabo','Fone','Caixa','Cartão SIM','Cartão SD'];
+  if (!ck.estado_visual && cond.length===0 && acess.length===0 && !ck.senha) return `<div class="empty-st" style="padding:20px"><i class="ti ti-clipboard-check"></i><h3>Checklist não preenchido</h3><p>O checklist foi registrado junto com a criação da OS.</p></div>`;
+  return `
+    <div style="display:flex;flex-direction:column;gap:12px">
+      ${ck.estado_visual?`<div style="background:var(--surface);border-radius:10px;padding:12px 14px"><div class="lbl" style="margin-bottom:4px">Estado Visual</div><div style="font-weight:700;color:var(--txt)">${ck.estado_visual}</div></div>`:''}
+      ${ck.senha?`<div style="background:var(--pri-light);border-radius:10px;padding:12px 14px"><div class="lbl" style="margin-bottom:4px;color:var(--pri)">Senha / Padrão de Desbloqueio</div><div style="font-family:monospace;font-size:18px;font-weight:800;color:var(--pri);letter-spacing:2px">${ck.senha}</div></div>`:''}
+      <div style="background:var(--surface);border-radius:10px;padding:12px 14px">
+        <div class="lbl" style="margin-bottom:8px">Condição Física</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">${todos_cond.map(item=>`<div style="display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:8px;border:1.5px solid ${cond.includes(item)?'var(--pri)':'var(--border)'};background:${cond.includes(item)?'var(--pri-light)':'var(--bg2)'};font-size:12px;font-weight:${cond.includes(item)?'700':'400'};color:${cond.includes(item)?'var(--pri)':'var(--txt3)'}"><i class="ti ti-${cond.includes(item)?'checkbox':'square'}" style="font-size:14px"></i>${item}</div>`).join('')}</div>
+      </div>
+      <div style="background:var(--surface);border-radius:10px;padding:12px 14px">
+        <div class="lbl" style="margin-bottom:8px">Acessórios Recebidos</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">${todos_acess.map(item=>`<div style="display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:8px;border:1.5px solid ${acess.includes(item)?'var(--success)':'var(--border)'};background:${acess.includes(item)?'rgba(16,185,129,.1)':'var(--bg2)'};font-size:12px;font-weight:${acess.includes(item)?'700':'400'};color:${acess.includes(item)?'var(--success)':'var(--txt3)'}"><i class="ti ti-${acess.includes(item)?'checkbox':'square'}" style="font-size:14px"></i>${item}</div>`).join('')}</div>
+      </div>
+    </div>`;
+}
+
+// ── ADICIONAR PEÇA NA OS ──────────────────────────────
+function abrirAddPecaOS(osId) {
+  const o = G.os.find(x => x.id === osId); if (!o) return;
+  // Busca peças do estoque (tipo 'peca') E produtos normais
+  const pecasEst = G.produtos.filter(p => p.status === 'ativo');
+  const opts = pecasEst.map(p => `<option value="${p.id}" data-preco="${p.preco}" data-nome="${p.nome.replace(/"/g,'&quot;')}">${p.nome} — ${fmt(p.preco)}</option>`).join('');
+  const html = `<div style="display:flex;flex-direction:column;gap:12px">
+    <div class="card-title"><i class="ti ti-tool" style="color:var(--pri)"></i> Adicionar Peça / Material</div>
+    <div class="fg"><label class="lbl">Peça do Estoque (opcional)</label>
+      <select id="add-peca-sel" onchange="preencherPecaOS(this)">
+        <option value="">— Digitar manualmente —</option>${opts}
+      </select>
+    </div>
+    <div class="fg"><label class="lbl">Nome da Peça *</label><input type="text" id="add-peca-nome" placeholder="Ex: Tela iPhone 13, Bateria..."></div>
+    <div class="fg"><label class="lbl">Código / SKU</label><input type="text" id="add-peca-cod" placeholder="Opcional"></div>
+    <div class="g2" style="gap:8px">
+      <div class="fg"><label class="lbl">Quantidade *</label><input type="number" id="add-peca-qty" value="1" min="1"></div>
+      <div class="fg"><label class="lbl">Valor Unitário *</label><input type="number" id="add-peca-preco" value="0" min="0" step="0.01"></div>
+    </div>
+  </div>`;
+  document.getElementById('os-det-content').innerHTML = html;
+  document.getElementById('os-det-footer').innerHTML = `
+    <button class="btn btn-out btn-sm" onclick="detOS('${osId}')">Cancelar</button>
+    <button class="btn btn-pri btn-sm" onclick="confirmarAddPecaOS('${osId}')"><i class="ti ti-check"></i> Adicionar</button>`;
+}
+
+function preencherPecaOS(sel) {
+  const opt = sel.options[sel.selectedIndex];
+  if (!opt.value) return;
+  document.getElementById('add-peca-nome').value = opt.dataset.nome || '';
+  document.getElementById('add-peca-preco').value = opt.dataset.preco || '0';
+}
+
+async function confirmarAddPecaOS(osId) {
+  const o = G.os.find(x => x.id === osId); if (!o) return;
+  const nome = document.getElementById('add-peca-nome').value.trim();
+  const cod = document.getElementById('add-peca-cod').value.trim();
+  const qty = parseInt(document.getElementById('add-peca-qty').value) || 1;
+  const preco = parseFloat(document.getElementById('add-peca-preco').value) || 0;
+  if (!nome) { notify('Informe o nome da peça.', 'error'); return; }
+  const pecas = [...(o.pecas || []), { nome, codigo: cod, qty, preco }];
+  const totalPecas = pecas.reduce((s, p) => s + p.preco * p.qty, 0);
+  const total = (o.valor_servico || 0) + totalPecas;
+  setLoad(true);
+  const { error } = await db.from('ordens_servico').update({ pecas, total, atualizado_em: new Date().toISOString() }).eq('id', osId);
+  setLoad(false);
+  if (error) { notify('Erro ao salvar peça: ' + error.message, 'error'); return; }
+  Object.assign(o, { pecas, total });
+  notify('Peça adicionada!', 'success');
+  detOS(osId);
+}
+
+async function removerPecaOS(osId, idx) {
+  const o = G.os.find(x => x.id === osId); if (!o) return;
+  const pecas = (o.pecas || []).filter((_, i) => i !== idx);
+  const totalPecas = pecas.reduce((s, p) => s + p.preco * p.qty, 0);
+  const total = (o.valor_servico || 0) + totalPecas;
+  setLoad(true);
+  const { error } = await db.from('ordens_servico').update({ pecas, total, atualizado_em: new Date().toISOString() }).eq('id', osId);
+  setLoad(false);
+  if (error) { notify('Erro ao remover peça.', 'error'); return; }
+  Object.assign(o, { pecas, total });
+  notify('Peça removida.', 'info');
+  detOS(osId); osDTab('pecas', null);
+}
+
+// ── VER TERMO DE GARANTIA ─────────────────────────────
+function verTermoGarantia(osId) {
+  const o = [...G.os, ...(G._osConcluidas || [])].find(x => x.id === osId); if (!o) return;
+  if (!o.garantia_termo_id) { notify('Nenhum termo de garantia vinculado.', 'info'); return; }
+  // Busca nos modelos de contratos
+  const termo = (G.contratoModelos || []).find(t => t.id === o.garantia_termo_id);
+  if (!termo) { notify('Termo não encontrado no cadastro.', 'warn'); return; }
+  document.getElementById('os-det-content').innerHTML = `
+    <div class="card-title"><i class="ti ti-file-certificate" style="color:var(--pri)"></i> Termo de Garantia — ${termo.nome}</div>
+    <div style="margin-top:12px;font-size:13px;line-height:1.7;color:var(--txt);white-space:pre-wrap;background:var(--surface);border-radius:10px;padding:16px">${(termo.conteudo||'').replace(/</g,'&lt;').replace(/{aparelho}/gi, o.aparelho||'').replace(/{cliente}/gi, o.cliente_nome||'').replace(/{garantia}/gi, (o.garantia_dias||0)+' dias').replace(/{valor}/gi, fmt(o.total||0)).replace(/{data}/gi, new Date().toLocaleDateString('pt-BR'))}</div>`;
+  document.getElementById('os-det-footer').innerHTML = `<button class="btn btn-out btn-sm" onclick="detOS('${osId}')">Voltar</button><button class="btn btn-pri btn-sm" onclick="gerarPdfOS('${osId}')"><i class="ti ti-printer"></i> Imprimir OS</button>`;
+}
+
+// ── MODAL CANCELAR OS (com justificativa) ─────────────
+function abrirCancelarOS(id) {
+  const o = G.os.find(x => x.id === id); if (!o) return;
+  document.getElementById('os-det-content').innerHTML = `
+    <div class="card-title" style="color:var(--danger)"><i class="ti ti-ban"></i> Cancelar OS ${o.numero}</div>
+    <div style="background:rgba(239,68,68,.08);border:1.5px solid rgba(239,68,68,.2);border-radius:10px;padding:12px 14px;margin:14px 0;font-size:13px;color:var(--danger)">
+      <i class="ti ti-alert-triangle"></i> Esta ação não pode ser desfeita. A OS será movida para o Histórico com status <strong>Cancelada</strong>.
+    </div>
+    <div class="fg"><label class="lbl">Motivo do cancelamento *</label>
+      <textarea id="cancel-os-motivo" rows="3" placeholder="Descreva o motivo do cancelamento..." style="resize:vertical"></textarea>
+    </div>`;
+  document.getElementById('os-det-footer').innerHTML = `
+    <button class="btn btn-out btn-sm" onclick="detOS('${id}')">Voltar</button>
+    <button class="btn btn-sm" style="background:var(--danger);color:#fff" onclick="confirmarCancelarOS('${id}')"><i class="ti ti-ban"></i> Confirmar Cancelamento</button>`;
+}
+
+async function confirmarCancelarOS(id) {
+  const o = G.os.find(x => x.id === id); if (!o) return;
+  const motivo = document.getElementById('cancel-os-motivo')?.value?.trim();
+  if (!motivo) { notify('Informe o motivo do cancelamento.', 'error'); return; }
+  const tl = [...(o.timeline || []), { status: 'Cancelada', data: new Date().toISOString(), motivo }];
+  const pl = { status: 'Cancelada', progresso: 0, timeline: tl, atualizado_em: new Date().toISOString(), data_conclusao: new Date().toISOString(), motivo_cancelamento: motivo };
+  setLoad(true);
+  const { error } = await db.from('ordens_servico').update(pl).eq('id', id);
+  setLoad(false);
+  if (error) { notify('Erro ao cancelar OS: ' + error.message, 'error'); return; }
+  Object.assign(o, pl);
+  G.os = G.os.filter(x => x.id !== id);
+  closeModal('modal-os-det'); renderOSList(); renderDashboard();
+  notify(o.numero + ' cancelada.', 'info');
+}
+
+// Remover função antiga abrirCancelarOS baseada em prompt
+
 async function advOS(id,next){
   const o=G.os.find(x=>x.id===id);if(!o)return;
   const tl=[...(o.timeline||[]),{status:next,data:new Date().toISOString()}];
@@ -6338,30 +6600,48 @@ async function advOS(id,next){
   notify(o.numero+' → '+next,next==='Entregue'?'success':'info');
 }
 
-// Abre prompt para motivo do cancelamento e confirma cancelamento da OS
-function abrirCancelarOS(id){
+async function advOS(id,next){
   const o=G.os.find(x=>x.id===id);if(!o)return;
-  const motivo=prompt('Informe o motivo do cancelamento da OS '+o.numero+':');
-  if(motivo===null)return; // usuário cancelou o prompt
-  if(!motivo.trim()){notify('Informe um motivo para cancelar a OS.','error');return;}
-  confirmAct('Cancelar OS', `Cancelar a OS ${o.numero}? Esta ação não pode ser desfeita.`, ()=>cancelarOS(id,motivo.trim()), 'Cancelar OS');
-}
-
-async function cancelarOS(id,motivo){
-  const o=G.os.find(x=>x.id===id);if(!o)return;
-  const tl=[...(o.timeline||[]),{status:'Cancelada',data:new Date().toISOString(),motivo}];
-  const pl={status:'Cancelada',progresso:0,timeline:tl,atualizado_em:new Date().toISOString(),data_conclusao:new Date().toISOString(),motivo_cancelamento:motivo};
+  const tl=[...(o.timeline||[]),{status:next,data:new Date().toISOString()}];
+  const pl={status:next,progresso:OP[next]||o.progresso,timeline:tl,atualizado_em:new Date().toISOString()};
+  if(next==='Entregue')pl.data_conclusao=new Date().toISOString();
   setLoad(true);
-  const {error}=await db.from('ordens_servico').update(pl).eq('id',id);
+  await db.from('ordens_servico').update(pl).eq('id',id);
   setLoad(false);
-  if(error){notify('Erro ao cancelar OS: '+error.message,'error');return;}
   Object.assign(o,pl);
-  G.os=G.os.filter(x=>x.id!==id);
+  if(next==='Entregue')G.os=G.os.filter(x=>x.id!==id);
   closeModal('modal-os-det');renderOSList();renderDashboard();
-  notify(o.numero+' cancelada.','info');
+  notify(o.numero+' → '+next,next==='Entregue'?'success':'info');
 }
 
-/* ── HISTÓRICO OS ────────────────────────────────────── */
+// ── PÁGINA DE CONFIGURAÇÕES ───────────────────────────
+function cfgTab(aba, btn) {
+  ['gateway','impressora','integracoes'].forEach(t => {
+    const el = document.getElementById('cfg-' + t);
+    if (el) el.style.display = t === aba ? '' : 'none';
+  });
+  document.querySelectorAll('#page-configuracoes .fin-tab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+}
+function renderConfiguracoes() {
+  cfgTab('gateway', document.querySelector('#page-configuracoes .fin-tab'));
+  const s = localStorage.getItem('emetech_cupom_config');
+  if (s) {
+    try {
+      const c = JSON.parse(s);
+      const f = (id, v) => { const el = document.getElementById(id); if (el) { if (typeof v === 'boolean') el.checked = v; else el.value = v; } };
+      f('cup-auto2', c.auto !== false); f('cup-largura2', c.largura || '80');
+      f('cup-logo2', c.logo !== false); f('cup-operador2', c.operador !== false); f('cup-caixa2', c.caixa !== false);
+    } catch(e) {}
+  }
+}
+function sincronizarCupomConfig() {
+  const sync = (id2, id) => { const a=document.getElementById(id2),b=document.getElementById(id); if(!a||!b)return; if(b.type==='checkbox')b.checked=a.checked; else b.value=a.value; };
+  sync('cup-auto2','cup-auto'); sync('cup-largura2','cup-largura'); sync('cup-logo2','cup-logo'); sync('cup-operador2','cup-operador'); sync('cup-caixa2','cup-caixa');
+}
+function salvarCupomConfigPg() { sincronizarCupomConfig(); if(typeof salvarCupomConfig==='function')salvarCupomConfig(); notify('Configurações de impressora salvas!','success'); }
+function toggleFieldVis(id, btn) { const el=document.getElementById(id);if(!el)return; el.type=el.type==='password'?'text':'password'; const i=btn.querySelector('i');if(i)i.className=el.type==='password'?'ti ti-eye':'ti ti-eye-off'; }
+
 function popOSFiltros(){
   const t=document.getElementById('hf-tec');const c=document.getElementById('hf-cli');
   t.innerHTML='<option value="">Todos técnicos</option>'+G.usuarios.filter(u=>['tecnico','admin','gerente'].includes(u.role)).map(u=>`<option>${u.nome}</option>`).join('');
@@ -13212,6 +13492,37 @@ function gerarPdfOS(id) {
       </table>
     </div>` : '';
 
+  const ck = o.checklist_entrada || {};
+  const ckCondicao = ck.condicao || [];
+  const ckAcessorios = ck.acessorios || [];
+  const ckEstadoVisual = ck.estado_visual || '';
+  const checklistHtml = (ckCondicao.length > 0 || ckAcessorios.length > 0 || ckEstadoVisual) ? `
+    <div class="sec">
+      <div class="sec-title">☑️ Checklist de Entrada</div>
+      ${ckEstadoVisual ? `<div class="info-row" style="margin-bottom:8px"><span class="info-lbl">Estado Visual</span><span class="info-val bold">${ckEstadoVisual}</span></div>` : ''}
+      ${ck.senha ? `<div class="info-row" style="margin-bottom:8px"><span class="info-lbl">Senha / Padrão</span><span class="info-val bold" style="font-family:monospace;background:#F3F0FF;padding:2px 8px;border-radius:5px">${ck.senha}</span></div>` : ''}
+      ${ckCondicao.length > 0 ? `
+      <div style="margin-bottom:8px">
+        <div style="font-size:10px;font-weight:700;color:#9D8FC5;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">Condição Física</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${['Liga normalmente','Tela trincada','Tela com manchas','Touch funciona','Carrega','Botões OK','Câmera OK','Alto-falante OK','Biometria OK','Molhado/oxidado','Riscos na carcaça','Chip presente'].map(item=>`
+            <div style="display:flex;align-items:center;gap:5px;padding:4px 8px;border-radius:6px;border:1.5px solid ${ckCondicao.includes(item)?'#5B47E0':'#E4DEFF'};background:${ckCondicao.includes(item)?'#EDE9FF':'#FAFAFE'};font-size:11px;color:${ckCondicao.includes(item)?'#3730A3':'#9D8FC5'}">
+              <span style="font-size:13px">${ckCondicao.includes(item)?'☑':'☐'}</span> ${item}
+            </div>`).join('')}
+        </div>
+      </div>` : ''}
+      ${ckAcessorios.length > 0 ? `
+      <div>
+        <div style="font-size:10px;font-weight:700;color:#9D8FC5;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">Acessórios Recebidos</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${['Capa','Película','Carregador','Cabo','Fone','Caixa','Cartão SIM','Cartão SD'].map(item=>`
+            <div style="display:flex;align-items:center;gap:5px;padding:4px 8px;border-radius:6px;border:1.5px solid ${ckAcessorios.includes(item)?'#10B981':'#E4DEFF'};background:${ckAcessorios.includes(item)?'#D1FAE5':'#FAFAFE'};font-size:11px;color:${ckAcessorios.includes(item)?'#065F46':'#9D8FC5'}">
+              <span style="font-size:13px">${ckAcessorios.includes(item)?'☑':'☐'}</span> ${item}
+            </div>`).join('')}
+        </div>
+      </div>` : ''}
+    </div>` : '';
+
   const conteudo = `
     <div class="sec">
       <div class="sec-title">👤 Dados do Cliente</div>
@@ -13238,6 +13549,7 @@ function gerarPdfOS(id) {
       <div class="sec-title">🔍 Defeito Relatado</div>
       <div style="background:#FAFAFE;border:1.5px solid #E4DEFF;border-radius:8px;padding:12px;font-size:12px;line-height:1.6;color:#1A0F3C">${o.defeito}</div>
     </div>
+    ${checklistHtml}
     ${o.diagnostico ? `<div class="sec">
       <div class="sec-title">🔬 Diagnóstico Técnico</div>
       <div style="background:#FAFAFE;border:1.5px solid #E4DEFF;border-radius:8px;padding:12px;font-size:12px;line-height:1.6">${o.diagnostico}</div>
