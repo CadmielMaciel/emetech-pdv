@@ -1098,6 +1098,16 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
                 <div class="fg"><label class="lbl">Garantia (dias)</label><input type="number" id="os-gar" value="90"></div>
                 <div class="fg"><label class="lbl">Prazo</label><input type="date" id="os-prazo"></div>
               </div>
+              <div class="g2">
+                <div class="fg"><label class="lbl">Produto / Peça Principal</label>
+                  <input type="text" id="os-garantia-produto" placeholder="Ex: Tela iPhone 13, Bateria...">
+                  <div style="font-size:10px;color:var(--txt3);margin-top:2px">Aparece na garantia e no documento da OS</div>
+                </div>
+                <div class="fg"><label class="lbl">Termo de Garantia</label>
+                  <select id="os-garantia-termo"><option value="">— Sem termo —</option></select>
+                  <div style="font-size:10px;color:var(--txt3);margin-top:2px">Vincula um contrato/termo à OS</div>
+                </div>
+              </div>
               <div class="fg"><label class="lbl">Obs.</label><textarea id="os-obs" rows="2" placeholder="Senha, acessórios..."></textarea></div>
               <button class="btn btn-pri" style="width:100%;justify-content:center;padding:11px" onclick="createOS()"><i class="ti ti-file-plus"></i>Criar OS</button>
             </div>
@@ -1551,8 +1561,15 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
 
       <!-- PRODUTOS -->
       <div class="page" id="page-produtos">
+        <!-- Abas: Produtos / Peças para OS -->
+        <div class="fin-tabs" style="margin-bottom:14px">
+          <button class="fin-tab active" onclick="prodTab('produtos',this)"><i class="ti ti-device-mobile" style="font-size:13px"></i> Produtos</button>
+          <button class="fin-tab" onclick="prodTab('pecas',this)"><i class="ti ti-cpu" style="font-size:13px"></i> Peças para OS</button>
+        </div>
+
+        <!-- ABA: PRODUTOS -->
+        <div id="prd-tab-produtos">
         <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-          <!-- Filtro por categoria (chips) -->
           <div id="cat-chips" style="display:flex;flex-wrap:wrap;align-items:center;gap:0;flex:1"></div>
           <div class="ig" style="min-width:160px"><i class="ti ti-search"></i><input type="text" placeholder="Buscar produto..." oninput="renderProdTable(this.value)"></div>
           <select id="pf-est" onchange="renderProdTable()" style="padding:7px 10px;font-size:12.5px;border-radius:8px;width:auto">
@@ -1566,7 +1583,20 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
           <thead><tr><th>Foto</th><th>Produto</th><th>SKU</th><th>Cat.</th><th>Preço</th><th>Estoque</th><th>Status</th><th>Ações</th></tr></thead>
           <tbody id="prod-table"></tbody>
         </table></div></div>
-      </div>
+        </div>
+
+        <!-- ABA: PEÇAS PARA OS -->
+        <div id="prd-tab-pecas" style="display:none">
+          <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+            <div style="flex:1;font-size:13px;color:var(--txt2)">Peças cadastradas com categoria <strong>Peça</strong> — usadas internamente nas Ordens de Serviço, não aparecem no PDV.</div>
+            <div class="ig" style="min-width:160px"><i class="ti ti-search"></i><input type="text" id="peca-busca" placeholder="Buscar peça..." oninput="renderPecasTable(this.value)"></div>
+            <button class="btn btn-pri" onclick="abrirModalProd('peca')"><i class="ti ti-plus"></i>Nova Peça</button>
+          </div>
+          <div class="card" style="padding:0"><div class="tw"><table>
+            <thead><tr><th>Foto</th><th>Peça / Material</th><th>SKU</th><th>Subcategoria</th><th>Custo</th><th>Preço</th><th>Estoque</th><th>Ações</th></tr></thead>
+            <tbody id="peca-table"></tbody>
+          </table></div></div>
+        </div>
 
       <!-- MOVIMENTAÇÕES -->
       <div class="page" id="page-estoque">
@@ -2388,6 +2418,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
           <button class="fin-tab" onclick="usrTab('slots',this)"><i class="ti ti-layout-grid" style="font-size:13px"></i> Perfis na Tela Inicial</button>
           <button class="fin-tab" onclick="usrTab('audit',this)"><i class="ti ti-shield-check" style="font-size:13px"></i> Log de Auditoria</button>
           <button class="fin-tab" onclick="usrTab('perms',this)"><i class="ti ti-lock" style="font-size:13px"></i> Permissões</button>
+          <button class="fin-tab" id="tab-admin-master" onclick="usrTab('master',this)" style="display:none"><i class="ti ti-crown" style="font-size:13px"></i> Admin Master</button>
         </div>
         <!-- Lista -->
         <div id="usr-tab-lista">
@@ -2469,6 +2500,27 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
                 <tr><td>Gerenciar Usuários</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td></tr>
                 <tr><td>Aparência & Marca</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td></tr>
               </tbody>
+            </table></div>
+          </div>
+        </div>
+
+        <!-- ABA: ADMIN MASTER (só visível para admin_master) -->
+        <div id="usr-tab-master" style="display:none">
+          <div style="background:linear-gradient(135deg,rgba(91,71,224,.08),rgba(124,58,237,.05));border:1.5px solid rgba(91,71,224,.2);border-radius:12px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
+            <i class="ti ti-crown" style="font-size:22px;color:var(--pri);flex-shrink:0"></i>
+            <div>
+              <div style="font-weight:700;font-size:13px;color:var(--txt)">Administradores do Painel Master</div>
+              <div style="font-size:12px;color:var(--txt3);margin-top:2px">Estes usuários têm acesso irrestrito ao <strong>admin.html</strong> (Painel Master SaaS) — gerenciam todas as empresas do sistema. Não têm acesso ao PDV das lojas.</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:12px">
+            <div style="flex:1"></div>
+            <button class="btn btn-pri" onclick="abrirNovoAdminMaster()"><i class="ti ti-user-plus"></i> Adicionar Admin Master</button>
+          </div>
+          <div class="card" style="padding:0">
+            <div class="tw"><table>
+              <thead><tr><th>Nome</th><th>E-mail</th><th>Criado em</th><th>Status</th><th>Ações</th></tr></thead>
+              <tbody id="master-table"><tr><td colspan="5" style="text-align:center;padding:24px;color:var(--txt3)"><div class="spinner" style="margin:0 auto"></div></td></tr></tbody>
             </table></div>
           </div>
         </div>
@@ -4804,6 +4856,70 @@ async function delProd(id){
     G.produtos=G.produtos.filter(x=>x.id!==id);setLoad(false);renderProdTable();notify('Produto removido');
   });
 }
+// ── ABA PRODUTOS / PEÇAS ──────────────────────────────
+function prodTab(aba, btn) {
+  document.getElementById('prd-tab-produtos').style.display = aba === 'produtos' ? '' : 'none';
+  document.getElementById('prd-tab-pecas').style.display   = aba === 'pecas'    ? '' : 'none';
+  document.querySelectorAll('#page-produtos .fin-tab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  if (aba === 'pecas') renderPecasTable();
+}
+
+function renderPecasTable(q = '') {
+  const f = (q || document.getElementById('peca-busca')?.value || '').toLowerCase();
+  const iC = {Peça:'cpu'};
+  const pecas = G.produtos.filter(p =>
+    p.categoria === 'Peça' &&
+    (!f || p.nome.toLowerCase().includes(f) || (p.sku||'').toLowerCase().includes(f))
+  );
+  const ce = G.role === 'admin' || G.role === 'gerente';
+  const tbody = document.getElementById('peca-table');
+  if (!tbody) return;
+  if (pecas.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--txt3)">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+        <i class="ti ti-cpu" style="font-size:32px;opacity:.3"></i>
+        <div>Nenhuma peça cadastrada</div>
+        <div style="font-size:11px">Cadastre produtos com categoria <strong>Peça</strong> para aparecerem aqui</div>
+      </div>
+    </td></tr>`;
+    return;
+  }
+  tbody.innerHTML = pecas.map(p => {
+    const foto = Array.isArray(p.fotos) && p.fotos.length > 0 ? p.fotos[0] : null;
+    const eb = !p.estoque_infinito && p.estoque > 0 && p.estoque <= (p.estoque_minimo || 3);
+    const ez = !p.estoque_infinito && p.estoque === 0;
+    return `<tr>
+      <td><div style="width:38px;height:38px;border-radius:7px;overflow:hidden;background:var(--pri-light);display:flex;align-items:center;justify-content:center">
+        ${foto ? `<img src="${foto}" style="width:100%;height:100%;object-fit:cover">` : `<i class="ti ti-cpu" style="font-size:17px;color:var(--pri)"></i>`}
+      </div></td>
+      <td><div style="font-weight:600;font-size:13px">${p.nome}</div><div style="font-size:10.5px;color:var(--txt3)">${p.marca||''}</div></td>
+      <td><code style="font-size:11px;background:var(--surface);padding:1px 6px;border-radius:4px;border:1px solid var(--border)">${p.sku||'—'}</code></td>
+      <td style="font-size:12px;color:var(--txt2)">${p.subcategoria||p.subcat||'—'}</td>
+      <td style="color:var(--txt3)">${p.custo ? fmt(p.custo) : '—'}</td>
+      <td style="font-weight:700;color:var(--pri)">${fmt(p.preco)}</td>
+      <td>${p.estoque_infinito ? '<span class="tag tag-inf">♾️</span>' : `<span style="font-weight:600;color:${ez?'var(--danger)':eb?'var(--warn)':'var(--success)'}">
+        ${p.estoque}</span>${eb?'<span class="tag tag-amb" style="font-size:9.5px;margin-left:3px">Baixo</span>':''}${ez?'<span class="tag tag-red" style="font-size:9.5px;margin-left:3px">Zerado</span>':''}`}</td>
+      <td><div style="display:flex;gap:3px">
+        ${ce ? `<button class="btn btn-out btn-xs" onclick="editProd('${p.id}')"><i class="ti ti-edit"></i></button>` : ''}
+        <button class="btn-ghost btn-xs" onclick="verMovProd('${p.id}')" title="Histórico"><i class="ti ti-history"></i></button>
+        ${ce ? `<button class="btn btn-danger btn-xs" onclick="delProd('${p.id}')"><i class="ti ti-trash"></i></button>` : ''}
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+function abrirModalProd(tipoPre) {
+  clearProdForm();
+  if (tipoPre === 'peca') {
+    // Pré-selecionar categoria Peça e estoque infinito desligado
+    const catEl = document.getElementById('p-cat');
+    if (catEl) catEl.value = 'Peça';
+    document.getElementById('prod-ttl').textContent = 'Nova Peça para OS';
+  }
+  openModal('modal-prod');
+}
+
 function renderProdTable(q=''){
   const f=(typeof q==='string'?q:'').toLowerCase();
   const fe=document.getElementById('pf-est')?.value||'';
@@ -6180,7 +6296,9 @@ async function createOS(){
   let numero=num, data, error, tentativas=0;
   setLoad(true);
   while(tentativas<6){
-    const base={empresa_id:EID(),numero,cliente_id:cliSel?.value||null,cliente_nome:cliSel?.options[cliSel.selectedIndex]?.text||'Consumidor Final',tecnico_id:tecSel?.value||null,tecnico_nome:tecSel?.value?tecSel.options[tecSel.selectedIndex].text:null,aparelho:ap,imei:document.getElementById('os-imei').value,defeito:def,diagnostico:document.getElementById('os-diag').value,valor_servico:parseFloat(document.getElementById('os-val').value)||0,total:parseFloat(document.getElementById('os-val').value)||0,garantia_dias:parseInt(document.getElementById('os-gar').value)||90,prazo:document.getElementById('os-prazo').value||null,observacoes:document.getElementById('os-obs').value,status:'Aguardando',progresso:8,timeline:tl};
+    const base={empresa_id:EID(),numero,cliente_id:cliSel?.value||null,cliente_nome:cliSel?.options[cliSel.selectedIndex]?.text||'Consumidor Final',tecnico_id:tecSel?.value||null,tecnico_nome:tecSel?.value?tecSel.options[tecSel.selectedIndex].text:null,aparelho:ap,imei:document.getElementById('os-imei').value,defeito:def,diagnostico:document.getElementById('os-diag').value,valor_servico:parseFloat(document.getElementById('os-val').value)||0,total:parseFloat(document.getElementById('os-val').value)||0,garantia_dias:parseInt(document.getElementById('os-gar').value)||90,prazo:document.getElementById('os-prazo').value||null,observacoes:document.getElementById('os-obs').value,status:'Aguardando',progresso:8,timeline:tl,
+    garantia_produto:document.getElementById('os-garantia-produto')?.value?.trim()||null,
+    garantia_termo_id:document.getElementById('os-garantia-termo')?.value||null};
     const payload={...base, checklist_entrada};
     ({data,error}=await db.from('ordens_servico').insert(payload).select().single());
     // coluna checklist_entrada ainda não existe (migração S01 não rodada)
@@ -6200,8 +6318,9 @@ async function createOS(){
   if(error){notify('Erro: '+error.message,'error');return;}
   G.os.unshift(data);
   G.osCounter=Math.max(G.osCounter, (parseInt(String(data.numero||'').replace(/\D/g,''),10)||0)+1);
-  ['os-ap','os-imei','os-def','os-diag','os-val','os-prazo','os-obs','os-senha'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
+  ['os-ap','os-imei','os-def','os-diag','os-val','os-prazo','os-obs','os-senha','os-garantia-produto'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
   document.getElementById('os-gar').value=90;
+  const gTermo=document.getElementById('os-garantia-termo');if(gTermo)gTermo.value='';
   const termo=document.getElementById('os-termo'); if(termo)termo.checked=false;
   document.querySelectorAll('.os-chk:checked,.os-acess:checked').forEach(c=>c.checked=false);
   renderOSList();renderDashboard();notify((data.numero||numero)+' criada!');
@@ -6215,6 +6334,15 @@ function popOSChecklist(){
   if(g && !g.dataset.done){ g.innerHTML=OS_COND_ITENS.map(it=>`<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" class="os-chk" value="${esc(it)}" style="width:auto">${esc(it)}</label>`).join(''); g.dataset.done='1'; }
   const a=document.getElementById('os-acess-grid');
   if(a && !a.dataset.done){ a.innerHTML=OS_ACESS_ITENS.map(it=>`<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" class="os-acess" value="${esc(it)}" style="width:auto">${esc(it)}</label>`).join(''); a.dataset.done='1'; }
+  // Popular select de termos de garantia
+  const tSel = document.getElementById('os-garantia-termo');
+  if (tSel) {
+    const modelos = G.contratoModelos || [];
+    tSel.innerHTML = '<option value="">— Sem termo —</option>' +
+      modelos.filter(m => m.ativo !== false).map(m =>
+        `<option value="${m.id}">${m.nome || 'Sem nome'}</option>`
+      ).join('');
+  }
 }
 
 function renderOSList(q=''){
@@ -9025,6 +9153,7 @@ function toggleComissaoField(){
 }
 
 function renderUsuarios(q=''){
+  inicializarAbaAdminMaster();
   const f=q.toLowerCase();
   const list=G.usuarios.filter(u=>!f||u.nome.toLowerCase().includes(f));
   const ehAdmin = G.role === 'admin';
@@ -11050,10 +11179,15 @@ function gerarBarcodeSVG(codigo, largura = 180, altura = 50) {
 }
 
 // Adiciona botão "Gerar EAN-13" ao form de produto
-function abrirModalProd() {
+function abrirModalProd(tipoPre) {
   clearProdForm();
-  popSelects(); // popula fornecedor (e demais selects) no cadastro de produto
-  // Adiciona botão de gerar EAN se não existir
+  popSelects();
+  if (tipoPre === 'peca') {
+    const catEl = document.getElementById('p-cat');
+    if (catEl) catEl.value = 'Peça';
+    document.getElementById('prod-ttl').textContent = 'Nova Peça para OS';
+  }
+  // Botão gerar EAN
   const bcField = document.getElementById('p-bc');
   if (bcField && !document.getElementById('btn-gen-ean')) {
     const btn = document.createElement('button');
@@ -11527,7 +11661,7 @@ function renderAuditLog() {
 function usrTab(tab, btn) {
   document.querySelectorAll('#page-usuarios .fin-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  ['lista','slots','audit','perms'].forEach(t => {
+  ['lista','slots','audit','perms','master'].forEach(t => {
     const el = document.getElementById('usr-tab-' + t); if (el) el.style.display = t === tab ? '' : 'none';
   });
   if (tab === 'audit') {
@@ -11537,6 +11671,69 @@ function usrTab(tab, btn) {
     renderAuditLog();
   }
   if (tab === 'slots') renderSlotsPreview();
+  if (tab === 'master') renderAdminMasterList();
+}
+
+// ── ADMIN MASTER (acesso ao Painel Master SaaS) ────────
+async function renderAdminMasterList() {
+  const tbody = document.getElementById('master-table'); if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px"><div class="spinner" style="margin:0 auto"></div></td></tr>';
+  try {
+    const { data, error } = await db.from('admin_master').select('*').order('criado_em', { ascending: false });
+    if (error) throw error;
+    const list = data || [];
+    if (list.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:28px;color:var(--txt3)">Nenhum admin master cadastrado</td></tr>';
+      return;
+    }
+    tbody.innerHTML = list.map(u => `<tr>
+      <td style="font-weight:600">${u.nome || '—'}</td>
+      <td style="font-size:12px;color:var(--txt2)">${u.email || '—'}</td>
+      <td style="font-size:11px;color:var(--txt3)">${u.criado_em ? new Date(u.criado_em).toLocaleDateString('pt-BR') : '—'}</td>
+      <td><span class="tag ${u.ativo !== false ? 'tag-grn' : 'tag-gry'}">${u.ativo !== false ? 'Ativo' : 'Inativo'}</span></td>
+      <td><button class="btn btn-danger btn-xs" onclick="removerAdminMaster('${u.id}','${u.email}')"><i class="ti ti-trash"></i></button></td>
+    </tr>`).join('');
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--danger)">
+      <i class="ti ti-alert-circle"></i> Tabela admin_master não encontrada. Rode a migração X01 no Supabase.
+      <div style="font-size:11px;margin-top:6px;color:var(--txt3)">SQL: CREATE TABLE admin_master (id uuid DEFAULT gen_random_uuid() PRIMARY KEY, nome text, email text UNIQUE NOT NULL, ativo boolean DEFAULT true, criado_em timestamptz DEFAULT now());</div>
+    </td></tr>`;
+  }
+}
+
+function abrirNovoAdminMaster() {
+  const email = prompt('E-mail do novo Admin Master:');
+  if (!email) return;
+  const nome = prompt('Nome do Admin Master:');
+  if (!nome) return;
+  confirmarNovoAdminMaster(email.trim(), nome.trim());
+}
+
+async function confirmarNovoAdminMaster(email, nome) {
+  setLoad(true);
+  const { error } = await db.from('admin_master').insert({ email, nome, ativo: true });
+  setLoad(false);
+  if (error) { notify('Erro: ' + error.message, 'error'); return; }
+  notify(`Admin Master ${nome} adicionado!`, 'success');
+  renderAdminMasterList();
+}
+
+async function removerAdminMaster(id, email) {
+  if (!confirm(`Remover ${email} dos Admin Masters?`)) return;
+  setLoad(true);
+  const { error } = await db.from('admin_master').delete().eq('id', id);
+  setLoad(false);
+  if (error) { notify('Erro: ' + error.message, 'error'); return; }
+  notify('Admin Master removido.', 'info');
+  renderAdminMasterList();
+}
+
+// Mostrar aba Admin Master só para admin_master
+function inicializarAbaAdminMaster() {
+  if (G.role === 'admin_master') {
+    const tab = document.getElementById('tab-admin-master');
+    if (tab) tab.style.display = '';
+  }
 }
 
 /* ── PREVIEW DOS SLOTS NA ABA USUÁRIOS ─────────────── */
