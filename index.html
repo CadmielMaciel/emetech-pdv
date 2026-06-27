@@ -74,24 +74,27 @@ button,.btn,.card,.tag,input,select,textarea{transition:var(--trans)}
 /* ── SIDEBAR RECOLHÍVEL ── */
 .sidebar{
   width:var(--sw-mini);
-  background:linear-gradient(170deg,#0f0a1e 0%,#1a1035 40%,#1e1445 100%);
+  background:linear-gradient(170deg,#0c0820 0%,#160e38 40%,#1a1240 100%);
   display:flex;flex-direction:column;flex-shrink:0;
   overflow:hidden;position:relative;
   transition:width .28s cubic-bezier(.4,0,.2,1);
-  box-shadow:2px 0 24px rgba(91,71,224,.18);
+  box-shadow:3px 0 32px rgba(91,71,224,.32);
   z-index:100;
 }
 .sidebar:hover{ width:var(--sw); }
-.sidebar::before{content:'';position:absolute;top:-60px;left:-20px;width:180px;height:180px;background:radial-gradient(circle,rgba(91,71,224,.35),transparent 70%);border-radius:50%;pointer-events:none}
+.sidebar::before{content:'';position:absolute;top:-40px;left:-30px;width:230px;height:230px;background:radial-gradient(circle,rgba(124,58,237,.55) 0%,rgba(91,71,224,.2) 45%,transparent 70%);border-radius:50%;pointer-events:none}
+.sidebar::after{content:'';position:absolute;bottom:-60px;right:-40px;width:160px;height:160px;background:radial-gradient(circle,rgba(91,71,224,.28) 0%,transparent 70%);border-radius:50%;pointer-events:none}
 
 /* Logo area */
-.logo-area{padding:14px 10px 12px;border-bottom:1px solid rgba(255,255,255,.12);flex-shrink:0;overflow:hidden}
+.logo-area{padding:14px 10px 12px;border-bottom:1px solid rgba(255,255,255,.1);flex-shrink:0;overflow:hidden}
 .logo-badge{display:flex;align-items:center;gap:10px;white-space:nowrap}
-.logo-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;background:rgba(255,255,255,.15);padding:5px}
-.logo-icon img,.logo-icon svg{width:100%;height:100%;object-fit:contain;filter:brightness(0) invert(1)}
-.logo-text{font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:#fff;opacity:0;transition:opacity .2s .05s;white-space:nowrap}
-.logo-sub{font-size:9px;color:rgba(255,255,255,.5);letter-spacing:1.8px;text-transform:uppercase;opacity:0;transition:opacity .2s .05s}
-.sidebar:hover .logo-text,.sidebar:hover .logo-sub{opacity:1}
+.logo-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;background:rgba(255,255,255,.12);padding:5px}
+.logo-icon img{width:100%;height:100%;object-fit:contain}
+.logo-icon svg{width:100%;height:100%;object-fit:contain}
+.logo-texts{display:flex;flex-direction:column;gap:1px;opacity:0;transition:opacity .2s .05s;min-width:0}
+.logo-text{font-family:'Syne',sans-serif;font-weight:800;font-size:13px;color:#fff;white-space:nowrap;line-height:1.2;letter-spacing:.3px}
+.logo-sub{font-size:9px;color:rgba(255,255,255,.45);letter-spacing:1.6px;text-transform:uppercase}
+.sidebar:hover .logo-texts{opacity:1}
 
 /* Nav */
 .nav{flex:1;padding:10px 8px;overflow-y:auto;overflow-x:hidden}
@@ -125,6 +128,12 @@ button,.btn,.card,.tag,input,select,textarea{transition:var(--trans)}
 .ni.active i{opacity:1}
 .ni-label{opacity:0;transition:opacity .15s .05s;white-space:nowrap}
 .sidebar:hover .ni-label{opacity:1}
+/* Subitens (Histórico OS, Diagnóstico dentro de OS) */
+.ni-sub{margin-left:0;padding-left:14px;font-size:12px;opacity:.9}
+.ni-sub i{font-size:16px;opacity:.65}
+.ni-sub .ni-label{color:rgba(255,255,255,.6);font-size:12px}
+.ni-sub:hover .ni-label,.ni-sub.active .ni-label{color:#fff}
+.sidebar:hover .ni-sub{padding-left:20px}
 
 /* Tooltip ao minimizar */
 .ni-tip{
@@ -581,49 +590,64 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
             <rect x="5"  y="96" width="90" height="10" rx="2"/>
           </svg>
         </div>
-        <div>
+        <div class="logo-texts">
           <div class="logo-text">MISU TECNOLOGY</div>
           <div class="logo-sub">ERP PDV v4</div>
         </div>
       </div>
     </div>
     <nav class="nav" id="nav">
-      <div class="nav-sec">Principal</div>
+
+      <!-- PRINCIPAL -->
       <div class="ni active" onclick="go('dashboard')" data-p="admin,gerente"><i class="ti ti-layout-dashboard"></i><span class="ni-label">Dashboard</span><span class="ni-tip">Dashboard</span></div>
       <div class="ni" onclick="go('pdv')" data-p="admin,gerente,operador"><i class="ti ti-shopping-cart"></i><span class="ni-label">PDV / Caixa</span><span class="ni-tip">PDV / Caixa</span></div>
-      <div class="nav-sec">Gestão</div>
-      <div class="ni" onclick="go('caixas')" data-p="admin,gerente" id="nav-caixas"><i class="ti ti-device-desktop-analytics"></i><span class="ni-label">Caixas</span><span class="ni-tip">Gestão de Caixas</span></div>
+
+      <!-- VENDAS -->
+      <div class="nav-sec">Vendas</div>
       <div class="ni" onclick="go('orcamentos')" data-p="admin,gerente,operador"><i class="ti ti-file-invoice"></i><span class="ni-label">Orçamentos</span><span class="ni-tip">Orçamentos</span></div>
-      <div class="ni" onclick="go('simulador')" data-p="admin,gerente,operador"><i class="ti ti-calculator"></i><span class="ni-label">Simulador de Cartão</span><span class="ni-tip">Simulador</span></div>
       <div class="ni" onclick="go('crediario')" data-p="admin,gerente,operador"><i class="ti ti-credit-card"></i><span class="ni-label">Crediário</span><span class="ni-tip">Crediário</span></div>
       <div class="ni" onclick="go('devolucoes')" data-p="admin,gerente"><i class="ti ti-arrow-back-up"></i><span class="ni-label">Devoluções</span><span class="ni-tip">Devoluções</span></div>
+      <div class="ni" onclick="go('simulador')" data-p="admin,gerente,operador"><i class="ti ti-calculator"></i><span class="ni-label">Simulador Cartão</span><span class="ni-tip">Simulador</span></div>
+
+      <!-- SERVIÇOS -->
       <div class="nav-sec">Serviços</div>
       <div class="ni" onclick="go('os')" data-p="admin,gerente,tecnico"><i class="ti ti-tools"></i><span class="ni-label">Ordens de Serviço</span><span class="ni-tip">OS</span></div>
-      <div class="ni" onclick="go('os-hist')" data-p="admin,gerente,tecnico"><i class="ti ti-history"></i><span class="ni-label">Histórico OS</span><span class="ni-tip">Histórico OS</span></div>
+      <div class="ni ni-sub" onclick="go('os-hist')" data-p="admin,gerente,tecnico"><i class="ti ti-history"></i><span class="ni-label">↳ Histórico de OS</span><span class="ni-tip">Histórico OS</span></div>
+      <div class="ni ni-sub" onclick="go('diagnostico')" data-p="admin,gerente,tecnico"><i class="ti ti-stethoscope"></i><span class="ni-label">↳ Diagnóstico</span><span class="ni-tip">Diagnóstico</span></div>
       <div class="ni" onclick="go('garantias')" data-p="admin,gerente,tecnico"><i class="ti ti-shield-check"></i><span class="ni-label">Garantias</span><span class="ni-tip">Garantias</span></div>
       <div class="ni" onclick="go('contratos')" data-p="admin,gerente"><i class="ti ti-file-certificate"></i><span class="ni-label">Contratos & Termos</span><span class="ni-tip">Contratos</span></div>
-      <div class="ni" onclick="go('diagnostico')" data-p="admin,gerente,tecnico"><i class="ti ti-stethoscope"></i><span class="ni-label">Diagnóstico (Panic)</span><span class="ni-tip">Diagnóstico</span></div>
-      <div class="ni" onclick="go('troca')" data-p="admin,gerente"><i class="ti ti-arrows-exchange"></i><span class="ni-label">Troca de Aparelhos</span><span class="ni-tip">Troca</span></div>
+
+      <!-- CLIENTES -->
+      <div class="nav-sec">Clientes</div>
+      <div class="ni" onclick="go('clientes')" data-p="admin,gerente,operador,tecnico"><i class="ti ti-users"></i><span class="ni-label">Clientes</span><span class="ni-tip">Clientes</span></div>
       <div class="ni" onclick="go('crm')" data-p="admin,gerente"><i class="ti ti-heart-handshake"></i><span class="ni-label">Relacionamento (CRM)</span><span class="ni-tip">CRM</span></div>
-      <div class="ni" onclick="go('catalogo')" data-p="admin,gerente"><i class="ti ti-building-store"></i><span class="ni-label">Catálogo Online</span><span class="ni-tip">Catálogo</span></div>
-      <div class="ni" onclick="go('agenda')" data-p="admin,gerente,tecnico,operador"><i class="ti ti-calendar-event"></i><span class="ni-label">Agenda de Entregas</span><span class="ni-tip">Agenda</span></div>
-      <div class="ni" onclick="go('comissoes')" data-p="admin,gerente"><i class="ti ti-award"></i><span class="ni-label">Comissão Técnicos</span><span class="ni-tip">Comissões</span></div>
+      <div class="ni" onclick="go('troca')" data-p="admin,gerente"><i class="ti ti-arrows-exchange"></i><span class="ni-label">Troca de Aparelhos</span><span class="ni-tip">Troca</span></div>
+      <div class="ni" onclick="go('agenda')" data-p="admin,gerente,tecnico,operador"><i class="ti ti-calendar-event"></i><span class="ni-label">Agenda</span><span class="ni-tip">Agenda de Entregas</span></div>
+
+      <!-- ESTOQUE -->
       <div class="nav-sec">Estoque & Produtos</div>
       <div class="ni" onclick="go('produtos')" data-p="admin,gerente"><i class="ti ti-device-mobile"></i><span class="ni-label">Produtos</span><span class="ni-tip">Produtos</span></div>
       <div class="ni" onclick="go('estoque')" data-p="admin,gerente"><i class="ti ti-package"></i><span class="ni-label">Movimentações</span><span class="ni-tip">Movimentações</span></div>
       <div class="ni" onclick="go('fornecedores')" data-p="admin,gerente"><i class="ti ti-truck"></i><span class="ni-label">Fornecedores</span><span class="ni-tip">Fornecedores</span></div>
-      <div class="ni" onclick="go('reposicao')" data-p="admin,gerente"><i class="ti ti-shopping-cart-plus"></i><span class="ni-label">Reposição</span><span class="ni-tip">Central de Reposição</span></div>
-      <div class="nav-sec">Financeiro</div>
+      <div class="ni" onclick="go('reposicao')" data-p="admin,gerente"><i class="ti ti-shopping-cart-plus"></i><span class="ni-label">Reposição</span><span class="ni-tip">Reposição</span></div>
+
+      <!-- FINANCEIRO & GESTÃO -->
+      <div class="nav-sec">Financeiro & Gestão</div>
       <div class="ni" onclick="go('financeiro')" data-p="admin,gerente"><i class="ti ti-wallet"></i><span class="ni-label">Contas & Fluxo</span><span class="ni-tip">Financeiro</span></div>
-      <div class="nav-sec">Cadastros</div>
-      <div class="ni" onclick="go('clientes')" data-p="admin,gerente,operador,tecnico"><i class="ti ti-users"></i><span class="ni-label">Clientes</span><span class="ni-tip">Clientes</span></div>
+      <div class="ni" onclick="go('caixas')" data-p="admin,gerente" id="nav-caixas"><i class="ti ti-device-desktop-analytics"></i><span class="ni-label">Gestão de Caixas</span><span class="ni-tip">Caixas</span></div>
+      <div class="ni" onclick="go('comissoes')" data-p="admin,gerente"><i class="ti ti-award"></i><span class="ni-label">Comissão Técnicos</span><span class="ni-tip">Comissões</span></div>
+      <div class="ni" onclick="go('catalogo')" data-p="admin,gerente"><i class="ti ti-building-store"></i><span class="ni-label">Catálogo Online</span><span class="ni-tip">Catálogo</span></div>
+
+      <!-- RELATÓRIOS & ADMIN -->
       <div class="nav-sec">Relatórios</div>
       <div class="ni" onclick="go('relatorios')" data-p="admin,gerente"><i class="ti ti-chart-bar"></i><span class="ni-label">Relatórios</span><span class="ni-tip">Relatórios</span></div>
+      <div class="ni" onclick="go('inteligencia')" data-p="admin,gerente"><i class="ti ti-brain"></i><span class="ni-label">Inteligência</span><span class="ni-tip">Inteligência</span></div>
+
       <div class="nav-sec nav-adm-sec">Administração</div>
-      <div class="ni nav-adm" onclick="go('inteligencia')" data-p="admin,gerente"><i class="ti ti-brain"></i><span class="ni-label">Inteligência</span><span class="ni-tip">Inteligência</span></div>
       <div class="ni nav-adm" onclick="go('usuarios')" data-p="admin"><i class="ti ti-shield-lock"></i><span class="ni-label">Usuários</span><span class="ni-tip">Usuários</span></div>
       <div class="ni nav-adm" onclick="go('permissoes')" data-p="admin"><i class="ti ti-key"></i><span class="ni-label">Permissões</span><span class="ni-tip">Permissões</span></div>
       <div class="ni nav-adm" onclick="go('aparencia')" data-p="admin"><i class="ti ti-palette"></i><span class="ni-label">Aparência & Marca</span><span class="ni-tip">Aparência</span></div>
+
       <div class="nav-sec">Conta</div>
       <div class="ni" onclick="abrirUpgrade()" data-p="admin,gerente"><i class="ti ti-rocket"></i><span class="ni-label">Fazer Upgrade</span><span class="ni-tip">Upgrade de plano</span></div>
       <div class="ni" onclick="abrirWhatsAppSuporte()" data-p="admin,gerente,operador,tecnico"><i class="ti ti-headset"></i><span class="ni-label">Suporte</span><span class="ni-tip">Falar com o suporte</span></div>
