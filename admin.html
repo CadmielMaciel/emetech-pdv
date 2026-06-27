@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EMETech — Painel Master</title>
+<title>MISU TECNOLOGY — Painel Master</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -13,25 +13,26 @@
 *{box-sizing:border-box;margin:0;padding:0}
 
 :root {
-  --bg:     #07050F;
-  --bg2:    #0F0B1C;
-  --bg3:    #16102A;
-  --surface:#1C1535;
-  --border: #2A2048;
-  --border2:#362A5E;
-  --txt:    #EDE9FF;
-  --txt2:   #9B8FCC;
-  --txt3:   #5C5082;
-  --pri:    #7C3AED;
-  --pri2:   #5B47E0;
-  --pri-light: rgba(124,58,237,.12);
-  --glow:   rgba(124,58,237,.35);
+  --bg:     #100B16;
+  --bg2:    #181020;
+  --bg3:    #1F1630;
+  --surface:#241A3A;
+  --border: #322550;
+  --border2:#3E2F66;
+  --txt:    #F1EDFB;
+  --txt2:   #A99DD2;
+  --txt3:   #685B8C;
+  --pri:    #8B5CF6;
+  --pri2:   #6D54E8;
+  --pri-light: rgba(139,92,246,.14);
+  --glow:   rgba(139,92,246,.32);
+  --accent: #E8915B;
   --success:#10B981;
   --danger: #EF4444;
   --warn:   #F59E0B;
-  --gold:   #F59E0B;
-  --radius: 12px;
-  --shadow: 0 4px 24px rgba(0,0,0,.4);
+  --gold:   #F0A93C;
+  --radius: 14px;
+  --shadow: 0 6px 26px rgba(0,0,0,.34);
 }
 
 ::-webkit-scrollbar{width:4px;height:4px}
@@ -622,7 +623,7 @@ select option { background: var(--bg2); }
   <div class="login-box">
     <div class="login-logo">M</div>
     <div class="login-title">Painel Master</div>
-    <div class="login-sub">EMETech SaaS — Acesso restrito</div>
+    <div class="login-sub">MISU TECNOLOGY SaaS — Acesso restrito</div>
     <div class="login-badge"><i class="ti ti-shield-lock" style="font-size:12px"></i> Somente administradores</div>
     <div class="login-err" id="login-err"></div>
     <div>
@@ -648,7 +649,7 @@ select option { background: var(--bg2); }
       <div class="sb-logo-badge">
         <div class="sb-logo-icon">M</div>
         <div>
-          <div class="sb-logo-text">EMETech</div>
+          <div class="sb-logo-text">MISU TECNOLOGY</div>
           <div class="sb-logo-sub">Master Panel</div>
         </div>
       </div>
@@ -1117,7 +1118,7 @@ select option { background: var(--bg2); }
           </div>
           <div class="fg">
             <label class="lbl">Mensagem padrão (opcional)</label>
-            <input type="text" id="sup-msg" placeholder="Olá! Preciso de suporte com o EMETech PDV.">
+            <input type="text" id="sup-msg" placeholder="Olá! Preciso de suporte com o MISU TECNOLOGY PDV.">
           </div>
           <div class="fg">
             <label class="lbl">E-mail de suporte (opcional)</label>
@@ -1538,7 +1539,7 @@ select option { background: var(--bg2); }
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 /* ══════════════════════════════════════════════════════
-   PAINEL MASTER — EMETech SaaS
+   PAINEL MASTER — MISU TECNOLOGY SaaS
    Arquivo: admin.html
    Hospedagem: mesmo repo que index.html (Vercel)
    Acesso: emetech-pdv.vercel.app/admin.html
@@ -1914,8 +1915,8 @@ async function getTemplates() {
   const { data, error } = await db.from('templates_mensagem').select('*').eq('id','default').single();
   if (error || !data) {
     return {
-      antes: 'Olá {empresa}! Lembrando que sua mensalidade do EMETech PDV (R$ {valor}) vence em {dias} dias, no dia {vencimento}. Qualquer dúvida estamos à disposição!',
-      dia:   'Olá {empresa}! Hoje é o vencimento da sua mensalidade EMETech PDV no valor de R$ {valor}. Para evitar bloqueio, regularize o pagamento. Obrigado!',
+      antes: 'Olá {empresa}! Lembrando que sua mensalidade do MISU TECNOLOGY PDV (R$ {valor}) vence em {dias} dias, no dia {vencimento}. Qualquer dúvida estamos à disposição!',
+      dia:   'Olá {empresa}! Hoje é o vencimento da sua mensalidade MISU TECNOLOGY PDV no valor de R$ {valor}. Para evitar bloqueio, regularize o pagamento. Obrigado!',
       apos:  'Olá {empresa}, identificamos que sua mensalidade (R$ {valor}, venc. {vencimento}) está em atraso há {dias} dia(s). Após o período de tolerância o acesso poderá ser bloqueado. Por favor regularize o quanto antes.',
     };
   }
