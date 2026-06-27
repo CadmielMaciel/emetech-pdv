@@ -983,7 +983,6 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
           <button class="fin-tab" onclick="credTab('parcelas',this)"><i class="ti ti-list" style="font-size:13px"></i> Parcelas</button>
           <button class="fin-tab" onclick="credTab('inadimplentes',this)"><i class="ti ti-alert-triangle" style="font-size:13px"></i> Inadimplentes</button>
           <button class="fin-tab" onclick="credTab('historico',this)"><i class="ti ti-send" style="font-size:13px"></i> Cobranças</button>
-          <button class="fin-tab" onclick="credTab('pagamento',this)" data-p-tab="admin,gerente"><i class="ti ti-credit-card-pay" style="font-size:13px"></i> Pagamento (Asaas)</button>
         </div>
 
         <!-- Contratos -->
@@ -1034,30 +1033,13 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
         </div>
 
         <!-- Pagamento (Asaas) — config por loja -->
+        <!-- Gateway movido para Configurações -->
         <div id="cred-tab-pagamento" style="display:none">
-          <div class="card" style="max-width:640px">
-            <div style="font-weight:700;font-size:15px;margin-bottom:4px"><i class="ti ti-credit-card-pay" style="color:var(--pri)"></i> Gateway de pagamento (Asaas)</div>
-            <div style="font-size:12.5px;color:var(--txt2);margin-bottom:14px">Conecte a conta Asaas <b>desta loja</b> para gerar boleto/PIX automáticos nas parcelas. A chave fica protegida no servidor — depois de salva, ela não é exibida de volta por segurança.</div>
-
-            <div id="pag-status" style="margin-bottom:14px"></div>
-
-            <div class="fg"><label class="lbl">Chave de API do Asaas</label>
-              <input type="password" id="pag-key" placeholder="Cole aqui a chave (começa com $aact_...)" autocomplete="off">
-              <div style="font-size:11px;color:var(--txt3);margin-top:4px">No Asaas: Integrações → API → copie a chave. Deixe em branco para manter a atual.</div>
-            </div>
-            <div class="fg"><label class="lbl">Ambiente</label>
-              <select id="pag-env">
-                <option value="producao">Produção (cobrança real)</option>
-                <option value="sandbox">Sandbox (teste)</option>
-              </select>
-            </div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
-              <button class="btn btn-pri" onclick="salvarChaveAsaas()"><i class="ti ti-device-floppy"></i> Salvar conexão</button>
-              <a class="btn btn-out" href="https://www.asaas.com" target="_blank"><i class="ti ti-external-link"></i> Abrir Asaas</a>
-            </div>
-            <div style="font-size:11.5px;color:var(--txt3);margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
-              <i class="ti ti-shield-lock"></i> O dinheiro das cobranças cai direto na conta Asaas <b>desta loja</b>. O sistema não intermedia o pagamento.
-            </div>
+          <div class="card" style="max-width:480px;text-align:center;padding:32px">
+            <i class="ti ti-settings" style="font-size:40px;color:var(--pri);opacity:.35;display:block;margin-bottom:12px"></i>
+            <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px;margin-bottom:6px">Gateway de Pagamento movido</div>
+            <div style="font-size:13px;color:var(--txt2);margin-bottom:18px">As configurações do Asaas agora ficam em <strong>Administração → Configurações → Gateway de Pagamento</strong>.</div>
+            <button class="btn btn-pri" onclick="go('configuracoes')"><i class="ti ti-settings"></i> Ir para Configurações</button>
           </div>
         </div>
       </div>
@@ -10778,7 +10760,7 @@ async function cobrarPdvAsaas(){
     });
     setLoad(false);
     if(error) throw error;
-    if(data && data.configured===false){ notify('Asaas não conectado nesta loja. Configure em Crediário → Pagamento (Asaas).','info',7000); return; }
+    if(data && data.configured===false){ notify('Asaas não conectado nesta loja. Configure em Administração → Configurações → Gateway de Pagamento.','info',7000); return; }
     if(data && data.error){ notify('Erro: '+data.error,'error',6000); return; }
     const url=data.invoiceUrl;
     const pixCode=data.pixCopiaECola;
@@ -10827,7 +10809,7 @@ async function gerarCobrancaParcela(contratoId, parcIdx){
     setLoad(false);
     if(error) throw error;
     if(data && data.configured===false){
-      notify('Gateway de pagamento não configurado. Configure o Asaas para gerar boletos/PIX automáticos (ver guia).','info',7000);
+      notify('Gateway de pagamento não configurado. Acesse Administração → Configurações → Gateway de Pagamento para conectar o Asaas.','info',7000);
       return;
     }
     if(data && data.error){ notify('Erro: '+data.error,'error',6000); return; }
