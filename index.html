@@ -99,21 +99,10 @@ button,.btn,.card,.tag,input,select,textarea{transition:var(--trans)}
 /* Nav */
 .nav{flex:1;padding:10px 8px;overflow-y:auto;overflow-x:hidden}
 .nav::-webkit-scrollbar{width:0}
-.nav-sec{
-  font-size:9px;color:rgba(255,255,255,.28);letter-spacing:1.6px;text-transform:uppercase;
-  padding:10px 10px 4px;font-weight:700;
-  white-space:nowrap;overflow:hidden;
-  opacity:0;transition:opacity .15s;
-  height:0;padding:0;margin:0;
-}
-.sidebar:hover .nav-sec{opacity:1;height:auto;padding:10px 10px 4px}
-/* Grupos recolhíveis */
-.nav-sec.nav-sec-toggle{cursor:pointer;display:flex;align-items:center;justify-content:space-between}
-.sidebar:hover .nav-sec-toggle{padding-right:10px}
-.nav-sec-chev{font-size:13px;opacity:.55;transition:transform .2s;flex-shrink:0}
-.nav-sec.collapsed .nav-sec-chev{transform:rotate(-90deg)}
-.nav-group-items{overflow:hidden;max-height:1400px;transition:max-height .26s ease}
-.nav-sec.collapsed + .nav-group-items{max-height:0}
+/* Separador fino entre grupos (sem label) */
+.nav-div{height:1px;background:rgba(255,255,255,.07);margin:6px 8px;}
+/* Legacy nav-sec — oculto (não usado mais, mantido para compatibilidade JS) */
+.nav-sec{display:none!important}
 .ni{
   display:flex;align-items:center;gap:10px;
   padding:9px 10px;border-radius:10px;cursor:pointer;
@@ -602,53 +591,58 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
       <div class="ni active" onclick="go('dashboard')" data-p="admin,gerente"><i class="ti ti-layout-dashboard"></i><span class="ni-label">Dashboard</span><span class="ni-tip">Dashboard</span></div>
       <div class="ni" onclick="go('pdv')" data-p="admin,gerente,operador"><i class="ti ti-shopping-cart"></i><span class="ni-label">PDV / Caixa</span><span class="ni-tip">PDV / Caixa</span></div>
 
+      <div class="nav-div"></div>
+
       <!-- VENDAS -->
-      <div class="nav-sec">Vendas</div>
       <div class="ni" onclick="go('orcamentos')" data-p="admin,gerente,operador"><i class="ti ti-file-invoice"></i><span class="ni-label">Orçamentos</span><span class="ni-tip">Orçamentos</span></div>
       <div class="ni" onclick="go('crediario')" data-p="admin,gerente,operador"><i class="ti ti-credit-card"></i><span class="ni-label">Crediário</span><span class="ni-tip">Crediário</span></div>
       <div class="ni" onclick="go('devolucoes')" data-p="admin,gerente"><i class="ti ti-arrow-back-up"></i><span class="ni-label">Devoluções</span><span class="ni-tip">Devoluções</span></div>
       <div class="ni" onclick="go('simulador')" data-p="admin,gerente,operador"><i class="ti ti-calculator"></i><span class="ni-label">Simulador Cartão</span><span class="ni-tip">Simulador</span></div>
 
+      <div class="nav-div"></div>
+
       <!-- SERVIÇOS -->
-      <div class="nav-sec">Serviços</div>
       <div class="ni" onclick="go('os')" data-p="admin,gerente,tecnico"><i class="ti ti-tools"></i><span class="ni-label">Ordens de Serviço</span><span class="ni-tip">OS</span></div>
       <div class="ni ni-sub" onclick="go('os-hist')" data-p="admin,gerente,tecnico"><i class="ti ti-history"></i><span class="ni-label">↳ Histórico de OS</span><span class="ni-tip">Histórico OS</span></div>
       <div class="ni ni-sub" onclick="go('diagnostico')" data-p="admin,gerente,tecnico"><i class="ti ti-stethoscope"></i><span class="ni-label">↳ Diagnóstico</span><span class="ni-tip">Diagnóstico</span></div>
       <div class="ni" onclick="go('garantias')" data-p="admin,gerente,tecnico"><i class="ti ti-shield-check"></i><span class="ni-label">Garantias</span><span class="ni-tip">Garantias</span></div>
       <div class="ni" onclick="go('contratos')" data-p="admin,gerente"><i class="ti ti-file-certificate"></i><span class="ni-label">Contratos & Termos</span><span class="ni-tip">Contratos</span></div>
 
+      <div class="nav-div"></div>
+
       <!-- CLIENTES -->
-      <div class="nav-sec">Clientes</div>
       <div class="ni" onclick="go('clientes')" data-p="admin,gerente,operador,tecnico"><i class="ti ti-users"></i><span class="ni-label">Clientes</span><span class="ni-tip">Clientes</span></div>
       <div class="ni" onclick="go('crm')" data-p="admin,gerente"><i class="ti ti-heart-handshake"></i><span class="ni-label">Relacionamento (CRM)</span><span class="ni-tip">CRM</span></div>
       <div class="ni" onclick="go('troca')" data-p="admin,gerente"><i class="ti ti-arrows-exchange"></i><span class="ni-label">Troca de Aparelhos</span><span class="ni-tip">Troca</span></div>
       <div class="ni" onclick="go('agenda')" data-p="admin,gerente,tecnico,operador"><i class="ti ti-calendar-event"></i><span class="ni-label">Agenda</span><span class="ni-tip">Agenda de Entregas</span></div>
 
+      <div class="nav-div"></div>
+
       <!-- ESTOQUE -->
-      <div class="nav-sec">Estoque & Produtos</div>
       <div class="ni" onclick="go('produtos')" data-p="admin,gerente"><i class="ti ti-device-mobile"></i><span class="ni-label">Produtos</span><span class="ni-tip">Produtos</span></div>
       <div class="ni" onclick="go('estoque')" data-p="admin,gerente"><i class="ti ti-package"></i><span class="ni-label">Movimentações</span><span class="ni-tip">Movimentações</span></div>
       <div class="ni" onclick="go('fornecedores')" data-p="admin,gerente"><i class="ti ti-truck"></i><span class="ni-label">Fornecedores</span><span class="ni-tip">Fornecedores</span></div>
       <div class="ni" onclick="go('reposicao')" data-p="admin,gerente"><i class="ti ti-shopping-cart-plus"></i><span class="ni-label">Reposição</span><span class="ni-tip">Reposição</span></div>
 
+      <div class="nav-div"></div>
+
       <!-- FINANCEIRO & GESTÃO -->
-      <div class="nav-sec">Financeiro & Gestão</div>
       <div class="ni" onclick="go('financeiro')" data-p="admin,gerente"><i class="ti ti-wallet"></i><span class="ni-label">Contas & Fluxo</span><span class="ni-tip">Financeiro</span></div>
       <div class="ni" onclick="go('caixas')" data-p="admin,gerente" id="nav-caixas"><i class="ti ti-device-desktop-analytics"></i><span class="ni-label">Gestão de Caixas</span><span class="ni-tip">Caixas</span></div>
       <div class="ni" onclick="go('comissoes')" data-p="admin,gerente"><i class="ti ti-award"></i><span class="ni-label">Comissão Técnicos</span><span class="ni-tip">Comissões</span></div>
       <div class="ni" onclick="go('catalogo')" data-p="admin,gerente"><i class="ti ti-building-store"></i><span class="ni-label">Catálogo Online</span><span class="ni-tip">Catálogo</span></div>
 
+      <div class="nav-div"></div>
+
       <!-- RELATÓRIOS & ADMIN -->
-      <div class="nav-sec">Relatórios</div>
       <div class="ni" onclick="go('relatorios')" data-p="admin,gerente"><i class="ti ti-chart-bar"></i><span class="ni-label">Relatórios</span><span class="ni-tip">Relatórios</span></div>
       <div class="ni" onclick="go('inteligencia')" data-p="admin,gerente"><i class="ti ti-brain"></i><span class="ni-label">Inteligência</span><span class="ni-tip">Inteligência</span></div>
-
-      <div class="nav-sec nav-adm-sec">Administração</div>
       <div class="ni nav-adm" onclick="go('usuarios')" data-p="admin"><i class="ti ti-shield-lock"></i><span class="ni-label">Usuários</span><span class="ni-tip">Usuários</span></div>
       <div class="ni nav-adm" onclick="go('permissoes')" data-p="admin"><i class="ti ti-key"></i><span class="ni-label">Permissões</span><span class="ni-tip">Permissões</span></div>
       <div class="ni nav-adm" onclick="go('aparencia')" data-p="admin"><i class="ti ti-palette"></i><span class="ni-label">Aparência & Marca</span><span class="ni-tip">Aparência</span></div>
 
-      <div class="nav-sec">Conta</div>
+      <div class="nav-div"></div>
+
       <div class="ni" onclick="abrirUpgrade()" data-p="admin,gerente"><i class="ti ti-rocket"></i><span class="ni-label">Fazer Upgrade</span><span class="ni-tip">Upgrade de plano</span></div>
       <div class="ni" onclick="abrirWhatsAppSuporte()" data-p="admin,gerente,operador,tecnico"><i class="ti ti-headset"></i><span class="ni-label">Suporte</span><span class="ni-tip">Falar com o suporte</span></div>
     </nav>
@@ -11940,7 +11934,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
   .sidebar:hover { width: 260px !important; }
   /* Labels sempre visíveis quando drawer aberto */
   .sidebar .ni-label { opacity: 1 !important; }
-  .sidebar .nav-sec { opacity: 1 !important; height: auto !important; padding: 10px 10px 4px !important; }
+  .sidebar .nav-sec { display: none !important; }
   .sidebar .logo-text, .sidebar .logo-sub { opacity: 1 !important; }
   .sidebar .ni-tip { display: none !important; }
   .sidebar .user-name, .sidebar .logout-btn { opacity: 1 !important; }
