@@ -614,6 +614,8 @@ select option { background: var(--bg2); }
   .sidebar { display: none; }
   .stat-grid { grid-template-columns: 1fr 1fr; }
 }
+.ct-var{display:inline-flex;align-items:center;padding:2px 8px;background:var(--pri-light);border:1px solid rgba(91,71,224,.2);border-radius:6px;font-size:11px;font-family:'DM Mono',monospace;color:var(--pri);cursor:pointer;transition:var(--trans);font-weight:600}
+.ct-var:hover{background:var(--pri);color:#fff}
 </style>
 </head>
 <body>
@@ -662,6 +664,7 @@ select option { background: var(--bg2); }
       <div class="sb-item" onclick="go('cobrancas')"><i class="ti ti-receipt"></i> Cobranças</div>
       <div class="sb-item" onclick="go('planos')"><i class="ti ti-credit-card"></i> Planos</div>
       <div class="sb-sec">Operações</div>
+      <div class="sb-item" onclick="go('contratos_master')"><i class="ti ti-file-certificate"></i> Contratos Master</div>
       <div class="sb-item" onclick="go('whatsapp')"><i class="ti ti-brand-whatsapp"></i> WhatsApp</div>
       <div class="sb-item" onclick="go('updates')"><i class="ti ti-cloud-upload"></i> Updates</div>
       <div class="sb-item" onclick="go('logs')"><i class="ti ti-activity"></i> Logs</div>
@@ -920,6 +923,46 @@ select option { background: var(--bg2); }
         <div id="wpp-empresas-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px">
           <div style="color:var(--txt3);font-size:13px;padding:20px">Carregando...</div>
         </div>
+      </div>
+
+      <!-- ══ PAGE: CONTRATOS MASTER ══ -->
+      <div class="page" id="page-contratos_master">
+        <div class="sec-hdr">
+          <div class="sec-title"><i class="ti ti-file-certificate" style="color:var(--pri)"></i> Contratos & Termos — Modelos Globais</div>
+          <div style="font-size:12.5px;color:var(--txt2);margin-top:4px">Crie modelos padrão que ficam disponíveis para <strong>todas as empresas</strong> do sistema. Cada empresa também pode criar seus próprios modelos adicionais.</div>
+        </div>
+
+        <!-- Aviso de escopo -->
+        <div style="background:rgba(91,71,224,.08);border:1.5px solid rgba(91,71,224,.18);border-radius:10px;padding:12px 16px;margin-bottom:18px;font-size:12.5px;color:var(--txt2);display:flex;align-items:center;gap:10px">
+          <i class="ti ti-info-circle" style="color:var(--pri);font-size:18px;flex-shrink:0"></i>
+          <div>Estes modelos são <strong>globais</strong> (empresa_id = NULL) e aparecem para todas as lojas. Os modelos criados por cada loja ficam visíveis apenas para ela. Para criar um modelo global, use o botão abaixo.</div>
+        </div>
+
+        <!-- Abas por tipo -->
+        <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;align-items:center;justify-content:space-between">
+          <div style="display:flex;gap:6px;flex-wrap:wrap" id="ctm-tipo-tabs">
+            <button class="btn btn-pri btn-xs" onclick="ctmFiltro('',this)">Todos</button>
+            <button class="btn btn-out btn-xs" onclick="ctmFiltro('garantia',this)">🛡️ Garantia</button>
+            <button class="btn btn-out btn-xs" onclick="ctmFiltro('servico_os',this)">🔧 OS / Serviço</button>
+            <button class="btn btn-out btn-xs" onclick="ctmFiltro('venda',this)">🛒 Venda</button>
+            <button class="btn btn-out btn-xs" onclick="ctmFiltro('funcionario',this)">👤 Funcionário</button>
+          </div>
+          <button class="btn btn-pri" onclick="ctmNovoModelo()"><i class="ti ti-plus"></i> Novo modelo global</button>
+        </div>
+
+        <!-- Templates prontos -->
+        <div id="ctm-templates-hint" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:14px">
+          <div style="font-weight:700;font-size:12px;color:var(--txt);margin-bottom:8px"><i class="ti ti-sparkles" style="color:var(--pri)"></i> Criar a partir de template pronto (global)</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <button class="btn btn-out btn-sm" onclick="ctmCriarTemplate('garantia_os')"><i class="ti ti-shield-check"></i> Garantia OS</button>
+            <button class="btn btn-out btn-sm" onclick="ctmCriarTemplate('garantia_venda')"><i class="ti ti-shield"></i> Garantia Venda</button>
+            <button class="btn btn-out btn-sm" onclick="ctmCriarTemplate('entrada_os')"><i class="ti ti-file-check"></i> Entrada OS</button>
+            <button class="btn btn-out btn-sm" onclick="ctmCriarTemplate('funcionario_clt')"><i class="ti ti-id-badge"></i> Contrato CLT</button>
+            <button class="btn btn-out btn-sm" onclick="ctmCriarTemplate('tecnico_autonomo')"><i class="ti ti-tools"></i> Técnico Autônomo</button>
+          </div>
+        </div>
+
+        <div id="ctm-lista" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px"></div>
       </div>
 
       <!-- ══ PAGE: UPDATES ══ -->
@@ -1216,6 +1259,47 @@ CREATE POLICY "master_all" ON admin_master FOR ALL USING (true) WITH CHECK (true
 <!-- ══ MODAIS ══ -->
 
 <!-- Nova/Editar Empresa -->
+<!-- Modal: Editar contrato global (admin master) -->
+<div class="modal-overlay" id="modal-ctm-edit">
+  <div class="modal" style="max-width:700px">
+    <div class="modal-title"><i class="ti ti-file-certificate" style="color:var(--pri)"></i><span id="ctm-titulo">Novo modelo global</span></div>
+    <input type="hidden" id="ctm-id">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div class="fg" style="margin-bottom:0"><label class="lbl">Nome do modelo *</label><input type="text" id="ctm-nome" placeholder="Ex: Termo de Garantia OS"></div>
+      <div class="fg" style="margin-bottom:0"><label class="lbl">Tipo *</label>
+        <select id="ctm-tipo" onchange="ctmTipoChange()">
+          <option value="garantia">🛡️ Garantia</option>
+          <option value="servico_os">🔧 OS / Serviço</option>
+          <option value="venda">🛒 Venda</option>
+          <option value="funcionario">👤 Funcionário</option>
+          <option value="outro">📄 Outro</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg"><label class="lbl">Sugerir para</label><input type="text" id="ctm-sugestao" placeholder="Ex: Apple, Todos, Xiaomi..."></div>
+    <div class="fg">
+      <label class="lbl">Variáveis <span style="font-size:10px;color:var(--txt3)">(clique para inserir)</span></label>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px">
+        <div style="display:flex;flex-wrap:wrap;gap:5px">
+          ${['cliente','cpf','produto','valor','data','loja','cnpj_loja','numero','garantia','tecnico'].map(v=>`<span class="ct-var" onclick="insVarCtm('{${v}}')">{${v}}</span>`).join('')}
+        </div>
+        <div id="ctm-vars-func" style="display:none;flex-wrap:wrap;gap:5px;width:100%;margin-top:4px;padding-top:6px;border-top:1px solid var(--border)">
+          <span style="font-size:10px;color:var(--txt3);width:100%">Funcionário:</span>
+          ${['funcionario','cargo','carga_horaria','salario','data_inicio','cpf_func','rg_func','endereco_func'].map(v=>`<span class="ct-var" onclick="insVarCtm('{${v}}')">{${v}}</span>`).join('')}
+        </div>
+      </div>
+      <textarea id="ctm-corpo" rows="14" placeholder="Texto do contrato..." style="font-family:monospace;font-size:12px;line-height:1.6"></textarea>
+    </div>
+    <div style="background:rgba(91,71,224,.06);border-radius:8px;padding:10px;font-size:11.5px;color:var(--txt2);margin-bottom:8px">
+      <i class="ti ti-world"></i> Este modelo será salvo como <strong>global</strong> (empresa_id = null) e ficará disponível para todas as lojas do sistema.
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:8px">
+      <button class="btn btn-out" onclick="closeModal('modal-ctm-edit')">Cancelar</button>
+      <button class="btn btn-pri" onclick="ctmSalvar()"><i class="ti ti-device-floppy"></i> Salvar modelo global</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-empresa">
   <div class="modal">
     <div class="modal-title"><i class="ti ti-building-store"></i><span id="modal-empresa-title">Nova Empresa</span></div>
@@ -2233,6 +2317,7 @@ const PAGE_TITLES = {
   saude:     { title:'Saúde dos Clientes', icon:'ti-heart-rate-monitor' },
   cobrancas: { title:'Cobranças',    icon:'ti-receipt'          },
   planos:    { title:'Planos',       icon:'ti-credit-card'      },
+  contratos_master: { title:'Contratos & Termos — Globais', icon:'ti-file-certificate' },
   whatsapp:  { title:'WhatsApp',     icon:'ti-brand-whatsapp'   },
   updates:   { title:'Updates',      icon:'ti-cloud-upload'     },
   logs:      { title:'Logs',         icon:'ti-activity'         },
@@ -2259,6 +2344,7 @@ function go(page) {
   if (page === 'cobrancas') renderCobrancas();
   if (page === 'whatsapp') renderWhatsapp();
   if (page === 'suporte') carregarSuporteConfig();
+  if (page === 'contratos_master') renderContratosMaster();
 }
 
 /* ── HEALTH SCORE (Saúde dos Clientes) — item 11.3 ───────────────────
@@ -4679,6 +4765,159 @@ function openModal(id) {
 }
 
 // ── Configurações por setor ──
+// ── CONTRATOS MASTER ─────────────────────────────────
+const CT_TIPOS_ADMIN = {
+  garantia:   { icon:'ti-shield-check', label:'Garantia',     cor:'#10B981' },
+  servico_os: { icon:'ti-tools',        label:'OS / Serviço', cor:'#5B47E0' },
+  venda:      { icon:'ti-shopping-cart',label:'Venda',        cor:'#F59E0B' },
+  funcionario:{ icon:'ti-id-badge',     label:'Funcionário',  cor:'#8b5cf6' },
+  outro:      { icon:'ti-file',         label:'Outro',        cor:'#9ca3af' },
+};
+
+const CT_TEMPLATES_ADMIN = {
+  garantia_os:    { nome:'Termo de Garantia — OS', tipo:'garantia', sugestao:'Todos', corpo:`TERMO DE GARANTIA — OS Nº {numero}\n\n{loja} garante o serviço realizado em {produto} do cliente {cliente} (CPF: {cpf}) por {garantia} a partir de {data}.\n\nA garantia cobre o serviço descrito. Não cobre danos por mau uso, líquidos ou violação por terceiros.\n\nTécnico: {tecnico} | Data: {data}` },
+  garantia_venda: { nome:'Garantia de Produto — Venda', tipo:'garantia', sugestao:'Todos', corpo:`CERTIFICADO DE GARANTIA — VENDA Nº {numero}\n\n{loja} (CNPJ: {cnpj_loja}) garante o produto {produto} adquirido em {data} por {cliente} pelo prazo de {garantia}.\n\nValor: {valor}` },
+  entrada_os:     { nome:'Termo de Entrada — OS', tipo:'servico_os', sugestao:'Todos', corpo:`TERMO DE RESPONSABILIDADE — OS Nº {numero}\n\nCliente: {cliente} | CPF: {cpf}\nEquipamento: {produto} | Data: {data}\n\nDeclaro que autorizo o serviço e estou ciente das condições da {loja}.\n\nTécnico: {tecnico} | Valor estimado: {valor}` },
+  funcionario_clt: { nome:'Contrato de Trabalho — CLT', tipo:'funcionario', sugestao:'Operador, Técnico', corpo:`CONTRATO INDIVIDUAL DE TRABALHO\n\nEMPREGADOR: {loja} (CNPJ: {cnpj_loja})\nEMPREGADO: {funcionario} | CPF: {cpf_func} | RG: {rg_func}\nEndereço: {endereco_func}\n\nFunção: {cargo} | Início: {data_inicio}\nJornada: {carga_horaria} | Salário: {salario}\n\n{loja}, {data}.` },
+  tecnico_autonomo: { nome:'Contrato Técnico Autônomo', tipo:'funcionario', sugestao:'Técnico', corpo:`CONTRATO DE PRESTAÇÃO DE SERVIÇOS\n\nCONTRATANTE: {loja} (CNPJ: {cnpj_loja})\nCONTRATADO: {funcionario} | CPF: {cpf_func}\n\nFunção: {cargo} | Remuneração: {salario}\nJornada: {carga_horaria} | Início: {data_inicio}\n\nAutônomo, sem vínculo empregatício.\n\n{loja}, {data}.` },
+};
+
+let _ctmFiltro = '';
+let _ctmModelos = [];
+
+async function renderContratosMaster() {
+  const lista = document.getElementById('ctm-lista'); if (!lista) return;
+  lista.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:24px"><div class="spinner" style="margin:0 auto"></div></div>';
+  try {
+    // Busca modelos globais (empresa_id IS NULL) e também de todas as empresas para referência
+    const { data, error } = await db.from('contratos_modelos').select('*').is('empresa_id', null).order('nome');
+    if (error) throw error;
+    _ctmModelos = data || [];
+    ctmRenderLista();
+  } catch(e) {
+    lista.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--txt3)">
+      <i class="ti ti-alert-circle" style="font-size:28px;display:block;margin-bottom:8px"></i>
+      Tabela não encontrada. Rode a migração <strong>W01</strong> no Supabase.
+    </div>`;
+  }
+}
+
+function ctmFiltro(tipo, btn) {
+  _ctmFiltro = tipo;
+  document.querySelectorAll('#ctm-tipo-tabs button').forEach(b => { b.classList.toggle('btn-pri', b.textContent.includes('Todos') && !tipo || b===btn); b.classList.toggle('btn-out', !(b.textContent.includes('Todos') && !tipo || b===btn)); });
+  if (btn) { document.querySelectorAll('#ctm-tipo-tabs button').forEach(b => { b.classList.remove('btn-pri'); b.classList.add('btn-out'); }); btn.classList.add('btn-pri'); btn.classList.remove('btn-out'); }
+  ctmRenderLista();
+}
+
+function ctmRenderLista() {
+  const lista = document.getElementById('ctm-lista'); if (!lista) return;
+  const list = _ctmFiltro ? _ctmModelos.filter(m => (m.tipo||'outro') === _ctmFiltro) : _ctmModelos;
+  if (!list.length) {
+    lista.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--txt3)">
+      <i class="ti ti-file-certificate" style="font-size:40px;opacity:.3;display:block;margin-bottom:10px"></i>
+      <div>Nenhum modelo global${_ctmFiltro ? ' deste tipo' : ''}.</div>
+      <div style="font-size:11px;margin-top:4px">Crie modelos globais ou use os templates prontos acima.</div>
+    </div>`;
+    return;
+  }
+  lista.innerHTML = list.map(m => {
+    const tp = CT_TIPOS_ADMIN[m.tipo||'outro'] || CT_TIPOS_ADMIN.outro;
+    return `<div class="card" style="padding:14px;border-top:3px solid ${tp.cor}">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+        <i class="ti ${tp.icon}" style="color:${tp.cor}"></i>
+        <span style="font-size:10px;font-weight:700;color:${tp.cor};text-transform:uppercase">${tp.label}</span>
+        <span class="badge" style="background:rgba(91,71,224,.1);color:var(--pri);font-size:9px;padding:1px 7px;border-radius:99px;margin-left:auto">Global</span>
+      </div>
+      <div style="font-weight:700;font-size:14px;margin-bottom:4px">${m.nome||'—'}</div>
+      ${m.sugestao ? `<div style="font-size:11px;color:var(--txt3);margin-bottom:6px">Para: ${m.sugestao}</div>` : ''}
+      <div style="font-size:12px;color:var(--txt2);max-height:48px;overflow:hidden;line-height:1.4;margin-bottom:12px">${(m.corpo||'').slice(0,120)}${(m.corpo||'').length>120?'…':''}</div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-out btn-xs" onclick="ctmEditar('${m.id}')"><i class="ti ti-edit"></i> Editar</button>
+        <button class="btn btn-out btn-xs" style="color:#ef4444" onclick="ctmExcluir('${m.id}','${m.nome.replace(/'/g,"\\'")}')"><i class="ti ti-trash"></i></button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function ctmNovoModelo() {
+  document.getElementById('ctm-id').value = '';
+  document.getElementById('ctm-nome').value = '';
+  document.getElementById('ctm-sugestao').value = '';
+  document.getElementById('ctm-corpo').value = '';
+  document.getElementById('ctm-tipo').value = 'garantia';
+  document.getElementById('ctm-titulo').textContent = 'Novo modelo global';
+  ctmTipoChange();
+  openModal('modal-ctm-edit');
+}
+
+function ctmEditar(id) {
+  const m = _ctmModelos.find(x => x.id === id); if (!m) return;
+  document.getElementById('ctm-id').value = m.id;
+  document.getElementById('ctm-nome').value = m.nome || '';
+  document.getElementById('ctm-sugestao').value = m.sugestao || '';
+  document.getElementById('ctm-corpo').value = m.corpo || '';
+  document.getElementById('ctm-tipo').value = m.tipo || 'garantia';
+  document.getElementById('ctm-titulo').textContent = 'Editar modelo global';
+  ctmTipoChange();
+  openModal('modal-ctm-edit');
+}
+
+function ctmTipoChange() {
+  const tipo = document.getElementById('ctm-tipo').value;
+  const fv = document.getElementById('ctm-vars-func');
+  if (fv) fv.style.display = tipo === 'funcionario' ? 'flex' : 'none';
+}
+
+function insVarCtm(v) {
+  const ta = document.getElementById('ctm-corpo'); if (!ta) return;
+  const s = ta.selectionStart || ta.value.length;
+  ta.value = ta.value.slice(0, s) + v + ta.value.slice(ta.selectionEnd || s);
+  ta.focus(); ta.selectionStart = ta.selectionEnd = s + v.length;
+}
+
+async function ctmSalvar() {
+  const nome = document.getElementById('ctm-nome').value.trim();
+  const corpo = document.getElementById('ctm-corpo').value.trim();
+  const sugestao = document.getElementById('ctm-sugestao').value.trim();
+  const tipo = document.getElementById('ctm-tipo').value || 'outro';
+  if (!nome || !corpo) { notify('Nome e texto são obrigatórios.', 'error'); return; }
+  const id = document.getElementById('ctm-id').value;
+  setLoad(true);
+  let err;
+  // empresa_id = null → modelo global
+  if (id) { ({error:err} = await db.from('contratos_modelos').update({nome,corpo,sugestao,tipo}).eq('id',id)); }
+  else     { ({error:err} = await db.from('contratos_modelos').insert({empresa_id:null,nome,corpo,sugestao,tipo})); }
+  setLoad(false);
+  if (err) { notify('Erro: '+err.message, 'error'); return; }
+  closeModal('modal-ctm-edit');
+  notify('Modelo global salvo!', 'success');
+  renderContratosMaster();
+}
+
+async function ctmExcluir(id, nome) {
+  if (!confirm(`Excluir o modelo global "${nome}"?\nEle deixará de aparecer para todas as empresas.`)) return;
+  setLoad(true);
+  const {error} = await db.from('contratos_modelos').delete().eq('id', id);
+  setLoad(false);
+  if (error) { notify('Erro: '+error.message, 'error'); return; }
+  notify('Modelo excluído.', 'info');
+  renderContratosMaster();
+}
+
+async function ctmCriarTemplate(chave) {
+  const t = CT_TEMPLATES_ADMIN[chave]; if (!t) return;
+  setLoad(true);
+  const {error} = await db.from('contratos_modelos').insert({empresa_id:null, nome:t.nome, corpo:t.corpo, sugestao:t.sugestao, tipo:t.tipo});
+  setLoad(false);
+  if (error) {
+    if (/does not exist/i.test(error.message)) notify('Rode a migração W01 no Supabase primeiro.','warn',7000);
+    else notify('Erro: '+error.message,'error');
+    return;
+  }
+  notify('"'+t.nome+'" criado como modelo global!','success');
+  renderContratosMaster();
+}
+
 function cfgTab(tab){
   ['geral','pagamentos','admins'].forEach(t=>{
     const sec=document.getElementById('cfg-sec-'+t); if(sec)sec.style.display=(t===tab)?'':'none';
