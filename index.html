@@ -839,7 +839,31 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
               <div class="cr"><span style="color:var(--txt2)">Subtotal</span><span id="c-sub" style="font-weight:600">R$ 0,00</span></div>
               <div class="cr"><span style="color:var(--txt2)">Desconto</span><div style="display:flex;align-items:center;gap:4px"><input type="number" id="c-desc" min="0" max="100" value="0" style="width:48px;padding:2px 6px;font-size:11.5px;text-align:center;border-radius:5px" oninput="renderCart()"><span style="font-size:11.5px;color:var(--txt3)">%</span></div></div>
               <div class="cr"><span style="color:var(--txt2)">Acréscimo</span><div style="display:flex;align-items:center;gap:4px"><input type="number" id="c-acr" min="0" value="0" step="0.01" style="width:70px;padding:2px 6px;font-size:11.5px;border-radius:5px" oninput="renderCart()" placeholder="R$"></div></div>
-              <div class="cr"><span style="color:var(--txt2)">Garantia</span><div style="display:flex;align-items:center;gap:4px"><input type="number" id="c-garantia" min="0" value="0" style="width:48px;padding:2px 6px;font-size:11.5px;text-align:center;border-radius:5px" title="Dias de garantia da venda"><span style="font-size:11.5px;color:var(--txt3)">dias</span></div></div>
+              <div class="cr"><span style="color:var(--txt2)">Garantia</span><div style="display:flex;align-items:center;gap:4px"><input type="number" id="c-garantia" min="0" value="0" style="width:48px;padding:2px 6px;font-size:11.5px;text-align:center;border-radius:5px" title="Dias de garantia da venda" oninput="renderGarantiaTermoSel()"><span style="font-size:11.5px;color:var(--txt3)">dias</span></div></div>
+              <!-- Termo de garantia vinculado -->
+              <div class="cr" id="garantia-termo-row" style="display:none"><span style="color:var(--txt2);font-size:11.5px">Termo</span>
+                <select id="c-garantia-termo" style="flex:1;padding:3px 6px;font-size:11.5px;border-radius:5px;border:1px solid var(--border)"><option value="">— Sem termo —</option></select>
+              </div>
+              <!-- Seletor de maquininha ao escolher cartão -->
+              <div id="cartao-maq-row" style="display:none;flex-direction:column;gap:6px;background:var(--pri-light);border-radius:9px;padding:9px 10px;margin:4px 0">
+                <div style="font-size:11px;font-weight:700;color:var(--pri);text-transform:uppercase;letter-spacing:.5px"><i class="ti ti-credit-card"></i> Cartão</div>
+                <div style="display:flex;gap:6px;align-items:center">
+                  <select id="c-maquininha" style="flex:1;padding:5px 8px;font-size:12.5px;border-radius:7px;border:1px solid var(--border)" onchange="renderTaxaCartao()">
+                    <option value="">— Maquininha —</option>
+                  </select>
+                  <select id="c-cartao-parcelas" style="width:80px;padding:5px 6px;font-size:12px;border-radius:7px;border:1px solid var(--border)" onchange="renderTaxaCartao()">
+                    <option value="1">1x</option><option value="2">2x</option><option value="3">3x</option>
+                    <option value="4">4x</option><option value="5">5x</option><option value="6">6x</option>
+                    <option value="7">7x</option><option value="8">8x</option><option value="9">9x</option>
+                    <option value="10">10x</option><option value="11">11x</option><option value="12">12x</option>
+                  </select>
+                </div>
+                <div id="taxa-cartao-info" style="font-size:11.5px;color:var(--txt2)"></div>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <label class="toggle" style="flex-shrink:0"><input type="checkbox" id="c-cartao-repassar" onchange="renderTaxaCartao()"><span class="tslider"></span></label>
+                  <div style="font-size:11.5px;color:var(--txt2)">Repassar taxa ao cliente (acréscimo automático)</div>
+                </div>
+              </div>
               <div class="cr" id="troca-row" style="display:none;align-items:center;gap:6px"><span style="color:var(--txt2);white-space:nowrap"><i class="ti ti-arrows-exchange" style="font-size:12px;color:var(--pri)"></i> Troca</span><span id="c-troca-desc" style="flex:1;font-size:11px;color:var(--txt3);text-align:right"></span><span id="c-troca-val" style="font-weight:700;color:#dc2626">- R$ 0,00</span><button class="btn btn-out btn-xs" onclick="removerTrocaPDV()" title="Remover troca" style="padding:1px 5px"><i class="ti ti-x"></i></button></div>
               <button class="btn btn-out btn-sm" id="btn-add-troca" onclick="abrirSelecaoTrocaPDV()" style="width:100%;justify-content:center;margin:4px 0;font-size:11.5px"><i class="ti ti-arrows-exchange"></i> Abater aparelho usado (troca)</button>
               <div class="cg"><span class="cg-lbl">Total</span><span class="cg-val" id="c-tot">R$ 0,00</span></div>
@@ -1584,10 +1608,11 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
 
       <!-- PRODUTOS -->
       <div class="page" id="page-produtos">
-        <!-- Abas: Produtos / Peças para OS -->
+        <!-- Abas: Produtos / Peças para OS / Categorias & Status -->
         <div class="fin-tabs" style="margin-bottom:14px">
           <button class="fin-tab active" onclick="prodTab('produtos',this)"><i class="ti ti-device-mobile" style="font-size:13px"></i> Produtos</button>
           <button class="fin-tab" onclick="prodTab('pecas',this)"><i class="ti ti-cpu" style="font-size:13px"></i> Peças para OS</button>
+          <button class="fin-tab" onclick="prodTab('config',this)"><i class="ti ti-settings-2" style="font-size:13px"></i> Categorias & Status</button>
         </div>
 
         <!-- ABA: PRODUTOS -->
@@ -1621,7 +1646,47 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
           </table></div></div>
         </div>
 
-      <!-- MOVIMENTAÇÕES -->
+        <!-- ABA: CATEGORIAS & STATUS -->
+        <div id="prd-tab-config" style="display:none">
+          <div class="g2" style="gap:14px">
+
+            <!-- CATEGORIAS -->
+            <div class="card">
+              <div class="card-hdr" style="margin-bottom:14px">
+                <div class="card-title"><i class="ti ti-tag" style="color:var(--pri)"></i> Categorias</div>
+                <button class="btn btn-pri btn-sm" onclick="prdCfgAddCat()"><i class="ti ti-plus"></i> Nova</button>
+              </div>
+              <div style="font-size:11.5px;color:var(--txt3);margin-bottom:10px">As categorias aparecem no select do cadastro de produto. Arraste para reordenar.</div>
+              <div id="prd-cat-list"></div>
+            </div>
+
+            <!-- STATUS -->
+            <div class="card">
+              <div class="card-hdr" style="margin-bottom:14px">
+                <div class="card-title"><i class="ti ti-badge" style="color:var(--pri)"></i> Status de Produto</div>
+                <button class="btn btn-pri btn-sm" onclick="prdCfgAddStatus()"><i class="ti ti-plus"></i> Novo</button>
+              </div>
+              <div style="font-size:11.5px;color:var(--txt3);margin-bottom:10px">Os status aparecem no select durante o cadastro e na tabela de produtos.</div>
+              <div id="prd-status-list"></div>
+            </div>
+
+          </div>
+
+          <!-- SUBCATEGORIAS (por categoria pai) -->
+          <div class="card" style="margin-top:14px">
+            <div class="card-hdr" style="margin-bottom:14px">
+              <div class="card-title"><i class="ti ti-tags" style="color:var(--pri)"></i> Subcategorias</div>
+              <div style="display:flex;gap:8px;align-items:center">
+                <select id="prd-subcat-pai" onchange="renderPrdSubcats()" style="padding:6px 10px;font-size:12.5px;border-radius:8px;width:auto">
+                  <option value="">— Escolha a categoria pai —</option>
+                </select>
+                <button class="btn btn-pri btn-sm" onclick="prdCfgAddSubcat()"><i class="ti ti-plus"></i> Nova subcategoria</button>
+              </div>
+            </div>
+            <div style="font-size:11.5px;color:var(--txt3);margin-bottom:10px">Subcategorias ficam disponíveis no campo de subcategoria do produto, filtradas pela categoria selecionada.</div>
+            <div id="prd-subcat-list"><div style="color:var(--txt3);font-size:13px;padding:16px 0">Selecione uma categoria acima para ver e gerenciar suas subcategorias.</div></div>
+          </div>
+        </div>
       <div class="page" id="page-estoque">
         <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
           <div class="card-title" style="flex:1;min-width:160px">Histórico de Movimentações</div>
@@ -2571,8 +2636,15 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
                 <i class="ti ti-scan"></i>
               </button>
             </div></div>
-      <div class="g2"><div class="fg"><label class="lbl">Categoria</label><select id="p-cat"><option>Celular</option><option>Acessório</option><option>Peça</option><option>Serviço</option><option>Outro</option></select></div><div class="fg"><label class="lbl">Marca</label><input type="text" id="p-marca"></div></div>
-      <div class="g2"><div class="fg"><label class="lbl">Subcategoria</label><input type="text" id="p-subcat" placeholder="Ex: Capa, Película, Bateria..."></div><div class="fg"><label class="lbl">Fornecedor</label><select id="p-forn"><option value="">— Nenhum —</option></select></div></div>
+      <div class="g2"><div class="fg"><label class="lbl">Categoria</label><select id="p-cat" onchange="popSubcatsByPai(this.value)"></select></div><div class="fg"><label class="lbl">Marca</label><input type="text" id="p-marca"></div></div>
+      <div class="g2">
+        <div class="fg"><label class="lbl">Subcategoria</label>
+          <select id="p-subcat-sel" onchange="document.getElementById('p-subcat').value=this.value" style="margin-bottom:4px"></select>
+          <input type="text" id="p-subcat" placeholder="Ou digite livremente..." style="font-size:12px">
+          <div style="font-size:10px;color:var(--txt3);margin-top:2px">Selecione da lista ou digite uma nova subcategoria</div>
+        </div>
+        <div class="fg"><label class="lbl">Fornecedor</label><select id="p-forn"><option value="">— Nenhum —</option></select></div>
+      </div>
       <div class="ms">Preços</div>
       <div class="g2"><div class="fg"><label class="lbl">Custo R$</label><input type="number" id="p-custo" step="0.01" placeholder="0,00"></div><div class="fg"><label class="lbl">Preço R$ *</label><input type="number" id="p-preco" step="0.01" placeholder="0,00"></div></div>
     </div>
@@ -2592,7 +2664,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
                   </button>
                 </div><div class="fg"><label class="lbl">Est. Mínimo</label><input type="number" id="p-estmin" value="3" min="0"></div></div>
       </div>
-      <div class="fg"><label class="lbl">Status</label><select id="p-status"><option value="ativo">Ativo (à venda)</option><option value="novo">Novo</option><option value="seminovo">Seminovo</option><option value="usado">Usado</option><option value="recondicionado">Recondicionado</option><option value="troca">Troca</option><option value="vitrine">Vitrine</option><option value="defeito">Defeito</option><option value="manutencao">Em manutenção</option><option value="fora_linha">Fora de linha</option><option value="inativo">Inativo</option></select></div>
+      <div class="fg"><label class="lbl">Status</label><select id="p-status"></select></div>
       <div class="ms">Fotos</div>
       <div class="img-up" onclick="document.getElementById('p-fotos-inp').click()">
         <i class="ti ti-camera-plus" style="font-size:24px;color:var(--txt3);margin-bottom:4px;display:block"></i>
@@ -3013,30 +3085,109 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
 <!-- Modal Novo Crédito -->
 <div class="modal-overlay" id="modal-novo-credito"><div class="modal lg">
   <div class="modal-title"><i class="ti ti-credit-card"></i>Novo Crediário / Fiado</div>
-  <div class="g2">
-    <div class="fg"><label class="lbl">Cliente *</label><select id="nc-cli"></select></div>
-    <div class="fg"><label class="lbl">Valor Total R$ *</label><input type="number" id="nc-valor" step="0.01" min="0.01" placeholder="0,00" oninput="calcParcelas()"></div>
-  </div>
-  <div class="g2">
-    <div class="fg"><label class="lbl">Entrada R$</label><input type="number" id="nc-entrada" step="0.01" min="0" value="0" placeholder="0,00" oninput="calcParcelas()"></div>
-    <div class="fg"><label class="lbl">Nº de Parcelas</label><input type="number" id="nc-parcelas" min="1" max="60" value="3" oninput="calcParcelas()"></div>
-  </div>
-  <div class="g2">
-    <div class="fg"><label class="lbl">Primeiro Vencimento</label><input type="date" id="nc-venc1" oninput="calcParcelas()"></div>
-    <div class="fg"><label class="lbl">Intervalo entre parcelas</label>
-      <select id="nc-intervalo" onchange="calcParcelas()">
-        <option value="30">Mensal (30 dias)</option><option value="15">Quinzenal (15 dias)</option><option value="7">Semanal (7 dias)</option>
-      </select>
-    </div>
-  </div>
-  <div class="fg"><label class="lbl">Descrição / Produto</label><input type="text" id="nc-desc" placeholder="Ex: Celular Samsung A54, Serviço de tela..."></div>
-  <div class="fg"><label class="lbl">Observações</label><textarea id="nc-obs" rows="2" placeholder="Termos, condições..."></textarea></div>
 
-  <div class="ms">Resumo das Parcelas</div>
-  <div id="nc-parcelas-preview" style="max-height:200px;overflow-y:auto"></div>
+  <!-- Abas do modal -->
+  <div class="fin-tabs" style="margin-bottom:14px">
+    <button class="fin-tab active" onclick="credModalTab('basico',this)"><i class="ti ti-list" style="font-size:12px"></i> Dados Básicos</button>
+    <button class="fin-tab" onclick="credModalTab('contrato',this)"><i class="ti ti-file-certificate" style="font-size:12px"></i> Contrato & Banco</button>
+  </div>
+
+  <!-- ABA: BÁSICO -->
+  <div id="cred-modal-basico">
+    <div class="g2">
+      <div class="fg"><label class="lbl">Cliente *</label><select id="nc-cli"></select></div>
+      <div class="fg"><label class="lbl">Valor Total R$ *</label><input type="number" id="nc-valor" step="0.01" min="0.01" placeholder="0,00" oninput="calcParcelas()"></div>
+    </div>
+    <div class="g2">
+      <div class="fg"><label class="lbl">Entrada R$</label><input type="number" id="nc-entrada" step="0.01" min="0" value="0" placeholder="0,00" oninput="calcParcelas()"></div>
+      <div class="fg"><label class="lbl">Nº de Parcelas</label><input type="number" id="nc-parcelas" min="1" max="60" value="3" oninput="calcParcelas()"></div>
+    </div>
+    <div class="g2">
+      <div class="fg"><label class="lbl">Primeiro Vencimento</label><input type="date" id="nc-venc1" oninput="calcParcelas()"></div>
+      <div class="fg"><label class="lbl">Intervalo entre parcelas</label>
+        <select id="nc-intervalo" onchange="calcParcelas()">
+          <option value="30">Mensal (30 dias)</option><option value="15">Quinzenal (15 dias)</option><option value="7">Semanal (7 dias)</option>
+        </select>
+      </div>
+    </div>
+    <div class="g2">
+      <div class="fg"><label class="lbl">Juros a.m. %</label><input type="number" id="nc-juros" step="0.01" min="0" value="0" placeholder="0" oninput="calcParcelas()"><div style="font-size:10px;color:var(--txt3);margin-top:2px">0 = sem juros</div></div>
+      <div class="fg"><label class="lbl">Multa por atraso %</label><input type="number" id="nc-multa" step="0.01" min="0" value="2" placeholder="2"><div style="font-size:10px;color:var(--txt3);margin-top:2px">Incide sobre parcela vencida</div></div>
+    </div>
+    <div class="fg"><label class="lbl">Descrição / Produto</label><input type="text" id="nc-desc" placeholder="Ex: Celular Samsung A54, Serviço de tela..."></div>
+    <div class="fg"><label class="lbl">Observações</label><textarea id="nc-obs" rows="2" placeholder="Termos, condições..."></textarea></div>
+    <div class="ms">Resumo das Parcelas</div>
+    <div id="nc-parcelas-preview" style="max-height:200px;overflow-y:auto"></div>
+  </div>
+
+  <!-- ABA: CONTRATO & BANCO -->
+  <div id="cred-modal-contrato" style="display:none">
+    <div style="background:rgba(239,68,68,.06);border:1.5px solid rgba(239,68,68,.2);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--txt2)">
+      <i class="ti ti-alert-triangle" style="color:var(--danger)"></i> Estas informações compõem o <strong>contrato formal de crédito</strong>. Dados de CPF e autorização SERASA são usados apenas no documento gerado — não enviamos a terceiros.
+    </div>
+
+    <div class="ms">Dados do Devedor (para o contrato)</div>
+    <div class="g2">
+      <div class="fg"><label class="lbl">CPF do Cliente *</label><input type="text" id="nc-cpf" placeholder="000.000.000-00" oninput="mascararCPF(this)"></div>
+      <div class="fg"><label class="lbl">RG</label><input type="text" id="nc-rg" placeholder="0000000"></div>
+    </div>
+    <div class="fg"><label class="lbl">Endereço completo</label><input type="text" id="nc-endereco" placeholder="Rua, número, bairro, cidade"></div>
+    <div class="g2">
+      <div class="fg"><label class="lbl">Profissão</label><input type="text" id="nc-profissao" placeholder="Ex: Autônomo, CLT..."></div>
+      <div class="fg"><label class="lbl">Telefone/WhatsApp</label><input type="text" id="nc-telefone" placeholder="(00) 00000-0000"></div>
+    </div>
+
+    <div class="ms">Dados Bancários (cobrança via banco)</div>
+    <div class="g2">
+      <div class="fg"><label class="lbl">Banco (se aplicável)</label>
+        <select id="nc-banco">
+          <option value="">— Sem cobrança bancária —</option>
+          <option value="Nubank">Nubank</option>
+          <option value="Banco do Brasil">Banco do Brasil</option>
+          <option value="Bradesco">Bradesco</option>
+          <option value="Caixa Econômica">Caixa Econômica Federal</option>
+          <option value="Itaú">Itaú</option>
+          <option value="Santander">Santander</option>
+          <option value="Sicredi">Sicredi</option>
+          <option value="Inter">Banco Inter</option>
+          <option value="Asaas">Asaas (automático)</option>
+          <option value="Outro">Outro</option>
+        </select>
+      </div>
+      <div class="fg"><label class="lbl">Nº do contrato bancário</label><input type="text" id="nc-contrato-banco" placeholder="Opcional"></div>
+    </div>
+
+    <div class="ms">Autorização & Protestos</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:10px 12px">
+        <input type="checkbox" id="nc-autoriza-serasa" style="width:auto;margin-top:2px;flex-shrink:0">
+        <div>
+          <div style="font-size:12.5px;font-weight:600;color:var(--txt)">Autorizo inclusão em SERASA/SPC em caso de inadimplência</div>
+          <div style="font-size:11px;color:var(--txt3);margin-top:2px">O devedor autoriza expressamente que, em caso de não pagamento, seu nome poderá ser incluído nos órgãos de proteção ao crédito (SERASA, SPC e similares).</div>
+        </div>
+      </label>
+      <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:10px 12px">
+        <input type="checkbox" id="nc-autoriza-protesto" style="width:auto;margin-top:2px;flex-shrink:0">
+        <div>
+          <div style="font-size:12.5px;font-weight:600;color:var(--txt)">Autorizo protesto em cartório</div>
+          <div style="font-size:11px;color:var(--txt3);margin-top:2px">O devedor autoriza o protesto de títulos em cartório competente em caso de inadimplência.</div>
+        </div>
+      </label>
+      <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:10px 12px">
+        <input type="checkbox" id="nc-autoriza-cobranca" style="width:auto;margin-top:2px;flex-shrink:0" checked>
+        <div>
+          <div style="font-size:12.5px;font-weight:600;color:var(--txt)">Autorizo cobrança via WhatsApp e telefone</div>
+          <div style="font-size:11px;color:var(--txt3);margin-top:2px">O credor poderá contatar o devedor pelos dados fornecidos para cobrança amigável.</div>
+        </div>
+      </label>
+    </div>
+
+    <div class="fg" style="margin-top:12px"><label class="lbl">Observações do contrato</label><textarea id="nc-obs-contrato" rows="2" placeholder="Condições especiais acordadas..."></textarea></div>
+  </div>
 
   <div class="modal-footer">
     <button class="btn btn-out" onclick="closeModal('modal-novo-credito')">Cancelar</button>
+    <button class="btn btn-out" onclick="gerarContratoCrediaroPDF()"><i class="ti ti-file-certificate"></i>Contrato PDF</button>
     <button class="btn btn-out" onclick="gerarCarnePDF()"><i class="ti ti-file-text"></i>Gerar Carnê</button>
     <button class="btn btn-out" onclick="gerarCarneGraficaModal()"><i class="ti ti-printer"></i>Carnê p/ Gráfica</button>
     <button class="btn btn-pri" onclick="salvarCredito()"><i class="ti ti-check"></i>Confirmar</button>
@@ -4948,13 +5099,258 @@ async function delProd(id){
     G.produtos=G.produtos.filter(x=>x.id!==id);setLoad(false);renderProdTable();notify('Produto removido');
   });
 }
-// ── ABA PRODUTOS / PEÇAS ──────────────────────────────
+// ── ABA PRODUTOS / PEÇAS / CONFIG ────────────────────
 function prodTab(aba, btn) {
   document.getElementById('prd-tab-produtos').style.display = aba === 'produtos' ? '' : 'none';
   document.getElementById('prd-tab-pecas').style.display   = aba === 'pecas'    ? '' : 'none';
+  document.getElementById('prd-tab-config').style.display  = aba === 'config'   ? '' : 'none';
   document.querySelectorAll('#page-produtos .fin-tab').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
   if (aba === 'pecas') renderPecasTable();
+  if (aba === 'config') renderPrdConfig();
+}
+
+// ── STORAGE DE CATEGORIAS/STATUS/SUBCATS ─────────────
+const PRD_CFG_KEY = 'misu_prod_cfg_' + (G?.empresa?.id || 'local');
+
+function getPrdCfg() {
+  try {
+    const raw = localStorage.getItem('misu_prod_cfg');
+    const d = raw ? JSON.parse(raw) : {};
+    return {
+      categorias: d.categorias || ['Celular','Acessório','Peça','Serviço','Outro'],
+      status: d.status || [
+        {valor:'ativo', label:'Ativo (à venda)'},
+        {valor:'novo', label:'Novo'},
+        {valor:'seminovo', label:'Seminovo'},
+        {valor:'usado', label:'Usado'},
+        {valor:'recondicionado', label:'Recondicionado'},
+        {valor:'troca', label:'Troca'},
+        {valor:'vitrine', label:'Vitrine'},
+        {valor:'defeito', label:'Defeito'},
+        {valor:'manutencao', label:'Em manutenção'},
+        {valor:'fora_linha', label:'Fora de linha'},
+        {valor:'inativo', label:'Inativo'},
+      ],
+      subcategorias: d.subcategorias || {
+        'Celular': ['iPhone','Samsung','Xiaomi','Motorola','Outros'],
+        'Acessório': ['Capa','Película','Carregador','Fone','Cabo','Suporte'],
+        'Peça': ['Tela','Bateria','Conector','Alto-falante','Câmera','Placa','Botão'],
+        'Serviço': ['Troca de Tela','Troca de Bateria','Limpeza','Configuração','Desbloqueio'],
+      }
+    };
+  } catch(e) { return { categorias:['Celular','Acessório','Peça','Serviço','Outro'], status:[], subcategorias:{} }; }
+}
+
+function savePrdCfg(cfg) {
+  try { localStorage.setItem('misu_prod_cfg', JSON.stringify(cfg)); } catch(e) {}
+  // Atualiza os selects do modal de produto imediatamente
+  popProdSelects();
+}
+
+// ── POPULA SELECTS DO MODAL DE PRODUTO ───────────────
+function popProdSelects() {
+  const cfg = getPrdCfg();
+  // Categoria
+  const catEl = document.getElementById('p-cat');
+  if (catEl) {
+    const cur = catEl.value;
+    catEl.innerHTML = cfg.categorias.map(c => `<option value="${c}"${c===cur?' selected':''}>${c}</option>`).join('');
+    popSubcatsByPai(catEl.value);
+  }
+  // Status
+  const stEl = document.getElementById('p-status');
+  if (stEl) {
+    const cur = stEl.value;
+    stEl.innerHTML = cfg.status.map(s => `<option value="${s.valor}"${s.valor===cur?' selected':''}>${s.label}</option>`).join('');
+  }
+}
+
+function popSubcatsByPai(cat) {
+  const cfg = getPrdCfg();
+  const subcatEl = document.getElementById('p-subcat-sel');
+  if (!subcatEl) return;
+  const subs = cfg.subcategorias[cat] || [];
+  subcatEl.innerHTML = '<option value="">— Nenhuma —</option>' + subs.map(s => `<option>${s}</option>`).join('');
+}
+
+// ── RENDERIZAR CONFIG ─────────────────────────────────
+function renderPrdConfig() {
+  const cfg = getPrdCfg();
+
+  // Categorias
+  const catList = document.getElementById('prd-cat-list');
+  if (catList) {
+    catList.innerHTML = cfg.categorias.length === 0
+      ? '<div style="color:var(--txt3);font-size:13px;padding:12px 0">Nenhuma categoria cadastrada.</div>'
+      : cfg.categorias.map((c, i) => `
+        <div class="prd-cfg-item" data-idx="${i}">
+          <div style="display:flex;align-items:center;gap:8px;flex:1">
+            <i class="ti ti-grip-vertical" style="color:var(--txt3);cursor:grab;font-size:16px"></i>
+            <i class="ti ti-${c==='Celular'?'device-mobile':c==='Peça'?'cpu':c==='Serviço'?'tools':c==='Acessório'?'headphones':'package'}" style="color:var(--pri);font-size:15px"></i>
+            <span style="font-size:13px;font-weight:600">${c}</span>
+            ${['Peça','Serviço'].includes(c) ? '<span style="font-size:10px;background:var(--pri-light);color:var(--pri);padding:1px 7px;border-radius:99px;font-weight:600">Sistema</span>' : ''}
+          </div>
+          <div style="display:flex;gap:4px">
+            <button class="btn btn-out btn-xs" onclick="prdCfgRenameCat(${i},'${c.replace(/'/g,"\\'")}')"><i class="ti ti-edit"></i></button>
+            ${!['Peça','Serviço','Celular'].includes(c) ? `<button class="btn btn-out btn-xs" style="color:var(--danger)" onclick="prdCfgDelCat(${i},'${c.replace(/'/g,"\\'")}')"><i class="ti ti-trash"></i></button>` : '<button class="btn btn-out btn-xs" disabled title="Categoria do sistema" style="opacity:.35"><i class="ti ti-lock"></i></button>'}
+          </div>
+        </div>`).join('');
+
+    // Popular o select do pai de subcategorias
+    const paiSel = document.getElementById('prd-subcat-pai');
+    if (paiSel) {
+      const cur = paiSel.value;
+      paiSel.innerHTML = '<option value="">— Escolha a categoria —</option>' + cfg.categorias.map(c => `<option${c===cur?' selected':''}>${c}</option>`).join('');
+    }
+  }
+
+  // Status
+  const stList = document.getElementById('prd-status-list');
+  if (stList) {
+    stList.innerHTML = cfg.status.length === 0
+      ? '<div style="color:var(--txt3);font-size:13px;padding:12px 0">Nenhum status cadastrado.</div>'
+      : cfg.status.map((s, i) => `
+        <div class="prd-cfg-item">
+          <div style="display:flex;align-items:center;gap:8px;flex:1">
+            <span class="tag ${s.valor==='ativo'||s.valor==='novo'?'tag-grn':s.valor==='inativo'||s.valor==='fora_linha'?'tag-gry':'tag-amb'}" style="font-size:11px">${s.label}</span>
+            <span style="font-size:10px;color:var(--txt3);font-family:monospace">${s.valor}</span>
+          </div>
+          <div style="display:flex;gap:4px">
+            <button class="btn btn-out btn-xs" onclick="prdCfgEditStatus(${i})"><i class="ti ti-edit"></i></button>
+            ${!['ativo','inativo'].includes(s.valor) ? `<button class="btn btn-out btn-xs" style="color:var(--danger)" onclick="prdCfgDelStatus(${i})"><i class="ti ti-trash"></i></button>` : '<button class="btn btn-out btn-xs" disabled style="opacity:.35"><i class="ti ti-lock"></i></button>'}
+          </div>
+        </div>`).join('');
+  }
+
+  renderPrdSubcats();
+}
+
+function renderPrdSubcats() {
+  const cfg = getPrdCfg();
+  const pai = document.getElementById('prd-subcat-pai')?.value || '';
+  const cont = document.getElementById('prd-subcat-list');
+  if (!cont) return;
+  if (!pai) { cont.innerHTML = '<div style="color:var(--txt3);font-size:13px;padding:16px 0">Selecione uma categoria acima.</div>'; return; }
+  const subs = cfg.subcategorias[pai] || [];
+  cont.innerHTML = subs.length === 0
+    ? `<div style="color:var(--txt3);font-size:13px;padding:12px 0">Nenhuma subcategoria em "${pai}". Clique em "Nova subcategoria".</div>`
+    : subs.map((s, i) => `
+      <div class="prd-cfg-item">
+        <div style="display:flex;align-items:center;gap:8px;flex:1">
+          <i class="ti ti-corner-down-right" style="color:var(--txt3);font-size:14px"></i>
+          <span style="font-size:13px;font-weight:500">${s}</span>
+        </div>
+        <div style="display:flex;gap:4px">
+          <button class="btn btn-out btn-xs" onclick="prdCfgRenameSubcat('${pai.replace(/'/g,"\\'")}',${i},'${s.replace(/'/g,"\\'")}')"><i class="ti ti-edit"></i></button>
+          <button class="btn btn-out btn-xs" style="color:var(--danger)" onclick="prdCfgDelSubcat('${pai.replace(/'/g,"\\'")}',${i})"><i class="ti ti-trash"></i></button>
+        </div>
+      </div>`).join('');
+}
+
+// ── CSS para items ─────────────────────────────────────
+// (injeta uma vez)
+(function() {
+  if (document.getElementById('prd-cfg-style')) return;
+  const s = document.createElement('style');
+  s.id = 'prd-cfg-style';
+  s.textContent = `.prd-cfg-item{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:9px;border:1px solid var(--border);background:var(--surface);margin-bottom:6px;transition:var(--trans)}.prd-cfg-item:hover{border-color:var(--pri);background:var(--pri-light)}`;
+  document.head.appendChild(s);
+})();
+
+// ── CRUD CATEGORIAS ───────────────────────────────────
+function prdCfgAddCat() {
+  const nome = prompt('Nome da nova categoria:');
+  if (!nome?.trim()) return;
+  const cfg = getPrdCfg();
+  if (cfg.categorias.includes(nome.trim())) { notify('Categoria já existe.','warn'); return; }
+  cfg.categorias.push(nome.trim());
+  savePrdCfg(cfg);
+  renderPrdConfig(); renderCatChips(); notify(`Categoria "${nome.trim()}" criada!`,'success');
+}
+
+function prdCfgRenameCat(idx, nome) {
+  const novo = prompt('Novo nome para a categoria:', nome);
+  if (!novo?.trim() || novo.trim() === nome) return;
+  const cfg = getPrdCfg();
+  const antigo = cfg.categorias[idx];
+  cfg.categorias[idx] = novo.trim();
+  // Migrar subcategorias para o novo nome
+  if (cfg.subcategorias[antigo]) { cfg.subcategorias[novo.trim()] = cfg.subcategorias[antigo]; delete cfg.subcategorias[antigo]; }
+  savePrdCfg(cfg);
+  renderPrdConfig(); renderCatChips(); notify('Categoria renomeada!','success');
+}
+
+function prdCfgDelCat(idx, nome) {
+  if (!confirm(`Excluir a categoria "${nome}"?\nProdutos com esta categoria não serão afetados — apenas o filtro desaparecerá.`)) return;
+  const cfg = getPrdCfg();
+  cfg.categorias.splice(idx, 1);
+  delete cfg.subcategorias[nome];
+  savePrdCfg(cfg);
+  renderPrdConfig(); renderCatChips(); notify('Categoria removida.','info');
+}
+
+// ── CRUD STATUS ───────────────────────────────────────
+function prdCfgAddStatus() {
+  const label = prompt('Nome do status (ex: Reformado):');
+  if (!label?.trim()) return;
+  const valor = prompt('Valor interno (sem espaços, ex: reformado):', label.trim().toLowerCase().replace(/\s+/g,'-'));
+  if (!valor?.trim()) return;
+  const cfg = getPrdCfg();
+  if (cfg.status.find(s => s.valor === valor.trim())) { notify('Já existe um status com este valor.','warn'); return; }
+  cfg.status.push({ valor: valor.trim(), label: label.trim() });
+  savePrdCfg(cfg);
+  renderPrdConfig(); notify(`Status "${label.trim()}" criado!`,'success');
+}
+
+function prdCfgEditStatus(idx) {
+  const cfg = getPrdCfg();
+  const s = cfg.status[idx];
+  const label = prompt('Nome do status:', s.label);
+  if (!label?.trim()) return;
+  cfg.status[idx].label = label.trim();
+  savePrdCfg(cfg);
+  renderPrdConfig(); notify('Status atualizado!','success');
+}
+
+function prdCfgDelStatus(idx) {
+  const cfg = getPrdCfg();
+  const s = cfg.status[idx];
+  if (!confirm(`Excluir o status "${s.label}"?`)) return;
+  cfg.status.splice(idx, 1);
+  savePrdCfg(cfg);
+  renderPrdConfig(); notify('Status removido.','info');
+}
+
+// ── CRUD SUBCATEGORIAS ────────────────────────────────
+function prdCfgAddSubcat() {
+  const pai = document.getElementById('prd-subcat-pai')?.value;
+  if (!pai) { notify('Selecione a categoria pai primeiro.','warn'); return; }
+  const nome = prompt(`Nova subcategoria em "${pai}":`);
+  if (!nome?.trim()) return;
+  const cfg = getPrdCfg();
+  if (!cfg.subcategorias[pai]) cfg.subcategorias[pai] = [];
+  if (cfg.subcategorias[pai].includes(nome.trim())) { notify('Subcategoria já existe.','warn'); return; }
+  cfg.subcategorias[pai].push(nome.trim());
+  savePrdCfg(cfg);
+  renderPrdSubcats(); notify(`Subcategoria "${nome.trim()}" criada!`,'success');
+}
+
+function prdCfgRenameSubcat(pai, idx, nome) {
+  const novo = prompt('Novo nome:', nome);
+  if (!novo?.trim() || novo.trim() === nome) return;
+  const cfg = getPrdCfg();
+  cfg.subcategorias[pai][idx] = novo.trim();
+  savePrdCfg(cfg);
+  renderPrdSubcats(); notify('Subcategoria renomeada!','success');
+}
+
+function prdCfgDelSubcat(pai, idx) {
+  if (!confirm('Excluir esta subcategoria?')) return;
+  const cfg = getPrdCfg();
+  cfg.subcategorias[pai].splice(idx, 1);
+  savePrdCfg(cfg);
+  renderPrdSubcats(); notify('Subcategoria removida.','info');
 }
 
 function renderPecasTable(q = '') {
@@ -5016,7 +5412,9 @@ function renderProdTable(q=''){
   const f=(typeof q==='string'?q:'').toLowerCase();
   const fe=document.getElementById('pf-est')?.value||'';
   const cC={Celular:'tag-pur',Acessório:'tag-blu',Peça:'tag-amb',Serviço:'tag-grn',Outro:'tag-gry'};
-  const iC={Celular:'device-mobile',Acessório:'headphones',Peça:'cpu',Serviço:'tools',Outro:'package'};
+  const getIC=(c)=>c==='Celular'?'device-mobile':c==='Acessório'?'headphones':c==='Peça'?'cpu':c==='Serviço'?'tools':'package';
+  // Garante que selects dinâmicos estão populados
+  if (!document.getElementById('p-cat')?.options?.length) popProdSelects();
   let list=G.produtos.filter(p=>(!f||p.nome.toLowerCase().includes(f)||(p.sku||'').toLowerCase().includes(f))&&(!fe||(fe==='low'&&!p.estoque_infinito&&p.estoque<=p.estoque_minimo&&p.estoque>0)||(fe==='out'&&!p.estoque_infinito&&p.estoque===0)||(fe==='inf'&&p.estoque_infinito)));
   const bx=G.produtos.filter(p=>!p.estoque_infinito&&p.estoque>0&&p.estoque<=(p.estoque_minimo||3));
   const zr=G.produtos.filter(p=>!p.estoque_infinito&&p.estoque===0);
@@ -5030,13 +5428,13 @@ function renderProdTable(q=''){
     const eb=!p.estoque_infinito&&p.estoque>0&&p.estoque<=(p.estoque_minimo||3);
     const ez=!p.estoque_infinito&&p.estoque===0;
     return`<tr>
-      <td><div style="width:38px;height:38px;border-radius:7px;overflow:hidden;background:var(--pri-light);display:flex;align-items:center;justify-content:center;cursor:${foto?'pointer':'default'}" ${foto?`onclick="fotoFull('${foto}')"`:''}>${foto?`<img src="${foto}" style="width:100%;height:100%;object-fit:cover">`:`<i class="ti ti-${iC[p.categoria]||'package'}" style="font-size:17px;color:var(--pri)"></i>`}</div></td>
+      <td><div style="width:38px;height:38px;border-radius:7px;overflow:hidden;background:var(--pri-light);display:flex;align-items:center;justify-content:center;cursor:${foto?'pointer':'default'}" ${foto?`onclick="fotoFull('${foto}')"`:''}>${foto?`<img src="${foto}" style="width:100%;height:100%;object-fit:cover">`:`<i class="ti ti-${getIC(p.categoria)}" style="font-size:17px;color:var(--pri)"></i>`}</div></td>
       <td><div style="font-weight:600;font-size:13px">${p.nome}</div><div style="font-size:10.5px;color:var(--txt3)">${p.marca||''}</div></td>
       <td><code style="font-size:11px;background:var(--surface);padding:1px 6px;border-radius:4px;border:1px solid var(--border)">${p.sku||'—'}</code></td>
       <td><span class="tag ${cC[p.categoria]||'tag-gry'}">${p.categoria||'—'}</span></td>
       <td style="font-weight:700;color:var(--pri)">${fmt(p.preco)}</td>
       <td>${p.estoque_infinito?'<span class="tag tag-inf">♾️</span>':`<span style="font-weight:600;color:${ez?'var(--danger)':eb?'var(--warn)':'var(--success)'}">${p.estoque}</span>${eb?'<span class="tag tag-amb" style="font-size:9.5px;margin-left:3px">Baixo</span>':''}${ez?'<span class="tag tag-red" style="font-size:9.5px;margin-left:3px">Zerado</span>':''}`}</td>
-      <td><span class="tag ${p.status==='ativo'?'tag-grn':'tag-gry'}">${p.status==='ativo'?'Ativo':'Inativo'}</span></td>
+      <td><span class="tag ${p.status==='ativo'?'tag-grn':p.status==='inativo'||p.status==='fora_linha'?'tag-gry':'tag-amb'}">${getPrdCfg().status.find(s=>s.valor===p.status)?.label || p.status || 'Ativo'}</span></td>
       <td><div style="display:flex;gap:3px">${ce?`<button class="btn btn-out btn-xs" onclick="editProd('${p.id}')"><i class="ti ti-edit"></i></button>`:''}
         <button class="btn-ghost btn-xs" onclick="verMovProd('${p.id}')" title="Histórico de Estoque"><i class="ti ti-history"></i></button>
         <button class="btn-ghost btn-xs" onclick="verHistoricoPreco('${p.id}')" title="Histórico de Preços"><i class="ti ti-chart-line"></i></button>
@@ -5171,7 +5569,80 @@ function selPay(btn,m){
   const mm=document.getElementById('pay-misto');
   if(m==='misto'){mm.classList.add('show');if(G.payMisto.length===0)addMistoItem();}
   else{mm.classList.remove('show');G.payMisto=[];}
+  // Mostrar seletor de maquininha e parcelas ao selecionar cartão
+  const maqRow=document.getElementById('cartao-maq-row');
+  if(maqRow){
+    maqRow.style.display=m==='cartao'?'flex':'none';
+    if(m==='cartao') popMaquininhaPDV();
+  }
   renderCart();
+}
+
+function popMaquininhaPDV(){
+  const sel=document.getElementById('c-maquininha'); if(!sel)return;
+  const cur=sel.value;
+  sel.innerHTML='<option value="">— Maquininha —</option>'+(G_MAQUINAS||[]).map(m=>`<option value="${m.id}"${m.id===cur?' selected':''}>${m.nome}</option>`).join('')+'<option value="__nova">+ Cadastrar nova</option>';
+  renderTaxaCartao();
+}
+
+function renderTaxaCartao(){
+  const maqId=document.getElementById('c-maquininha')?.value;
+  const parc=parseInt(document.getElementById('c-cartao-parcelas')?.value)||1;
+  const repassar=document.getElementById('c-cartao-repassar')?.checked;
+  const info=document.getElementById('taxa-cartao-info'); if(!info)return;
+
+  if(maqId==='__nova'){go('simulador');return;}
+  if(!maqId||!(G_MAQUINAS||[]).length){info.innerHTML='<span style="color:var(--txt3)">Nenhuma maquininha cadastrada. <a onclick="go(\'simulador\')" style="color:var(--pri);cursor:pointer">Cadastrar</a></span>';return;}
+
+  const maq=(G_MAQUINAS||[]).find(x=>x.id===maqId);
+  if(!maq){info.innerHTML='';return;}
+
+  let taxa=0;
+  if(parc===1){
+    taxa=maq.taxa_debito||maq.taxas_credito?.[0]||0;
+    // Detectar débito vs crédito 1x (débito se parcelas=1 e toggle débito ativo — simplificado: usa taxas_credito[0])
+    taxa=Array.isArray(maq.taxas_credito)?maq.taxas_credito[0]||maq.taxa_debito||0:maq.taxa_debito||0;
+  } else {
+    taxa=Array.isArray(maq.taxas_credito)&&maq.taxas_credito.length>=parc?maq.taxas_credito[parc-1]:maq.taxa_credito||0;
+  }
+
+  // Calcular total atual
+  const sub=G.cart.reduce((s,i)=>s+i.preco*i.qty,0);
+  const desc=parseFloat(document.getElementById('c-desc')?.value)||0;
+  const acr=parseFloat(document.getElementById('c-acr')?.value)||0;
+  const base=sub*(1-desc/100)+acr;
+  const custoTaxa=base*(taxa/100);
+  const totalComTaxa=base+custoTaxa;
+  const parcelado=totalComTaxa/parc;
+
+  // Salvar taxa atual para usar em finalizeSale
+  G._taxaCartaoAtual={maqId,maqNome:maq.nome,parc,taxa,custoTaxa,repassar};
+
+  if(repassar){
+    // Atualiza acréscimo automaticamente
+    const acrEl=document.getElementById('c-acr');
+    if(acrEl){acrEl.value=custoTaxa.toFixed(2);renderCart();}
+    info.innerHTML=`<span style="color:var(--success)"><i class="ti ti-arrow-right"></i> Taxa <b>${taxa}%</b> = <b>${fmt(custoTaxa)}</b> repassada → cliente paga <b>${fmt(totalComTaxa)}</b> em ${parc}x de <b>${fmt(parcelado)}</b></span>`;
+  } else {
+    // Remove acréscimo de taxa anterior se tinha
+    info.innerHTML=`<span style="color:var(--warn)"><i class="ti ti-info-circle"></i> Taxa <b>${taxa}%</b> = <b>${fmt(custoTaxa)}</b> absorvida pela loja | ${parc}x de <b>${fmt(base/parc)}</b></span>`;
+  }
+}
+
+function renderGarantiaTermoSel(){
+  const dias=parseInt(document.getElementById('c-garantia')?.value)||0;
+  const row=document.getElementById('garantia-termo-row');
+  if(!row)return;
+  if(dias>0){
+    row.style.display='flex';
+    const sel=document.getElementById('c-garantia-termo');
+    if(sel&&sel.options.length<=1){
+      const modelos=(G.contratoModelos||G_CONTRATOS_MODELOS||[]).filter(m=>m.tipo==='garantia'||!m.tipo);
+      sel.innerHTML='<option value="">— Sem termo —</option>'+modelos.map(m=>`<option value="${m.id}">${m.nome}</option>`).join('');
+    }
+  } else {
+    row.style.display='none';
+  }
 }
 
 function addMistoItem(){
@@ -5230,7 +5701,12 @@ async function finalizeSale(){
     const continuar = window.confirm('Este cliente possui parcelas em atraso no crediário. Deseja continuar com a venda assim mesmo?');
     if (!continuar) return;
   }
-  const venda={empresa_id:EID(),caixa_id:G.caixaAtual.id,cliente_id:cliId||null,cliente_nome:cliNome,operador_id:G.profile.id,operador_nome:G.profile.nome,itens:G.cart,subtotal:sub,desconto_pct:desc,desconto_valor:sub*desc/100,acrescimo_valor:acr,troca_valor:trocaVal,troca_id:G.trocaPDV?.id||null,total,custo_total:custo,lucro:total-custo,pagamentos,pagamento:G.payMethod==='misto'?'misto':G.payMethod,troco,garantia_dias:parseInt(document.getElementById('c-garantia')?.value)||0};
+  const venda={empresa_id:EID(),caixa_id:G.caixaAtual.id,cliente_id:cliId||null,cliente_nome:cliNome,operador_id:G.profile.id,operador_nome:G.profile.nome,itens:G.cart,subtotal:sub,desconto_pct:desc,desconto_valor:sub*desc/100,acrescimo_valor:acr,troca_valor:trocaVal,troca_id:G.trocaPDV?.id||null,total,custo_total:custo,lucro:total-custo,pagamentos,pagamento:G.payMethod==='misto'?'misto':G.payMethod,troco,garantia_dias:parseInt(document.getElementById('c-garantia')?.value)||0,
+    garantia_termo_id:document.getElementById('c-garantia-termo')?.value||null,
+    maquininha_id:G._taxaCartaoAtual?.maqId||null,
+    maquininha_nome:G._taxaCartaoAtual?.maqNome||null,
+    cartao_parcelas:G.payMethod==='cartao'?(parseInt(document.getElementById('c-cartao-parcelas')?.value)||1):null,
+    cartao_taxa:G._taxaCartaoAtual?.taxa||null};
 
   if(!navigator.onLine){
     // ── MODO OFFLINE: guarda venda na fila local, baixa estoque só na memória local ──
@@ -9982,6 +10458,130 @@ function calcParcelas() {
 }
 
 // ── SALVAR CONTRATO ──────────────────────────────────
+// ── ABA DO MODAL CREDIÁRIO ─────────────────────────────
+function credModalTab(aba, btn) {
+  document.getElementById('cred-modal-basico').style.display = aba==='basico' ? '' : 'none';
+  document.getElementById('cred-modal-contrato').style.display = aba==='contrato' ? '' : 'none';
+  document.querySelectorAll('#modal-novo-credito .fin-tab').forEach(b => b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  // Pré-preencher CPF/tel do cliente selecionado
+  if(aba==='contrato'){
+    const cliId=document.getElementById('nc-cli')?.value;
+    if(cliId){
+      const c=G.clientes.find(x=>x.id===cliId);
+      if(c){
+        if(!document.getElementById('nc-cpf').value && c.cpf_cnpj) document.getElementById('nc-cpf').value=c.cpf_cnpj;
+        if(!document.getElementById('nc-telefone').value && c.telefone) document.getElementById('nc-telefone').value=c.telefone;
+        if(!document.getElementById('nc-endereco').value) {
+          const end=[c.endereco,c.numero,c.bairro,c.cidade,c.estado].filter(Boolean).join(', ');
+          document.getElementById('nc-endereco').value=end;
+        }
+      }
+    }
+  }
+}
+
+function mascararCPF(el){
+  let v=el.value.replace(/\D/g,'').slice(0,11);
+  if(v.length>9) v=v.replace(/^(\d{3})(\d{3})(\d{3})(\d{1,2})$/,'$1.$2.$3-$4');
+  else if(v.length>6) v=v.replace(/^(\d{3})(\d{3})(\d{1,3})$/,'$1.$2.$3');
+  else if(v.length>3) v=v.replace(/^(\d{3})(\d{1,3})$/,'$1.$2');
+  el.value=v;
+}
+
+// ── GERAR PDF DO CONTRATO DE CREDIÁRIO ───────────────
+function gerarContratoCrediaroPDF(){
+  const cliSel=document.getElementById('nc-cli');
+  const cliNome=cliSel?.options[cliSel.selectedIndex]?.text||'—';
+  const total=parseFloat(document.getElementById('nc-valor')?.value)||0;
+  const entrada=parseFloat(document.getElementById('nc-entrada')?.value)||0;
+  const nParc=parseInt(document.getElementById('nc-parcelas')?.value)||1;
+  const juros=parseFloat(document.getElementById('nc-juros')?.value)||0;
+  const multa=parseFloat(document.getElementById('nc-multa')?.value)||2;
+  const desc=document.getElementById('nc-desc')?.value||'—';
+  const cpf=document.getElementById('nc-cpf')?.value||'—';
+  const rg=document.getElementById('nc-rg')?.value||'—';
+  const end=document.getElementById('nc-endereco')?.value||'—';
+  const prof=document.getElementById('nc-profissao')?.value||'—';
+  const tel=document.getElementById('nc-telefone')?.value||'—';
+  const banco=document.getElementById('nc-banco')?.value||'';
+  const autSerasa=document.getElementById('nc-autoriza-serasa')?.checked;
+  const autProtesto=document.getElementById('nc-autoriza-protesto')?.checked;
+  const autCob=document.getElementById('nc-autoriza-cobranca')?.checked;
+  const obsContrato=document.getElementById('nc-obs-contrato')?.value||'';
+  const venc1=document.getElementById('nc-venc1')?.value;
+  const interv=parseInt(document.getElementById('nc-intervalo')?.value)||30;
+  const saldo=total-entrada;
+  const emp=G.empresa||{};
+  const hoje=new Date().toLocaleDateString('pt-BR');
+  const e=getEmpDados?getEmpDados():{};
+
+  // Gerar tabela de parcelas
+  let parcelasRows='';
+  for(let i=0;i<nParc;i++){
+    const d=new Date(venc1+'T12:00');d.setDate(d.getDate()+i*interv);
+    parcelasRows+=`<tr><td style="text-align:center">${i+1}</td><td>${d.toLocaleDateString('pt-BR')}</td><td style="text-align:right;font-weight:700">${fmt(saldo/nParc)}</td><td><span style="font-size:10px;background:#FEF9EE;color:#D97706;padding:2px 8px;border-radius:4px">Em aberto</span></td></tr>`;
+  }
+
+  const numContrato='CR-'+Date.now().toString().slice(-6);
+  const conteudo=`
+    <div class="sec">
+      <div class="sec-title">📋 Dados do Contrato</div>
+      <div class="info-grid">
+        <div class="info-row"><span class="info-lbl">Nº Contrato</span><span class="info-val bold">${numContrato}</span></div>
+        <div class="info-row"><span class="info-lbl">Data</span><span class="info-val">${hoje}</span></div>
+        <div class="info-row"><span class="info-lbl">Credor</span><span class="info-val bold">${emp.nome||'—'}</span></div>
+        ${emp.cnpj?`<div class="info-row"><span class="info-lbl">CNPJ Credor</span><span class="info-val">${emp.cnpj}</span></div>`:''}
+        ${banco?`<div class="info-row"><span class="info-lbl">Banco</span><span class="info-val">${banco}</span></div>`:''}
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">👤 Dados do Devedor</div>
+      <div class="info-grid">
+        <div class="info-row"><span class="info-lbl">Nome</span><span class="info-val bold">${cliNome}</span></div>
+        <div class="info-row"><span class="info-lbl">CPF</span><span class="info-val">${cpf}</span></div>
+        <div class="info-row"><span class="info-lbl">RG</span><span class="info-val">${rg}</span></div>
+        <div class="info-row"><span class="info-lbl">Endereço</span><span class="info-val">${end}</span></div>
+        <div class="info-row"><span class="info-lbl">Profissão</span><span class="info-val">${prof}</span></div>
+        <div class="info-row"><span class="info-lbl">Telefone</span><span class="info-val">${tel}</span></div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">💰 Condições do Crédito</div>
+      <div class="info-grid">
+        <div class="info-row"><span class="info-lbl">Produto / Serviço</span><span class="info-val">${desc}</span></div>
+        <div class="info-row"><span class="info-lbl">Valor total</span><span class="info-val bold" style="color:#5B47E0">${fmt(total)}</span></div>
+        <div class="info-row"><span class="info-lbl">Entrada</span><span class="info-val">${fmt(entrada)}</span></div>
+        <div class="info-row"><span class="info-lbl">Saldo a parcelar</span><span class="info-val bold">${fmt(saldo)}</span></div>
+        <div class="info-row"><span class="info-lbl">Parcelas</span><span class="info-val">${nParc}x de ${fmt(saldo/nParc)}</span></div>
+        ${juros>0?`<div class="info-row"><span class="info-lbl">Juros a.m.</span><span class="info-val">${juros}%</span></div>`:''}
+        <div class="info-row"><span class="info-lbl">Multa por atraso</span><span class="info-val">${multa}%</span></div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">📅 Tabela de Pagamento</div>
+      <table class="pdf-table"><thead><tr><th style="text-align:center">Parcela</th><th>Vencimento</th><th style="text-align:right">Valor</th><th>Status</th></tr></thead>
+      <tbody>${parcelasRows}</tbody></table>
+    </div>
+    <div class="sec">
+      <div class="sec-title">📜 Cláusulas e Autorizações</div>
+      <div style="font-size:11.5px;line-height:1.7;color:#1A0F3C">
+        <p><strong>1. OBJETO:</strong> O presente contrato tem por objeto a concessão de crédito para aquisição de ${desc} pelo valor de ${fmt(total)}, a ser quitado conforme tabela acima.</p>
+        <p><strong>2. MORA E MULTA:</strong> O atraso no pagamento de qualquer parcela implicará multa de ${multa}% sobre o valor da parcela, acrescido de juros de mora de ${juros>0?juros+'%':' 1%'} ao mês (pro rata die), sem necessidade de notificação prévia.</p>
+        <p><strong>3. VENCIMENTO ANTECIPADO:</strong> O não pagamento de qualquer parcela no prazo vencerá antecipadamente todas as demais parcelas, tornando exigível imediatamente o saldo devedor total.</p>
+        ${autSerasa?`<p><strong>4. PROTEÇÃO AO CRÉDITO:</strong> O DEVEDOR autoriza expressamente a inclusão de seu nome nos cadastros de proteção ao crédito (SERASA, SPC e similares) em caso de inadimplência, após notificação prévia.</p>`:''}
+        ${autProtesto?`<p><strong>5. PROTESTO:</strong> O DEVEDOR autoriza o protesto dos títulos em cartório competente, conforme legislação vigente, em caso de inadimplência.</p>`:''}
+        ${autCob?`<p><strong>6. COBRANÇA:</strong> O DEVEDOR autoriza contato via WhatsApp, telefone e outros meios para cobrança amigável.</p>`:''}
+        ${obsContrato?`<p><strong>CONDIÇÕES ESPECIAIS:</strong> ${obsContrato}</p>`:''}
+      </div>
+    </div>`;
+
+  const assin=pdfAssinatura?.(emp.nome||'Credor','Credor / Responsável',cliNome,'Devedor (CPF: '+cpf+')');
+  const html=pdfBase?.({titulo:'Contrato de Crédito',numero:numContrato,tipo:'CONTRATO DE CRÉDITO / CREDIÁRIO',conteudo,assinatura:assin,wmSrc:e.wmSrc,wmOp:e.wmOp});
+  if(html)abrirPDFModal?.(html,'Contrato-Crediario-'+cliNome.replace(/\s+/g,'-'));
+  else notify('Salve o crediário primeiro para gerar o contrato.','warn');
+}
+
 function salvarCredito() {
   const cliSel = document.getElementById('nc-cli');
   const cliId  = cliSel?.value || null;
@@ -10008,6 +10608,20 @@ function salvarCredito() {
     clienteId: cliId, clienteNome: cliNome,
     descricao: desc, observacoes: obs,
     valorTotal: total, entrada, saldo,
+    juros: parseFloat(document.getElementById('nc-juros')?.value)||0,
+    multa: parseFloat(document.getElementById('nc-multa')?.value)||2,
+    // Dados contrato formal
+    cpf: document.getElementById('nc-cpf')?.value||null,
+    rg: document.getElementById('nc-rg')?.value||null,
+    endereco: document.getElementById('nc-endereco')?.value||null,
+    profissao: document.getElementById('nc-profissao')?.value||null,
+    telefone: document.getElementById('nc-telefone')?.value||null,
+    banco: document.getElementById('nc-banco')?.value||null,
+    contrato_banco: document.getElementById('nc-contrato-banco')?.value||null,
+    autoriza_serasa: !!(document.getElementById('nc-autoriza-serasa')?.checked),
+    autoriza_protesto: !!(document.getElementById('nc-autoriza-protesto')?.checked),
+    autoriza_cobranca: !!(document.getElementById('nc-autoriza-cobranca')?.checked),
+    obs_contrato: document.getElementById('nc-obs-contrato')?.value||null,
     parcelas, status: 'aberto',
     criado_em: new Date().toISOString(),
     operador: (_operadorAtual||G.profile)?.nome || '—'
@@ -10021,10 +10635,16 @@ function salvarCredito() {
 }
 
 function limparFormCredito() {
-  ['nc-valor','nc-entrada','nc-desc','nc-obs','nc-venc1'].forEach(id => { const el=document.getElementById(id); if(el)el.value=''; });
+  ['nc-valor','nc-entrada','nc-desc','nc-obs','nc-venc1','nc-cpf','nc-rg','nc-endereco','nc-profissao','nc-telefone','nc-contrato-banco','nc-obs-contrato','nc-juros'].forEach(id => { const el=document.getElementById(id); if(el)el.value=''; });
   document.getElementById('nc-parcelas').value = 3;
   document.getElementById('nc-intervalo').value = 30;
+  document.getElementById('nc-multa').value = 2;
+  document.getElementById('nc-banco').value = '';
+  const autSer=document.getElementById('nc-autoriza-serasa'); if(autSer)autSer.checked=false;
+  const autPro=document.getElementById('nc-autoriza-protesto'); if(autPro)autPro.checked=false;
+  const autCob=document.getElementById('nc-autoriza-cobranca'); if(autCob)autCob.checked=true;
   document.getElementById('nc-parcelas-preview').innerHTML = '';
+  credModalTab('basico', document.querySelector('#modal-novo-credito .fin-tab'));
 }
 
 // ── RENDER CONTRATOS ─────────────────────────────────
@@ -10867,8 +11487,8 @@ ${(venda.desconto_pct||0)>0?`  DESCONTO (${venda.desconto_pct}%):${fmt(venda.sub
 ${lin}
 PAGAMENTO
 ${pagStr}
-${(venda.troco||0)>0?`  TROCO:              ${fmt(venda.troco).padStart(12)}\n`:''}${lin}
-${CUPOM_CONFIG.rodape||''}
+${(venda.troco||0)>0?`  TROCO:              ${fmt(venda.troco).padStart(12)}\n`:''}${venda.maquininha_nome?`  Maquininha: ${venda.maquininha_nome}${venda.cartao_parcelas>1?' ('+venda.cartao_parcelas+'x)':''}\n`:''}${venda.cartao_taxa?`  Taxa aplicada: ${venda.cartao_taxa}%\n`:''}${lin}
+${(venda.garantia_dias||0)>0?`GARANTIA: ${venda.garantia_dias} DIAS\n  A partir de: ${new Date(venda.criado_em||new Date()).toLocaleDateString('pt-BR')}\n  Validade: ${new Date(new Date(venda.criado_em||new Date()).getTime()+(venda.garantia_dias*86400000)).toLocaleDateString('pt-BR')}\n${lin}\n`:''}${CUPOM_CONFIG.rodape||''}
 ${emp.end?'\n'+emp.end:''}${emp.tel?'\n'+emp.tel:''}
 ${lin}`;
 
@@ -11274,12 +11894,13 @@ function gerarBarcodeSVG(codigo, largura = 180, altura = 50) {
 function abrirModalProd(tipoPre) {
   clearProdForm();
   popSelects();
+  popProdSelects(); // popula categorias e status dinâmicos
   if (tipoPre === 'peca') {
     const catEl = document.getElementById('p-cat');
-    if (catEl) catEl.value = 'Peça';
+    if (catEl) { catEl.value = 'Peça'; popSubcatsByPai('Peça'); }
     document.getElementById('prod-ttl').textContent = 'Nova Peça para OS';
   }
-  // Botão gerar EAN
+  // Botão gerar EAN (adiciona uma vez)
   const bcField = document.getElementById('p-bc');
   if (bcField && !document.getElementById('btn-gen-ean')) {
     const btn = document.createElement('button');
@@ -11371,10 +11992,14 @@ function baixarEtiqueta() {
 let catFiltroAtivo = '';
 function renderCatChips() {
   const cont = document.getElementById('cat-chips'); if (!cont) return;
-  const cats = ['Todos', ...new Set(G.produtos.map(p => p.categoria).filter(Boolean))];
-  cont.innerHTML = cats.map(c => `
-    <div class="cat-chip ${catFiltroAtivo === (c==='Todos'?'':c) ? 'active' : ''}" onclick="setCatFiltro('${c==='Todos'?'':c}',this)">
-      <i class="ti ti-${c==='Todos'?'apps':c==='Celular'?'device-mobile':c==='Serviço'?'tools':c==='Peça'?'cpu':'package'}"></i>${c}
+  const cfg = getPrdCfg();
+  // Combina categorias do cadastro + as que existem nos produtos (retrocompat)
+  const fromProds = [...new Set(G.produtos.map(p => p.categoria).filter(Boolean))];
+  const allCats = [...new Set([...cfg.categorias, ...fromProds])];
+  const iC = (c) => c==='Celular'?'device-mobile':c==='Peça'?'cpu':c==='Serviço'?'tools':c==='Acessório'?'headphones':'package';
+  cont.innerHTML = ['Todos', ...allCats].map(c =>
+    `<div class="cat-chip ${catFiltroAtivo === (c==='Todos'?'':c) ? 'active' : ''}" onclick="setCatFiltro('${c==='Todos'?'':c}',this)">
+      <i class="ti ti-${iC(c)}"></i>${c}
     </div>`).join('');
 }
 
