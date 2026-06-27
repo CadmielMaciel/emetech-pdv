@@ -99,18 +99,31 @@ button,.btn,.card,.tag,input,select,textarea{transition:var(--trans)}
 /* Nav */
 .nav{flex:1;padding:10px 8px;overflow-y:auto;overflow-x:hidden}
 .nav::-webkit-scrollbar{width:0}
-/* Label de grupo — sempre visível quando sidebar expandida, oculto minimizado */
-.nav-sec{
-  font-size:9px;color:rgba(255,255,255,.32);letter-spacing:1.8px;text-transform:uppercase;
-  font-weight:700;white-space:nowrap;overflow:hidden;
-  padding:12px 10px 4px;
-  opacity:0;height:0;padding:0;margin:0;
-  transition:opacity .15s;
-}
-.sidebar:hover .nav-sec{opacity:1;height:auto;padding:12px 10px 4px}
-/* sem chevron, sem toggle */
-.nav-sec-chev{display:none!important}
-.nav-group-items{overflow:visible!important;max-height:none!important}
+/* nav-sec legacy — oculto (grupos agora são .ni-group) */
+.nav-sec{display:none!important}
+/* Separador fino */
+.nav-div-thin{height:1px;background:rgba(255,255,255,.08);margin:6px 4px}
+/* Item de grupo clicável — visual diferenciado */
+.ni-group{position:relative}
+.ni-group i{background:rgba(255,255,255,.1);border-radius:8px;padding:4px;width:28px!important;height:28px;display:flex;align-items:center;justify-content:center;min-width:28px!important;font-size:15px!important}
+.ni-group:hover i,.ni-group.active i{background:rgba(255,255,255,.2)}
+.ni-group::after{content:'›';position:absolute;right:8px;font-size:16px;color:rgba(255,255,255,.3);opacity:0;transition:opacity .15s}
+.sidebar:hover .ni-group::after{opacity:1}
+/* Hub pages */
+.hub-page{padding:4px 0}
+.hub-title{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:var(--txt);margin-bottom:6px;display:flex;align-items:center;gap:10px}
+.hub-title i{font-size:22px;color:var(--pri)}
+.hub-sub{font-size:13px;color:var(--txt3);margin-bottom:20px}
+.hub-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.hub-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 16px;cursor:pointer;transition:var(--trans);display:flex;flex-direction:column;align-items:flex-start;gap:10px;position:relative;overflow:hidden}
+.hub-card:hover{border-color:var(--pri);transform:translateY(-2px);box-shadow:0 8px 24px rgba(91,71,224,.14)}
+.hub-card:hover .hc-icon{background:var(--pri);color:#fff}
+.hub-card::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(91,71,224,.04),transparent);pointer-events:none}
+.hc-icon{width:44px;height:44px;border-radius:12px;background:var(--pri-light);color:var(--pri);display:flex;align-items:center;justify-content:center;font-size:22px;transition:var(--trans);flex-shrink:0}
+.hc-label{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:var(--txt);line-height:1.3}
+.hc-desc{font-size:11px;color:var(--txt3);line-height:1.4}
+[data-theme="dark"] .hub-card{background:var(--bg2)}
+[data-theme="dark"] .hc-icon{background:rgba(91,71,224,.2)}
 .ni{
   display:flex;align-items:center;gap:10px;
   padding:9px 10px;border-radius:10px;cursor:pointer;
@@ -594,62 +607,25 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
       </div>
     </div>
     <nav class="nav" id="nav">
-
-      <!-- PRINCIPAL -->
+      <!-- Itens diretos (sempre visíveis) -->
       <div class="ni active" onclick="go('dashboard')" data-p="admin,gerente"><i class="ti ti-layout-dashboard"></i><span class="ni-label">Dashboard</span><span class="ni-tip">Dashboard</span></div>
       <div class="ni" onclick="go('pdv')" data-p="admin,gerente,operador"><i class="ti ti-shopping-cart"></i><span class="ni-label">PDV / Caixa</span><span class="ni-tip">PDV / Caixa</span></div>
 
-      <!-- VENDAS -->
-      <div class="nav-sec">Vendas</div>
-      <div class="ni" onclick="go('orcamentos')" data-p="admin,gerente,operador"><i class="ti ti-file-invoice"></i><span class="ni-label">Orçamentos</span><span class="ni-tip">Orçamentos</span></div>
-      <div class="ni" onclick="go('crediario')" data-p="admin,gerente,operador"><i class="ti ti-credit-card"></i><span class="ni-label">Crediário</span><span class="ni-tip">Crediário</span></div>
-      <div class="ni" onclick="go('devolucoes')" data-p="admin,gerente"><i class="ti ti-arrow-back-up"></i><span class="ni-label">Devoluções</span><span class="ni-tip">Devoluções</span></div>
-      <div class="ni" onclick="go('simulador')" data-p="admin,gerente,operador"><i class="ti ti-calculator"></i><span class="ni-label">Simulador Cartão</span><span class="ni-tip">Simulador</span></div>
+      <!-- Grupos clicáveis -->
+      <div class="nav-div-thin"></div>
+      <div class="ni ni-group" onclick="goHub('vendas')" data-p="admin,gerente,operador" data-hub="vendas"><i class="ti ti-tag"></i><span class="ni-label">Vendas</span><span class="ni-tip">Vendas</span></div>
+      <div class="ni ni-group" onclick="goHub('servicos')" data-p="admin,gerente,tecnico" data-hub="servicos"><i class="ti ti-tools"></i><span class="ni-label">Serviços</span><span class="ni-tip">Serviços</span></div>
+      <div class="ni ni-group" onclick="goHub('clientes')" data-p="admin,gerente,operador,tecnico" data-hub="clientes"><i class="ti ti-users"></i><span class="ni-label">Clientes</span><span class="ni-tip">Clientes</span></div>
+      <div class="ni ni-group" onclick="goHub('estoque')" data-p="admin,gerente" data-hub="estoque"><i class="ti ti-package"></i><span class="ni-label">Estoque & Produtos</span><span class="ni-tip">Estoque</span></div>
+      <div class="ni ni-group" onclick="goHub('financeiro')" data-p="admin,gerente" data-hub="financeiro"><i class="ti ti-wallet"></i><span class="ni-label">Financeiro & Gestão</span><span class="ni-tip">Financeiro</span></div>
 
-      <!-- SERVIÇOS -->
-      <div class="nav-sec">Serviços</div>
-      <div class="ni" onclick="go('os')" data-p="admin,gerente,tecnico"><i class="ti ti-tools"></i><span class="ni-label">Ordens de Serviço</span><span class="ni-tip">OS</span></div>
-      <div class="ni ni-sub" onclick="go('os-hist')" data-p="admin,gerente,tecnico"><i class="ti ti-history"></i><span class="ni-label">↳ Histórico de OS</span><span class="ni-tip">Histórico OS</span></div>
-      <div class="ni ni-sub" onclick="go('diagnostico')" data-p="admin,gerente,tecnico"><i class="ti ti-stethoscope"></i><span class="ni-label">↳ Diagnóstico</span><span class="ni-tip">Diagnóstico</span></div>
-      <div class="ni" onclick="go('garantias')" data-p="admin,gerente,tecnico"><i class="ti ti-shield-check"></i><span class="ni-label">Garantias</span><span class="ni-tip">Garantias</span></div>
-      <div class="ni" onclick="go('contratos')" data-p="admin,gerente"><i class="ti ti-file-certificate"></i><span class="ni-label">Contratos & Termos</span><span class="ni-tip">Contratos</span></div>
+      <div class="nav-div-thin"></div>
+      <div class="ni ni-group" onclick="goHub('relatorios')" data-p="admin,gerente" data-hub="relatorios"><i class="ti ti-chart-bar"></i><span class="ni-label">Relatórios</span><span class="ni-tip">Relatórios</span></div>
+      <div class="ni ni-group nav-adm" onclick="goHub('admin')" data-p="admin" data-hub="admin"><i class="ti ti-settings"></i><span class="ni-label">Administração</span><span class="ni-tip">Administração</span></div>
 
-      <!-- CLIENTES -->
-      <div class="nav-sec">Clientes</div>
-      <div class="ni" onclick="go('clientes')" data-p="admin,gerente,operador,tecnico"><i class="ti ti-users"></i><span class="ni-label">Clientes</span><span class="ni-tip">Clientes</span></div>
-      <div class="ni" onclick="go('crm')" data-p="admin,gerente"><i class="ti ti-heart-handshake"></i><span class="ni-label">Relacionamento (CRM)</span><span class="ni-tip">CRM</span></div>
-      <div class="ni" onclick="go('troca')" data-p="admin,gerente"><i class="ti ti-arrows-exchange"></i><span class="ni-label">Troca de Aparelhos</span><span class="ni-tip">Troca</span></div>
-      <div class="ni" onclick="go('agenda')" data-p="admin,gerente,tecnico,operador"><i class="ti ti-calendar-event"></i><span class="ni-label">Agenda</span><span class="ni-tip">Agenda de Entregas</span></div>
-
-      <!-- ESTOQUE & PRODUTOS -->
-      <div class="nav-sec">Estoque & Produtos</div>
-      <div class="ni" onclick="go('produtos')" data-p="admin,gerente"><i class="ti ti-device-mobile"></i><span class="ni-label">Produtos</span><span class="ni-tip">Produtos</span></div>
-      <div class="ni" onclick="go('estoque')" data-p="admin,gerente"><i class="ti ti-package"></i><span class="ni-label">Movimentações</span><span class="ni-tip">Movimentações</span></div>
-      <div class="ni" onclick="go('fornecedores')" data-p="admin,gerente"><i class="ti ti-truck"></i><span class="ni-label">Fornecedores</span><span class="ni-tip">Fornecedores</span></div>
-      <div class="ni" onclick="go('reposicao')" data-p="admin,gerente"><i class="ti ti-shopping-cart-plus"></i><span class="ni-label">Reposição</span><span class="ni-tip">Reposição</span></div>
-
-      <!-- FINANCEIRO & GESTÃO -->
-      <div class="nav-sec">Financeiro & Gestão</div>
-      <div class="ni" onclick="go('financeiro')" data-p="admin,gerente"><i class="ti ti-wallet"></i><span class="ni-label">Contas & Fluxo</span><span class="ni-tip">Financeiro</span></div>
-      <div class="ni" onclick="go('caixas')" data-p="admin,gerente" id="nav-caixas"><i class="ti ti-device-desktop-analytics"></i><span class="ni-label">Gestão de Caixas</span><span class="ni-tip">Caixas</span></div>
-      <div class="ni" onclick="go('comissoes')" data-p="admin,gerente"><i class="ti ti-award"></i><span class="ni-label">Comissão Técnicos</span><span class="ni-tip">Comissões</span></div>
-      <div class="ni" onclick="go('catalogo')" data-p="admin,gerente"><i class="ti ti-building-store"></i><span class="ni-label">Catálogo Online</span><span class="ni-tip">Catálogo</span></div>
-
-      <!-- RELATÓRIOS -->
-      <div class="nav-sec">Relatórios</div>
-      <div class="ni" onclick="go('relatorios')" data-p="admin,gerente"><i class="ti ti-chart-bar"></i><span class="ni-label">Relatórios</span><span class="ni-tip">Relatórios</span></div>
-      <div class="ni" onclick="go('inteligencia')" data-p="admin,gerente"><i class="ti ti-brain"></i><span class="ni-label">Inteligência</span><span class="ni-tip">Inteligência</span></div>
-
-      <!-- ADMINISTRAÇÃO -->
-      <div class="nav-sec nav-adm-sec">Administração</div>
-      <div class="ni nav-adm" onclick="go('usuarios')" data-p="admin"><i class="ti ti-shield-lock"></i><span class="ni-label">Usuários</span><span class="ni-tip">Usuários</span></div>
-      <div class="ni nav-adm" onclick="go('permissoes')" data-p="admin"><i class="ti ti-key"></i><span class="ni-label">Permissões</span><span class="ni-tip">Permissões</span></div>
-      <div class="ni nav-adm" onclick="go('aparencia')" data-p="admin"><i class="ti ti-palette"></i><span class="ni-label">Aparência & Marca</span><span class="ni-tip">Aparência</span></div>
-
-      <!-- CONTA -->
-      <div class="nav-sec">Conta</div>
-      <div class="ni" onclick="abrirUpgrade()" data-p="admin,gerente"><i class="ti ti-rocket"></i><span class="ni-label">Fazer Upgrade</span><span class="ni-tip">Upgrade de plano</span></div>
-      <div class="ni" onclick="abrirWhatsAppSuporte()" data-p="admin,gerente,operador,tecnico"><i class="ti ti-headset"></i><span class="ni-label">Suporte</span><span class="ni-tip">Falar com o suporte</span></div>
+      <div class="nav-div-thin"></div>
+      <div class="ni" onclick="abrirUpgrade()" data-p="admin,gerente"><i class="ti ti-rocket"></i><span class="ni-label">Fazer Upgrade</span><span class="ni-tip">Upgrade</span></div>
+      <div class="ni" onclick="abrirWhatsAppSuporte()" data-p="admin,gerente,operador,tecnico"><i class="ti ti-headset"></i><span class="ni-label">Suporte</span><span class="ni-tip">Suporte</span></div>
     </nav>
     <div class="sidebar-footer">
       <div class="user-pill">
@@ -729,6 +705,88 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
             <button class="dq-btn dq-out" onclick="go('crediario')"><i class="ti ti-credit-card"></i>Crediário</button>
             <button class="dq-btn dq-out" onclick="go('agenda')"><i class="ti ti-calendar"></i>Agenda</button>
           </div>
+        </div>
+      </div>
+
+      <!-- HUB: VENDAS -->
+      <div class="page hub-page" id="page-hub-vendas">
+        <div class="hub-title"><i class="ti ti-tag"></i>Vendas</div>
+        <div class="hub-sub">Gerencie orçamentos, crediário, devoluções e simulações de cartão.</div>
+        <div class="hub-grid">
+          <div class="hub-card" onclick="go('orcamentos')"><div class="hc-icon"><i class="ti ti-file-invoice"></i></div><div><div class="hc-label">Orçamentos</div><div class="hc-desc">Crie e gerencie orçamentos para clientes</div></div></div>
+          <div class="hub-card" onclick="go('crediario')"><div class="hc-icon"><i class="ti ti-credit-card"></i></div><div><div class="hc-label">Crediário</div><div class="hc-desc">Controle vendas a prazo e parcelas</div></div></div>
+          <div class="hub-card" onclick="go('devolucoes')"><div class="hc-icon"><i class="ti ti-arrow-back-up"></i></div><div><div class="hc-label">Devoluções</div><div class="hc-desc">Processe devoluções de produtos</div></div></div>
+          <div class="hub-card" onclick="go('simulador')"><div class="hc-icon"><i class="ti ti-calculator"></i></div><div><div class="hc-label">Simulador Cartão</div><div class="hc-desc">Calcule taxas e parcelas de cartão</div></div></div>
+        </div>
+      </div>
+
+      <!-- HUB: SERVIÇOS -->
+      <div class="page hub-page" id="page-hub-servicos">
+        <div class="hub-title"><i class="ti ti-tools"></i>Serviços</div>
+        <div class="hub-sub">Gerencie ordens de serviço, garantias, diagnósticos e contratos.</div>
+        <div class="hub-grid">
+          <div class="hub-card" onclick="go('os')"><div class="hc-icon"><i class="ti ti-tools"></i></div><div><div class="hc-label">Ordens de Serviço</div><div class="hc-desc">Crie e acompanhe OS em aberto</div></div></div>
+          <div class="hub-card" onclick="go('os-hist')"><div class="hc-icon"><i class="ti ti-history"></i></div><div><div class="hc-label">Histórico de OS</div><div class="hc-desc">Consulte OS entregues e arquivadas</div></div></div>
+          <div class="hub-card" onclick="go('diagnostico')"><div class="hc-icon"><i class="ti ti-stethoscope"></i></div><div><div class="hc-label">Diagnóstico</div><div class="hc-desc">Modo Panic — diagnóstico rápido do aparelho</div></div></div>
+          <div class="hub-card" onclick="go('garantias')"><div class="hc-icon"><i class="ti ti-shield-check"></i></div><div><div class="hc-label">Garantias</div><div class="hc-desc">Acompanhe garantias ativas e expiradas</div></div></div>
+          <div class="hub-card" onclick="go('contratos')"><div class="hc-icon"><i class="ti ti-file-certificate"></i></div><div><div class="hc-label">Contratos & Termos</div><div class="hc-desc">Modelos de contratos e termos de entrada</div></div></div>
+        </div>
+      </div>
+
+      <!-- HUB: CLIENTES -->
+      <div class="page hub-page" id="page-hub-clientes">
+        <div class="hub-title"><i class="ti ti-users"></i>Clientes</div>
+        <div class="hub-sub">Cadastros, relacionamento, trocas e agenda de entregas.</div>
+        <div class="hub-grid">
+          <div class="hub-card" onclick="go('clientes')"><div class="hc-icon"><i class="ti ti-users"></i></div><div><div class="hc-label">Clientes</div><div class="hc-desc">Cadastro e histórico de clientes</div></div></div>
+          <div class="hub-card" onclick="go('crm')"><div class="hc-icon"><i class="ti ti-heart-handshake"></i></div><div><div class="hc-label">Relacionamento (CRM)</div><div class="hc-desc">Leads, follow-ups e campanhas</div></div></div>
+          <div class="hub-card" onclick="go('troca')"><div class="hc-icon"><i class="ti ti-arrows-exchange"></i></div><div><div class="hc-label">Troca de Aparelhos</div><div class="hc-desc">Gerencie aparelhos recebidos como troca</div></div></div>
+          <div class="hub-card" onclick="go('agenda')"><div class="hc-icon"><i class="ti ti-calendar-event"></i></div><div><div class="hc-label">Agenda</div><div class="hc-desc">Entregas agendadas e compromissos</div></div></div>
+        </div>
+      </div>
+
+      <!-- HUB: ESTOQUE -->
+      <div class="page hub-page" id="page-hub-estoque">
+        <div class="hub-title"><i class="ti ti-package"></i>Estoque & Produtos</div>
+        <div class="hub-sub">Controle produtos, movimentações, fornecedores e reposição.</div>
+        <div class="hub-grid">
+          <div class="hub-card" onclick="go('produtos')"><div class="hc-icon"><i class="ti ti-device-mobile"></i></div><div><div class="hc-label">Produtos</div><div class="hc-desc">Cadastro e preços de produtos</div></div></div>
+          <div class="hub-card" onclick="go('estoque')"><div class="hc-icon"><i class="ti ti-package"></i></div><div><div class="hc-label">Movimentações</div><div class="hc-desc">Entradas, saídas e ajustes de estoque</div></div></div>
+          <div class="hub-card" onclick="go('fornecedores')"><div class="hc-icon"><i class="ti ti-truck"></i></div><div><div class="hc-label">Fornecedores</div><div class="hc-desc">Cadastro e contatos de fornecedores</div></div></div>
+          <div class="hub-card" onclick="go('reposicao')"><div class="hc-icon"><i class="ti ti-shopping-cart-plus"></i></div><div><div class="hc-label">Reposição</div><div class="hc-desc">Central de reposição de estoque baixo</div></div></div>
+        </div>
+      </div>
+
+      <!-- HUB: FINANCEIRO -->
+      <div class="page hub-page" id="page-hub-financeiro">
+        <div class="hub-title"><i class="ti ti-wallet"></i>Financeiro & Gestão</div>
+        <div class="hub-sub">Controle financeiro, caixas, comissões e catálogo online.</div>
+        <div class="hub-grid">
+          <div class="hub-card" onclick="go('financeiro')"><div class="hc-icon"><i class="ti ti-wallet"></i></div><div><div class="hc-label">Contas & Fluxo</div><div class="hc-desc">Contas a pagar, receber e fluxo de caixa</div></div></div>
+          <div class="hub-card" onclick="go('caixas')" id="nav-caixas"><div class="hc-icon"><i class="ti ti-device-desktop-analytics"></i></div><div><div class="hc-label">Gestão de Caixas</div><div class="hc-desc">Abertura, fechamento e operações de caixa</div></div></div>
+          <div class="hub-card" onclick="go('comissoes')"><div class="hc-icon"><i class="ti ti-award"></i></div><div><div class="hc-label">Comissão Técnicos</div><div class="hc-desc">Cálculo de comissões por técnico</div></div></div>
+          <div class="hub-card" onclick="go('catalogo')"><div class="hc-icon"><i class="ti ti-building-store"></i></div><div><div class="hc-label">Catálogo Online</div><div class="hc-desc">Vitrine pública de produtos da loja</div></div></div>
+        </div>
+      </div>
+
+      <!-- HUB: RELATÓRIOS -->
+      <div class="page hub-page" id="page-hub-relatorios">
+        <div class="hub-title"><i class="ti ti-chart-bar"></i>Relatórios</div>
+        <div class="hub-sub">Análises, relatórios e inteligência operacional.</div>
+        <div class="hub-grid">
+          <div class="hub-card" onclick="go('relatorios')"><div class="hc-icon"><i class="ti ti-chart-bar"></i></div><div><div class="hc-label">Relatórios</div><div class="hc-desc">Relatórios de vendas, OS e estoque</div></div></div>
+          <div class="hub-card" onclick="go('inteligencia')"><div class="hc-icon"><i class="ti ti-brain"></i></div><div><div class="hc-label">Inteligência</div><div class="hc-desc">Alertas, metas e análise operacional</div></div></div>
+        </div>
+      </div>
+
+      <!-- HUB: ADMINISTRAÇÃO -->
+      <div class="page hub-page" id="page-hub-admin">
+        <div class="hub-title"><i class="ti ti-settings"></i>Administração</div>
+        <div class="hub-sub">Usuários, permissões e aparência do sistema.</div>
+        <div class="hub-grid">
+          <div class="hub-card" onclick="go('usuarios')"><div class="hc-icon"><i class="ti ti-shield-lock"></i></div><div><div class="hc-label">Usuários</div><div class="hc-desc">Gestão de usuários e perfis de acesso</div></div></div>
+          <div class="hub-card" onclick="go('permissoes')"><div class="hc-icon"><i class="ti ti-key"></i></div><div><div class="hc-label">Permissões</div><div class="hc-desc">Configure o que cada perfil pode acessar</div></div></div>
+          <div class="hub-card" onclick="go('aparencia')"><div class="hc-icon"><i class="ti ti-palette"></i></div><div><div class="hc-label">Aparência & Marca</div><div class="hc-desc">Logo, cores e identidade visual da loja</div></div></div>
         </div>
       </div>
 
@@ -4046,6 +4104,7 @@ function getRolePerms(){
 }
 
 function canAccess(role,page){
+  if(page&&page.startsWith('hub-')) return true; // hub pages sempre permitidas
   if(role==='admin_master') return true; // master irrestrito
   if(role==='admin') return true;         // dono vê tudo (Usuários/Aparência inclusos)
   // Usuários e Aparência são exclusivos do dono
@@ -4129,39 +4188,11 @@ function applyRoleUI(){
   updateNavGroupVisibility();
 }
 
-/* ── SIDEBAR AGRUPADA / RECOLHÍVEL (item 9) ───────────────────────────
-   Aditivo: agrupa os .ni sob cada cabeçalho .nav-sec num container
-   recolhível e torna o cabeçalho clicável. Preserva data-p, onclick e
-   o comportamento de hover. Estado salvo em localStorage. */
-function initSidebarGroups(){
-  const nav=document.getElementById('nav'); if(!nav||nav.dataset.grouped)return;
-  let collapsed={}; try{collapsed=JSON.parse(localStorage.getItem('navGroups')||'{}');}catch(e){}
-  const secs=[...nav.querySelectorAll('.nav-sec')];
-  secs.forEach(sec=>{
-    const label=sec.textContent.replace(/\s+/g,' ').trim();
-    const wrap=document.createElement('div'); wrap.className='nav-group-items';
-    let n=sec.nextElementSibling;
-    while(n && !n.classList.contains('nav-sec')){ const next=n.nextElementSibling; wrap.appendChild(n); n=next; }
-    sec.after(wrap);
-    sec.insertAdjacentHTML('beforeend','<i class="ti ti-chevron-down nav-sec-chev"></i>');
-    sec.classList.add('nav-sec-toggle');
-    if(collapsed[label]) sec.classList.add('collapsed');
-    sec.addEventListener('click',(e)=>{ e.stopPropagation(); sec.classList.toggle('collapsed'); saveNavGroups(); });
-  });
-  nav.dataset.grouped='1';
-}
-function saveNavGroups(){
-  const o={}; document.querySelectorAll('#nav .nav-sec').forEach(s=>{ o[s.textContent.replace(/\s+/g,' ').trim()]=s.classList.contains('collapsed')?1:0; });
-  try{localStorage.setItem('navGroups',JSON.stringify(o));}catch(e){}
-}
+/* ── SIDEBAR AGRUPADA / RECOLHÍVEL — desativado (grupos são .ni-group agora) ── */
+function initSidebarGroups(){ /* no-op */ }
+function saveNavGroups(){ /* no-op */ }
 function updateNavGroupVisibility(){
-  document.querySelectorAll('#nav .nav-group-items').forEach(wrap=>{
-    const items=[...wrap.querySelectorAll('.ni')];
-    const visible=items.some(it=>it.style.display!=='none');
-    const header=wrap.previousElementSibling;
-    if(header&&header.classList.contains('nav-sec')) header.style.display=visible?'':'none';
-    wrap.style.display=visible?'':'none';
-  });
+  // Oculta itens .ni e .ni-group conforme permissão de role
 }
 
 
@@ -4427,7 +4458,17 @@ function iniciarVerificacaoBloqueio(){
 }
 
 /* ── NAVEGAÇÃO ───────────────────────────────────────── */
-const PT={dashboard:'Dashboard',pdv:'PDV / Caixa',orcamentos:'Orçamentos',devolucoes:'Devoluções',os:'Ordens de Serviço','os-hist':'Histórico OS',agenda:'Agenda de Entregas',comissoes:'Comissão por Técnico',produtos:'Produtos',estoque:'Movimentações de Estoque',fornecedores:'Fornecedores',financeiro:'Financeiro',reposicao:'Central de Reposição',clientes:'Clientes',relatorios:'Relatórios',usuarios:'Usuários & Acesso',aparencia:'Aparência & Marca',inteligencia:'Inteligência Operacional',caixas:'Gestão de Caixas',crediario:'Crediário'};
+const PT={dashboard:'Dashboard',pdv:'PDV / Caixa',orcamentos:'Orçamentos',devolucoes:'Devoluções',os:'Ordens de Serviço','os-hist':'Histórico OS',agenda:'Agenda de Entregas',comissoes:'Comissão por Técnico',produtos:'Produtos',estoque:'Movimentações de Estoque',fornecedores:'Fornecedores',financeiro:'Financeiro',reposicao:'Central de Reposição',clientes:'Clientes',relatorios:'Relatórios',usuarios:'Usuários & Acesso',aparencia:'Aparência & Marca',inteligencia:'Inteligência Operacional',caixas:'Gestão de Caixas',crediario:'Crediário',
+  'hub-vendas':'Vendas','hub-servicos':'Serviços','hub-clientes':'Clientes','hub-estoque':'Estoque & Produtos','hub-financeiro':'Financeiro & Gestão','hub-relatorios':'Relatórios','hub-admin':'Administração'};
+
+function goHub(hub){
+  const page='hub-'+hub;
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+page)?.classList.add('active');
+  document.getElementById('topbar-title').textContent=PT[page]||hub;
+  document.querySelectorAll('.ni-group').forEach(el=>{if(el.dataset.hub===hub)el.classList.add('active');});
+}
 
 function go(page){
   if(!canAccess(G.role,page)){notify('Acesso não permitido.','error');return;}
@@ -4450,6 +4491,16 @@ function go(page){
   document.getElementById('page-'+page)?.classList.add('active');
   document.getElementById('topbar-title').textContent=PT[page]||page;
   document.querySelectorAll('.ni').forEach(el=>{if(el.getAttribute('onclick')?.includes(`'${page}'`))el.classList.add('active');});
+  // Manter grupo pai ativo quando dentro de um módulo filho
+  const _hubMap={orcamentos:'vendas',crediario:'vendas',devolucoes:'vendas',simulador:'vendas',
+    os:'servicos','os-hist':'servicos',diagnostico:'servicos',garantias:'servicos',contratos:'servicos',
+    clientes:'clientes',crm:'clientes',troca:'clientes',agenda:'clientes',
+    produtos:'estoque',estoque:'estoque',fornecedores:'estoque',reposicao:'estoque',
+    financeiro:'financeiro',caixas:'financeiro',comissoes:'financeiro',catalogo:'financeiro',
+    relatorios:'relatorios',inteligencia:'relatorios',
+    usuarios:'admin',permissoes:'admin',aparencia:'admin'};
+  const _hubParent=_hubMap[page];
+  if(_hubParent){document.querySelectorAll('.ni-group').forEach(el=>{if(el.dataset.hub===_hubParent)el.classList.add('active');});}
   const R={
     dashboard:renderDashboard,
     pdv:()=>{ setTimeout(initPDVMobile, 80);renderPDVGrid();popSelects();checkCaixaStatus();},
@@ -11939,7 +11990,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
   .sidebar:hover { width: 260px !important; }
   /* Labels sempre visíveis quando drawer aberto */
   .sidebar .ni-label { opacity: 1 !important; }
-  .sidebar .nav-sec { opacity: 1 !important; height: auto !important; padding: 12px 10px 4px !important; }
+  .sidebar .nav-sec { display: none !important; }
   .sidebar .logo-text, .sidebar .logo-sub { opacity: 1 !important; }
   .sidebar .ni-tip { display: none !important; }
   .sidebar .user-name, .sidebar .logout-btn { opacity: 1 !important; }
