@@ -1271,11 +1271,11 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
         <div id="cat-config">
           <div class="card">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
-              <label class="switch"><input type="checkbox" id="cat-ativo"><span class="slider"></span></label>
+              <label class="switch"><input type="checkbox" id="cat-ativo" onchange="atualizarLinkCatalogo()"><span class="slider"></span></label>
               <div><div style="font-weight:700">Catálogo ativo</div><div style="font-size:11.5px;color:var(--txt3)">Quando ligado, a vitrine fica acessível pelo link público.</div></div>
             </div>
             <div class="g2">
-              <div class="fg"><label class="lbl">Endereço (slug) *</label><input type="text" id="cat-slug" placeholder="minhaloja" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')"><div style="font-size:10.5px;color:var(--txt3);margin-top:3px">Só letras minúsculas, números e hífen.</div></div>
+              <div class="fg"><label class="lbl">Endereço (slug) *</label><input type="text" id="cat-slug" placeholder="minhaloja" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'');atualizarLinkCatalogo()"><div style="font-size:10.5px;color:var(--txt3);margin-top:3px">Só letras minúsculas, números e hífen.</div></div>
               <div class="fg"><label class="lbl">Nome público da loja</label><input type="text" id="cat-nome" placeholder="Minha Loja Celulares"></div>
             </div>
             <div class="fg"><label class="lbl">Descrição</label><textarea id="cat-desc" rows="2" placeholder="Os melhores preços em celulares e acessórios..."></textarea></div>
@@ -8441,18 +8441,41 @@ async function renderCatalogo(){
 }
 
 function atualizarLinkCatalogo(){
-  const slug=_catConfig?.slug;
-  const temLink=slug&&_catConfig?.ativo;
-  ['cat-link-btn','cat-abrir-btn'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=temLink?'':'none';});
-  const prev=document.getElementById('cat-link-preview');
+  // Lê do formulário em tempo real (não só do _catConfig salvo)
+  const slugInput = document.getElementById('cat-slug')?.value?.trim();
+  const ativoInput = document.getElementById('cat-ativo')?.checked;
+  // Usa o slug do input se preenchido, senão do config salvo
+  const slug = slugInput || _catConfig?.slug;
+  const ativo = ativoInput !== undefined ? ativoInput : _catConfig?.ativo;
+  const temSlug = !!(slug);
+  const temLink = temSlug; // mostra o link sempre que tiver slug, indicando status
+
+  ['cat-link-btn','cat-abrir-btn'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.style.display = temSlug ? '' : 'none';
+  });
+
+  const prev = document.getElementById('cat-link-preview');
   if(prev){
-    if(temLink){ prev.style.display=''; prev.innerHTML=`<i class="ti ti-link" style="color:var(--pri)"></i> ${linkCatalogo()}`; }
-    else { prev.style.display='none'; }
+    if(temSlug){
+      const url = `${location.origin}${location.pathname.replace(/[^/]*$/,'')}catalogo.html?loja=${slug}`;
+      prev.style.display = '';
+      prev.innerHTML = `
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <i class="ti ti-link" style="color:var(--pri);font-size:15px;flex-shrink:0"></i>
+          <span style="flex:1;word-break:break-all;font-family:monospace;font-size:12px">${url}</span>
+          ${!ativo ? '<span style="background:rgba(245,158,11,.12);color:#b45309;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap"><i class="ti ti-eye-off"></i> Inativo</span>' : '<span style="background:rgba(16,185,129,.1);color:var(--success);font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap"><i class="ti ti-eye"></i> Ativo</span>'}
+        </div>`;
+    } else {
+      prev.style.display = 'none';
+    }
   }
 }
+
 function linkCatalogo(){
-  const base=location.origin+location.pathname.replace(/[^/]*$/,'');
-  return `${base}catalogo.html?loja=${_catConfig?.slug||''}`;
+  const slug = document.getElementById('cat-slug')?.value?.trim() || _catConfig?.slug || '';
+  const base = location.origin + location.pathname.replace(/[^/]*$/,'');
+  return `${base}catalogo.html?loja=${slug}`;
 }
 function copiarLinkCatalogo(){
   navigator.clipboard.writeText(linkCatalogo()).then(()=>notify('Link copiado!','success')).catch(()=>notify('Copie manualmente: '+linkCatalogo(),'info',6000));
