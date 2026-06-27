@@ -12,18 +12,28 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --pri:#5B47E0;--pri2:#7C3AED;--pri-light:#EDE9FF;--pri-dark:#2D1B8E;
-  --bg:#F4F2FB;--bg2:#fff;--surface:#FAFAFE;--surface2:#F0EDF8;
-  --txt:#1A0F3C;--txt2:#5C4F8A;--txt3:#9D8FC5;--txt4:#C4B8E8;
-  --border:#E4DEFF;--border2:#D4CAFF;
+  --pri:#5B47E0;--pri2:#7C3AED;--pri-light:#EFEAFF;--pri-dark:#2D1B8E;
+  --accent:#E8915B;--accent-soft:#FBEEE3; /* toque quente p/ aconchego */
+  --bg:#F7F4EF;--bg2:#FFFFFF;--surface:#FDFBF8;--surface2:#F2EDE5;
+  --txt:#241B3A;--txt2:#5E5280;--txt3:#9A8FB5;--txt4:#C8BEE0;
+  --border:#EBE5DC;--border2:#DDD4C9;
   --success:#10B981;--danger:#EF4444;--warn:#F59E0B;--info:#3B82F6;
-  --radius:12px;--radius-lg:18px;
-  --shadow:0 2px 16px rgba(79,53,194,.10);--shadow-lg:0 8px 32px rgba(79,53,194,.16);
+  --radius:14px;--radius-lg:20px;
+  --shadow:0 2px 14px rgba(74,54,110,.07);--shadow-lg:0 10px 34px rgba(74,54,110,.13);
   --sw:230px;--sw-mini:56px;--th:62px;--trans:all .2s cubic-bezier(.4,0,.2,1);
 }
-[data-theme="dark"]{--bg:#0F0A1E;--bg2:#1A1030;--surface:#201540;--surface2:#2A1D50;--txt:#F0EEFF;--txt2:#B8AADC;--txt3:#7A6FAA;--txt4:#4A4070;--border:#2E2050;--border2:#3A2A6A;--pri-light:#2D1B8E;}
+[data-theme="dark"]{--bg:#16111F;--bg2:#1C1530;--surface:#221842;--surface2:#2C1F52;--txt:#F2EFFA;--txt2:#BCAEDE;--txt3:#7E73AE;--txt4:#4C4274;--border:#302252;--border2:#3C2C6C;--pri-light:#2D1B8E;--surface2:#2C1F52;--accent:#E8915B;--accent-soft:#3A2A2A;}
 ::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:10px}
-body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;overflow:hidden;transition:background .3s,color .3s}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);background-image:radial-gradient(1200px 600px at 100% -10%, rgba(232,145,91,.05), transparent 60%),radial-gradient(1000px 500px at -10% 110%, rgba(124,58,237,.05), transparent 55%);background-attachment:fixed;color:var(--txt);min-height:100vh;overflow:hidden;transition:background .3s,color .3s}
+
+/* ── Polimento aconchegante + acessibilidade ── */
+::selection{background:rgba(232,145,91,.28);color:var(--txt)}
+.ct-var{display:inline-block;background:var(--pri-light);color:var(--pri);border-radius:6px;padding:1px 7px;margin:2px 2px 0 0;font-size:11px;font-weight:700;cursor:pointer;font-family:monospace}
+.ct-var:hover{background:var(--pri);color:#fff}
+:focus-visible{outline:2.5px solid var(--pri);outline-offset:2px;border-radius:6px}
+button,.btn,.card,.tag,input,select,textarea{transition:var(--trans)}
+.btn:active{transform:translateY(1px)}
+.card{transition:box-shadow .25s ease, transform .25s ease, border-color .25s ease}
 
 /* LOGIN */
 .ls{position:fixed;inset:0;background:linear-gradient(135deg,var(--pri-dark),var(--pri) 50%,var(--pri2));display:flex;align-items:center;justify-content:center;z-index:9999;transition:opacity .4s}
@@ -570,6 +580,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
       <div class="ni" onclick="go('os')" data-p="admin,gerente,tecnico"><i class="ti ti-tools"></i><span class="ni-label">Ordens de Serviço</span><span class="ni-tip">OS</span></div>
       <div class="ni" onclick="go('os-hist')" data-p="admin,gerente,tecnico"><i class="ti ti-history"></i><span class="ni-label">Histórico OS</span><span class="ni-tip">Histórico OS</span></div>
       <div class="ni" onclick="go('garantias')" data-p="admin,gerente,tecnico"><i class="ti ti-shield-check"></i><span class="ni-label">Garantias</span><span class="ni-tip">Garantias</span></div>
+      <div class="ni" onclick="go('contratos')" data-p="admin,gerente"><i class="ti ti-file-certificate"></i><span class="ni-label">Contratos & Termos</span><span class="ni-tip">Contratos</span></div>
       <div class="ni" onclick="go('diagnostico')" data-p="admin,gerente,tecnico"><i class="ti ti-stethoscope"></i><span class="ni-label">Diagnóstico (Panic)</span><span class="ni-tip">Diagnóstico</span></div>
       <div class="ni" onclick="go('troca')" data-p="admin,gerente"><i class="ti ti-arrows-exchange"></i><span class="ni-label">Troca de Aparelhos</span><span class="ni-tip">Troca</span></div>
       <div class="ni" onclick="go('crm')" data-p="admin,gerente"><i class="ti ti-heart-handshake"></i><span class="ni-label">Relacionamento (CRM)</span><span class="ni-tip">CRM</span></div>
@@ -1144,6 +1155,18 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
             <tbody id="cat-prod-table"></tbody>
           </table></div></div>
         </div>
+      </div>
+
+      <!-- CONTRATOS & TERMOS -->
+      <div class="page" id="page-contratos">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+          <div>
+            <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:var(--txt)">Contratos & Termos</div>
+            <div style="font-size:12.5px;color:var(--txt3)">Modelos de termo que você pode gerar na venda ou na OS. Use variáveis como {cliente}, {produto}, {valor}, {data}, {loja}.</div>
+          </div>
+          <button class="btn btn-pri" onclick="novoContrato()"><i class="ti ti-plus"></i> Novo modelo</button>
+        </div>
+        <div id="contratos-lista" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px"></div>
       </div>
 
       <!-- DIAGNÓSTICO (PANIC) -->
@@ -2523,7 +2546,8 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
   <p style="color:var(--txt2);font-size:12.5px;margin-bottom:5px" id="vok-info"></p>
   <p style="font-family:'Syne',sans-serif;font-weight:800;font-size:26px;color:var(--pri)" id="vok-total"></p>
   <p style="font-size:13px;color:var(--success);font-weight:600;margin-top:4px" id="vok-troco"></p>
-  <div class="modal-footer" style="justify-content:center;margin-top:18px">
+  <div class="modal-footer" style="justify-content:center;margin-top:18px;flex-wrap:wrap">
+    <button class="btn btn-out" onclick="gerarContratoVenda()"><i class="ti ti-file-certificate"></i>Gerar contrato</button>
     <button class="btn btn-out" onclick="closeModal('modal-venda-ok')"><i class="ti ti-plus"></i>Nova Venda</button>
   </div>
 </div></div>
@@ -3430,6 +3454,57 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
 </div>
 
 <!-- MODAL DOCUMENTOS OS -->
+<!-- Modal: cadastrar/editar modelo de contrato -->
+<div class="modal-overlay" id="modal-contrato-edit">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-title"><i class="ti ti-file-certificate" style="color:var(--pri)"></i><span id="ct-edit-titulo">Novo modelo de contrato</span></div>
+    <input type="hidden" id="ct-id">
+    <div class="g2">
+      <div class="fg"><label class="lbl">Nome do modelo *</label><input type="text" id="ct-nome" placeholder="Ex: Termo de venda — iPhone"></div>
+      <div class="fg"><label class="lbl">Sugerir para (marca/categoria)</label><input type="text" id="ct-sugestao" placeholder="Ex: Apple, iPhone, Xiaomi..."></div>
+    </div>
+    <div class="fg">
+      <label class="lbl">Texto do contrato *</label>
+      <div style="font-size:11px;color:var(--txt3);margin-bottom:6px">Variáveis (clique para inserir): 
+        <span class="ct-var" onclick="insVarContrato('{cliente}')">{cliente}</span>
+        <span class="ct-var" onclick="insVarContrato('{cpf}')">{cpf}</span>
+        <span class="ct-var" onclick="insVarContrato('{produto}')">{produto}</span>
+        <span class="ct-var" onclick="insVarContrato('{valor}')">{valor}</span>
+        <span class="ct-var" onclick="insVarContrato('{data}')">{data}</span>
+        <span class="ct-var" onclick="insVarContrato('{loja}')">{loja}</span>
+        <span class="ct-var" onclick="insVarContrato('{numero}')">{numero}</span>
+        <span class="ct-var" onclick="insVarContrato('{garantia}')">{garantia}</span>
+      </div>
+      <textarea id="ct-corpo" rows="12" placeholder="Ex: Pelo presente termo, {loja} vende ao cliente {cliente} (CPF {cpf}) o produto {produto}, no valor de {valor}, na data {data}..." style="font-family:'DM Sans',sans-serif;line-height:1.5"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-out" onclick="closeModal('modal-contrato-edit')">Cancelar</button>
+      <button class="btn btn-pri" onclick="salvarContrato()"><i class="ti ti-device-floppy"></i> Salvar modelo</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: escolher modelo e gerar (venda/OS) -->
+<div class="modal-overlay" id="modal-contrato-gerar">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-title"><i class="ti ti-file-certificate" style="color:var(--pri)"></i><span>Gerar contrato / termo</span></div>
+    <p style="font-size:12.5px;color:var(--txt2);margin-bottom:10px" id="cg-contexto"></p>
+    <div class="fg"><label class="lbl">Modelo</label><select id="cg-modelo"></select></div>
+    <div style="margin:10px 0">
+      <label class="lbl">Formato</label>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button type="button" class="btn btn-pri btn-xs cg-fmt" data-fmt="a4" onclick="cgSetFmt('a4',this)" style="flex:1">📄 A4 / PDF</button>
+        <button type="button" class="btn btn-out btn-xs cg-fmt" data-fmt="58" onclick="cgSetFmt('58',this)" style="flex:1">🧾 58mm</button>
+        <button type="button" class="btn btn-out btn-xs cg-fmt" data-fmt="80" onclick="cgSetFmt('80',this)" style="flex:1">🧾 80mm</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-out" onclick="closeModal('modal-contrato-gerar')">Fechar</button>
+      <button class="btn btn-pri" onclick="emitirContrato()"><i class="ti ti-printer"></i> Gerar documento</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-docs-os">
   <div class="modal" style="max-width:500px">
     <div class="modal-title">
@@ -3442,6 +3517,11 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
 
     <!-- Grid de tipos de documento -->
     <div class="doc-btn-grid">
+      <div class="doc-btn-card" onclick="gerarContratoOS(_docOsAtual?.id)">
+        <i class="ti ti-file-certificate"></i>
+        <div class="doc-btn-nome">Contrato / Termo</div>
+        <div class="doc-btn-desc">Gera um termo do seu modelo (iPhone, Xiaomi...) com os dados desta OS.</div>
+      </div>
       <div class="doc-btn-card" onclick="gerarTermoEntrada()">
         <i class="ti ti-device-mobile-down"></i>
         <div class="doc-btn-nome">Termo de Entrada</div>
@@ -3797,6 +3877,24 @@ const fmtD = d => new Date(d).toLocaleDateString('pt-BR');
 const fmtDT = d => new Date(d).toLocaleDateString('pt-BR')+' '+new Date(d).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
 const pad = (n,l=4) => String(n).padStart(l,'0');
 const setLoad = v => document.getElementById('loading').classList.toggle('show',v);
+
+/* ── Proteção GLOBAL contra duplo-clique em botões de AÇÃO ──────────────
+   Bloqueia um 2º clique no mesmo botão dentro de ~1.1s, apenas para ações
+   que criam/salvam/confirmam (evita duplicidade de registros). Não afeta
+   botões de clique rápido (somar qtd, teclado do PIN, navegação, abas). */
+(function(){
+  const ACAO=/(salvar|salva|criar|create|gerar|registrar|registra|finaliz|cobrar|cobra|lan[cç]ar|confirmar|transferir|emitir|baixar(parcela|conta)|converter|abrir(caixa|os)|aplicar)/i;
+  document.addEventListener('click', function(e){
+    const btn = e.target && e.target.closest ? e.target.closest('button,.btn,.fin-btn') : null;
+    if(!btn || btn.disabled) return;
+    const oc = btn.getAttribute('onclick') || '';
+    // só guarda botões cuja ação sugere mutação (cria/salva/confirma)
+    if(!ACAO.test(oc)) return;
+    const now=Date.now(), last=+btn.dataset._lc || 0;
+    if(now-last < 1100){ e.preventDefault(); e.stopImmediatePropagation(); return false; }
+    btn.dataset._lc=now;
+  }, true);
+})();
 
 function notify(msg, type='success', dur=3200) {
   const s=document.getElementById('nstack');
@@ -4209,6 +4307,7 @@ async function loadAll(){
       db.from('entregas_avulsas').select('*').neq('status','cancelado').order('data')
     ]);
     G.produtos=pr.data||[];G.clientes=cl.data||[];G.os=os.data||[];
+    carregarContratosModelos();
     G.vendas=ve.data||[];G.usuarios=us.data||[];G.movs=mv.data||[];
     G.fornecedores=fo.data||[];G.orcamentos=oc.data||[];G.devolucoes=dv.data||[];
     G.receber=re.data||[];G.pagar=pa.data||[];G.caixas=cx.data||[];
@@ -4290,6 +4389,7 @@ function go(page){
     usuarios:()=>{renderUsuarios();carregarAuditLog();renderAuditLog();},
     permissoes:renderPermissoes,
     garantias:()=>{_garCache=[];renderGarantias();},
+    contratos:renderContratos,
     troca:()=>{G_TROCAS=[];renderTroca();},
     crm:renderCrm,
     catalogo:renderCatalogo,
@@ -4782,6 +4882,16 @@ async function finalizeSale(){
     G.trocaPDV=null;
   }
   G.vendas.unshift({...venda,criado_em:new Date().toISOString()});
+  // resumo da venda p/ gerar contrato
+  _ultimaVendaContrato={
+    tipo:'venda',
+    cliente:cliNome,
+    cpf:(G.clientes||[]).find(x=>x.id===cliId)?.cpf||'',
+    produto:(G.cart||[]).map(i=>`${i.qty}x ${i.nome}`).join(', '),
+    valor:total,
+    numero:'',
+    marca:(G.cart&&G.cart[0]&&(G.cart[0].marca||''))||''
+  };
   document.getElementById('vok-info').textContent=`${G.cart.length} item(s) · ${cliNome}`;
   document.getElementById('vok-total').textContent=fmt(total);
   document.getElementById('vok-troco').textContent=troco>0?`Troco: ${fmt(troco)}`:'';
@@ -4933,7 +5043,7 @@ async function buscarVendaDev(){
   if(!v){notify('Venda não encontrada!','error');return;}
   devVendaAtual=v;
   document.getElementById('dev-venda-info').style.display='';
-  document.getElementById('dev-venda-info').innerHTML=`<div style="font-weight:600;margin-bottom:6px">Venda #${pad(v.numero||0)} — ${v.cliente_nome}</div><div style="font-size:12px;color:var(--txt2)">${fmtDT(v.criado_em)} · ${fmt(v.total)}</div>`;
+  document.getElementById('dev-venda-info').innerHTML=`<div style="font-weight:600;margin-bottom:6px">Venda #${pad(v.numero||0)} — ${esc(v.cliente_nome)}</div><div style="font-size:12px;color:var(--txt2)">${fmtDT(v.criado_em)} · ${fmt(v.total)}</div>`;
   const itens=v.itens||[];
   document.getElementById('dev-itens-sel').innerHTML=`<div class="ms">Itens para devolução</div>`+itens.map((i,idx)=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)">
     <input type="checkbox" id="dev-it-${idx}" checked style="width:auto;cursor:pointer">
@@ -5083,10 +5193,10 @@ function renderClientes(q=''){
   const f=q.toLowerCase();
   const list=G.clientes.filter(c=>!f||c.nome.toLowerCase().includes(f)||(c.telefone||'').includes(f));
   document.getElementById('cli-table').innerHTML=list.length===0?'<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--txt3)">Nenhum cliente</td></tr>':list.map(c=>`<tr>
-    <td style="font-weight:600">${c.nome}</td>
-    <td>${c.cpf||'—'}</td>
-    <td>${c.telefone||'—'}</td>
-    <td style="color:var(--txt2)">${c.cidade||'—'}</td>
+    <td style="font-weight:600">${esc(c.nome)}</td>
+    <td>${esc(c.cpf)||'—'}</td>
+    <td>${esc(c.telefone)||'—'}</td>
+    <td style="color:var(--txt2)">${esc(c.cidade)||'—'}</td>
     <td>${c.limite_credito>0?fmt(c.limite_credito):'—'}</td>
     <td><div style="display:flex;gap:3px">
       <button class="btn btn-out btn-xs" onclick="editCli('${c.id}')"><i class="ti ti-edit"></i></button>
@@ -5359,8 +5469,8 @@ function renderFluxo(){
   // Resumo
   const proxRec=G.receber.filter(r=>r.status!=='pago').slice(0,5);
   const proxPag=G.pagar.filter(p=>p.status!=='pago').slice(0,5);
-  document.getElementById('fluxo-ent').innerHTML=proxRec.length===0?'<div class="empty-st" style="padding:20px"><p>Nenhuma entrada prevista</p></div>':proxRec.map(r=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)"><div><div style="font-size:13px;font-weight:600">${r.descricao}</div><div style="font-size:11px;color:var(--txt3)">${fmtD(r.data_vencimento+'T12:00')}</div></div><div style="font-weight:700;color:var(--success)">${fmt(r.valor_original)}</div></div>`).join('');
-  document.getElementById('fluxo-sai').innerHTML=proxPag.length===0?'<div class="empty-st" style="padding:20px"><p>Nenhuma saída prevista</p></div>':proxPag.map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)"><div><div style="font-size:13px;font-weight:600">${p.descricao}</div><div style="font-size:11px;color:var(--txt3)">${fmtD(p.data_vencimento+'T12:00')}</div></div><div style="font-weight:700;color:var(--danger)">${fmt(p.valor_original)}</div></div>`).join('');
+  document.getElementById('fluxo-ent').innerHTML=proxRec.length===0?'<div class="empty-st" style="padding:20px"><p>Nenhuma entrada prevista</p></div>':proxRec.map(r=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)"><div><div style="font-size:13px;font-weight:600">${esc(r.descricao)}</div><div style="font-size:11px;color:var(--txt3)">${fmtD(r.data_vencimento+'T12:00')}</div></div><div style="font-weight:700;color:var(--success)">${fmt(r.valor_original)}</div></div>`).join('');
+  document.getElementById('fluxo-sai').innerHTML=proxPag.length===0?'<div class="empty-st" style="padding:20px"><p>Nenhuma saída prevista</p></div>':proxPag.map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)"><div><div style="font-size:13px;font-weight:600">${esc(p.descricao)}</div><div style="font-size:11px;color:var(--txt3)">${fmtD(p.data_vencimento+'T12:00')}</div></div><div style="font-weight:700;color:var(--danger)">${fmt(p.valor_original)}</div></div>`).join('');
 }
 
 /* ── BOLETOS DA EMPRESA (NOVO) ───────────────────────── */
@@ -5915,8 +6025,8 @@ function renderOSList(q=''){
       <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:12px;color:var(--pri)">${o.numero}</div>
       <span class="tag ${OC[o.status]||'tag-gry'}" style="font-size:10px">${o.status}</span>
     </div>
-    <div style="font-size:13px;font-weight:600;color:var(--txt);margin:2px 0">${o.cliente_nome}</div>
-    <div style="font-size:11.5px;color:var(--txt3)">${o.aparelho}</div>
+    <div style="font-size:13px;font-weight:600;color:var(--txt);margin:2px 0">${esc(o.cliente_nome)}</div>
+    <div style="font-size:11.5px;color:var(--txt3)">${esc(o.aparelho)}</div>
     <div class="prog-bar"><div class="prog-fill" style="width:${o.progresso}%"></div></div>
     <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:1px">
       <span style="color:var(--txt3)">${fmtDT(o.criado_em)}</span>
@@ -7979,10 +8089,10 @@ function renderDashboard(){
   }
   document.getElementById('d-alerts').innerHTML=alertsHtml;
   // Últimas vendas
-  document.getElementById('d-ult-v').innerHTML=G.vendas.length===0?'<div class="empty-st" style="padding:16px"><i class="ti ti-shopping-cart-off"></i><p>Nenhuma venda</p></div>':`<div class="tw"><table><thead><tr><th>Cliente</th><th>Total</th><th>Lucro</th></tr></thead><tbody>${G.vendas.slice(0,5).map(v=>`<tr><td>${v.cliente_nome}</td><td style="font-weight:700">${fmt(v.total)}</td><td style="color:var(--success);font-weight:700">${fmt(v.lucro||0)}</td></tr>`).join('')}</tbody></table></div>`;
+  document.getElementById('d-ult-v').innerHTML=G.vendas.length===0?'<div class="empty-st" style="padding:16px"><i class="ti ti-shopping-cart-off"></i><p>Nenhuma venda</p></div>':`<div class="tw"><table><thead><tr><th>Cliente</th><th>Total</th><th>Lucro</th></tr></thead><tbody>${G.vendas.slice(0,5).map(v=>`<tr><td>${esc(v.cliente_nome)}</td><td style="font-weight:700">${fmt(v.total)}</td><td style="color:var(--success);font-weight:700">${fmt(v.lucro||0)}</td></tr>`).join('')}</tbody></table></div>`;
   // OS abertas
   const openOS=G.os.filter(o=>o.status!=='Entregue').slice(0,5);
-  document.getElementById('d-ult-os').innerHTML=openOS.length===0?'<div class="empty-st" style="padding:16px"><i class="ti ti-tools"></i><p>Nenhuma OS</p></div>':`<div class="tw"><table><thead><tr><th>OS</th><th>Aparelho</th><th>Status</th></tr></thead><tbody>${openOS.map(o=>`<tr><td style="font-weight:700;color:var(--pri)">${o.numero}</td><td>${o.aparelho}</td><td><span class="tag ${OC[o.status]||'tag-gry'}" style="font-size:10px">${o.status}</span></td></tr>`).join('')}</tbody></table></div>`;
+  document.getElementById('d-ult-os').innerHTML=openOS.length===0?'<div class="empty-st" style="padding:16px"><i class="ti ti-tools"></i><p>Nenhuma OS</p></div>':`<div class="tw"><table><thead><tr><th>OS</th><th>Aparelho</th><th>Status</th></tr></thead><tbody>${openOS.map(o=>`<tr><td style="font-weight:700;color:var(--pri)">${esc(o.numero)}</td><td>${esc(o.aparelho)}</td><td><span class="tag ${OC[o.status]||'tag-gry'}" style="font-size:10px">${o.status}</span></td></tr>`).join('')}</tbody></table></div>`;
   // Gráfico 7 dias
   const labels=[],vals=[];
   for(let i=6;i>=0;i--){
@@ -9259,7 +9369,7 @@ function salvarCredito() {
   }
   const contrato = {
     id: 'CRED-' + Date.now(),
-    numero: 'CR-' + pad(G_CONTRATOS.length + 1),
+    numero: 'CR-' + pad(((G_CONTRATOS||[]).reduce((m,c)=>{const n=parseInt(String(c.numero||'').replace(/\D/g,''),10)||0;return n>m?n:m;},0))+1),
     clienteId: cliId, clienteNome: cliNome,
     descricao: desc, observacoes: obs,
     valorTotal: total, entrada, saldo,
@@ -15416,6 +15526,211 @@ document.addEventListener('click', e => {
    ══════════════════════════════════════════════════════════════════ */
 
 let _docOsAtual = null;
+
+/* ═══ CONTRATOS & TERMOS ═══════════════════════════════════════════ */
+let G_CONTRATOS_MODELOS = [];
+let _cgContexto = null;      // contexto (venda/os) p/ gerar
+let _cgFmt = 'a4';
+let _ultimaVendaContrato = null;  // resumo da última venda
+
+// Botão "Gerar contrato" no modal de Venda Concluída
+function gerarContratoVenda(){
+  if(!_ultimaVendaContrato){ notify('Faça uma venda primeiro.','info'); return; }
+  abrirGerarContrato(_ultimaVendaContrato);
+}
+// Gerar contrato a partir de uma OS
+function gerarContratoOS(osId){
+  const o=(G.os||[]).find(x=>x.id===osId); if(!o)return;
+  abrirGerarContrato({
+    tipo:'os', cliente:o.cliente_nome, cpf:(G.clientes||[]).find(x=>x.id===o.cliente_id)?.cpf||'',
+    produto:o.aparelho||'', valor:o.total||o.valor_servico||0, numero:o.numero||'',
+    garantia:(o.garantia_dias?o.garantia_dias+' dias':''), marca:o.aparelho||''
+  });
+}
+
+async function carregarContratosModelos(){
+  try{
+    const {data,error}=await db.from('contratos_modelos').select('*').order('nome');
+    if(error)throw error;
+    G_CONTRATOS_MODELOS=data||[];
+  }catch(e){ G_CONTRATOS_MODELOS=[]; /* tabela pode não existir ainda (migração W01) */ }
+}
+
+function renderContratos(){
+  carregarContratosModelos().then(()=>{
+    const cont=document.getElementById('contratos-lista');
+    if(!cont)return;
+    if(!G_CONTRATOS_MODELOS.length){
+      cont.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--txt3)">
+        <i class="ti ti-file-certificate" style="font-size:42px;opacity:.4"></i>
+        <p style="margin-top:10px">Nenhum modelo de contrato ainda.<br>Crie um (ex: "Termo de venda — iPhone") e use na venda ou na OS.</p>
+        <p style="font-size:11.5px;margin-top:8px">Se acabou de criar e não apareceu, rode a migração <b>W01</b> no Supabase.</p>
+      </div>`;
+      return;
+    }
+    cont.innerHTML=G_CONTRATOS_MODELOS.map(m=>`
+      <div class="card" style="padding:14px">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+          <div style="font-weight:700;font-size:14px;color:var(--txt)"><i class="ti ti-file-certificate" style="color:var(--pri)"></i> ${esc(m.nome)}</div>
+        </div>
+        ${m.sugestao?`<div style="font-size:11.5px;color:var(--txt3);margin-top:4px">Sugerido para: <b>${esc(m.sugestao)}</b></div>`:''}
+        <div style="font-size:12px;color:var(--txt2);margin-top:8px;max-height:60px;overflow:hidden;line-height:1.45">${esc((m.corpo||'').slice(0,160))}${(m.corpo||'').length>160?'…':''}</div>
+        <div style="display:flex;gap:6px;margin-top:12px">
+          <button class="btn btn-out btn-xs" onclick="editarContrato('${m.id}')"><i class="ti ti-edit"></i> Editar</button>
+          <button class="btn btn-out btn-xs" onclick="excluirContrato('${m.id}')" style="color:var(--danger)"><i class="ti ti-trash"></i></button>
+        </div>
+      </div>`).join('');
+  });
+}
+
+function novoContrato(){
+  document.getElementById('ct-id').value='';
+  document.getElementById('ct-nome').value='';
+  document.getElementById('ct-sugestao').value='';
+  document.getElementById('ct-corpo').value='';
+  document.getElementById('ct-edit-titulo').textContent='Novo modelo de contrato';
+  openModal('modal-contrato-edit');
+}
+function editarContrato(id){
+  const m=G_CONTRATOS_MODELOS.find(x=>x.id===id); if(!m)return;
+  document.getElementById('ct-id').value=m.id;
+  document.getElementById('ct-nome').value=m.nome||'';
+  document.getElementById('ct-sugestao').value=m.sugestao||'';
+  document.getElementById('ct-corpo').value=m.corpo||'';
+  document.getElementById('ct-edit-titulo').textContent='Editar modelo';
+  openModal('modal-contrato-edit');
+}
+function insVarContrato(v){
+  const ta=document.getElementById('ct-corpo'); if(!ta)return;
+  const s=ta.selectionStart||ta.value.length, e=ta.selectionEnd||ta.value.length;
+  ta.value=ta.value.slice(0,s)+v+ta.value.slice(e);
+  ta.focus(); ta.selectionStart=ta.selectionEnd=s+v.length;
+}
+async function salvarContrato(){
+  const nome=document.getElementById('ct-nome').value.trim();
+  const corpo=document.getElementById('ct-corpo').value.trim();
+  const sugestao=document.getElementById('ct-sugestao').value.trim();
+  if(!nome||!corpo){notify('Nome e texto são obrigatórios.','error');return;}
+  const id=document.getElementById('ct-id').value;
+  setLoad(true);
+  let err;
+  if(id){ ({error:err}=await db.from('contratos_modelos').update({nome,corpo,sugestao}).eq('id',id)); }
+  else  { ({error:err}=await db.from('contratos_modelos').insert({empresa_id:EID(),nome,corpo,sugestao})); }
+  setLoad(false);
+  if(err){
+    if(/contratos_modelos|does not exist|schema/i.test(err.message||'')) notify('Rode a migração W01 no Supabase para ativar os contratos.','warn',7000);
+    else notify('Erro: '+err.message,'error',6000);
+    return;
+  }
+  closeModal('modal-contrato-edit');
+  notify('Modelo salvo!','success');
+  renderContratos();
+}
+function excluirContrato(id){
+  const m=G_CONTRATOS_MODELOS.find(x=>x.id===id); if(!m)return;
+  confirmAct('Excluir modelo', `Excluir o modelo "${m.nome}"?`, async()=>{
+    setLoad(true);
+    const {error}=await db.from('contratos_modelos').delete().eq('id',id);
+    setLoad(false);
+    if(error){notify('Erro: '+error.message,'error');return;}
+    notify('Modelo excluído.','success'); renderContratos();
+  }, 'Excluir');
+}
+
+/* —— Gerar contrato a partir de uma VENDA ou OS —— */
+// contexto = { tipo:'venda'|'os', cliente, cpf, produto, valor, numero, garantia, marca }
+function abrirGerarContrato(contexto){
+  _cgContexto=contexto; _cgFmt='a4';
+  carregarContratosModelos().then(()=>{
+    if(!G_CONTRATOS_MODELOS.length){ notify('Cadastre um modelo em Contratos & Termos primeiro.','info',6000); go('contratos'); return; }
+    // sugere o modelo pela marca/produto
+    const alvo=((contexto.marca||'')+' '+(contexto.produto||'')).toLowerCase();
+    let sugeridoId=null;
+    for(const m of G_CONTRATOS_MODELOS){
+      const s=(m.sugestao||'').toLowerCase().trim();
+      if(s && alvo.includes(s.split(/[,\s]+/)[0])){ sugeridoId=m.id; break; }
+    }
+    const sel=document.getElementById('cg-modelo');
+    sel.innerHTML=G_CONTRATOS_MODELOS.map(m=>`<option value="${m.id}">${esc(m.nome)}${m.sugestao?(' — '+esc(m.sugestao)):''}</option>`).join('');
+    if(sugeridoId) sel.value=sugeridoId;
+    document.getElementById('cg-contexto').textContent=`${contexto.tipo==='os'?'OS':'Venda'} ${contexto.numero||''} · ${contexto.cliente||'Cliente'} · ${contexto.produto||''}`.trim();
+    document.querySelectorAll('.cg-fmt').forEach(b=>{const a=b.dataset.fmt==='a4';b.classList.toggle('btn-pri',a);b.classList.toggle('btn-out',!a);});
+    openModal('modal-contrato-gerar');
+  });
+}
+function cgSetFmt(f,btn){ _cgFmt=f; document.querySelectorAll('.cg-fmt').forEach(b=>{b.classList.remove('btn-pri');b.classList.add('btn-out');}); if(btn){btn.classList.remove('btn-out');btn.classList.add('btn-pri');} }
+
+function _preencheContrato(corpo, c){
+  const m=getMarca?getMarca():{};
+  const loja=(m.nomeFantasia||m.razaoSocial||(G.profile&&G.profile.empresa_nome)||'A loja');
+  const map={
+    '{cliente}': c.cliente||'—',
+    '{cpf}': c.cpf||'—',
+    '{produto}': c.produto||'—',
+    '{valor}': c.valor!=null?fmt(c.valor):'—',
+    '{data}': new Date().toLocaleDateString('pt-BR'),
+    '{loja}': loja,
+    '{numero}': c.numero||'—',
+    '{garantia}': c.garantia||'—'
+  };
+  return String(corpo||'').replace(/\{cliente\}|\{cpf\}|\{produto\}|\{valor\}|\{data\}|\{loja\}|\{numero\}|\{garantia\}/g, k=>map[k]||k);
+}
+function emitirContrato(){
+  if(!_cgContexto) return;
+  const id=document.getElementById('cg-modelo').value;
+  const modelo=G_CONTRATOS_MODELOS.find(x=>x.id===id);
+  if(!modelo){notify('Escolha um modelo.','warn');return;}
+  const texto=_preencheContrato(modelo.corpo, _cgContexto);
+  const m=getMarca?getMarca():{};
+  const cor=m.cor||'#5B47E0';
+  const loja=(m.nomeFantasia||m.razaoSocial||'A loja');
+  const logo=(document.getElementById('doc-opt-logo')?.checked!==false)&&(m.logoSidebar||m.logoLogin||m.logo);
+  const w = _cgFmt==='58'?58 : _cgFmt==='80'?80 : 0;
+  let html;
+  if(w){ // térmico
+    html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(modelo.nome)}</title><style>${getCssCupom(cor,w)}</style></head><body>
+      <div class="print-bar"><button class="print-btn print-btn-pri" onclick="window.print()">Imprimir</button><button class="print-btn print-btn-out" onclick="window.close()">Fechar</button></div>
+      <div class="cupom">
+        ${logo?`<img src="${logo}" class="cup-logo">`:''}
+        <div class="cup-emp">${esc(loja)}</div>
+        <div class="cup-tipo">${esc(modelo.nome)}</div>
+        <div class="cup-txt" style="white-space:pre-wrap">${esc(texto)}</div>
+        <div class="cup-assin"><div class="cup-assin-line">Assinatura do cliente</div></div>
+      </div></body></html>`;
+  } else { // A4
+    html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(modelo.nome)}</title>
+      <style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+      *{box-sizing:border-box;margin:0;padding:0}body{font-family:'Inter',Arial,sans-serif;background:#888;color:#1a1a2e}
+      .pg{max-width:780px;background:#fff;margin:16px auto;padding:42px 48px;min-height:1000px}
+      .hd{display:flex;align-items:center;gap:14px;border-bottom:3px solid ${cor};padding-bottom:14px;margin-bottom:8px}
+      .hd img{max-height:54px;max-width:160px;object-fit:contain}
+      .hd .nm{font-size:22px;font-weight:800}
+      .ttl{text-align:center;font-size:18px;font-weight:800;margin:22px 0;text-transform:uppercase;color:${cor}}
+      .corpo{font-size:14px;line-height:1.85;text-align:justify;white-space:pre-wrap}
+      .assin{margin-top:70px;display:flex;justify-content:space-around;text-align:center;font-size:13px}
+      .assin .ln{border-top:1px solid #000;padding-top:6px;min-width:230px}
+      .meta{font-size:12px;color:#666;margin-top:6px}
+      .bar{background:#1a1a2e;padding:10px;display:flex;gap:8px;justify-content:center;position:sticky;top:0}
+      .bar button{padding:8px 16px;border:none;border-radius:7px;font-weight:700;cursor:pointer}
+      .b1{background:${cor};color:#fff}.b2{background:#444;color:#fff}
+      @media print{body{background:#fff}.pg{margin:0;padding:24mm 20mm}.bar{display:none}@page{size:A4;margin:0}}
+      </style></head><body>
+      <div class="bar"><button class="b1" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button><button class="b2" onclick="window.close()">Fechar</button></div>
+      <div class="pg">
+        <div class="hd">${logo?`<img src="${logo}">`:''}<div><div class="nm">${esc(loja)}</div><div class="meta">${esc(_cgContexto.tipo==='os'?'OS':'Venda')} ${esc(_cgContexto.numero||'')} · ${new Date().toLocaleDateString('pt-BR')}</div></div></div>
+        <div class="ttl">${esc(modelo.nome)}</div>
+        <div class="corpo">${esc(texto)}</div>
+        <div class="assin">
+          <div class="ln">${esc(_cgContexto.cliente||'Cliente')}<br><span style="font-size:11px;color:#666">Cliente</span></div>
+          <div class="ln">${esc(loja)}<br><span style="font-size:11px;color:#666">Loja</span></div>
+        </div>
+      </div></body></html>`;
+  }
+  const win=window.open('','_blank');
+  if(!win){notify('Permita pop-ups para abrir o documento.','warn',6000);return;}
+  win.document.write(html); win.document.close();
+  closeModal('modal-contrato-gerar');
+}
 
 function abrirDocumentosOS(osId) {
   const os = (G.os || []).find(x => x.id === osId);
