@@ -64,7 +64,7 @@
   .pprice-row{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:11px}
   .preco{font-family:'Sora';font-weight:800;font-size:21px;color:var(--pri)}
   .consulte{font-size:13px;color:var(--txt2);font-weight:600}
-  .indisp{font-size:11px;color:#fff;background:var(--txt3);padding:3px 8px;border-radius:7px;font-weight:600}
+  .indisp{font-size:11px;color:#fff;background:#E8915B;padding:3px 8px;border-radius:7px;font-weight:600}
   .pbtn{margin-top:auto;background:#25D366;color:#fff;border:0;border-radius:11px;padding:11px;font-size:13.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;text-decoration:none;transition:filter .15s}
   .pbtn:hover{filter:brightness(.96)}
 
@@ -88,10 +88,37 @@
     .grid{grid-template-columns:repeat(auto-fill,minmax(156px,1fr));gap:13px}
     .preco{font-size:18px}
   }
+  .card{cursor:pointer}
+  /* MODAL DE PRODUTO */
+  .pm-overlay{position:fixed;inset:0;background:rgba(20,16,40,.55);backdrop-filter:blur(4px);display:none;align-items:flex-end;justify-content:center;z-index:200;padding:0}
+  .pm-overlay.on{display:flex}
+  @media(min-width:640px){.pm-overlay{align-items:center;padding:20px}}
+  .pm-card{background:var(--surface);width:100%;max-width:460px;max-height:92vh;overflow-y:auto;border-radius:22px 22px 0 0;position:relative;animation:pmUp .28s cubic-bezier(.2,.8,.2,1)}
+  @media(min-width:640px){.pm-card{border-radius:22px}}
+  @keyframes pmUp{from{transform:translateY(40px);opacity:.4}to{transform:translateY(0);opacity:1}}
+  .pm-close{position:absolute;top:12px;right:12px;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.9);border:1px solid var(--border);color:var(--txt);font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:3}
+  .pm-img{height:260px;background:linear-gradient(135deg,#f3f1fa,#eceaf7);display:flex;align-items:center;justify-content:center;font-size:70px;color:var(--txt3)}
+  .pm-img img{width:100%;height:100%;object-fit:contain}
+  .pm-gal{display:flex;gap:8px;padding:10px 16px 0;overflow-x:auto}
+  .pm-gal img{width:54px;height:54px;border-radius:10px;object-fit:cover;border:2px solid transparent;cursor:pointer;flex-shrink:0}
+  .pm-gal img.on{border-color:var(--pri)}
+  .pm-body{padding:16px 18px 22px}
+  .pm-cat{font-size:12px;font-weight:600;color:var(--pri);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+  .pm-nome{font-size:21px;font-weight:800;color:var(--txt);line-height:1.25;margin-bottom:8px}
+  .pm-price{font-family:'Sora',sans-serif;font-size:24px;font-weight:800;color:var(--txt);margin-bottom:12px}
+  .pm-price .consulte{font-size:15px;font-weight:600;color:var(--txt2)}
+  .pm-status{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;padding:7px 12px;border-radius:9px;margin-bottom:12px}
+  .pm-status.ok{background:rgba(16,185,129,.12);color:#0a9d6e}
+  .pm-status.enc{background:rgba(245,158,11,.14);color:#b45309}
+  .pm-desc{font-size:14px;color:var(--txt2);line-height:1.6;margin-bottom:14px;white-space:pre-wrap}
+  .pm-note{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:11px;padding:11px 13px;font-size:12.5px;color:#92500a;line-height:1.5;margin-bottom:14px}
+  .pm-wa{display:flex;align-items:center;justify-content:center;gap:8px;background:#25D366;color:#fff;border-radius:13px;padding:14px;font-size:15px;font-weight:700;text-decoration:none;transition:filter .15s}
+  .pm-wa:hover{filter:brightness(.95)}
 </style>
 </head>
 <body>
   <div id="app"><div class="loading"><div class="spin"></div>Carregando catálogo...</div></div>
+  <div class="pm-overlay" id="modalProduto" onclick="fecharProduto()"></div>
 
 <script>
 const SURL='https://icgfpfwcnhkjglrmnuca.supabase.co';
@@ -113,6 +140,7 @@ async function init(){
     if(error)throw error;
     if(!data||!data.length){ render(`<div class="empty"><i class="ti ti-shopping-bag-x"></i><p style="margin-top:10px">Catálogo não encontrado ou indisponível.</p></div>`); return; }
     PRODUTOS=data;
+    PRODUTOS.forEach((p,i)=>{ p._i=i; });
     LOJA={ nome:data[0].loja_nome||'Loja', descricao:data[0].loja_descricao||'', whatsapp:(data[0].loja_whatsapp||'').replace(/\D/g,''), instagram:data[0].loja_instagram||'', cor:data[0].loja_cor||'#5B47E0', mostrarPreco:data[0].mostrar_preco };
     document.documentElement.style.setProperty('--pri',LOJA.cor);
     document.documentElement.style.setProperty('--pri-2',shade(LOJA.cor,-18));
@@ -157,7 +185,7 @@ function desenhar(){
     </div>
 
     ${num?`<a class="fab" target="_blank" href="https://wa.me/${num}?text=${encodeURIComponent('Olá! Vi o catálogo de '+LOJA.nome)}" title="Falar no WhatsApp"><i class="ti ti-brand-whatsapp"></i></a>`:''}
-    <footer>🛍️ Catálogo de <b>${esc(LOJA.nome)}</b> · feito com EMETech</footer>
+    <footer>🛍️ Catálogo de <b>${esc(LOJA.nome)}</b> · feito com MISU TECNOLOGY</footer>
   `);
   renderLista();
 }
@@ -166,10 +194,8 @@ function onBusca(v){ BUSCA=v.toLowerCase(); renderLista(); }
 function setCat(c,el){ CAT_ATUAL=c; document.querySelectorAll('.chip').forEach(ch=>ch.classList.remove('on')); if(el)el.classList.add('on'); renderLista(); }
 
 function cardHtml(p,hot){
-  const num=waNum();
   const foto=(p.fotos&&p.fotos.length)?`<img src="${esc(p.fotos[0])}" alt="${esc(p.nome)}" loading="lazy">`:'<i class="ti ti-device-mobile"></i>';
-  const msg=encodeURIComponent(`Olá! Tenho interesse no produto: ${p.nome}${p.preco?(' ('+fmt(p.preco)+')'):''}`);
-  return `<div class="card ${hot?'hot':''}">
+  return `<div class="card ${hot?'hot':''}" onclick="abrirProduto(${p._i})">
     ${hot?'<span class="badge badge-hot"><i class="ti ti-flame" style="font-size:12px"></i> Oferta</span>':''}
     <div class="pimg">${foto}</div>
     <div class="pbody">
@@ -177,12 +203,48 @@ function cardHtml(p,hot){
       <div class="pnome">${esc(p.nome)}</div>
       <div class="pprice-row">
         ${p.preco!=null?`<span class="preco">${fmt(p.preco)}</span>`:'<span class="consulte">Consulte o preço</span>'}
-        ${p.disponivel?'':'<span class="indisp">Indisponível</span>'}
+        ${p.disponivel===false?'<span class="indisp">Sob encomenda</span>':''}
       </div>
-      ${num?`<a class="pbtn" target="_blank" href="https://wa.me/${num}?text=${msg}"><i class="ti ti-brand-whatsapp"></i> Pedir no WhatsApp</a>`:''}
+      <div class="pbtn"><i class="ti ti-eye"></i> Ver detalhes</div>
     </div>
   </div>`;
 }
+
+// Mensagem pronta de WhatsApp: em estoque = interesse; sem estoque = pedido sob encomenda
+function msgProduto(p){
+  const preco = p.preco!=null ? ' ('+fmt(p.preco)+')' : '';
+  if(p.disponivel===false){
+    return `Olá, ${LOJA.nome}! Gostaria de fazer um *pedido sob encomenda* do produto: ${p.nome}${preco}. Vocês conseguem providenciar? Qual o prazo e a forma de pagamento?`;
+  }
+  return `Olá, ${LOJA.nome}! Tenho interesse no produto: ${p.nome}${preco}. Ainda está disponível? Como faço para comprar?`;
+}
+function abrirProduto(i){
+  const p=PRODUTOS[i]; if(!p) return;
+  const num=waNum();
+  const fotos=(p.fotos&&p.fotos.length)?p.fotos:[];
+  const fotoMain = fotos.length ? `<img id="pm-main" src="${esc(fotos[0])}" alt="${esc(p.nome)}">` : '<i class="ti ti-device-mobile"></i>';
+  const galeria = fotos.length>1 ? `<div class="pm-gal">${fotos.map((f,idx)=>`<img src="${esc(f)}" class="${idx===0?'on':''}" onclick="trocaFoto(this)">`).join('')}</div>` : '';
+  const enc = p.disponivel===false;
+  const msg = encodeURIComponent(msgProduto(p));
+  const m=document.getElementById('modalProduto');
+  m.innerHTML = `<div class="pm-card" onclick="event.stopPropagation()">
+    <button class="pm-close" onclick="fecharProduto()"><i class="ti ti-x"></i></button>
+    <div class="pm-img">${fotoMain}</div>
+    ${galeria}
+    <div class="pm-body">
+      <div class="pm-cat">${esc(p.categoria||'Produto')}${p.marca?(' · '+esc(p.marca)):''}</div>
+      <h2 class="pm-nome">${esc(p.nome)}</h2>
+      <div class="pm-price">${p.preco!=null?fmt(p.preco):'<span class="consulte">Consulte o preço</span>'}</div>
+      <div class="pm-status ${enc?'enc':'ok'}">${enc?'<i class="ti ti-truck-delivery"></i> Sob encomenda':'<i class="ti ti-circle-check"></i> Disponível em estoque'}</div>
+      ${p.descricao?`<p class="pm-desc">${esc(p.descricao)}</p>`:''}
+      ${enc?'<div class="pm-note"><b>Este item não está em estoque no momento.</b> Você pode solicitá-lo como <b>pedido sob encomenda</b> pelo WhatsApp — a loja confirma o prazo e a forma de pagamento com você.</div>':''}
+      ${num?`<a class="pm-wa" target="_blank" href="https://wa.me/${num}?text=${msg}"><i class="ti ti-brand-whatsapp"></i> ${enc?'Solicitar pedido no WhatsApp':'Solicitar no WhatsApp'}</a>`:'<div class="pm-note">A loja ainda não cadastrou um WhatsApp para contato.</div>'}
+    </div>
+  </div>`;
+  m.classList.add('on');
+}
+function fecharProduto(){ document.getElementById('modalProduto').classList.remove('on'); }
+function trocaFoto(el){ const mm=document.getElementById('pm-main'); if(mm)mm.src=el.src; document.querySelectorAll('.pm-gal img').forEach(i=>i.classList.remove('on')); el.classList.add('on'); }
 
 function renderLista(){
   let list=PRODUTOS.slice();
@@ -203,6 +265,7 @@ function renderLista(){
   cont.innerHTML=html;
 }
 
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') fecharProduto(); });
 init();
 </script>
 </body>
