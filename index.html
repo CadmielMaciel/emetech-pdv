@@ -1669,7 +1669,8 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
             <div id="prd-subcat-list"><div style="color:var(--txt3);font-size:13px;padding:16px 0">Selecione uma categoria acima para ver e gerenciar suas subcategorias.</div></div>
           </div>
         </div>
-      <div class="page" id="page-estoque">
+
+      <!-- MOVIMENTAÇÕES -->id="page-estoque">
         <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
           <div class="card-title" style="flex:1;min-width:160px">Histórico de Movimentações</div>
           <input type="date" id="mf-de" onchange="renderMov()" title="De" style="padding:6px 9px;font-size:12.5px;border-radius:8px;width:auto">
@@ -4434,7 +4435,7 @@ const PAGINAS_CONFIG = {
 
 // Padrões embutidos (usados quando a empresa não configurou nada)
 const ROLE_PERMS_DEFAULT = {
-  gerente:['dashboard','pdv','caixas','crediario','orcamentos','simulador','os-hist','devolucoes','os','agenda','comissoes','produtos','estoque','fornecedores','financeiro','clientes','relatorios','inteligencia','garantias','troca','crm','diagnostico','catalogo','contratos','configuracoes','usuarios'],
+  gerente:['dashboard','pdv','caixas','crediario','orcamentos','simulador','os-hist','devolucoes','os','agenda','comissoes','produtos','estoque','fornecedores','reposicao','financeiro','clientes','relatorios','inteligencia','garantias','troca','crm','diagnostico','catalogo','contratos','configuracoes','usuarios','permissoes'],
   operador:['pdv','crediario','orcamentos','simulador','agenda','clientes'],
   tecnico:['os-hist','os','agenda','clientes','garantias','diagnostico']
 };
@@ -4897,7 +4898,7 @@ function go(page){
     diagnostico:renderDiagnostico,
     inteligencia:()=>{initIntel();renderAlertasOperacionais();popPrecoEspSelects();},
     caixas:()=>{initCaixas();go_caixas();},
-    crediario:async()=>{await initCredario();renderContratos();popSelects();},
+    crediario:async()=>{await initCredario();renderContratosCred();popSelects();},
   };
   R[page]?.();
 }
@@ -5401,16 +5402,8 @@ function renderPecasTable(q = '') {
   }).join('');
 }
 
-function abrirModalProd(tipoPre) {
-  clearProdForm();
-  if (tipoPre === 'peca') {
-    // Pré-selecionar categoria Peça e estoque infinito desligado
-    const catEl = document.getElementById('p-cat');
-    if (catEl) catEl.value = 'Peça';
-    document.getElementById('prod-ttl').textContent = 'Nova Peça para OS';
-  }
-  openModal('modal-prod');
-}
+
+
 
 function renderProdTable(q=''){
   const f=(typeof q==='string'?q:'').toLowerCase();
@@ -7300,19 +7293,8 @@ async function advOS(id,next){
   notify(o.numero+' → '+next,next==='Entregue'?'success':'info');
 }
 
-async function advOS(id,next){
-  const o=G.os.find(x=>x.id===id);if(!o)return;
-  const tl=[...(o.timeline||[]),{status:next,data:new Date().toISOString()}];
-  const pl={status:next,progresso:OP[next]||o.progresso,timeline:tl,atualizado_em:new Date().toISOString()};
-  if(next==='Entregue')pl.data_conclusao=new Date().toISOString();
-  setLoad(true);
-  await db.from('ordens_servico').update(pl).eq('id',id);
-  setLoad(false);
-  Object.assign(o,pl);
-  if(next==='Entregue')G.os=G.os.filter(x=>x.id!==id);
-  closeModal('modal-os-det');renderOSList();renderDashboard();
-  notify(o.numero+' → '+next,next==='Entregue'?'success':'info');
-}
+async 
+
 
 // ── PÁGINA DE CONFIGURAÇÕES ───────────────────────────
 function cfgTab(aba, btn) {
@@ -10675,7 +10657,7 @@ function limparFormCredito() {
 }
 
 // ── RENDER CONTRATOS ─────────────────────────────────
-function renderContratos(q = '') {
+function renderContratosCred(q = '') {
   const f = q.toLowerCase();
   const fs = document.getElementById('cred-filter-status')?.value || '';
   const hoje = new Date().toISOString().split('T')[0];
@@ -17292,25 +17274,8 @@ function abrirContratoGerar(contexto, modeloIdPre) { abrirGerarContrato(contexto
 
 /* —— Gerar contrato a partir de uma VENDA ou OS —— */
 // contexto = { tipo:'venda'|'os', cliente, cpf, produto, valor, numero, garantia, marca }
-function abrirGerarContrato(contexto){
-  _cgContexto=contexto; _cgFmt='a4';
-  carregarContratosModelos().then(()=>{
-    if(!G_CONTRATOS_MODELOS.length){ notify('Cadastre um modelo em Contratos & Termos primeiro.','info',6000); go('contratos'); return; }
-    // sugere o modelo pela marca/produto
-    const alvo=((contexto.marca||'')+' '+(contexto.produto||'')).toLowerCase();
-    let sugeridoId=null;
-    for(const m of G_CONTRATOS_MODELOS){
-      const s=(m.sugestao||'').toLowerCase().trim();
-      if(s && alvo.includes(s.split(/[,\s]+/)[0])){ sugeridoId=m.id; break; }
-    }
-    const sel=document.getElementById('cg-modelo');
-    sel.innerHTML=G_CONTRATOS_MODELOS.map(m=>`<option value="${m.id}">${esc(m.nome)}${m.sugestao?(' — '+esc(m.sugestao)):''}</option>`).join('');
-    if(sugeridoId) sel.value=sugeridoId;
-    document.getElementById('cg-contexto').textContent=`${contexto.tipo==='os'?'OS':'Venda'} ${contexto.numero||''} · ${contexto.cliente||'Cliente'} · ${contexto.produto||''}`.trim();
-    document.querySelectorAll('.cg-fmt').forEach(b=>{const a=b.dataset.fmt==='a4';b.classList.toggle('btn-pri',a);b.classList.toggle('btn-out',!a);});
-    openModal('modal-contrato-gerar');
-  });
-}
+
+
 function cgSetFmt(f,btn){ _cgFmt=f; document.querySelectorAll('.cg-fmt').forEach(b=>{b.classList.remove('btn-pri');b.classList.add('btn-out');}); if(btn){btn.classList.remove('btn-out');btn.classList.add('btn-pri');} }
 
 function _preencheContrato(corpo, c){
