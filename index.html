@@ -4426,12 +4426,15 @@ const PAGINAS_CONFIG = {
   os:'Ordens de Serviço', agenda:'Agenda', comissoes:'Comissões', produtos:'Produtos',
   estoque:'Estoque', fornecedores:'Fornecedores', reposicao:'Central de Reposição', financeiro:'Financeiro',
   clientes:'Clientes', relatorios:'Relatórios', inteligencia:'Inteligência (IA)',
-  garantias:'Garantias', troca:'Troca de Aparelhos', crm:'Relacionamento (CRM)', diagnostico:'Diagnóstico (Panic)', catalogo:'Catálogo Online', simulador:'Simulador de Cartão'
+  garantias:'Garantias', troca:'Troca de Aparelhos', crm:'Relacionamento (CRM)',
+  diagnostico:'Diagnóstico (Panic)', catalogo:'Catálogo Online', simulador:'Simulador de Cartão',
+  contratos:'Contratos & Termos', permissoes:'Permissões', aparencia:'Aparência & Marca',
+  configuracoes:'Configurações', usuarios:'Usuários & Acesso',
 };
 
 // Padrões embutidos (usados quando a empresa não configurou nada)
 const ROLE_PERMS_DEFAULT = {
-  gerente:['dashboard','pdv','caixas','crediario','orcamentos','simulador','os-hist','devolucoes','os','agenda','comissoes','produtos','estoque','fornecedores','financeiro','clientes','relatorios','inteligencia','garantias','troca','crm','diagnostico','catalogo'],
+  gerente:['dashboard','pdv','caixas','crediario','orcamentos','simulador','os-hist','devolucoes','os','agenda','comissoes','produtos','estoque','fornecedores','financeiro','clientes','relatorios','inteligencia','garantias','troca','crm','diagnostico','catalogo','contratos','configuracoes','usuarios'],
   operador:['pdv','crediario','orcamentos','simulador','agenda','clientes'],
   tecnico:['os-hist','os','agenda','clientes','garantias','diagnostico']
 };
@@ -4452,9 +4455,10 @@ function getRolePerms(){
 function canAccess(role,page){
   if(page&&page.startsWith('hub-')) return true; // hub pages sempre permitidas
   if(role==='admin_master') return true; // master irrestrito
-  if(role==='admin') return true;         // dono vê tudo (Usuários/Aparência inclusos)
-  // Usuários e Aparência são exclusivos do dono
-  if(page==='usuarios'||page==='aparencia') return false;
+  if(role==='admin') return true;        // dono vê tudo (Usuários/Aparência inclusos)
+  if(role==='gerente'&&(page==='usuarios'||page==='aparencia')) return true; // gerente pode ver usuários
+  // Páginas exclusivas do admin para outros roles
+  if(page==='aparencia') return false;
   const perms=getRolePerms();
   const lista=perms[role]||[];
   return lista.includes(page);
@@ -4517,14 +4521,15 @@ function restaurarPermissoesPadrao(){
 function applyRoleUI(){
   initSidebarGroups();
   document.querySelectorAll('.ni[data-p]').forEach(el=>{el.style.display=el.dataset.p.split(',').includes(G.role)?'':'none';});
-  document.querySelectorAll('.nav-adm-sec,.nav-adm').forEach(el=>{el.style.display=G.role==='admin'?'':'none';});
-  // Esconde também itens cujo acesso a config de permissões não permite ao role atual.
-  // (Itens de página têm onclick="go('xxx')". Suporte/Upgrade não são páginas e ficam de fora.)
+  document.querySelectorAll('.nav-adm-sec,.nav-adm').forEach(el=>{el.style.display=G.role==='admin'||G.role==='admin_master'?'':'none';});
+  // Reset display first so items hidden by previous role switch reappear
+  document.querySelectorAll('.ni[onclick^="go("]').forEach(el=>{ el.style.display=''; });
+  // Esconde itens cujo acesso não está permitido para o role atual
   document.querySelectorAll('.ni[onclick^="go("]').forEach(el=>{
     const mm=el.getAttribute('onclick').match(/go\('([^']+)'\)/);
     if(!mm) return;
     const page=mm[1];
-    if(!(page in PAGINAS_CONFIG) && page!=='usuarios' && page!=='aparencia') return; // não é página gerenciável
+    if(!(page in PAGINAS_CONFIG) && !['usuarios','aparencia','configuracoes','contratos','permissoes'].includes(page)) return;
     if(!canAccess(G.role,page)) el.style.display='none';
   });
   document.getElementById('uname').textContent=G.profile?.nome||G.user?.email||'—';
@@ -4804,15 +4809,31 @@ function iniciarVerificacaoBloqueio(){
 }
 
 /* ── NAVEGAÇÃO ───────────────────────────────────────── */
-const PT={dashboard:'Dashboard',pdv:'PDV / Caixa',orcamentos:'Orçamentos',devolucoes:'Devoluções',os:'Ordens de Serviço','os-hist':'Histórico OS',agenda:'Agenda de Entregas',comissoes:'Comissão por Técnico',produtos:'Produtos',estoque:'Movimentações de Estoque',fornecedores:'Fornecedores',financeiro:'Financeiro',reposicao:'Central de Reposição',clientes:'Clientes',relatorios:'Relatórios',usuarios:'Usuários & Acesso',aparencia:'Aparência & Marca',inteligencia:'Inteligência Operacional',caixas:'Gestão de Caixas',crediario:'Crediário',configuracoes:'Configurações',
-  'hub-vendas':'Vendas','hub-servicos':'Serviços','hub-clientes':'Clientes','hub-estoque':'Estoque & Produtos','hub-financeiro':'Financeiro & Gestão','hub-relatorios':'Relatórios','hub-admin':'Administração'};
+const PT={
+  dashboard:'Dashboard',pdv:'PDV / Caixa',orcamentos:'Orçamentos',devolucoes:'Devoluções',
+  os:'Ordens de Serviço','os-hist':'Histórico OS',agenda:'Agenda de Entregas',
+  comissoes:'Comissão por Técnico',produtos:'Produtos',estoque:'Movimentações de Estoque',
+  fornecedores:'Fornecedores',financeiro:'Financeiro',reposicao:'Central de Reposição',
+  clientes:'Clientes',relatorios:'Relatórios',usuarios:'Usuários & Acesso',
+  aparencia:'Aparência & Marca',inteligencia:'Inteligência Operacional',
+  caixas:'Gestão de Caixas',crediario:'Crediário',configuracoes:'Configurações',
+  contratos:'Contratos & Termos',garantias:'Garantias',diagnostico:'Diagnóstico',
+  simulador:'Simulador de Cartão',troca:'Troca de Aparelhos',crm:'Relacionamento (CRM)',
+  catalogo:'Catálogo Online',permissoes:'Permissões',
+  'hub-vendas':'Vendas','hub-servicos':'Serviços','hub-clientes':'Clientes',
+  'hub-estoque':'Estoque & Produtos','hub-financeiro':'Financeiro & Gestão',
+  'hub-relatorios':'Relatórios','hub-admin':'Administração',
+};
 
 function goHub(hub){
   const page='hub-'+hub;
+  const pageEl=document.getElementById('page-'+page);
+  if(!pageEl){ notify('Seção não encontrada: '+hub,'warn'); return; }
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
-  document.getElementById('page-'+page)?.classList.add('active');
-  document.getElementById('topbar-title').textContent=PT[page]||hub;
+  pageEl.classList.add('active');
+  const titleEl=document.getElementById('topbar-title');
+  if(titleEl) titleEl.textContent=PT[page]||PT['hub-'+hub]||hub;
   document.querySelectorAll('.ni-group').forEach(el=>{if(el.dataset.hub===hub)el.classList.add('active');});
 }
 
@@ -4856,7 +4877,8 @@ function go(page){
     'os-hist':()=>{popOSFiltros();renderOSHist();},
     agenda:renderAgenda,
     comissoes:renderComissoes,
-    produtos:renderProdTable,    estoque:()=>{popMovFiltros();renderMov();},
+    produtos:()=>{renderProdTable();popProdSelects();renderCatChips();},
+    estoque:()=>{popMovFiltros();renderMov();},
     fornecedores:renderFornecedores,
     reposicao:renderReposicao,
     financeiro:()=>{renderFinanceiro();popLancCli();},
