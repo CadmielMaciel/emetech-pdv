@@ -852,7 +852,6 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
         <div class="fin-tabs" style="margin-bottom:14px">
           <button class="fin-tab active" onclick="caixaTab('lista',this)"><i class="ti ti-cash-register" style="font-size:13px"></i> Caixas</button>
           <button class="fin-tab" onclick="caixaTab('operacoes',this)"><i class="ti ti-list" style="font-size:13px"></i> Operações</button>
-          <button class="fin-tab" onclick="caixaTab('permissoes',this)"><i class="ti ti-lock" style="font-size:13px"></i> Permissões</button>
           <button class="fin-tab" onclick="caixaTab('relatorio',this)"><i class="ti ti-chart-bar" style="font-size:13px"></i> Relatório</button>
         </div>
 
@@ -1129,7 +1128,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
           <span style="font-size:11px;color:var(--txt3);flex-basis:100%">Verifica roubo/furto/bloqueio na base oficial. O IMEI é copiado; cole no site da Anatel e resolva o captcha.</span>
         </div>
         <div class="card" style="padding:0"><div class="tw"><table>
-          <thead><tr><th>OS</th><th>Cliente</th><th>Equipamento</th><th>Abertura</th><th>Conclusão</th><th>Técnico</th><th>Valor</th><th>Status</th><th>Documentos</th></tr></thead>
+          <thead><tr><th>OS</th><th>Cliente</th><th>Equipamento</th><th>Abertura</th><th>Conclusão</th><th>Técnico</th><th>Valor</th><th>Status</th><th>Motivo Cancel.</th><th>Documentos</th></tr></thead>
           <tbody id="os-hist-table"></tbody>
         </table></div></div>
       </div>
@@ -1684,7 +1683,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
             <option value="zerado">Só zerados</option>
             <option value="critico">Zerado + crítico</option>
           </select>
-          <button class="btn btn-out" onclick="exportarReposicao()"><i class="ti ti-file-text"></i> Lista de compra</button>
+          <button class="btn btn-out" onclick="abrirExportReposicao()"><i class="ti ti-download"></i> Exportar lista</button>
         </div>
         <div class="card" style="padding:0"><div class="tw"><table>
           <thead><tr><th>Produto</th><th>Status</th><th style="text-align:center">Atual</th><th style="text-align:center">Mínimo</th><th style="text-align:center">Ideal</th><th style="text-align:center">Comprar</th><th>Fornecedor</th></tr></thead>
@@ -6148,16 +6147,116 @@ function renderReposicao(){
   }).join('');
 }
 
-function exportarReposicao(){
-  const prods=(G.produtos||[]).map(p=>({p,cls:_repoClassificar(p)})).filter(x=>x.cls.key!=='ok');
-  if(!prods.length){ notify('Nenhum produto precisa de reposição agora.','info'); return; }
-  const ordem={zerado:0,critico:1,baixo:2};
-  prods.sort((a,b)=>ordem[a.cls.key]-ordem[b.cls.key]);
-  let txt='LISTA DE COMPRA / REPOSIÇÃO\n'+new Date().toLocaleString('pt-BR')+'\n'+'='.repeat(40)+'\n\n';
-  prods.forEach(({p,cls})=>{ txt+=`[${cls.label}] ${p.nome}\n   Atual: ${Number(p.estoque)||0}  |  Mínimo: ${Number(p.estoque_minimo)||0}  |  Comprar: ${_repoComprar(p)}\n\n`; });
-  const blob=new Blob([txt],{type:'text/plain;charset=utf-8'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='lista-compra.txt'; a.click();
-  notify('Lista de compra gerada.','success');
+function _getListaFiltrada(){
+  const filtro=document.getElementById('rep-filtro')?.value||'todos';
+  const busca=(document.getElementById('rep-busca')?.value||'').toLowerCase();
+  let list=(G.produtos||[]).map(p=>({p,cls:_repoClassificar(p)}));
+  if(filtro==='repor') list=list.filter(x=>x.cls.key!=='ok');
+  else if(filtro==='zerado') list=list.filter(x=>x.cls.key==='zerado');
+  else if(filtro==='critico') list=list.filter(x=>x.cls.key==='zerado'||x.cls.key==='critico');
+  if(busca) list=list.filter(x=>(x.p.nome||'').toLowerCase().includes(busca));
+  const ordem={zerado:0,critico:1,baixo:2,ok:3};
+  list.sort((a,b2)=>ordem[a.cls.key]-ordem[b2.cls.key]||_repoComprar(b2.p)-_repoComprar(a.p));
+  return list;
+}
+
+function abrirExportReposicao(){
+  const list=_getListaFiltrada();
+  if(!list.length){notify('Nenhum produto na lista atual.','info');return;}
+  // Cria modal simples de escolha de formato
+  const existe=document.getElementById('modal-export-rep');
+  if(existe)existe.remove();
+  const m=document.createElement('div');
+  m.id='modal-export-rep';
+  m.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45)';
+  m.innerHTML=`
+    <div style="background:var(--bg);border-radius:16px;padding:28px 32px;min-width:320px;box-shadow:0 8px 32px rgba(0,0,0,.18);text-align:center">
+      <div style="font-size:17px;font-weight:700;margin-bottom:6px">Exportar Lista de Reposição</div>
+      <div style="font-size:13px;color:var(--txt3);margin-bottom:20px">${list.length} produto(s) na lista atual</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button class="btn btn-pri" onclick="exportReposicao('pdf');document.getElementById('modal-export-rep').remove()">
+          <i class="ti ti-file-type-pdf"></i> Exportar como PDF
+        </button>
+        <button class="btn btn-pri" onclick="exportReposicao('xlsx');document.getElementById('modal-export-rep').remove()" style="background:var(--success)">
+          <i class="ti ti-file-spreadsheet"></i> Exportar como Excel (.xlsx)
+        </button>
+        <button class="btn btn-out" onclick="exportReposicao('txt');document.getElementById('modal-export-rep').remove()">
+          <i class="ti ti-file-text"></i> Exportar como Texto (.txt)
+        </button>
+        <button class="btn btn-out" onclick="document.getElementById('modal-export-rep').remove()" style="margin-top:4px">
+          Cancelar
+        </button>
+      </div>
+    </div>`;
+  m.addEventListener('click',e=>{if(e.target===m)m.remove();});
+  document.body.appendChild(m);
+}
+
+function exportarReposicao(){ abrirExportReposicao(); }
+
+function exportReposicao(formato){
+  const list=_getListaFiltrada();
+  if(!list.length){notify('Nenhum produto na lista.','info');return;}
+  const data=new Date().toLocaleString('pt-BR');
+
+  if(formato==='txt'){
+    let txt='LISTA DE REPOSIÇÃO — '+data+'\n'+'='.repeat(40)+'\n\n';
+    list.forEach(({p,cls})=>{
+      txt+=`[${cls.label}] ${p.nome}\n`;
+      txt+=`   Atual: ${Number(p.estoque)||0}  |  Mínimo: ${Number(p.estoque_minimo)||0}  |  Comprar: ${_repoComprar(p)}`;
+      if(p.fornecedor_id){const fn=_fornNome(p.fornecedor_id);if(fn)txt+=`  |  Fornecedor: ${fn}`;}
+      txt+='\n\n';
+    });
+    const blob=new Blob([txt],{type:'text/plain;charset=utf-8'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='lista-reposicao.txt';a.click();
+    notify('Lista exportada em TXT.','success');
+
+  } else if(formato==='xlsx'){
+    // CSV com separador ; compatível com Excel
+    let csv='Produto;Categoria;Status;Estoque Atual;Mínimo;Ideal;Comprar;Fornecedor\n';
+    list.forEach(({p,cls})=>{
+      const comprar=_repoComprar(p);
+      csv+=`"${(p.nome||'').replace(/"/g,'""')}";"${(p.categoria||'').replace(/"/g,'""')}";"${cls.label}";${Number(p.estoque)||0};${Number(p.estoque_minimo)||0};${_repoIdeal(p)};${comprar};"${(_fornNome(p.fornecedor_id)||'').replace(/"/g,'""')}"\n`;
+    });
+    const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='lista-reposicao.csv';a.click();
+    notify('Lista exportada. Abra com Excel.','success');
+
+  } else if(formato==='pdf'){
+    const linhas=list.map(({p,cls})=>{
+      const comprar=_repoComprar(p);
+      const cor=cls.key==='zerado'?'#dc2626':cls.key==='critico'?'#ea580c':cls.key==='baixo'?'#d97706':'#16a34a';
+      return `<tr>
+        <td style="font-weight:600">${esc(p.nome||'')}<div style="font-size:10px;color:#666">${esc(p.categoria||'')}</div></td>
+        <td><span style="background:${cor}22;color:${cor};padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700">${cls.label}</span></td>
+        <td style="text-align:center;font-weight:700">${Number(p.estoque)||0}</td>
+        <td style="text-align:center">${Number(p.estoque_minimo)||0}</td>
+        <td style="text-align:center">${_repoIdeal(p)}</td>
+        <td style="text-align:center;font-weight:700;color:#5B47E0">${comprar>0?comprar:'—'}</td>
+        <td style="font-size:11px;color:#666">${esc(_fornNome(p.fornecedor_id)||'—')}</td>
+      </tr>`;
+    }).join('');
+    const html=`<!DOCTYPE html><html><head><meta charset="UTF-8">
+      <title>Lista de Reposição</title>
+      <style>
+        body{font-family:Arial,sans-serif;margin:24px;color:#1A0F3C}
+        h2{margin:0 0 4px}
+        .sub{color:#666;font-size:12px;margin-bottom:20px}
+        table{width:100%;border-collapse:collapse;font-size:12px}
+        th{background:#5B47E0;color:#fff;padding:8px 10px;text-align:left}
+        td{padding:7px 10px;border-bottom:1px solid #eee}
+        tr:hover td{background:#f9f9ff}
+        @media print{body{margin:8px}}
+      </style></head><body>
+      <h2>📋 Lista de Reposição</h2>
+      <div class="sub">Gerado em ${data} — ${list.length} produto(s)</div>
+      <table><thead><tr><th>Produto</th><th>Status</th><th>Atual</th><th>Mínimo</th><th>Ideal</th><th>Comprar</th><th>Fornecedor</th></tr></thead>
+      <tbody>${linhas}</tbody></table>
+      <script>window.onload=()=>{window.print();}<\/script>
+      </body></html>`;
+    const w=window.open('','_blank');w.document.write(html);w.document.close();
+    notify('Abrindo PDF para impressão.','success');
+  }
 }
 
 
@@ -6862,7 +6961,18 @@ function popOSChecklist(){
   // Popular select de termos de garantia
   const tSel = document.getElementById('os-garantia-termo');
   if (tSel) {
-    const modelos = G.contratoModelos || [];
+    // Usa G.contratoModelos (populado por carregarContratosModelos) com fallback para G_CONTRATOS_MODELOS
+    const modelos = (G.contratoModelos && G.contratoModelos.length ? G.contratoModelos : G_CONTRATOS_MODELOS) || [];
+    if (!modelos.length) {
+      // Se ainda não carregou, carrega agora e repopula
+      carregarContratosModelos().then(() => {
+        const ms = G.contratoModelos || [];
+        if (tSel) tSel.innerHTML = '<option value="">— Sem termo —</option>' +
+          ms.filter(m => m.ativo !== false).map(m =>
+            `<option value="${m.id}">${m.nome || 'Sem nome'}</option>`
+          ).join('');
+      });
+    }
     tSel.innerHTML = '<option value="">— Sem termo —</option>' +
       modelos.filter(m => m.ativo !== false).map(m =>
         `<option value="${m.id}">${m.nome || 'Sem nome'}</option>`
@@ -7314,20 +7424,35 @@ async function renderOSHist(){
     <td>${o.tecnico_nome||'—'}</td>
     <td style="font-weight:700;color:var(--pri)">${fmt(o.total)}</td>
     <td><span class="tag ${o.status==='Cancelada'?'tag-red':'tag-grn'}">${o.status}</span></td>
+    <td style="font-size:11px;color:var(--txt3);max-width:160px">${o.motivo_cancelamento?`<span title="${esc(o.motivo_cancelamento)}" style="cursor:help">${esc(o.motivo_cancelamento.length>40?o.motivo_cancelamento.slice(0,40)+'…':o.motivo_cancelamento)}</span>`:'—'}</td>
     <td><button class="btn btn-out btn-xs" onclick="abrirDocumentosOSHist('${o.id}')" title="Documentos"><i class="ti ti-file-text"></i></button></td>
   </tr>`).join('');
 }
 
-// Abre os documentos de uma OS a partir do histórico (busca no cache do histórico,
-// pois o histórico carrega de ordens_servico, não de G.os)
-function abrirDocumentosOSHist(osId){
+// Abre os documentos de uma OS a partir do histórico
+// Busca no banco para garantir objeto completo (com pecas, timeline, etc)
+async function abrirDocumentosOSHist(osId){
+  // Tenta primeiro no cache local (G.os + G._osHist)
   let os=(G.os||[]).find(x=>x.id===osId) || (G._osHist||[]).find(x=>x.id===osId);
-  if(!os){notify('OS não encontrada.','error');return;}
-  _docOsAtual=os;
-  if(typeof resetDocFormato==='function')resetDocFormato();
-  document.getElementById('modal-docs-titulo').textContent=`Documentos — OS ${os.numero}`;
-  document.getElementById('modal-docs-sub').textContent=`${os.aparelho} · ${os.cliente_nome} · Status: ${os.status}`;
-  openModal('modal-docs-os');
+  // Se não achou ou veio sem dados completos, busca no banco
+  if(!os){
+    setLoad(true);
+    const {data}=await db.from('ordens_servico').select('*').eq('id',osId).maybeSingle();
+    setLoad(false);
+    if(!data){notify('OS não encontrada.','error');return;}
+    os=data;
+  }
+  // Reutiliza a função principal (declarada mais abaixo, mas já existe no escopo global)
+  // Injeta no _docOsAtual via timeout para garantir que está inicializado
+  setTimeout(()=>{
+    if(typeof _docOsAtual !== 'undefined'){
+      _docOsAtual = os;
+      if(typeof resetDocFormato==='function') resetDocFormato();
+      document.getElementById('modal-docs-titulo').textContent=`Documentos — OS ${os.numero}`;
+      document.getElementById('modal-docs-sub').textContent=`${os.aparelho} · ${os.cliente_nome} · Status: ${os.status}`;
+      openModal('modal-docs-os');
+    }
+  }, 0);
 }
 
 function limparFiltrosOS(){['hf-de','hf-ate'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});document.getElementById('hf-tec').value='';document.getElementById('hf-cli').value='';if(document.getElementById('hf-status'))document.getElementById('hf-status').value='';renderOSHist();}
@@ -16879,7 +17004,8 @@ async function carregarContratosModelos(){
     const {data,error}=await db.from('contratos_modelos').select('*').order('nome');
     if(error)throw error;
     G_CONTRATOS_MODELOS=data||[];
-  }catch(e){ G_CONTRATOS_MODELOS=[]; /* tabela pode não existir ainda (migração W01) */ }
+    G.contratoModelos=G_CONTRATOS_MODELOS; // sincroniza as duas referências
+  }catch(e){ G_CONTRATOS_MODELOS=[]; G.contratoModelos=[]; }
 }
 
 // ── TIPO LABELS / ICONS ──────────────────────────────
