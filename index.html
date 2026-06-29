@@ -1562,7 +1562,6 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
         <!-- ABA: PRODUTOS -->
         <div id="prd-tab-produtos">
         <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-          <div id="cat-chips" style="display:flex;flex-wrap:wrap;align-items:center;gap:0;flex:1"></div>
           <div class="ig" style="min-width:160px"><i class="ti ti-search"></i><input type="text" placeholder="Buscar produto..." oninput="renderProdTable(this.value)"></div>
           <select id="pf-est" onchange="renderProdTable()" style="padding:7px 10px;font-size:12.5px;border-radius:8px;width:auto">
             <option value="">Todos</option><option value="ok">Disponível</option><option value="low">Estoque baixo</option><option value="out">Sem estoque</option><option value="inf">Infinito</option>
@@ -1632,7 +1631,8 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
           </div>
         </div>
 
-      <!-- MOVIMENTAÇÕES -->id="page-estoque">
+      <!-- MOVIMENTAÇÕES -->
+      
         <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
           <div class="card-title" style="flex:1;min-width:160px">Histórico de Movimentações</div>
           <input type="date" id="mf-de" onchange="renderMov()" title="De" style="padding:6px 9px;font-size:12.5px;border-radius:8px;width:auto">
