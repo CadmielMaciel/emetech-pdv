@@ -6930,6 +6930,12 @@ async function createOS(){
       ({data,error}=await db.from('ordens_servico').insert(base).select().single());
       if(!error) notify('OS criada. (Rode a migração S01 para salvar o checklist estruturado.)','warn',6000);
     }
+    // coluna garantia_produto não existe ainda (migração pendente): tenta sem ela
+    if(error && /garantia_produto|column|schema/i.test(error.message||'')){
+      const {garantia_produto:_gp, ...semGp}=payload;
+      ({data,error}=await db.from('ordens_servico').insert(semGp).select().single());
+      if(!error) notify('OS criada. (Rode o SQL abaixo para ativar o campo Garantia Produto.)', 'warn', 6000);
+    }
     // número duplicado (trava global antiga, antes da migração V01): incrementa e tenta de novo
     if(error && /duplicate key|unique|already exists|numero/i.test(error.message||'')){
       tentativas++;
