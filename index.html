@@ -828,18 +828,34 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
               <button class="btn btn-out btn-sm" id="btn-add-troca" onclick="abrirSelecaoTrocaPDV()" style="width:100%;justify-content:center;margin:4px 0;font-size:11.5px"><i class="ti ti-arrows-exchange"></i> Abater aparelho usado (troca)</button>
               <div class="cg"><span class="cg-lbl">Total</span><span class="cg-val" id="c-tot">R$ 0,00</span></div>
               <div style="font-size:10.5px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px">Pagamento</div>
-              <div class="pay-grid">
+              <div class="pay-grid" style="grid-template-columns:1fr 1fr 1fr">
                 <button class="pb sel" onclick="selPay(this,'dinheiro')"><i class="ti ti-cash"></i>Dinheiro</button>
                 <button class="pb" onclick="selPay(this,'pix')"><i class="ti ti-qrcode"></i>Pix</button>
                 <button class="pb" onclick="selPay(this,'cartao')"><i class="ti ti-credit-card"></i>Cartão</button>
-                <button class="pb" onclick="selPay(this,'misto')"><i class="ti ti-stack-2"></i>Misto</button>
               </div>
-              <div class="pay-misto" id="pay-misto">
-                <div id="misto-items"></div>
-                <button class="btn btn-out btn-sm" onclick="addMistoItem()" style="width:100%;justify-content:center;margin-top:4px"><i class="ti ti-plus"></i>Adicionar forma</button>
+              <!-- Pagamento parcial: campos dinâmicos por forma -->
+              <div id="pay-parcial-area" style="margin-top:6px"></div>
+              <!-- Restante a pagar em outra forma -->
+              <div id="pay-restante-area" style="display:none;margin-top:4px;padding:8px 10px;background:var(--surface);border-radius:9px;border:1px solid var(--border)">
+                <div style="font-size:11px;color:var(--txt3);margin-bottom:5px;font-weight:600">Restante a pagar</div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                  <span id="pay-restante-val" style="font-size:15px;font-weight:800;color:var(--danger)">R$ 0,00</span>
+                  <select id="pay-restante-forma" onchange="renderRestanteForma()" style="padding:5px 8px;font-size:12px;border-radius:7px;border:1px solid var(--border)">
+                    <option value="">— Outra forma —</option>
+                    <option value="dinheiro">Dinheiro</option>
+                    <option value="pix">Pix</option>
+                    <option value="cartao">Cartão</option>
+                    <option value="crediario">Crediário</option>
+                  </select>
+                </div>
+                <div id="pay-restante-detalhe" style="display:none"></div>
               </div>
-              <div class="cr" id="recebido-row" style="display:flex;align-items:center;gap:8px"><span style="color:var(--txt2);white-space:nowrap">Valor recebido</span><input type="number" id="c-recebido" min="0" step="0.01" placeholder="R$" oninput="renderCart()" style="flex:1;text-align:right;padding:6px 8px;border-radius:7px;border:1px solid var(--border);font-weight:700"></div>
+              <div class="cr" id="recebido-row" style="display:flex;align-items:center;gap:8px"><span style="color:var(--txt2);white-space:nowrap">Valor recebido</span><input type="number" id="c-recebido" min="0" step="0.01" placeholder="R$" oninput="renderCart();renderParcialRestante()" style="flex:1;text-align:right;padding:6px 8px;border-radius:7px;border:1px solid var(--border);font-weight:700"></div>
               <div class="cr" id="troco-row" style="display:none"><span style="color:var(--txt2)">Troco</span><span id="c-troco" style="font-weight:700;color:var(--success)">R$ 0,00</span></div>
+              <!-- Botão crediário separado -->
+              <button class="pb" id="btn-pay-crediario" onclick="irParaCrediarioPDV()" style="width:100%;margin-top:6px;background:linear-gradient(135deg,#7C3AED,#5B47E0);color:#fff;border:none;justify-content:center">
+                <i class="ti ti-file-invoice"></i> Crediário (parcelar)
+              </button>
               <button class="fin-btn" id="fin-btn" onclick="finalizeSale()" disabled><i class="ti ti-check"></i>Finalizar Venda</button>
               <button class="btn btn-out" id="btn-qr-asaas" onclick="cobrarPdvAsaas()" style="width:100%;justify-content:center;margin-top:6px;font-size:12.5px"><i class="ti ti-qrcode"></i> Cobrar com QR (Asaas)</button>
             </div>
@@ -1064,9 +1080,13 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
                 <div class="fg"><label class="lbl">Prazo</label><input type="date" id="os-prazo"></div>
               </div>
               <div class="g2">
-                <div class="fg"><label class="lbl">Produto / Peça Principal</label>
-                  <input type="text" id="os-garantia-produto" placeholder="Ex: Tela iPhone 13, Bateria...">
-                  <div style="font-size:10px;color:var(--txt3);margin-top:2px">Aparece na garantia e no documento da OS</div>
+                <div class="fg" style="position:relative">
+                  <label class="lbl">Produto / Peça Principal</label>
+                  <input type="text" id="os-garantia-produto" placeholder="Buscar peça cadastrada..." autocomplete="off"
+                    oninput="osPecaSearch(this.value)" onfocus="osPecaSearch(this.value)"
+                    onblur="setTimeout(()=>{const d=document.getElementById('os-peca-drop');if(d)d.style.display='none';},200)">
+                  <div id="os-peca-drop" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:999;background:var(--bg);border:1px solid var(--border);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.12);max-height:200px;overflow-y:auto;margin-top:2px"></div>
+                  <div id="os-peca-info" style="font-size:10px;color:var(--txt3);margin-top:2px">Aparece na garantia e no documento da OS</div>
                 </div>
                 <div class="fg"><label class="lbl">Termo de Garantia</label>
                   <select id="os-garantia-termo"><option value="">— Sem termo —</option></select>
@@ -3794,10 +3814,26 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
           <label class="chk-item"><input type="checkbox" class="tr-chk" value="Alto-falante" checked> Alto-falante</label>
           <label class="chk-item"><input type="checkbox" class="tr-chk" value="Microfone" checked> Microfone</label>
           <label class="chk-item"><input type="checkbox" class="tr-chk" value="Wi-Fi" checked> Wi-Fi</label>
+          <label class="chk-item"><input type="checkbox" class="tr-chk" value="Bluetooth" checked> Bluetooth</label>
           <label class="chk-item"><input type="checkbox" class="tr-chk" value="Carregamento" checked> Carregamento</label>
+          <label class="chk-item"><input type="checkbox" class="tr-chk" value="Carregamento sem fio" checked> Carregamento sem fio</label>
           <label class="chk-item"><input type="checkbox" class="tr-chk" value="Botões" checked> Botões</label>
           <label class="chk-item"><input type="checkbox" class="tr-chk" value="Sensores" checked> Sensores</label>
+          <label class="chk-item"><input type="checkbox" class="tr-chk" value="GPS" checked> GPS</label>
+          <label class="chk-item"><input type="checkbox" class="tr-chk" value="Chip / SIM" checked> Chip / SIM</label>
+          <label class="chk-item"><input type="checkbox" class="tr-chk" value="Face ID / Touch ID" checked> Face ID / Touch ID</label>
+          <label class="chk-item"><input type="checkbox" class="tr-chk" value="Câmera frontal" checked> Câmera frontal</label>
+          <label class="chk-item"><input type="checkbox" class="tr-chk" value="Câmera traseira" checked> Câmera traseira</label>
+          <label class="chk-item"><input type="checkbox" class="tr-chk" value="Flash" checked> Flash</label>
+          <label class="chk-item"><input type="checkbox" class="tr-chk" value="Alto-falante externo" checked> Alto-falante ext.</label>
+          <label class="chk-item"><input type="checkbox" class="tr-chk" value="Vibração" checked> Vibração</label>
+          <label class="chk-item"><input type="checkbox" class="tr-chk" value="Tela touch" checked> Tela touch</label>
+          <label class="chk-item"><input type="checkbox" class="tr-chk" value="NFC" checked> NFC</label>
         </div>
+      </div>
+      <div class="fg" style="margin-top:6px">
+        <label class="lbl">Defeitos observados</label>
+        <textarea id="tr-defeitos" rows="2" placeholder="Descreva defeitos, amassados, riscos relevantes..."></textarea>
       </div>
 
       <div class="sec-sub" style="font-weight:700;font-size:12.5px;color:var(--pri);margin:14px 0 8px">Valores</div>
@@ -5498,21 +5534,36 @@ function renderCart(){
   }
   document.getElementById('c-sub').textContent=fmt(sub);
   document.getElementById('c-tot').textContent=fmt(total);
-  // Campo "valor recebido" e troco só fazem sentido para dinheiro
+  // Campo "valor recebido" (dinheiro) / "valor pago agora" (pix/cartão parcial) e troco
   const recRow=document.getElementById('recebido-row');
   const trocoRow=document.getElementById('troco-row');
+  const parcialArea=document.getElementById('pay-parcial-area');
   if(G.payMethod==='dinheiro'){
     if(recRow)recRow.style.display='flex';
+    if(parcialArea)parcialArea.innerHTML='';
     const recebido=parseFloat(document.getElementById('c-recebido')?.value)||0;
     const troco=Math.max(0,recebido-total);
     if(trocoRow)trocoRow.style.display=(recebido>0)?'flex':'none';
     document.getElementById('c-troco').textContent=fmt(troco);
+  } else if(G.payMethod==='pix'||G.payMethod==='cartao'){
+    if(recRow)recRow.style.display='none';
+    if(trocoRow)trocoRow.style.display='none';
+    // Campo de valor parcial para pix/cartão
+    if(parcialArea&&!document.getElementById('c-valor-parcial')){
+      parcialArea.innerHTML=`<div class="cr" style="display:flex;align-items:center;gap:8px">
+        <span style="color:var(--txt2);white-space:nowrap;font-size:12.5px">Valor pago agora</span>
+        <input type="number" id="c-valor-parcial" min="0" step="0.01" placeholder="${fmt(total)}"
+          oninput="renderParcialRestante()"
+          style="flex:1;text-align:right;padding:6px 8px;border-radius:7px;border:1px solid var(--border);font-weight:700">
+      </div>`;
+    }
   } else {
     if(recRow)recRow.style.display='none';
     if(trocoRow)trocoRow.style.display='none';
+    if(parcialArea)parcialArea.innerHTML='';
   }
-  // Atualizar itens misto
   renderMistoTotal(total);
+  renderParcialRestante();
 }
 
 function cQty(id,d){const p=G.produtos.find(x=>x.id===id);const ci=G.cart.find(x=>x.id===id);if(!ci)return;ci.qty+=d;if(!ci.inf&&p&&ci.qty>p.estoque){ci.qty=p.estoque;notify('Limite!','warn');return;}if(ci.qty<1)G.cart=G.cart.filter(x=>x.id!==id);renderCart();}
@@ -5521,17 +5572,126 @@ function clearCart(){G.cart=[];G.trocaPDV=null;document.getElementById('c-desc')
 
 function selPay(btn,m){
   document.querySelectorAll('.pb').forEach(b=>b.classList.remove('sel'));
-  btn.classList.add('sel');G.payMethod=m;
-  const mm=document.getElementById('pay-misto');
-  if(m==='misto'){mm.classList.add('show');if(G.payMisto.length===0)addMistoItem();}
-  else{mm.classList.remove('show');G.payMisto=[];}
-  // Mostrar seletor de maquininha e parcelas ao selecionar cartão
+  btn.classList.add('sel');
+  G.payMethod=m;
+  G._payParcial=null; // resetar pagamento parcial ao trocar forma principal
+  // Mostrar campo de maquininha se cartão
   const maqRow=document.getElementById('cartao-maq-row');
   if(maqRow){
     maqRow.style.display=m==='cartao'?'flex':'none';
     if(m==='cartao') popMaquininhaPDV();
   }
   renderCart();
+  renderParcialRestante();
+}
+
+// Renderiza o painel de restante a pagar e atualiza estado
+function renderParcialRestante(){
+  const total=parseFloat(document.getElementById('c-tot')?.textContent?.replace('R$','').replace(/\./g,'').replace(',','.'))||0;
+  const area=document.getElementById('pay-restante-area');
+  const restVal=document.getElementById('pay-restante-val');
+  if(!area||!total) return;
+
+  let pago=0;
+  if(G.payMethod==='dinheiro'){
+    pago=parseFloat(document.getElementById('c-recebido')?.value)||0;
+  } else if(G.payMethod==='pix'||G.payMethod==='cartao'){
+    pago=parseFloat(document.getElementById('c-valor-parcial')?.value)||total;
+  }
+
+  const restante=Math.max(0, total-pago);
+  if(restVal) restVal.textContent=fmt(restante);
+
+  // Só mostra painel de restante se houver valor parcial digitado menor que o total
+  const temParcial = pago>0 && pago<total-0.01;
+  area.style.display=temParcial?'':'none';
+
+  // Salvar no estado global para usar no finalizeSale
+  if(temParcial){
+    G._payRestante={valor:restante};
+  } else {
+    G._payRestante=null;
+  }
+  renderRestanteForma();
+}
+
+function renderRestanteForma(){
+  const forma=document.getElementById('pay-restante-forma')?.value||'';
+  const det=document.getElementById('pay-restante-detalhe'); if(!det)return;
+  const restante=G._payRestante?.valor||0;
+  if(!forma||!restante){det.style.display='none';return;}
+
+  if(forma==='cartao'){
+    det.style.display='';
+    det.innerHTML=`<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+      <select id="pay-rest-maq" style="flex:1;padding:5px 8px;font-size:12px;border-radius:7px;border:1px solid var(--border)" onchange="renderRestanteTaxaInfo()">
+        <option value="">— Maquininha —</option>
+        ${(G_MAQUINAS||[]).map(m=>`<option value="${m.id}">${m.nome}</option>`).join('')}
+      </select>
+      <select id="pay-rest-parc" style="width:70px;padding:5px 8px;font-size:12px;border-radius:7px;border:1px solid var(--border)" onchange="renderRestanteTaxaInfo()">
+        ${[1,2,3,4,5,6,7,8,9,10,11,12].map(n=>`<option value="${n}">${n}x</option>`).join('')}
+      </select>
+      <label style="display:flex;align-items:center;gap:4px;font-size:11.5px;white-space:nowrap">
+        <input type="checkbox" id="pay-rest-repassar" onchange="renderRestanteTaxaInfo()"> Juros p/ cliente
+      </label>
+    </div>
+    <div id="pay-rest-taxa-info" style="font-size:11px;color:var(--txt3);margin-top:4px"></div>`;
+    renderRestanteTaxaInfo();
+  } else if(forma==='crediario'){
+    det.style.display='';
+    det.innerHTML=`<div style="padding:8px;background:var(--pri-light);border-radius:8px;font-size:12px;color:var(--pri)">
+      <i class="ti ti-info-circle"></i> O restante de <b>${fmt(restante)}</b> será lançado como crediário após finalizar a venda.
+    </div>`;
+  } else {
+    det.style.display='none';
+  }
+  if(G._payRestante) G._payRestante.forma=forma;
+}
+
+function renderRestanteTaxaInfo(){
+  const maqId=document.getElementById('pay-rest-maq')?.value;
+  const parc=parseInt(document.getElementById('pay-rest-parc')?.value)||1;
+  const repassar=document.getElementById('pay-rest-repassar')?.checked;
+  const info=document.getElementById('pay-rest-taxa-info'); if(!info)return;
+  const maq=(G_MAQUINAS||[]).find(x=>x.id===maqId);
+  if(!maq){info.textContent='';return;}
+  let taxa=Array.isArray(maq.taxas_credito)?maq.taxas_credito[parc-1]||maq.taxa_debito||0:maq.taxa_debito||0;
+  const restante=G._payRestante?.valor||0;
+  const custo=restante*(taxa/100);
+  const total=restante+custo;
+  const parcelado=total/parc;
+  if(G._payRestante) G._payRestante.maqId=maqId;if(G._payRestante) G._payRestante.parc=parc;if(G._payRestante) G._payRestante.taxa=taxa;if(G._payRestante) G._payRestante.repassar=repassar;
+  info.innerHTML=repassar
+    ?`<span style="color:var(--success)">Taxa ${taxa}% = ${fmt(custo)} → cliente paga ${fmt(total)} em ${parc}x de ${fmt(parcelado)}</span>`
+    :`<span style="color:var(--warn)">Taxa ${taxa}% = ${fmt(custo)} absorvida pela loja | ${parc}x de ${fmt(restante/parc)}</span>`;
+}
+
+// Redireciona para crediário com cliente e valor pré-preenchidos
+function irParaCrediarioPDV(){
+  const total=parseFloat(document.getElementById('c-tot')?.textContent?.replace('R$','').replace(/\./g,'').replace(',','.'))||0;
+  const cli=document.getElementById('cart-cli');
+  const cliId=cli?.value||null;
+  const cliNome=cli?.options[cli.selectedIndex]?.text||'';
+  if(!G.cart.length){notify('Carrinho vazio.','warn');return;}
+  if(!cliId){notify('Selecione um cliente para o crediário.','warn');return;}
+  // Salva contexto para o crediário aproveitar
+  G._pdvParaCrediario={total,cliId,cliNome,itens:[...G.cart]};
+  go('crediario');
+  setTimeout(()=>{
+    // Abre modal de novo crediário pré-preenchido
+    if(typeof popSelects==='function') popSelects();
+    if(typeof openModal==='function') openModal('modal-novo-credito');
+    setTimeout(()=>{
+      const nc=G._pdvParaCrediario;
+      const cliSel=document.getElementById('cred-cli');
+      if(cliSel&&nc.cliId) cliSel.value=nc.cliId;
+      const desc=document.getElementById('cred-desc');
+      if(desc) desc.value=(nc.itens||[]).map(i=>i.nome).join(', ').slice(0,100);
+      const val=document.getElementById('cred-total');
+      if(val) val.value=nc.total.toFixed(2);
+      notify('Valor e cliente pré-preenchidos. Complete as parcelas.','info',5000);
+    },300);
+  },400);
 }
 
 function popMaquininhaPDV(){
@@ -5601,29 +5761,10 @@ function renderGarantiaTermoSel(){
   }
 }
 
-function addMistoItem(){
-  G.payMisto.push({forma:'dinheiro',valor:0});renderMistoItems();
-}
-function renderMistoItems(){
-  const c=document.getElementById('misto-items');
-  c.innerHTML=G.payMisto.map((p,i)=>`<div class="pay-misto-item">
-    <select onchange="G.payMisto[${i}].forma=this.value">
-      <option value="dinheiro" ${p.forma==='dinheiro'?'selected':''}>Dinheiro</option>
-      <option value="pix" ${p.forma==='pix'?'selected':''}>Pix</option>
-      <option value="cartao" ${p.forma==='cartao'?'selected':''}>Cartão</option>
-    </select>
-    <input type="number" value="${p.valor||''}" placeholder="Valor R$" oninput="G.payMisto[${i}].valor=parseFloat(this.value)||0;renderMistoTotal()">
-    <button class="qb" onclick="G.payMisto.splice(${i},1);renderMistoItems()" style="border-color:var(--danger);color:var(--danger)"><i class="ti ti-x" style="font-size:10px"></i></button>
-  </div>`).join('');
-}
-function renderMistoTotal(totalForcado){
-  const total=totalForcado||parseFloat(document.getElementById('c-tot').textContent.replace('R$ ','').replace('.','').replace(',','.'))||0;
-  const pago=G.payMisto.reduce((s,p)=>s+parseFloat(p.valor||0),0);
-  const falta=total-pago;
-  const troco=Math.max(0,pago-total);
-  document.getElementById('troco-row').style.display=troco>0?'':'none';
-  if(troco>0)document.getElementById('c-troco').textContent=fmt(troco);
-}
+// Funções legadas mantidas para compatibilidade (misto removido da UI)
+function addMistoItem(){}
+function renderMistoItems(){}
+function renderMistoTotal(){}
 
 async function finalizeSale(){
   if(!G.cart.length)return;
@@ -5638,16 +5779,24 @@ async function finalizeSale(){
   const cli=document.getElementById('cart-cli');
   const cliId=cli?.value||null;
   const cliNome=cli?.options[cli.selectedIndex]?.text||'Consumidor Final';
-  const pagamentos=G.payMethod==='misto'?G.payMisto:[{forma:G.payMethod,valor:total}];
-  // Validação do pagamento misto: a soma deve cobrir o total
-  if(G.payMethod==='misto'){
-    if(!G.payMisto.length){somErro();notify('Adicione ao menos uma forma de pagamento.','warn');return;}
-    const somaMisto=G.payMisto.reduce((s,p)=>s+(parseFloat(p.valor)||0),0);
-    if(somaMisto + 0.005 < total){
-      somErro();
-      notify(`Pagamento insuficiente: faltam ${fmt(total-somaMisto)} para fechar a venda.`,'warn',5000);
-      return;
-    }
+  // Monta array de pagamentos (suporte a pagamento parcial + segunda forma)
+  let pagamentos=[];
+  if(G._payRestante&&G._payRestante.forma&&G._payRestante.valor>0.01){
+    // Pagamento híbrido: primeira forma parcial + segunda forma para o restante
+    const valorPrincipal=total-(G._payRestante.valor||0);
+    pagamentos.push({forma:G.payMethod,valor:valorPrincipal});
+    const r=G._payRestante;
+    const parc2={forma:r.forma,valor:r.valor};
+    if(r.forma==='cartao'){parc2.maquininha_id=r.maqId;parc2.parcelas=r.parc;parc2.taxa=r.taxa;parc2.repassar=r.repassar;}
+    if(r.forma==='crediario'){parc2.pendente=true;} // será lançado no crediário
+    pagamentos.push(parc2);
+  } else {
+    pagamentos=[{forma:G.payMethod,valor:total}];
+  }
+  // Validação: soma cobre o total (exceto crediário que é pendente por definição)
+  const somaImediata=pagamentos.filter(p=>p.forma!=='crediario').reduce((s,p)=>s+(p.valor||0),0);
+  if(somaImediata+0.01<total&&!pagamentos.find(p=>p.forma==='crediario')){
+    somErro();notify(`Pagamento insuficiente: faltam ${fmt(total-somaImediata)}.`,'warn',5000);return;
   }
   const recebidoDin=parseFloat(document.getElementById('c-recebido')?.value)||0;
   const troco=G.payMethod==='dinheiro'?Math.max(0,recebidoDin-total):0;
@@ -7461,6 +7610,131 @@ async function abrirDocumentosOSHist(osId){
   }, 0);
 }
 
+// ── AUTOCOMPLETE DE PEÇAS NA OS ─────────────────────────────────
+function osPecaSearch(q) {
+  const drop = document.getElementById('os-peca-drop');
+  if (!drop) return;
+  const termo = (q || '').toLowerCase().trim();
+
+  // Filtra produtos com categoria 'Peça'
+  const pecas = (G.produtos || []).filter(p =>
+    p.categoria === 'Peça' && p.status !== 'inativo' &&
+    (!termo || (p.nome || '').toLowerCase().includes(termo) || (p.sku || '').toLowerCase().includes(termo))
+  );
+
+  // Descobre cliente selecionado para mostrar desconto
+  const cliSel = document.getElementById('os-cli');
+  const cliId = cliSel?.value || null;
+  const cli = cliId ? (G.clientes || []).find(c => c.id === cliId) : null;
+  const descontoCli = cli?.limite_credito ? null : null; // preços especiais via G_INTEL
+
+  if (!termo && !pecas.length) { drop.style.display = 'none'; return; }
+
+  let html = '';
+
+  if (pecas.length) {
+    pecas.slice(0, 10).forEach(p => {
+      const preco = p.preco || 0;
+      // Verifica preço especial para este cliente/produto
+      const pe = (G_INTEL?.precosEsp || []).find(x => x.produto_id === p.id && x.cliente_id === cliId);
+      const precoFinal = pe ? pe.preco_especial : preco;
+      const temDesc = pe && precoFinal < preco;
+      const estoq = p.estoque_infinito ? '∞' : (p.estoque || 0);
+      const semEstoque = !p.estoque_infinito && (p.estoque || 0) <= 0;
+
+      html += `<div style="padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;${semEstoque?'opacity:.5':''}"
+        onmousedown="osPecaSelecionar('${p.id}','${esc(p.nome)}',${precoFinal})">
+        <div>
+          <div style="font-size:13px;font-weight:600">${esc(p.nome)}</div>
+          <div style="font-size:10.5px;color:var(--txt3)">
+            ${p.sku ? `SKU: ${esc(p.sku)} · ` : ''}Estoque: ${estoq}${semEstoque ? ' <span style="color:var(--danger)">⚠ Sem estoque</span>' : ''}
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          ${temDesc
+            ? `<div style="font-size:12px;font-weight:700;color:var(--success)">${fmt(precoFinal)}</div>
+               <div style="font-size:10px;color:var(--txt3);text-decoration:line-through">${fmt(preco)}</div>
+               <div style="font-size:9.5px;color:var(--success)">Desc. cliente</div>`
+            : `<div style="font-size:12px;font-weight:700;color:var(--pri)">${fmt(preco)}</div>`
+          }
+        </div>
+      </div>`;
+    });
+    if (pecas.length > 10) {
+      html += `<div style="padding:6px 12px;font-size:11px;color:var(--txt3);text-align:center">+${pecas.length-10} peças — refine a busca</div>`;
+    }
+  }
+
+  // Se não achou nada ou tem texto digitado, mostra opção de cadastrar
+  if (!pecas.length && termo) {
+    html += `<div style="padding:12px;text-align:center">
+      <div style="font-size:12px;color:var(--txt3);margin-bottom:8px">
+        Peça "<strong>${esc(q)}</strong>" não cadastrada
+      </div>
+      <button class="btn btn-pri btn-sm" style="font-size:11.5px" onmousedown="osPecaCadastrar('${esc(q)}')">
+        <i class="ti ti-plus"></i> Cadastrar em Produtos → Peças para OS
+      </button>
+      <div style="font-size:10px;color:var(--txt3);margin-top:6px">
+        Ou continue digitando para usar o nome livre
+      </div>
+    </div>`;
+  } else if (termo && pecas.length) {
+    // Opção de usar o texto livre mesmo com resultados
+    html += `<div style="padding:7px 12px;font-size:11px;color:var(--txt3);border-top:1px solid var(--border);cursor:pointer"
+      onmousedown="osPecaUsarLivre('${esc(q)}')">
+      ✏️ Usar "<strong>${esc(q)}</strong>" como texto livre
+    </div>`;
+  }
+
+  drop.innerHTML = html;
+  drop.style.display = html ? '' : 'none';
+}
+
+function osPecaSelecionar(prodId, nome, preco) {
+  const inp = document.getElementById('os-garantia-produto');
+  const info = document.getElementById('os-peca-info');
+  const drop = document.getElementById('os-peca-drop');
+  if (inp) { inp.value = nome; inp.dataset.pecaId = prodId; inp.dataset.pecaPreco = preco; }
+  if (info) info.innerHTML = `<span style="color:var(--pri);font-weight:600">${fmt(preco)}</span> · Aparece na garantia e no documento da OS`;
+  if (drop) drop.style.display = 'none';
+}
+
+function osPecaUsarLivre(texto) {
+  const inp = document.getElementById('os-garantia-produto');
+  const drop = document.getElementById('os-peca-drop');
+  if (inp) { inp.value = texto; inp.dataset.pecaId = ''; inp.dataset.pecaPreco = ''; }
+  if (drop) drop.style.display = 'none';
+}
+
+function osPecaCadastrar(nome) {
+  // Navega para Produtos, pré-seleciona aba Peças e abre modal com nome preenchido
+  const drop = document.getElementById('os-peca-drop');
+  if (drop) drop.style.display = 'none';
+  go('produtos');
+  // Espera a aba de produtos carregar e clica na aba Peças
+  setTimeout(() => {
+    const abaPecas = document.querySelector('#page-produtos .fin-tab:nth-child(2)');
+    if (abaPecas) { prodTab('pecas', abaPecas); }
+    // Abre modal de novo produto com nome preenchido e categoria Peça
+    setTimeout(() => {
+      abrirModalProd();
+      setTimeout(() => {
+        const nomeCampo = document.getElementById('p-nome');
+        const catCampo = document.getElementById('p-cat');
+        if (nomeCampo) nomeCampo.value = nome;
+        if (catCampo) {
+          // Seleciona "Peça" se existir nas opções
+          const opts = Array.from(catCampo.options);
+          const pecaOpt = opts.find(o => o.value === 'Peça' || o.text === 'Peça');
+          if (pecaOpt) catCampo.value = pecaOpt.value;
+        }
+        notify('Cadastre a peça e volte para criar a OS.', 'info', 5000);
+      }, 300);
+    }, 200);
+  }, 300);
+}
+// ────────────────────────────────────────────────────────────────
+
 function limparFiltrosOS(){['hf-de','hf-ate'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});document.getElementById('hf-tec').value='';document.getElementById('hf-cli').value='';if(document.getElementById('hf-status'))document.getElementById('hf-status').value='';renderOSHist();}
 
 /* ── CENTRAL DE GARANTIAS ──────────────────────────────────────────
@@ -7654,6 +7928,7 @@ async function salvarAvaliacaoTroca(status){
     biometria_status:document.getElementById('tr-biometria').value,
     acessorios:document.getElementById('tr-acessorios').value||null,
     checklist,
+    defeitos:document.getElementById('tr-defeitos')?.value?.trim()||null,
     valor_oferecido:of,
     valor_revenda_estim:rev,
     lucro_previsto:rev-of,
@@ -7764,6 +8039,7 @@ function editarTroca(id){
   document.getElementById('tr-oferecido').value=t.valor_oferecido||'';
   document.getElementById('tr-revenda').value=t.valor_revenda_estim||'';
   document.getElementById('tr-obs').value=t.observacoes||'';
+  if(document.getElementById('tr-defeitos'))document.getElementById('tr-defeitos').value=t.defeitos||'';
   if(t.cliente_id) document.getElementById('tr-cli').value=t.cliente_id;
   // restaura checklist
   if(Array.isArray(t.checklist)){
@@ -7785,43 +8061,138 @@ async function mudarStatusTroca(id,novo){
   });
 }
 
-// Converte a avaliação aceita em um produto no estoque (origem: troca)
-async function converterTrocaEstoque(id){
+// Converte a avaliação aceita — pergunta se precisa de OS ou vai direto para estoque como semi-novo
+function converterTrocaEstoque(id){
   const t=G_TROCAS.find(x=>x.id===id); if(!t)return;
-  const nome=[t.marca,t.modelo,t.armazenamento,t.cor].filter(Boolean).join(' ')+' (usado)';
-  const msg=`Adicionar "${nome}" ao estoque?\n\nCusto: ${fmt(t.valor_oferecido)} (valor pago ao cliente)\nPreço de venda sugerido: ${fmt(t.valor_revenda_estim)}`;
-  confirmAct('Adicionar ao estoque', msg, async()=>{
-    setLoad(true);
-    const prod={
-      empresa_id:EID(),
-      nome,
-      sku:'USADO-'+(t.imei||Date.now()),
-      barcode:t.imei||'',
-      categoria:'Celular',
-      subcategoria:'Seminovo',
-      marca:t.marca||null,
-      custo:t.valor_oferecido||0,
-      preco:t.valor_revenda_estim||0,
-      estoque_infinito:false,
-      estoque:1,
-      estoque_minimo:0,
-      status:'ativo',
-      origem:'troca',
-      fotos:[]
-    };
-    const {data:novoProd,error}=await db.from('produtos').insert(prod).select().single();
-    if(error){setLoad(false);notify('Erro ao criar produto: '+error.message,'error');return;}
-    // Atualiza a avaliação como convertida e vincula o produto
-    const {error:e2}=await db.from('avaliacoes_troca').update({status:'convertido',produto_id:novoProd.id,atualizado_em:new Date().toISOString()}).eq('id',id);
-    setLoad(false);
-    if(e2){notify('Produto criado, mas falhou ao vincular: '+e2.message,'warn');}
-    t.status='convertido'; t.produto_id=novoProd.id;
-    if(G.produtos) G.produtos.unshift(novoProd);
-    // registra movimentação de entrada se a função existir
-    if(typeof regMov==='function'){ try{ await regMov(novoProd.id, nome, 'entrada', 1, 1, 'Entrada por troca de aparelho'); }catch(e){} }
-    renderTroca();
-    notify('✅ Aparelho adicionado ao estoque! Já pode ser vendido.','success',5000);
-  });
+  const nome=[t.marca,t.modelo,t.armazenamento,t.cor].filter(Boolean).join(' ');
+
+  // Remove modal anterior se existir
+  const anterior=document.getElementById('modal-troca-destino');
+  if(anterior)anterior.remove();
+
+  const m=document.createElement('div');
+  m.id='modal-troca-destino';
+  m.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.5)';
+  m.innerHTML=`
+    <div style="background:var(--bg);border-radius:16px;padding:28px 32px;max-width:420px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.2)">
+      <div style="font-size:17px;font-weight:700;margin-bottom:6px">📱 ${esc(nome||'Aparelho recebido')}</div>
+      <div style="font-size:13px;color:var(--txt3);margin-bottom:20px">
+        Custo: <b>${fmt(t.valor_oferecido)}</b> · Revenda estimada: <b>${fmt(t.valor_revenda_estim)}</b>
+      </div>
+      <div style="font-size:13.5px;font-weight:600;margin-bottom:12px">O aparelho precisa de conserto antes de vender?</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button class="btn btn-pri" onclick="_trocaParaOS('${id}')">
+          <i class="ti ti-tools"></i> Sim — Criar OS de conserto
+          <div style="font-size:10.5px;font-weight:400;opacity:.8;margin-top:2px">Abre uma OS vinculada a este aparelho</div>
+        </button>
+        <button class="btn btn-pri" style="background:var(--success)" onclick="_trocaParaSemiNovo('${id}')">
+          <i class="ti ti-package-import"></i> Não — Adicionar ao estoque como Semi-novo
+          <div style="font-size:10.5px;font-weight:400;opacity:.8;margin-top:2px">Cria o produto automaticamente em Produtos</div>
+        </button>
+        <button class="btn btn-out" onclick="document.getElementById('modal-troca-destino').remove()" style="margin-top:4px">
+          Cancelar
+        </button>
+      </div>
+    </div>`;
+  m.addEventListener('click',e=>{if(e.target===m)m.remove();});
+  document.body.appendChild(m);
+}
+
+// Cria OS vinculada ao aparelho recebido na troca
+async function _trocaParaOS(id){
+  const m=document.getElementById('modal-troca-destino');
+  if(m)m.remove();
+  const t=G_TROCAS.find(x=>x.id===id); if(!t)return;
+  const nome=[t.marca,t.modelo,t.armazenamento,t.cor].filter(Boolean).join(' ');
+
+  // Pré-preenche o formulário de OS com os dados da troca
+  go('os');
+  await new Promise(r=>setTimeout(r,400));
+
+  const ap=document.getElementById('os-ap');
+  const def=document.getElementById('os-def');
+  const obs=document.getElementById('os-obs');
+  const imei=document.getElementById('os-imei');
+  if(ap) ap.value=nome||t.modelo||'';
+  if(imei) imei.value=t.imei||'';
+  if(def) def.value=t.defeitos||'Aparelho recebido em troca — verificar e consertar';
+  if(obs) obs.value=`Aparelho recebido em troca do cliente ${t.cliente_nome||''}. Defeitos: ${t.defeitos||'a verificar'}`;
+
+  // Seleciona o cliente se existir
+  const cliSel=document.getElementById('os-cli');
+  if(cliSel&&t.cliente_id){
+    cliSel.value=t.cliente_id;
+  }
+
+  // Marca a avaliação como "em OS" (usa campo observacoes para rastrear)
+  await db.from('avaliacoes_troca').update({
+    status:'convertido',
+    observacoes:(t.observacoes||'')+'\n[OS de conserto criada em '+new Date().toLocaleDateString('pt-BR')+']',
+    atualizado_em:new Date().toISOString()
+  }).eq('id',id);
+  t.status='convertido';
+
+  notify('Formulário de OS pré-preenchido! Revise e clique em "Criar OS".','success',6000);
+  renderTroca();
+}
+
+// Cria produto Semi-novo automaticamente
+async function _trocaParaSemiNovo(id){
+  const m=document.getElementById('modal-troca-destino');
+  if(m)m.remove();
+  const t=G_TROCAS.find(x=>x.id===id); if(!t)return;
+  const nome=[t.marca,t.modelo,t.armazenamento,t.cor].filter(Boolean).join(' ');
+  const nomeProd=(nome||t.modelo||'Aparelho')+' — Semi-novo';
+
+  setLoad(true);
+  // Monta descrição automática com checklist
+  const chkOk=(t.checklist||[]).filter(i=>i.ok).map(i=>i.item).join(', ');
+  const chkFalha=(t.checklist||[]).filter(i=>!i.ok).map(i=>i.item).join(', ');
+  let descricao=`Aparelho recebido em troca. Estado: ${t.estado_fisico||'—'} | Bateria: ${t.bateria_pct!=null?t.bateria_pct+'%':'—'}`;
+  if(chkOk) descricao+=`\nItens OK: ${chkOk}`;
+  if(chkFalha) descricao+=`\nItens com defeito: ${chkFalha}`;
+  if(t.defeitos) descricao+=`\nDefeitos: ${t.defeitos}`;
+  if(t.acessorios) descricao+=`\nAcessórios: ${t.acessorios}`;
+
+  const prod={
+    empresa_id:EID(),
+    nome:nomeProd,
+    sku:'SEMI-'+(t.imei?t.imei.slice(-6):Date.now()),
+    barcode:t.imei||'',
+    categoria:'Celular',
+    subcategoria:'Seminovo',
+    marca:t.marca||null,
+    descricao,
+    custo:t.valor_oferecido||0,
+    preco:t.valor_revenda_estim||0,
+    estoque_infinito:false,
+    estoque:1,
+    estoque_minimo:0,
+    status:'ativo',
+    origem_fiscal:'troca',
+    fotos:[]
+  };
+
+  const {data:novoProd,error}=await db.from('produtos').insert(prod).select().single();
+  if(error){setLoad(false);notify('Erro ao criar produto: '+error.message,'error');return;}
+
+  // Vincula produto à avaliação
+  await db.from('avaliacoes_troca').update({
+    status:'convertido',
+    produto_id:novoProd.id,
+    atualizado_em:new Date().toISOString()
+  }).eq('id',id);
+
+  // Registra movimentação de estoque
+  if(typeof regMov==='function'){
+    try{ await regMov(novoProd.id,nomeProd,'entrada',1,1,'Entrada por troca de aparelho'); }catch(e){}
+  }
+
+  setLoad(false);
+  t.status='convertido'; t.produto_id=novoProd.id;
+  if(G.produtos) G.produtos.unshift(novoProd);
+  renderTroca();
+  notify(`✅ "${nomeProd}" adicionado ao estoque! Acesse Produtos para ajustar o preço.`,'success',6000);
 }
 
 // ── ABATER TROCA NO PDV (Fase 3) ──────────────────────────────
