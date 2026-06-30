@@ -821,8 +821,9 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
         <!-- Status do caixa -->
         <div id="caixa-fechado-warn" style="display:none">
           <div class="alert-box alert-warn" style="margin-bottom:12px"><i class="ti ti-alert-triangle" style="font-size:18px"></i><div><strong>Caixa fechado!</strong> Abra o caixa para realizar vendas.</div></div>
-          <div class="caixa-ops" style="max-width:400px">
+          <div class="caixa-ops" style="max-width:400px;display:flex;gap:10px;flex-wrap:wrap">
             <div class="caixa-op-btn" onclick="abrirCaixa()"><i class="ti ti-lock-open"></i><span>Abrir Caixa</span></div>
+            <div class="caixa-op-btn" id="reimprimir-fechamento-btn" style="display:none" onclick="imprimirRelatorioFechamentoCaixa()"><i class="ti ti-printer"></i><span>Reimprimir Relatório</span></div>
           </div>
         </div>
         <div id="caixa-aberto-ops" style="display:none;margin-bottom:10px">
@@ -3071,9 +3072,9 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
       ondragover="event.preventDefault();this.classList.add('drag')"
       ondragleave="this.classList.remove('drag')"
       ondrop="handleImportDrop(event)">
-      <i class="ti ti-file-spreadsheet"></i>
-      <span>Clique ou arraste sua planilha (.xlsx, .xls, .csv)</span>
-      <div style="font-size:11px;color:var(--txt4);margin-top:6px">Máx. 5MB · XLS, XLSX, CSV</div>
+      <div class="import-drop-icon"><i class="ti ti-file-spreadsheet"></i></div>
+      <div class="import-drop-title">Clique aqui ou arraste o arquivo para esta área</div>
+      <div class="import-drop-sub">Planilha .xlsx, .xls ou .csv · Máx. 5MB</div>
       <input type="file" id="import-file" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleImportFile(event)">
     </div>
     <div class="alert-box alert-info" style="margin-top:12px">
@@ -4416,6 +4417,90 @@ let G = {
 // Restaura preferência salva de som
 G.somPDV = localStorage.getItem('emetech_som_pdv')!=='0';
 
+// Guarda o snapshot do último fechamento de caixa, para permitir reimpressão do relatório
+// sem precisar reconsultar o banco (usado pelo botão "Reimprimir Relatório" no PDV)
+let _ultimoFechamentoCaixa=null;
+
+/* ── PERSISTÊNCIA DE SESSÃO (restaura aba/página + carrinho em caso de fechamento inesperado) ──
+   Guarda a última página visitada e o carrinho do PDV em andamento no localStorage,
+   indexado por empresa + operador (para não misturar estados entre PINs diferentes no mesmo PC).
+   Só é apagado quando o operador finaliza/cancela a venda, troca de página de forma explícita
+   para fora do PDV com o carrinho vazio, ou usa a ação manual de "Limpar sessão salva". */
+const SESSAO_KEY_PREFIX = 'emetech_sessao_';
+let _salvarEstadoTimer = null;
+
+function _sessaoKey(){
+  const emp = (typeof EID === 'function' ? EID() : null) || 'semempresa';
+  const op = G.profile?.id || 'semoperador';
+  return SESSAO_KEY_PREFIX + emp + '_' + op;
+}
+
+function salvarEstadoSessao(parcial){
+  // Debounce leve para não martelar o localStorage em sequências rápidas de cliques
+  clearTimeout(_salvarEstadoTimer);
+  _salvarEstadoTimer = setTimeout(()=>{
+    try{
+      const atual = lerEstadoSessao() || {};
+      const novo = {...atual, ...parcial, salvo_em:new Date().toISOString()};
+      localStorage.setItem(_sessaoKey(), JSON.stringify(novo));
+    }catch(e){ /* localStorage indisponível/cheio: falha silenciosa, não quebra o app */ }
+  }, 150);
+}
+
+function lerEstadoSessao(){
+  try{
+    const raw = localStorage.getItem(_sessaoKey());
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
+
+function limparEstadoSessao(){
+  try{ localStorage.removeItem(_sessaoKey()); }catch(e){}
+}
+
+// Salva o carrinho do PDV em andamento (chamado a cada alteração: add/remover/qty)
+function salvarCarrinhoSessao(){
+  salvarEstadoSessao({
+    cart: G.cart,
+    payMethod: G.payMethod,
+    cliId: document.getElementById('cart-cli')?.value || null,
+    desc: document.getElementById('c-desc')?.value || 0,
+    acr: document.getElementById('c-acr')?.value || 0,
+    garantia: document.getElementById('c-garantia')?.value || 0
+  });
+}
+
+// Restaura o carrinho do PDV salvo (chamado ao entrar no sistema, antes de renderCart())
+function restaurarCarrinhoSessao(estado){
+  if(!estado || !Array.isArray(estado.cart) || estado.cart.length===0) return false;
+  G.cart = estado.cart;
+  if(estado.payMethod) G.payMethod = estado.payMethod;
+  // Os campos de formulário (cliente/desconto/acréscimo/garantia) são restaurados depois
+  // que a página do PDV terminar de renderizar os <select> (popSelects), por isso usamos setTimeout.
+  setTimeout(()=>{
+    const cli=document.getElementById('cart-cli'); if(cli&&estado.cliId) cli.value=estado.cliId;
+    const desc=document.getElementById('c-desc'); if(desc&&estado.desc) desc.value=estado.desc;
+    const acr=document.getElementById('c-acr'); if(acr&&estado.acr) acr.value=estado.acr;
+    const gar=document.getElementById('c-garantia'); if(gar&&estado.garantia) gar.value=estado.garantia;
+    renderCart();
+  }, 200);
+  return true;
+}
+
+// Ação manual: o operador descarta o rascunho salvo (carrinho + página) sem precisar finalizar nada
+function limparSessaoSalva(){
+  confirmAct(
+    'Limpar sessão salva',
+    'Isso vai descartar o carrinho em andamento e a última página salva. Deseja continuar?',
+    ()=>{
+      limparEstadoSessao();
+      G.cart=[];
+      if(typeof renderCart==='function') renderCart();
+      notify('Sessão salva foi limpa.','info');
+    }
+  );
+}
+
 /* ── UTILS ───────────────────────────────────────────── */
 const fmt = v => 'R$ '+(v||0).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
 const fmtD = d => new Date(d).toLocaleDateString('pt-BR');
@@ -4961,6 +5046,8 @@ function go(page){
     crediario:async()=>{await initCredario();renderContratosCred();popSelects();},
   };
   R[page]?.();
+  // ── PERSISTÊNCIA DE SESSÃO: salva a página atual para restaurar se a aba fechar inesperadamente ──
+  salvarEstadoSessao({page});
 }
 
 /* ── CAIXA ───────────────────────────────────────────── */
@@ -4985,6 +5072,8 @@ function checkCaixaStatus(){
     document.getElementById('caixa-op-hora').textContent=fmtDT(G.caixaAtual.criado_em);
   }else{
     fc.style.display='';ao.style.display='none';
+    const reBtn=document.getElementById('reimprimir-fechamento-btn');
+    if(reBtn) reBtn.style.display=_ultimoFechamentoCaixa?'':'none';
   }
 }
 
@@ -5004,8 +5093,23 @@ async function confirmarAbertura(){
 
 async function fecharCaixa(){
   if(!G.caixaAtual){notify('Nenhum caixa aberto.','warn');return;}
-  const vendasCx=G.vendas.filter(v=>v.caixa_id===G.caixaAtual.id&&v.status==='concluida');
+  // Toda venda gravada na tabela 'vendas' é, por definição, uma venda concluída
+  // (não há fluxo de cancelamento/estorno que mude esse status). O filtro por
+  // status==='concluida' fazia o relatório zerar, pois vendas antigas foram
+  // gravadas sem esse campo (status undefined ≠ 'concluida'). Agora aceitamos
+  // qualquer status que não seja explicitamente 'cancelada' ou 'estornada'.
+  const vendasCx=G.vendas.filter(v=>v.caixa_id===G.caixaAtual.id&&v.status!=='cancelada'&&v.status!=='estornada');
   const totalVendas=vendasCx.reduce((s,v)=>s+(v.total||0),0);
+  // Detalhamento por forma de pagamento (considera vendas com pagamento misto)
+  const porForma={dinheiro:0,pix:0,cartao:0,crediario:0,fiado:0};
+  vendasCx.forEach(v=>{
+    const pgs=v.pagamentos&&v.pagamentos.length?v.pagamentos:[{forma:v.pagamento,valor:v.total}];
+    pgs.forEach(p=>{
+      const forma=p.forma||'dinheiro';
+      if(!(forma in porForma))porForma[forma]=0;
+      porForma[forma]+=parseFloat(p.valor)||0;
+    });
+  });
   // Apenas DINHEIRO entra no caixa físico (pix/cartão não somam à gaveta)
   const totalDinheiro=vendasCx.reduce((s,v)=>{
     const pgs=v.pagamentos||[{forma:v.pagamento,valor:v.total}];
@@ -5014,21 +5118,192 @@ async function fecharCaixa(){
     return s+din-(v.troco||0);
   },0);
   // Sangrias (negativas) e reforços (positivos) do período
-  let ajustes=0;
+  let movs=[];
   try{
-    const {data}=await db.from('movimentacoes_caixa').select('valor,tipo').eq('caixa_id',G.caixaAtual.id).in('tipo',['sangria','reforco']);
-    ajustes=(data||[]).reduce((s,m)=>s+(parseFloat(m.valor)||0),0);
+    const {data}=await db.from('movimentacoes_caixa').select('*').eq('caixa_id',G.caixaAtual.id).order('criado_em',{ascending:true});
+    movs=data||[];
   }catch(e){}
+  const totalSangrias=movs.filter(m=>m.tipo==='sangria').reduce((s,m)=>s+Math.abs(parseFloat(m.valor)||0),0);
+  const totalReforcos=movs.filter(m=>m.tipo==='reforco').reduce((s,m)=>s+(parseFloat(m.valor)||0),0);
+  const ajustes=totalReforcos-totalSangrias;
   const valorSistema=(G.caixaAtual.valor_abertura||0)+totalDinheiro+ajustes;
   confirmAct('Fechar Caixa',`Vendas no caixa: ${fmt(totalVendas)} (sendo ${fmt(totalDinheiro)} em dinheiro). Esperado na gaveta: ${fmt(valorSistema)}. Confirmar fechamento?`, async()=>{
     setLoad(true);
-    const payload={status:'fechado',data_fechamento:new Date().toISOString(),valor_sistema:valorSistema};
+    const dataFechamento=new Date().toISOString();
+    const payload={status:'fechado',data_fechamento:dataFechamento,valor_sistema:valorSistema};
     await db.from('caixas').update(payload).eq('id',G.caixaAtual.id);
     const idx=G.caixas.findIndex(c=>c.id===G.caixaAtual.id);
     if(idx>=0)Object.assign(G.caixas[idx],payload);
+    // Monta o snapshot do relatório ANTES de zerar G.caixaAtual, para a impressão usar os dados corretos
+    const snapshot={
+      caixa:{...G.caixaAtual,...payload},
+      vendas:vendasCx,totalVendas,porForma,totalDinheiro,
+      totalSangrias,totalReforcos,movs,valorSistema,
+      operador:G.profile?.nome||G.caixaAtual.operador_nome,
+      dataFechamento
+    };
     G.caixaAtual=null;
     setLoad(false);checkCaixaStatus();updateCaixaPill();notify('Caixa fechado!','success');
+    _ultimoFechamentoCaixa=snapshot;
+    abrirRelatorioFechamentoCaixa(snapshot);
   });
+}
+
+// (snapshot do último fechamento fica em _ultimoFechamentoCaixa, declarada perto do estado global)
+
+// Mostra um modal de confirmação perguntando se o operador quer imprimir o relatório de fechamento
+function abrirRelatorioFechamentoCaixa(snapshot){
+  confirmAct(
+    'Caixa fechado com sucesso',
+    'Deseja imprimir o relatório de fechamento de caixa agora?',
+    ()=>imprimirRelatorioFechamentoCaixa(snapshot)
+  );
+}
+
+// Gera o HTML do relatório de fechamento de caixa (layout A4, com fallback legível em térmica)
+function gerarRelatorioFechamentoHTML(snapshot){
+  const emp=getEmpDados();
+  const pL={dinheiro:'Dinheiro',pix:'Pix',cartao:'Cartão',crediario:'Crediário',fiado:'Fiado',misto:'Misto'};
+  const cx=snapshot.caixa;
+  const abertura=cx.valor_abertura||0;
+  const linhasFormas=Object.entries(snapshot.porForma)
+    .filter(([,v])=>v>0.001)
+    .map(([forma,v])=>`<tr><td>${pL[forma]||forma}</td><td style="text-align:right">${fmt(v)}</td></tr>`)
+    .join('')||'<tr><td colspan="2" style="text-align:center;color:#777">Nenhum pagamento registrado</td></tr>';
+
+  const linhasVendas=snapshot.vendas.map(v=>`<tr>
+      <td>${fmtDT(v.criado_em||new Date().toISOString())}</td>
+      <td>${(v.cliente_nome||'Cliente avulso').slice(0,28)}</td>
+      <td>${pL[v.pagamento]||v.pagamento||'—'}</td>
+      <td style="text-align:right">${fmt(v.total)}</td>
+    </tr>`).join('')||'<tr><td colspan="4" style="text-align:center;color:#777">Nenhuma venda no período</td></tr>';
+
+  const linhasMovs=snapshot.movs.filter(m=>m.tipo==='sangria'||m.tipo==='reforco').map(m=>`<tr>
+      <td>${fmtDT(m.criado_em||new Date().toISOString())}</td>
+      <td>${m.tipo==='sangria'?'Sangria':'Reforço'}</td>
+      <td>${m.descricao||'—'}</td>
+      <td style="text-align:right;color:${m.tipo==='sangria'?'#DC2626':'#059669'}">${m.tipo==='sangria'?'-':'+'}${fmt(Math.abs(parseFloat(m.valor)||0))}</td>
+    </tr>`).join('');
+
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Relatório de Fechamento de Caixa</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Segoe UI',Arial,sans-serif;color:#1a1a2e;background:#fff;padding:24px;font-size:13px}
+    .rel-hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1a1a2e;padding-bottom:14px;margin-bottom:16px}
+    .rel-emp h1{font-size:18px;font-weight:800;letter-spacing:.3px}
+    .rel-emp p{font-size:11px;color:#555;margin-top:2px}
+    .rel-tag{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#5B47E0;text-align:right}
+    .rel-tag .num{font-size:20px;font-weight:800;color:#1a1a2e;display:block;margin-top:2px}
+    .rel-meta{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+    .rel-meta div{background:#F5F2EC;border-radius:8px;padding:8px 10px}
+    .rel-meta .lbl{font-size:9.5px;text-transform:uppercase;letter-spacing:.6px;color:#777;font-weight:700}
+    .rel-meta .val{font-size:13px;font-weight:700;margin-top:2px}
+    .rel-sec{margin-bottom:18px}
+    .rel-sec h2{font-size:12.5px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #ddd;padding-bottom:5px;margin-bottom:8px}
+    table{width:100%;border-collapse:collapse;font-size:12px}
+    th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:#777;padding:5px 6px;border-bottom:1px solid #ccc}
+    th:last-child,td:last-child{text-align:right}
+    td{padding:5px 6px;border-bottom:1px solid #eee}
+    .rel-resumo{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:6px}
+    .rel-resumo table td:first-child{color:#555}
+    .rel-resumo table td:last-child{font-weight:700}
+    .rel-final{background:#1a1a2e;color:#fff;border-radius:10px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;margin-top:16px}
+    .rel-final .lbl{font-size:11px;text-transform:uppercase;letter-spacing:1px;opacity:.7}
+    .rel-final .val{font-size:22px;font-weight:800;margin-top:2px}
+    .rel-foot{margin-top:22px;padding-top:12px;border-top:1px dashed #ccc;font-size:10.5px;color:#777;text-align:center}
+    .rel-assinatura{margin-top:36px;display:grid;grid-template-columns:1fr 1fr;gap:40px;text-align:center;font-size:11px}
+    .rel-assinatura div{border-top:1px solid #999;padding-top:6px}
+    .print-bar{display:flex;gap:8px;justify-content:center;margin-bottom:18px}
+    .print-btn{padding:9px 18px;border-radius:8px;border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+    .print-btn-pri{background:#5B47E0;color:#fff}
+    .print-btn-out{background:#fff;border:1.5px solid #ddd;color:#333}
+    @media print{
+      .print-bar{display:none}
+      body{padding:8mm}
+      @page{size:A4;margin:12mm}
+    }
+    /* Fallback para impressoras térmicas estreitas (largura ~80mm) */
+    @media print and (max-width:80mm){
+      body{padding:2mm;font-size:10px}
+      .rel-meta{grid-template-columns:1fr 1fr}
+      .rel-resumo{grid-template-columns:1fr}
+      .rel-assinatura{grid-template-columns:1fr;gap:18px}
+    }
+  </style></head>
+  <body>
+    <div class="print-bar">
+      <button class="print-btn print-btn-pri" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
+      <button class="print-btn print-btn-out" onclick="window.close()">Fechar</button>
+    </div>
+    <div class="rel-hdr">
+      <div class="rel-emp">
+        <h1>${emp.nome}</h1>
+        ${emp.cnpj?`<p>CNPJ: ${emp.cnpj}</p>`:''}
+        ${emp.end?`<p>${emp.end}</p>`:''}
+        ${emp.tel?`<p>${emp.tel}</p>`:''}
+      </div>
+      <div class="rel-tag">Relatório de Fechamento de Caixa
+        <span class="num">${fmtDT(snapshot.dataFechamento)}</span>
+      </div>
+    </div>
+
+    <div class="rel-meta">
+      <div><div class="lbl">Operador Responsável</div><div class="val">${snapshot.operador||'—'}</div></div>
+      <div><div class="lbl">Abertura</div><div class="val">${fmtDT(cx.criado_em||snapshot.dataFechamento)}</div></div>
+      <div><div class="lbl">Fechamento</div><div class="val">${fmtDT(snapshot.dataFechamento)}</div></div>
+      <div><div class="lbl">Total de Vendas</div><div class="val">${snapshot.vendas.length}</div></div>
+    </div>
+
+    <div class="rel-sec">
+      <h2>Resumo Financeiro</h2>
+      <div class="rel-resumo">
+        <table>
+          <tr><td>Saldo Inicial (Abertura)</td><td>${fmt(abertura)}</td></tr>
+          <tr><td>Total de Vendas (todas as formas)</td><td>${fmt(snapshot.totalVendas)}</td></tr>
+          <tr><td>Total em Dinheiro</td><td>${fmt(snapshot.totalDinheiro)}</td></tr>
+          <tr><td>Reforços</td><td>+ ${fmt(snapshot.totalReforcos)}</td></tr>
+          <tr><td>Sangrias</td><td>− ${fmt(snapshot.totalSangrias)}</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2" style="border-bottom:1px solid #ccc">Por Forma de Pagamento</th></tr>
+          ${linhasFormas}
+        </table>
+      </div>
+    </div>
+
+    ${linhasMovs?`<div class="rel-sec"><h2>Sangrias e Reforços</h2><table>
+      <thead><tr><th>Data/Hora</th><th>Tipo</th><th>Descrição</th><th>Valor</th></tr></thead>
+      <tbody>${linhasMovs}</tbody>
+    </table></div>`:''}
+
+    <div class="rel-sec">
+      <h2>Vendas do Período (${snapshot.vendas.length})</h2>
+      <table>
+        <thead><tr><th>Data/Hora</th><th>Cliente</th><th>Pagamento</th><th>Valor</th></tr></thead>
+        <tbody>${linhasVendas}</tbody>
+      </table>
+    </div>
+
+    <div class="rel-final">
+      <div><div class="lbl">Saldo Esperado na Gaveta</div></div>
+      <div class="val">${fmt(snapshot.valorSistema)}</div>
+    </div>
+
+    <div class="rel-assinatura">
+      <div>${snapshot.operador||'Operador'}<br>Operador Responsável</div>
+      <div>Conferência / Supervisor</div>
+    </div>
+
+    <div class="rel-foot">Relatório gerado automaticamente pelo sistema em ${fmtDT(new Date().toISOString())} · ${emp.nome}</div>
+  </body></html>`;
+}
+
+// Abre a impressão do relatório de fechamento (usa o mesmo motor confiável de impressão do sistema)
+function imprimirRelatorioFechamentoCaixa(snapshot){
+  const alvo=snapshot||_ultimoFechamentoCaixa;
+  if(!alvo){notify('Nenhum fechamento de caixa recente encontrado.','warn');return;}
+  const html=gerarRelatorioFechamentoHTML(alvo);
+  pdfImprimir(html);
 }
 
 async function confirmarSangria(){
@@ -5551,6 +5826,7 @@ function addToCart(id){
   }
   somAddItem();
   renderCart();
+  salvarCarrinhoSessao();
   // Atualiza sugestões após adicionar item
   setTimeout(renderSugestoesPDV, 100);
   // Monitora padrões
@@ -5631,9 +5907,33 @@ function renderCart(){
   renderParcialRestante();
 }
 
-function cQty(id,d){const p=G.produtos.find(x=>x.id===id);const ci=G.cart.find(x=>x.id===id);if(!ci)return;ci.qty+=d;if(!ci.inf&&p&&ci.qty>p.estoque){ci.qty=p.estoque;notify('Limite!','warn');return;}if(ci.qty<1)G.cart=G.cart.filter(x=>x.id!==id);renderCart();}
-function rmCart(id){G.cart=G.cart.filter(x=>x.id!==id);renderCart();}
-function clearCart(){G.cart=[];G.trocaPDV=null;document.getElementById('c-desc').value=0;document.getElementById('c-acr').value=0;var r=document.getElementById('c-recebido');if(r)r.value='';var g=document.getElementById('c-garantia');if(g)g.value=0;renderCart();}
+function cQty(id,d){const p=G.produtos.find(x=>x.id===id);const ci=G.cart.find(x=>x.id===id);if(!ci)return;ci.qty+=d;if(!ci.inf&&p&&ci.qty>p.estoque){ci.qty=p.estoque;notify('Limite!','warn');return;}if(ci.qty<1)G.cart=G.cart.filter(x=>x.id!==id);renderCart();salvarCarrinhoSessao();}
+function rmCart(id){G.cart=G.cart.filter(x=>x.id!==id);renderCart();salvarCarrinhoSessao();}
+function clearCart(){G.cart=[];G.trocaPDV=null;document.getElementById('c-desc').value=0;document.getElementById('c-acr').value=0;var r=document.getElementById('c-recebido');if(r)r.value='';var g=document.getElementById('c-garantia');if(g)g.value=0;renderCart();limparEstadoSessao();resetPainelPagamento();}
+
+// Reseta completamente o painel de pagamento ao começar uma nova venda, garantindo que
+// nenhuma seleção (forma do restante, valores confirmados, maquininha) "vaze" de uma
+// venda anterior para a próxima — essa era uma causa do bug de venda concluída com
+// pagamento incompleto (o select de restante ficava com "Dinheiro" pré-marcado).
+function resetPainelPagamento(){
+  G.payMethod='dinheiro';
+  G._payRestante=null;
+  G._payParcial=null;
+  G._taxaCartaoAtual=null;
+  document.querySelectorAll('.pb').forEach(b=>b.classList.remove('sel'));
+  const btnDinheiro=document.querySelector(".pb[onclick*=\"'dinheiro'\"]");
+  if(btnDinheiro) btnDinheiro.classList.add('sel');
+  const selForma=document.getElementById('pay-restante-forma');
+  if(selForma) selForma.value='';
+  const area=document.getElementById('pay-restante-area');
+  if(area) area.style.display='none';
+  const det=document.getElementById('pay-restante-detalhe');
+  if(det){ det.style.display='none'; det.innerHTML=''; }
+  const valorParcial=document.getElementById('c-valor-parcial');
+  if(valorParcial) valorParcial.value='';
+  const maqRow=document.getElementById('cartao-maq-row');
+  if(maqRow) maqRow.style.display='none';
+}
 
 function selPay(btn,m){
   document.querySelectorAll('.pb').forEach(b=>b.classList.remove('sel'));
@@ -5671,9 +5971,21 @@ function renderParcialRestante(){
   const temParcial = pago>0 && pago<total-0.01;
   area.style.display=temParcial?'':'none';
 
-  // Salvar no estado global para usar no finalizeSale
+  // Salvar no estado global para usar no finalizeSale.
+  // Preserva forma/confirmação já escolhidas se o valor do restante não mudou
+  // (evita forçar o operador a reconfirmar a cada tecla digitada no campo principal).
   if(temParcial){
-    G._payRestante={valor:restante};
+    const anterior=G._payRestante;
+    const mesmoValor = anterior && Math.abs((anterior.valor||0)-restante)<0.01;
+    if(!mesmoValor){
+      // Painel está "nascendo" agora (ou o valor mudou de forma relevante): reseta a forma
+      // selecionada no DOM para não herdar a escolha "grudada" de uma venda anterior.
+      const selForma=document.getElementById('pay-restante-forma');
+      if(selForma) selForma.value='';
+      G._payRestante={valor:restante, forma:'', confirmado:false};
+    } else {
+      G._payRestante={...anterior, valor:restante};
+    }
   } else {
     G._payRestante=null;
   }
@@ -5702,15 +6014,55 @@ function renderRestanteForma(){
     </div>
     <div id="pay-rest-taxa-info" style="font-size:11px;color:var(--txt3);margin-top:4px"></div>`;
     renderRestanteTaxaInfo();
+    if(G._payRestante) G._payRestante.confirmado=false; // confirmado quando a maquininha for escolhida (renderRestanteTaxaInfo)
   } else if(forma==='crediario'){
     det.style.display='';
     det.innerHTML=`<div style="padding:8px;background:var(--pri-light);border-radius:8px;font-size:12px;color:var(--pri)">
       <i class="ti ti-info-circle"></i> O restante de <b>${fmt(restante)}</b> será lançado como crediário após finalizar a venda.
     </div>`;
+    if(G._payRestante) G._payRestante.confirmado=true; // crediário não exige confirmação de recebimento (é pendente por natureza)
+  } else if(forma==='dinheiro'||forma==='pix'){
+    // Exige confirmação explícita do valor efetivamente recebido nesta segunda forma,
+    // evitando que o sistema "assuma" que o restante foi pago só por ter escolhido a forma.
+    det.style.display='';
+    const rotulo=forma==='dinheiro'?'Confirme o valor em dinheiro recebido para o restante':'Confirme o valor recebido via Pix para o restante';
+    det.innerHTML=`<div style="font-size:11px;color:var(--txt2);margin-bottom:4px;font-weight:600">${rotulo}</div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <input type="number" id="pay-rest-valor-confirmado" min="0" step="0.01" placeholder="${restante.toFixed(2).replace('.',',')}"
+          style="flex:1;padding:6px 8px;border-radius:7px;border:1.5px solid var(--border);font-weight:700"
+          oninput="confirmarValorRestante()">
+        <button type="button" class="btn btn-out btn-sm" onclick="document.getElementById('pay-rest-valor-confirmado').value=(${restante}).toFixed(2);confirmarValorRestante()">Recebi tudo</button>
+      </div>
+      <div id="pay-rest-confirmado-aviso" style="font-size:11px;color:var(--warn);margin-top:4px;font-weight:600">
+        <i class="ti ti-alert-triangle"></i> Confirme o valor recebido para liberar a finalização.
+      </div>`;
+    if(G._payRestante) G._payRestante.confirmado=false;
   } else {
     det.style.display='none';
   }
   if(G._payRestante) G._payRestante.forma=forma;
+}
+
+// Confirma que o operador efetivamente recebeu o valor do restante em dinheiro/pix.
+// Só libera a venda se o valor digitado cobrir (com pequena tolerância) o restante devido.
+function confirmarValorRestante(){
+  const input=document.getElementById('pay-rest-valor-confirmado');
+  const aviso=document.getElementById('pay-rest-confirmado-aviso');
+  if(!input||!G._payRestante)return;
+  const valorConfirmado=parseFloat(input.value)||0;
+  const restante=G._payRestante.valor||0;
+  const ok=valorConfirmado+0.01>=restante;
+  G._payRestante.confirmado=ok;
+  G._payRestante.valorConfirmado=valorConfirmado;
+  if(aviso){
+    if(ok){
+      aviso.style.color='var(--success)';
+      aviso.innerHTML='<i class="ti ti-check"></i> Valor confirmado.';
+    } else {
+      aviso.style.color='var(--warn)';
+      aviso.innerHTML=`<i class="ti ti-alert-triangle"></i> Faltam ${fmt(restante-valorConfirmado)} para confirmar o restante.`;
+    }
+  }
 }
 
 function renderRestanteTaxaInfo(){
@@ -5719,13 +6071,13 @@ function renderRestanteTaxaInfo(){
   const repassar=document.getElementById('pay-rest-repassar')?.checked;
   const info=document.getElementById('pay-rest-taxa-info'); if(!info)return;
   const maq=(G_MAQUINAS||[]).find(x=>x.id===maqId);
-  if(!maq){info.textContent='';return;}
+  if(!maq){info.textContent='';if(G._payRestante)G._payRestante.confirmado=false;return;}
   let taxa=Array.isArray(maq.taxas_credito)?maq.taxas_credito[parc-1]||maq.taxa_debito||0:maq.taxa_debito||0;
   const restante=G._payRestante?.valor||0;
   const custo=restante*(taxa/100);
   const total=restante+custo;
   const parcelado=total/parc;
-  if(G._payRestante) G._payRestante.maqId=maqId;if(G._payRestante) G._payRestante.parc=parc;if(G._payRestante) G._payRestante.taxa=taxa;if(G._payRestante) G._payRestante.repassar=repassar;
+  if(G._payRestante){ G._payRestante.maqId=maqId;G._payRestante.parc=parc;G._payRestante.taxa=taxa;G._payRestante.repassar=repassar;G._payRestante.confirmado=true; }
   info.innerHTML=repassar
     ?`<span style="color:var(--success)">Taxa ${taxa}% = ${fmt(custo)} → cliente paga ${fmt(total)} em ${parc}x de ${fmt(parcelado)}</span>`
     :`<span style="color:var(--warn)">Taxa ${taxa}% = ${fmt(custo)} absorvida pela loja | ${parc}x de ${fmt(restante/parc)}</span>`;
@@ -5845,23 +6197,54 @@ async function finalizeSale(){
   const cliId=cli?.value||null;
   const cliNome=cli?.options[cli.selectedIndex]?.text||'Consumidor Final';
   // Monta array de pagamentos (suporte a pagamento parcial + segunda forma)
+  // Descobre quanto foi efetivamente digitado como pago na forma principal
+  let pagoPrincipal;
+  if(G.payMethod==='dinheiro'){
+    pagoPrincipal=parseFloat(document.getElementById('c-recebido')?.value)||0;
+    // Dinheiro: se nada foi digitado, assume que cobre o total (comportamento padrão de troco)
+    if(pagoPrincipal<=0) pagoPrincipal=total;
+  } else if(G.payMethod==='pix'||G.payMethod==='cartao'){
+    const campoParcial=document.getElementById('c-valor-parcial');
+    // Se o campo de valor parcial existe mas está vazio, o placeholder mostra o total — então assume total
+    pagoPrincipal=(campoParcial&&campoParcial.value!=='')?(parseFloat(campoParcial.value)||0):total;
+  } else {
+    pagoPrincipal=total;
+  }
+  pagoPrincipal=Math.min(pagoPrincipal,total);
+
   let pagamentos=[];
-  if(G._payRestante&&G._payRestante.forma&&G._payRestante.valor>0.01){
-    // Pagamento híbrido: primeira forma parcial + segunda forma para o restante
-    const valorPrincipal=total-(G._payRestante.valor||0);
-    pagamentos.push({forma:G.payMethod,valor:valorPrincipal});
+  if(G._payRestante&&G._payRestante.valor>0.01){
+    pagamentos.push({forma:G.payMethod,valor:pagoPrincipal});
     const r=G._payRestante;
+    if(!r.forma){
+      // Restante não teve forma de pagamento selecionada → BLOQUEIA a venda
+      somErro();notify(`Selecione a forma de pagamento do restante (faltam ${fmt(r.valor)}).`,'warn',5000);return;
+    }
     const parc2={forma:r.forma,valor:r.valor};
-    if(r.forma==='cartao'){parc2.maquininha_id=r.maqId;parc2.parcelas=r.parc;parc2.taxa=r.taxa;parc2.repassar=r.repassar;}
+    if(r.forma==='cartao'){
+      if(!r.maqId){somErro();notify('Selecione a maquininha para o pagamento do restante.','warn',5000);return;}
+      parc2.maquininha_id=r.maqId;parc2.parcelas=r.parc;parc2.taxa=r.taxa;parc2.repassar=r.repassar;
+    }
+    if(r.forma==='dinheiro'||r.forma==='pix'){
+      // Exige que o operador tenha confirmado explicitamente o valor recebido nessa
+      // segunda forma (campo "Confirme o valor recebido" / botão "Recebi tudo").
+      // Sem isso, o sistema NUNCA assume que o restante foi pago — é exatamente o
+      // bug relatado: a venda concluía mesmo com o dinheiro/pix do restante não confirmado.
+      if(!r.confirmado||(r.valorConfirmado||0)+0.01<r.valor){
+        somErro();notify(`Confirme o valor de ${fmt(r.valor)} recebido (${r.forma==='dinheiro'?'dinheiro':'Pix'}) do restante antes de finalizar.`,'warn',6000);return;
+      }
+    }
     if(r.forma==='crediario'){parc2.pendente=true;} // será lançado no crediário
     pagamentos.push(parc2);
   } else {
-    pagamentos=[{forma:G.payMethod,valor:total}];
+    pagamentos=[{forma:G.payMethod,valor:pagoPrincipal}];
   }
-  // Validação: soma cobre o total (exceto crediário que é pendente por definição)
+  // Validação final: a soma das formas imediatas (excluindo crediário, que é pendente por definição)
+  // tem que cobrir o total. Caso contrário, a venda é BLOQUEADA — não conclui com saldo em aberto.
   const somaImediata=pagamentos.filter(p=>p.forma!=='crediario').reduce((s,p)=>s+(p.valor||0),0);
-  if(somaImediata+0.01<total&&!pagamentos.find(p=>p.forma==='crediario')){
-    somErro();notify(`Pagamento insuficiente: faltam ${fmt(total-somaImediata)}.`,'warn',5000);return;
+  const temCrediario=pagamentos.find(p=>p.forma==='crediario');
+  if(somaImediata+0.01<total&&!temCrediario){
+    somErro();notify(`Pagamento insuficiente: faltam ${fmt(total-somaImediata)}. Complete o valor ou selecione uma forma para o restante.`,'warn',5500);return;
   }
   const recebidoDin=parseFloat(document.getElementById('c-recebido')?.value)||0;
   const troco=G.payMethod==='dinheiro'?Math.max(0,recebidoDin-total):0;
@@ -5872,6 +6255,7 @@ async function finalizeSale(){
     if (!continuar) return;
   }
   const venda={empresa_id:EID(),caixa_id:G.caixaAtual.id,cliente_id:cliId||null,cliente_nome:cliNome,operador_id:G.profile.id,operador_nome:G.profile.nome,itens:G.cart,subtotal:sub,desconto_pct:desc,desconto_valor:sub*desc/100,acrescimo_valor:acr,troca_valor:trocaVal,troca_id:G.trocaPDV?.id||null,total,custo_total:custo,lucro:total-custo,pagamentos,pagamento:G.payMethod==='misto'?'misto':G.payMethod,troco,garantia_dias:parseInt(document.getElementById('c-garantia')?.value)||0,
+    status:'concluida',
     garantia_termo_id:document.getElementById('c-garantia-termo')?.value||null,
     maquininha_id:G._taxaCartaoAtual?.maqId||null,
     maquininha_nome:G._taxaCartaoAtual?.maqNome||null,
@@ -5879,6 +6263,13 @@ async function finalizeSale(){
     cartao_taxa:G._taxaCartaoAtual?.taxa||null};
 
   if(!navigator.onLine){
+    // Troca de aparelho usado exige conexão (cria produto + movimentação no Supabase).
+    // Bloqueamos para não deixar a avaliação "perdida" sem o usado entrar no estoque.
+    if(G.trocaPDV){
+      somErro();
+      notify('Sem conexão: vendas com troca de aparelho usado exigem internet para registrar o usado no estoque. Aguarde a conexão voltar.','warn',7000);
+      return;
+    }
     // ── MODO OFFLINE: guarda venda na fila local, baixa estoque só na memória local ──
     for(const ci of G.cart){
       const p=G.produtos.find(x=>x.id===ci.id);
@@ -5931,9 +6322,64 @@ async function finalizeSale(){
     return;
   }
   setLoad(false);
-  // Vincula a troca à venda (marca como convertida) se houve abatimento
+  // ── ENTRADA DO APARELHO USADO NO ESTOQUE (corrige bug: a troca abatia o valor
+  // mas o usado recebido nunca virava produto vendável nem gerava movimentação) ──
+  // Vincula a troca à venda e cria automaticamente o produto "Semi-novo" no estoque,
+  // preservando modelo, IMEI, cliente, valor de avaliação e demais dados da avaliação,
+  // exatamente com a mesma lógica já usada em "Troca de Aparelhos" (_trocaParaSemiNovo).
   if(G.trocaPDV){
-    try{ await db.from('avaliacoes_troca').update({status:'convertido',venda_id:venda.id||null,atualizado_em:new Date().toISOString()}).eq('id',G.trocaPDV.id); }catch(e){}
+    const t=G.trocaPDV;
+    try{
+      const nome=[t.marca,t.modelo,t.armazenamento,t.cor].filter(Boolean).join(' ');
+      const nomeProd=(nome||t.modelo||'Aparelho')+' — Semi-novo';
+      const chkOk=(t.checklist||[]).filter(i=>i.ok).map(i=>i.item).join(', ');
+      const chkFalha=(t.checklist||[]).filter(i=>!i.ok).map(i=>i.item).join(', ');
+      let descricao=`Aparelho recebido em troca (venda #${venda.id||''}, cliente ${cliNome}). Estado: ${t.estado_fisico||'—'} | Bateria: ${t.bateria_pct!=null?t.bateria_pct+'%':'—'}`;
+      if(chkOk) descricao+=`\nItens OK: ${chkOk}`;
+      if(chkFalha) descricao+=`\nItens com defeito: ${chkFalha}`;
+      if(t.defeitos) descricao+=`\nDefeitos: ${t.defeitos}`;
+      if(t.acessorios) descricao+=`\nAcessórios: ${t.acessorios}`;
+
+      const prodUsado={
+        empresa_id:EID(),
+        nome:nomeProd,
+        sku:'SEMI-'+(t.imei?t.imei.slice(-6):Date.now()),
+        barcode:t.imei||'',
+        categoria:'Celular',
+        subcategoria:'Seminovo',
+        marca:t.marca||null,
+        descricao,
+        custo:t.valor_oferecido||0,
+        preco:t.valor_revenda_estim||(t.valor_oferecido?Math.round(t.valor_oferecido*1.3*100)/100:0),
+        estoque_infinito:false,
+        estoque:1,
+        estoque_minimo:0,
+        status:'ativo',
+        origem_fiscal:'troca',
+        fotos:[]
+      };
+      const {data:novoProd,error:errProd}=await db.from('produtos').insert(prodUsado).select().single();
+      if(errProd) throw errProd;
+
+      // Vincula o produto criado e a venda à avaliação de troca original
+      await db.from('avaliacoes_troca').update({
+        status:'convertido',
+        venda_id:venda.id||null,
+        produto_id:novoProd.id,
+        atualizado_em:new Date().toISOString()
+      }).eq('id',t.id);
+
+      // Movimentação de ENTRADA do usado recebido (histórico completo, igual à saída da venda)
+      await regMov(novoProd.id,nomeProd,'entrada',1,1,`Entrada por troca de aparelho (venda #${venda.id||''})`);
+
+      if(G.produtos) G.produtos.unshift(novoProd);
+      notify(`📦 "${nomeProd}" entrou no estoque como seminovo (da troca).`,'success',5000);
+    }catch(e){
+      console.error('Erro ao processar entrada do aparelho usado na troca:',e);
+      notify('⚠️ Venda concluída, mas houve falha ao registrar o aparelho usado no estoque. Verifique em "Troca de Aparelhos".','warn',7000);
+      // Mesmo com falha na criação do produto, garante que a avaliação não fique "presa" sem vínculo com a venda
+      try{ await db.from('avaliacoes_troca').update({status:'convertido',venda_id:venda.id||null,atualizado_em:new Date().toISOString()}).eq('id',t.id); }catch(e2){}
+    }
     G.trocaPDV=null;
   }
   G.vendas.unshift({...venda,criado_em:new Date().toISOString()});
@@ -11564,9 +12010,57 @@ function gerarEmailCobEstilizado(c, vencidas, valAtrasado, emp, msg) {
 .sugestao-preco { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px; color: var(--pri); white-space: nowrap; }
 .sugestao-badge { position: absolute; top: 4px; right: 4px; background: linear-gradient(135deg,var(--warn),#f59e0b); color: #fff; font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 4px; }
 /* Import drop */
-.import-drop { border: 2px dashed var(--border2); border-radius: 12px; padding: 32px; text-align: center; cursor: pointer; transition: var(--trans); background: var(--surface); display: flex; flex-direction: column; align-items: center; gap: 8px; }
-.import-drop i { font-size: 40px; color: var(--txt3); }
-.import-drop:hover, .import-drop.drag { border-color: var(--pri); background: var(--pri-light); }
+.import-drop{
+  position:relative;
+  border:2.5px dashed var(--border2);
+  border-radius:18px;
+  padding:40px 28px;
+  text-align:center;
+  cursor:pointer;
+  transition:border-color .22s,background .22s,transform .15s,box-shadow .22s;
+  background:var(--surface);
+  display:flex;flex-direction:column;align-items:center;gap:10px;
+  overflow:hidden;
+}
+/* Glow de fundo sutil sempre presente, intensifica no hover/drag */
+.import-drop::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(circle at 50% 30%, rgba(91,71,224,.07), transparent 65%);
+  opacity:0;transition:opacity .25s;pointer-events:none;
+}
+.import-drop-icon{
+  width:64px;height:64px;border-radius:18px;
+  background:var(--pri-light);
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .25s cubic-bezier(.34,1.4,.64,1),background .22s;
+  margin-bottom:2px;
+}
+.import-drop i{font-size:30px;color:var(--pri);transition:transform .22s}
+.import-drop-title{font-family:'Syne',sans-serif;font-weight:700;font-size:15px;color:var(--txt)}
+.import-drop-sub{font-size:12.5px;color:var(--txt3)}
+/* Hover: levanta levemente, intensifica borda e glow */
+.import-drop:hover{
+  border-color:var(--pri);
+  background:var(--pri-light);
+  transform:translateY(-2px);
+  box-shadow:0 10px 28px rgba(91,71,224,.16);
+}
+.import-drop:hover::before{opacity:1}
+.import-drop:hover .import-drop-icon{transform:scale(1.08) rotate(-4deg);background:#fff}
+/* Drag ativo: estado mais intenso, borda sólida pulsante */
+.import-drop.drag{
+  border-style:solid;
+  border-color:var(--pri);
+  background:var(--pri-light);
+  transform:scale(1.015);
+  box-shadow:0 0 0 6px rgba(91,71,224,.1),0 14px 32px rgba(91,71,224,.22);
+}
+.import-drop.drag::before{opacity:1}
+.import-drop.drag .import-drop-icon{transform:scale(1.15);background:#fff;animation:import-bounce .6s ease-in-out infinite}
+.import-drop.drag i{transform:translateY(-2px)}
+@keyframes import-bounce{0%,100%{transform:scale(1.15) translateY(0)}50%{transform:scale(1.15) translateY(-4px)}}
+/* Clique: leve compressão para confirmar resposta ao toque */
+.import-drop:active{transform:scale(.985);box-shadow:0 4px 14px rgba(91,71,224,.18)}
 .import-map-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
 .import-map-label { font-size: 12.5px; font-weight: 600; color: var(--txt2); min-width: 160px; }
 /* Alertas suspeitos */
@@ -15511,7 +16005,22 @@ function entrarComPerfil(u) {
   document.getElementById('tb-date').textContent = new Date().toLocaleDateString('pt-BR', {weekday:'short',day:'2-digit',month:'short',year:'numeric'});
   applyRoleUI();
   if (typeof aplicarRestricoesDePlano === 'function') aplicarRestricoesDePlano();
-  go(RH[u.role] || 'dashboard');
+
+  // ── RESTAURAÇÃO DE SESSÃO ──
+  // Se havia uma página/carrinho salvos (ex: o navegador fechou inesperadamente
+  // por queda de energia, travamento, etc.), volta exatamente para onde o operador parou.
+  // Só restaura se a página salva for acessível para o cargo atual (canAccess), senão cai no padrão.
+  const estadoSalvo = lerEstadoSessao();
+  const paginaPadrao = RH[u.role] || 'dashboard';
+  let paginaAlvo = paginaPadrao;
+  if (estadoSalvo && estadoSalvo.page && typeof canAccess==='function' && canAccess(u.role, estadoSalvo.page)) {
+    paginaAlvo = estadoSalvo.page;
+  }
+  go(paginaAlvo);
+  if (estadoSalvo && Array.isArray(estadoSalvo.cart) && estadoSalvo.cart.length>0 && paginaAlvo==='pdv') {
+    const restaurou = restaurarCarrinhoSessao(estadoSalvo);
+    if (restaurou) notify('Carrinho anterior restaurado automaticamente.', 'info', 3500);
+  }
 }
 
 // ── TELA DE PIN ────────────────────────────────────────
