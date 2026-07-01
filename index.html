@@ -741,6 +741,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
           <div class="hub-card" onclick="go('orcamentos')"><div class="hc-icon"><i class="ti ti-file-invoice"></i></div><div><div class="hc-label">Orçamentos</div><div class="hc-desc">Crie e gerencie orçamentos para clientes</div></div></div>
           <div class="hub-card" onclick="go('crediario')"><div class="hc-icon"><i class="ti ti-credit-card"></i></div><div><div class="hc-label">Crediário</div><div class="hc-desc">Controle vendas a prazo e parcelas</div></div></div>
           <div class="hub-card" onclick="go('devolucoes')"><div class="hc-icon"><i class="ti ti-arrow-back-up"></i></div><div><div class="hc-label">Devoluções</div><div class="hc-desc">Processe devoluções de produtos</div></div></div>
+          <div class="hub-card" onclick="go('hist-vendas')" data-p="admin,gerente,operador"><div class="hc-icon"><i class="ti ti-receipt"></i></div><div><div class="hc-label">Histórico de Vendas</div><div class="hc-desc">Consulte todas as vendas realizadas</div></div></div>
           <div class="hub-card" onclick="go('simulador')"><div class="hc-icon"><i class="ti ti-calculator"></i></div><div><div class="hc-label">Simulador Cartão</div><div class="hc-desc">Calcule taxas e parcelas de cartão</div></div></div>
         </div>
       </div>
@@ -1095,6 +1096,35 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
           <thead><tr><th>#Dev</th><th>Venda</th><th>Cliente</th><th>Tipo</th><th>Motivo</th><th>Valor</th><th>Estorno</th><th>Data</th><th>Comprovante</th></tr></thead>
           <tbody id="dev-table"></tbody>
         </table></div></div>
+      </div>
+
+      <!-- HISTÓRICO DE VENDAS -->
+      <div class="page" id="page-hist-vendas">
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+          <div class="ig" style="flex:1;min-width:180px"><i class="ti ti-search"></i><input type="text" id="hv-busca" placeholder="Buscar cliente, nº da venda, operador..." oninput="renderHistoricoVendas()"></div>
+          <input type="date" id="hv-de" onchange="renderHistoricoVendas()" style="padding:7px 10px;font-size:12.5px;border-radius:8px;border:1px solid var(--border);background:var(--bg2)">
+          <input type="date" id="hv-ate" onchange="renderHistoricoVendas()" style="padding:7px 10px;font-size:12.5px;border-radius:8px;border:1px solid var(--border);background:var(--bg2)">
+          <select id="hv-forma" onchange="renderHistoricoVendas()" style="padding:7px 10px;font-size:12.5px;border-radius:8px;border:1px solid var(--border);background:var(--bg2)">
+            <option value="">Todas as formas</option>
+            <option value="dinheiro">Dinheiro</option>
+            <option value="pix">Pix</option>
+            <option value="cartao">Cartão</option>
+            <option value="crediario">Crediário</option>
+          </select>
+          <button class="btn btn-out btn-sm" onclick="exportarVendasCSV()"><i class="ti ti-download"></i>Exportar CSV</button>
+        </div>
+        <div class="sg" style="grid-template-columns:repeat(4,1fr);margin-bottom:12px" id="hv-stats"></div>
+        <div class="card" style="padding:0">
+          <div class="tw">
+            <table>
+              <thead><tr>
+                <th>#Venda</th><th>Data/Hora</th><th>Cliente</th><th>Operador</th>
+                <th>Itens</th><th>Pagamento</th><th>Total</th><th>Lucro</th><th>Ações</th>
+              </tr></thead>
+              <tbody id="hv-table"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       <!-- OS -->
@@ -4568,7 +4598,7 @@ const RH = {admin:'dashboard',gerente:'dashboard',operador:'pdv',tecnico:'os'};
 // admin (dono) e admin_master NÃO entram aqui: têm acesso total sempre.
 const PAGINAS_CONFIG = {
   dashboard:'Dashboard', pdv:'PDV (Venda)', caixas:'Caixas', crediario:'Crediário',
-  orcamentos:'Orçamentos', 'os-hist':'Histórico de OS', devolucoes:'Devoluções',
+  orcamentos:'Orçamentos', 'os-hist':'Histórico de OS', devolucoes:'Devoluções', 'hist-vendas':'Histórico de Vendas',
   os:'Ordens de Serviço', agenda:'Agenda', comissoes:'Comissões', produtos:'Produtos',
   estoque:'Estoque', fornecedores:'Fornecedores', reposicao:'Central de Reposição', financeiro:'Financeiro',
   clientes:'Clientes', relatorios:'Relatórios', inteligencia:'Inteligência (IA)',
@@ -4611,7 +4641,7 @@ function canAccess(role,page){
 }
 
 function _canAccessLegado(role,page){
-  const P={dashboard:['admin','gerente'],pdv:['admin','gerente','operador'],caixas:['admin','gerente'],crediario:['admin','gerente','operador'],orcamentos:['admin','gerente','operador'],'os-hist':['admin','gerente','tecnico'],devolucoes:['admin','gerente'],os:['admin','gerente','tecnico'],agenda:['admin','gerente','tecnico','operador'],comissoes:['admin','gerente'],produtos:['admin','gerente'],estoque:['admin','gerente'],fornecedores:['admin','gerente'],reposicao:['admin','gerente'],financeiro:['admin','gerente'],clientes:['admin','gerente','operador','tecnico'],relatorios:['admin','gerente'],inteligencia:['admin','gerente'],usuarios:['admin'],aparencia:['admin']};
+  const P={dashboard:['admin','gerente'],pdv:['admin','gerente','operador'],caixas:['admin','gerente'],crediario:['admin','gerente','operador'],orcamentos:['admin','gerente','operador'],'os-hist':['admin','gerente','tecnico'],devolucoes:['admin','gerente'],'hist-vendas':['admin','gerente','operador'],os:['admin','gerente','tecnico'],agenda:['admin','gerente','tecnico','operador'],comissoes:['admin','gerente'],produtos:['admin','gerente'],estoque:['admin','gerente'],fornecedores:['admin','gerente'],reposicao:['admin','gerente'],financeiro:['admin','gerente'],clientes:['admin','gerente','operador','tecnico'],relatorios:['admin','gerente'],inteligencia:['admin','gerente'],usuarios:['admin'],aparencia:['admin']};
   return (P[page]||[]).includes(role);
 }
 
@@ -5019,6 +5049,7 @@ function go(page){
     pdv:()=>{ setTimeout(initPDVMobile, 80);renderPDVGrid();popSelects();checkCaixaStatus();},
     orcamentos:()=>{ setTimeout(initOSMobile, 80);renderOrcamentos();popSelects();popProdSel();},
     devolucoes:renderDevolucoes,
+    'hist-vendas':renderHistoricoVendas,
     os:()=>{renderOSList();popSelects();popTecSel();popOSChecklist();},
     'os-hist':()=>{popOSFiltros();renderOSHist();},
     agenda:renderAgenda,
@@ -5886,10 +5917,10 @@ function renderCart(){
     const troco=Math.max(0,recebido-total);
     if(trocoRow)trocoRow.style.display=(recebido>0)?'flex':'none';
     document.getElementById('c-troco').textContent=fmt(troco);
-  } else if(G.payMethod==='pix'||G.payMethod==='cartao'){
+  } else if(G.payMethod==='pix'){
     if(recRow)recRow.style.display='none';
     if(trocoRow)trocoRow.style.display='none';
-    // Campo de valor parcial para pix/cartão
+    // Campo de valor parcial somente para pix (cartão usa o painel roxo acima)
     if(parcialArea&&!document.getElementById('c-valor-parcial')){
       parcialArea.innerHTML=`<div class="cr" style="display:flex;align-items:center;gap:8px">
         <span style="color:var(--txt2);white-space:nowrap;font-size:12.5px">Valor pago agora</span>
@@ -5898,6 +5929,11 @@ function renderCart(){
           style="flex:1;text-align:right;padding:6px 8px;border-radius:7px;border:1px solid var(--border);font-weight:700">
       </div>`;
     }
+  } else if(G.payMethod==='cartao'){
+    if(recRow)recRow.style.display='none';
+    if(trocoRow)trocoRow.style.display='none';
+    // Cartão: NÃO gera campo duplicado — o painel roxo (cartao-maq-row) já é o controle
+    if(parcialArea)parcialArea.innerHTML='';
   } else {
     if(recRow)recRow.style.display='none';
     if(trocoRow)trocoRow.style.display='none';
@@ -6017,10 +6053,13 @@ function renderRestanteForma(){
     if(G._payRestante) G._payRestante.confirmado=false; // confirmado quando a maquininha for escolhida (renderRestanteTaxaInfo)
   } else if(forma==='crediario'){
     det.style.display='';
+    const cliSel=document.getElementById('cart-cli');
+    const cliNome=cliSel?.options[cliSel.selectedIndex]?.text||'';
+    const cliId=cliSel?.value||'';
     det.innerHTML=`<div style="padding:8px;background:var(--pri-light);border-radius:8px;font-size:12px;color:var(--pri)">
-      <i class="ti ti-info-circle"></i> O restante de <b>${fmt(restante)}</b> será lançado como crediário após finalizar a venda.
+      <i class="ti ti-info-circle"></i> <b>${fmt(restante)}</b> será lançado no crediário${cliNome&&cliNome!=='Consumidor Final'?` de <b>${cliNome}</b>`:' — selecione um cliente antes de finalizar'} após concluir a venda.
     </div>`;
-    if(G._payRestante) G._payRestante.confirmado=true; // crediário não exige confirmação de recebimento (é pendente por natureza)
+    if(G._payRestante){ G._payRestante.confirmado=true; G._payRestante.cliId=cliId; }
   } else if(forma==='dinheiro'||forma==='pix'){
     // Exige confirmação explícita do valor efetivamente recebido nesta segunda forma,
     // evitando que o sistema "assuma" que o restante foi pago só por ter escolhido a forma.
@@ -6113,8 +6152,11 @@ function irParaCrediarioPDV(){
 
 function popMaquininhaPDV(){
   const sel=document.getElementById('c-maquininha'); if(!sel)return;
-  const cur=sel.value;
+  // Restaura a última maquininha usada (salva no localStorage por empresa)
+  const salva=localStorage.getItem('emetech_maq_pdv_'+EID());
+  const cur=sel.value||salva||'';
   sel.innerHTML='<option value="">— Maquininha —</option>'+(G_MAQUINAS||[]).map(m=>`<option value="${m.id}"${m.id===cur?' selected':''}>${m.nome}</option>`).join('')+'<option value="__nova">+ Cadastrar nova</option>';
+  if(!sel.value&&cur) sel.value=cur; // força seleção se não pegou pelo selected
   renderTaxaCartao();
 }
 
@@ -6130,35 +6172,46 @@ function renderTaxaCartao(){
   const maq=(G_MAQUINAS||[]).find(x=>x.id===maqId);
   if(!maq){info.innerHTML='';return;}
 
+  // Salva maquininha escolhida como padrão para próximas vendas
+  try{localStorage.setItem('emetech_maq_pdv_'+EID(),maqId);}catch(e){}
+
+  // Taxa correta por parcelamento (1x = débito/crédito à vista, 2x+ = crédito parcelado)
   let taxa=0;
   if(parc===1){
-    taxa=maq.taxa_debito||maq.taxas_credito?.[0]||0;
-    // Detectar débito vs crédito 1x (débito se parcelas=1 e toggle débito ativo — simplificado: usa taxas_credito[0])
-    taxa=Array.isArray(maq.taxas_credito)?maq.taxas_credito[0]||maq.taxa_debito||0:maq.taxa_debito||0;
+    taxa=Array.isArray(maq.taxas_credito)?maq.taxas_credito[0]??maq.taxa_debito??0:maq.taxa_debito??0;
   } else {
-    taxa=Array.isArray(maq.taxas_credito)&&maq.taxas_credito.length>=parc?maq.taxas_credito[parc-1]:maq.taxa_credito||0;
+    taxa=Array.isArray(maq.taxas_credito)&&maq.taxas_credito.length>=parc
+      ?maq.taxas_credito[parc-1]
+      :(maq.taxa_credito??maq.taxa_debito??0);
   }
 
-  // Calcular total atual
   const sub=G.cart.reduce((s,i)=>s+i.preco*i.qty,0);
   const desc=parseFloat(document.getElementById('c-desc')?.value)||0;
-  const acr=parseFloat(document.getElementById('c-acr')?.value)||0;
-  const base=sub*(1-desc/100)+acr;
-  const custoTaxa=base*(taxa/100);
-  const totalComTaxa=base+custoTaxa;
-  const parcelado=totalComTaxa/parc;
+  // Base sem acréscimo de taxa (para não acumular taxa sobre taxa em rerenders)
+  const acrAtual=parseFloat(document.getElementById('c-acr')?.value)||0;
+  const base=sub*(1-desc/100)+(repassar?0:acrAtual);
+  const custoTaxa=repassar?base*(taxa/100):base*(taxa/100);
+  const totalComTaxa=base+(repassar?custoTaxa:0);
+  const parcelado=(repassar?totalComTaxa:base)/parc;
 
-  // Salvar taxa atual para usar em finalizeSale
   G._taxaCartaoAtual={maqId,maqNome:maq.nome,parc,taxa,custoTaxa,repassar};
 
   if(repassar){
-    // Atualiza acréscimo automaticamente
     const acrEl=document.getElementById('c-acr');
-    if(acrEl){acrEl.value=custoTaxa.toFixed(2);renderCart();}
-    info.innerHTML=`<span style="color:var(--success)"><i class="ti ti-arrow-right"></i> Taxa <b>${taxa}%</b> = <b>${fmt(custoTaxa)}</b> repassada → cliente paga <b>${fmt(totalComTaxa)}</b> em ${parc}x de <b>${fmt(parcelado)}</b></span>`;
+    if(acrEl){
+      // Recalcula base sem acréscimo anterior para não acumular
+      const baseClean=sub*(1-desc/100);
+      const taxaVal=baseClean*(taxa/100);
+      G._taxaCartaoAtual.custoTaxa=taxaVal;
+      acrEl.value=taxaVal.toFixed(2);
+      renderCart();
+    }
+    info.innerHTML=`<span style="color:var(--success)"><i class="ti ti-arrow-right"></i> Taxa <b>${taxa}%</b> (${parc}x) = <b>${fmt(custoTaxa)}</b> → cliente paga <b>${fmt(totalComTaxa)}</b> em ${parc}x de <b>${fmt(parcelado)}</b></span>`;
   } else {
-    // Remove acréscimo de taxa anterior se tinha
-    info.innerHTML=`<span style="color:var(--warn)"><i class="ti ti-info-circle"></i> Taxa <b>${taxa}%</b> = <b>${fmt(custoTaxa)}</b> absorvida pela loja | ${parc}x de <b>${fmt(base/parc)}</b></span>`;
+    // Remove acréscimo de taxa anterior se tinha sido repassado antes
+    const acrEl=document.getElementById('c-acr');
+    if(acrEl&&parseFloat(acrEl.value)>0&&G._taxaCartaoAtual?.repassar===false){/* não limpa acréscimo manual */}
+    info.innerHTML=`<span style="color:var(--warn)"><i class="ti ti-info-circle"></i> Taxa <b>${taxa}%</b> (${parc}x) = <b>${fmt(custoTaxa)}</b> absorvida pela loja | ${parc}x de <b>${fmt(base/parc)}</b></span>`;
   }
 }
 
@@ -6188,7 +6241,8 @@ async function finalizeSale(){
   if(!G.caixaAtual){somErro();notify('Abra o caixa antes de vender!','warn');return;}
   const sub=G.cart.reduce((s,i)=>s+i.preco*i.qty,0);
   const desc=parseFloat(document.getElementById('c-desc').value)||0;
-  const acr=parseFloat(document.getElementById('c-acr').value)||0;
+  // Lê acr APÓS renderTaxaCartao ter atualizado c-acr com a taxa (evita divergência de total)
+  const acr=parseFloat(document.getElementById('c-acr')?.value)||0;
   const totalBruto=sub*(1-desc/100)+acr;
   const trocaVal=G.trocaPDV?(G.trocaPDV.valor_oferecido||0):0;
   const total=Math.max(0, totalBruto - trocaVal);
@@ -6196,16 +6250,20 @@ async function finalizeSale(){
   const cli=document.getElementById('cart-cli');
   const cliId=cli?.value||null;
   const cliNome=cli?.options[cli.selectedIndex]?.text||'Consumidor Final';
-  // Monta array de pagamentos (suporte a pagamento parcial + segunda forma)
-  // Descobre quanto foi efetivamente digitado como pago na forma principal
+
+  // ── MONTA PAGAMENTOS ──
+  // Cartão com painel roxo (forma principal, sem parcial): usa G._taxaCartaoAtual já calculado
   let pagoPrincipal;
   if(G.payMethod==='dinheiro'){
     pagoPrincipal=parseFloat(document.getElementById('c-recebido')?.value)||0;
-    // Dinheiro: se nada foi digitado, assume que cobre o total (comportamento padrão de troco)
     if(pagoPrincipal<=0) pagoPrincipal=total;
-  } else if(G.payMethod==='pix'||G.payMethod==='cartao'){
+  } else if(G.payMethod==='pix'){
     const campoParcial=document.getElementById('c-valor-parcial');
-    // Se o campo de valor parcial existe mas está vazio, o placeholder mostra o total — então assume total
+    pagoPrincipal=(campoParcial&&campoParcial.value!=='')?(parseFloat(campoParcial.value)||0):total;
+  } else if(G.payMethod==='cartao'){
+    // No cartão, NÃO existe campo "valor pago agora" separado — o total JÁ inclui a taxa
+    // quando repassar=true (via c-acr). O pagoPrincipal é sempre o total da venda.
+    const campoParcial=document.getElementById('c-valor-parcial');
     pagoPrincipal=(campoParcial&&campoParcial.value!=='')?(parseFloat(campoParcial.value)||0):total;
   } else {
     pagoPrincipal=total;
@@ -6217,7 +6275,6 @@ async function finalizeSale(){
     pagamentos.push({forma:G.payMethod,valor:pagoPrincipal});
     const r=G._payRestante;
     if(!r.forma){
-      // Restante não teve forma de pagamento selecionada → BLOQUEIA a venda
       somErro();notify(`Selecione a forma de pagamento do restante (faltam ${fmt(r.valor)}).`,'warn',5000);return;
     }
     const parc2={forma:r.forma,valor:r.valor};
@@ -6226,21 +6283,23 @@ async function finalizeSale(){
       parc2.maquininha_id=r.maqId;parc2.parcelas=r.parc;parc2.taxa=r.taxa;parc2.repassar=r.repassar;
     }
     if(r.forma==='dinheiro'||r.forma==='pix'){
-      // Exige que o operador tenha confirmado explicitamente o valor recebido nessa
-      // segunda forma (campo "Confirme o valor recebido" / botão "Recebi tudo").
-      // Sem isso, o sistema NUNCA assume que o restante foi pago — é exatamente o
-      // bug relatado: a venda concluía mesmo com o dinheiro/pix do restante não confirmado.
       if(!r.confirmado||(r.valorConfirmado||0)+0.01<r.valor){
         somErro();notify(`Confirme o valor de ${fmt(r.valor)} recebido (${r.forma==='dinheiro'?'dinheiro':'Pix'}) do restante antes de finalizar.`,'warn',6000);return;
       }
     }
-    if(r.forma==='crediario'){parc2.pendente=true;} // será lançado no crediário
+    if(r.forma==='crediario'){parc2.pendente=true;}
     pagamentos.push(parc2);
   } else {
-    pagamentos=[{forma:G.payMethod,valor:pagoPrincipal}];
+    // Cartão sem parcial: monta pagamento com dados da maquininha
+    if(G.payMethod==='cartao'&&G._taxaCartaoAtual){
+      const t=G._taxaCartaoAtual;
+      pagamentos=[{forma:'cartao',valor:pagoPrincipal,maquininha_id:t.maqId,maquininha_nome:t.maqNome,parcelas:t.parc,taxa:t.taxa,repassar:t.repassar}];
+    } else {
+      pagamentos=[{forma:G.payMethod,valor:pagoPrincipal}];
+    }
   }
-  // Validação final: a soma das formas imediatas (excluindo crediário, que é pendente por definição)
-  // tem que cobrir o total. Caso contrário, a venda é BLOQUEADA — não conclui com saldo em aberto.
+
+  // Validação: soma cobre o total (exceto crediário que é pendente)
   const somaImediata=pagamentos.filter(p=>p.forma!=='crediario').reduce((s,p)=>s+(p.valor||0),0);
   const temCrediario=pagamentos.find(p=>p.forma==='crediario');
   if(somaImediata+0.01<total&&!temCrediario){
@@ -6263,14 +6322,11 @@ async function finalizeSale(){
     cartao_taxa:G._taxaCartaoAtual?.taxa||null};
 
   if(!navigator.onLine){
-    // Troca de aparelho usado exige conexão (cria produto + movimentação no Supabase).
-    // Bloqueamos para não deixar a avaliação "perdida" sem o usado entrar no estoque.
     if(G.trocaPDV){
       somErro();
-      notify('Sem conexão: vendas com troca de aparelho usado exigem internet para registrar o usado no estoque. Aguarde a conexão voltar.','warn',7000);
+      notify('Sem conexão: vendas com troca de aparelho usado exigem internet. Aguarde a conexão voltar.','warn',7000);
       return;
     }
-    // ── MODO OFFLINE: guarda venda na fila local, baixa estoque só na memória local ──
     for(const ci of G.cart){
       const p=G.produtos.find(x=>x.id===ci.id);
       if(p&&!p.estoque_infinito) p.estoque=Math.max(0,p.estoque-ci.qty);
@@ -6281,16 +6337,13 @@ async function finalizeSale(){
     document.getElementById('vok-info').textContent=`${G.cart.length} item(s) · ${cliNome} (offline)`;
     document.getElementById('vok-total').textContent=fmt(total);
     document.getElementById('vok-troco').textContent=troco>0?`Troco: ${fmt(troco)}`:'';
-    notify('Sem conexão: venda guardada e será enviada automaticamente quando voltar.','warn',4500);
-    somVendaOk();
-    openModal('modal-venda-ok');renderDashboard();
+    notify('Sem conexão: venda guardada para sincronizar.','warn',4500);
+    somVendaOk();openModal('modal-venda-ok');renderDashboard();
     return;
   }
 
   setLoad(true);
   try{
-    // Baixar estoque (lê o valor atual do servidor para evitar sobrescrever
-    // vendas concorrentes — não confia no cache local)
     for(const ci of G.cart){
       const p=G.produtos.find(x=>x.id===ci.id);
       if(p&&!p.estoque_infinito){
@@ -6305,14 +6358,31 @@ async function finalizeSale(){
         p.estoque=ne;
       }
     }
-    const {error}=await db.from('vendas').insert(venda);
-    if(error)throw error;
+    const {data:vendaInserida,error}=await db.from('vendas').insert(venda).select().single();
+    if(error){
+      // Log detalhado para ajudar diagnóstico (visível no console do navegador)
+      console.error('Erro Supabase ao inserir venda:',error.code,error.message,error.details,error.hint);
+      throw error;
+    }
+    // Usa o id retornado pelo banco (necessário para vincular troca, crediário etc.)
+    if(vendaInserida?.id) venda.id=vendaInserida.id;
   }catch(e){
     setLoad(false);
-    // Falhou no meio (ex: caiu a conexão agora) — guarda offline pra não perder a venda
+    const msg=e?.message||'';
+    const code=e?.code||'';
+    // Erros conhecidos que NÃO devem ir para fila offline (problema de dado, não de rede)
+    const errosDeDado=['23502','23503','23514','42703','42601','PGRST'];
+    const erroConhecido=errosDeDado.some(c=>code.startsWith(c)||msg.includes(c));
+    if(erroConhecido){
+      // Erro de schema/dado — avisar sem guardar offline (guardar offline propagaria o dado inválido)
+      notify(`Erro ao salvar venda: ${msg}. Verifique o console (F12) para detalhes.`,'error',8000);
+      somErro();
+      return; // NÃO abre modal de venda concluída com dado inválido
+    }
+    // Erro de rede/timeout — guarda offline pra não perder a venda
     await offAddVenda(venda);
     await updatePendingBadge();
-    notify('Falha ao enviar venda. Guardada para sincronizar depois.','warn',4500);
+    notify('Falha de conexão: venda guardada para sincronizar assim que a internet voltar.','warn',5000);
     somErro();
     G.vendas.unshift({...venda,criado_em:new Date().toISOString(),_pendente_offline:true});
     document.getElementById('vok-info').textContent=`${G.cart.length} item(s) · ${cliNome}`;
@@ -6667,6 +6737,105 @@ function renderDevolucoes(q=''){
     <td style="font-size:12px;color:var(--txt3)">${fmtDT(d.criado_em)}</td>
     <td><button class="btn btn-out btn-xs" onclick="imprimirComprovanteDevolucao('${d.id}')" title="Comprovante"><i class="ti ti-receipt"></i></button></td>
   </tr>`).join('');
+}
+
+function renderHistoricoVendas(){
+  const q=(document.getElementById('hv-busca')?.value||'').toLowerCase();
+  const de=document.getElementById('hv-de')?.value||'';
+  const ate=document.getElementById('hv-ate')?.value||'';
+  const forma=document.getElementById('hv-forma')?.value||'';
+  const fmLabels={dinheiro:'Dinheiro',pix:'Pix',cartao:'Cartão',crediario:'Crediário',misto:'Misto'};
+  const fmTags={dinheiro:'tag-grn',pix:'tag-blu',cartao:'tag-pur',crediario:'tag-amb',misto:'tag-gry'};
+  let list=[...(G.vendas||[])];
+  if(q) list=list.filter(v=>(v.cliente_nome||'').toLowerCase().includes(q)||(v.operador_nome||'').toLowerCase().includes(q)||String(v.id||'').includes(q));
+  if(de) list=list.filter(v=>v.criado_em&&v.criado_em.split('T')[0]>=de);
+  if(ate) list=list.filter(v=>v.criado_em&&v.criado_em.split('T')[0]<=ate);
+  if(forma) list=list.filter(v=>v.pagamento===forma);
+  // Stats rápidos
+  const totVen=list.reduce((s,v)=>s+(v.total||0),0);
+  const totLuc=list.reduce((s,v)=>s+(v.lucro||0),0);
+  const statsEl=document.getElementById('hv-stats');
+  if(statsEl) statsEl.innerHTML=`
+    <div class="sc"><div class="sc-body"><div class="sc-lbl">Total de vendas</div><div class="sc-val">${list.length}</div></div></div>
+    <div class="sc"><div class="sc-body"><div class="sc-lbl">Faturamento</div><div class="sc-val" style="font-size:16px">${fmt(totVen)}</div></div></div>
+    <div class="sc"><div class="sc-body"><div class="sc-lbl">Lucro estimado</div><div class="sc-val" style="font-size:16px;color:var(--success)">${fmt(totLuc)}</div></div></div>
+    <div class="sc"><div class="sc-body"><div class="sc-lbl">Ticket médio</div><div class="sc-val" style="font-size:16px">${list.length?fmt(totVen/list.length):'—'}</div></div></div>`;
+  const el=document.getElementById('hv-table');
+  if(!el)return;
+  el.innerHTML=list.length===0?'<tr><td colspan="9" style="text-align:center;padding:28px;color:var(--txt3)">Nenhuma venda encontrada</td></tr>':list.map((v,idx)=>{
+    const num=String(v.id||'').slice(-6).toUpperCase()||pad(list.length-idx);
+    const itensTxt=(v.itens||[]).slice(0,2).map(i=>`${i.qty}x ${i.nome}`).join(', ')+(v.itens?.length>2?` +${v.itens.length-2}`:'');
+    return `<tr>
+      <td style="font-weight:700;color:var(--pri);font-size:12px">${num}</td>
+      <td style="font-size:11.5px;color:var(--txt3)">${fmtDT(v.criado_em||new Date().toISOString())}</td>
+      <td style="font-weight:600">${esc(v.cliente_nome||'Consumidor Final')}</td>
+      <td style="font-size:12px;color:var(--txt2)">${esc(v.operador_nome||'—')}</td>
+      <td style="font-size:11.5px;color:var(--txt2)">${esc(itensTxt||'—')}</td>
+      <td><span class="tag ${fmTags[v.pagamento]||'tag-gry'}">${fmLabels[v.pagamento]||v.pagamento||'—'}</span></td>
+      <td style="font-weight:700">${fmt(v.total||0)}</td>
+      <td style="font-weight:600;color:var(--success)">${fmt(v.lucro||0)}</td>
+      <td><div style="display:flex;gap:3px">
+        <button class="btn btn-out btn-xs" onclick="imprimirCupomVenda('${v.id}')" title="Imprimir cupom"><i class="ti ti-printer"></i></button>
+        <button class="btn btn-out btn-xs" onclick="verDetalheVenda('${v.id}')" title="Ver detalhes"><i class="ti ti-eye"></i></button>
+        <button class="btn btn-danger btn-xs" onclick="iniciarDevolucaoVenda('${v.id}')" title="Devolver"><i class="ti ti-arrow-back-up"></i></button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+function verDetalheVenda(id){
+  const v=G.vendas.find(x=>x.id===id);
+  if(!v){notify('Venda não encontrada.','warn');return;}
+  const fmLabels={dinheiro:'Dinheiro',pix:'Pix',cartao:'Cartão',crediario:'Crediário',misto:'Misto'};
+  const itensHTML=(v.itens||[]).map(i=>`<tr><td>${esc(i.nome||'')}</td><td style="text-align:center">${i.qty}</td><td style="text-align:right">${fmt(i.preco)}</td><td style="text-align:right;font-weight:700">${fmt((i.preco||0)*(i.qty||1))}</td></tr>`).join('');
+  const pgsHTML=(v.pagamentos||[{forma:v.pagamento,valor:v.total}]).map(p=>`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span>${fmLabels[p.forma]||p.forma}${p.parcelas>1?' ('+p.parcelas+'x)':''}</span><b>${fmt(p.valor)}</b></div>`).join('');
+  confirmAct(`Venda — ${String(v.id||'').slice(-6).toUpperCase()}`,
+    `<div style="font-size:13px">
+      <div style="margin-bottom:8px;color:var(--txt3)">${fmtDT(v.criado_em)} · Op: ${v.operador_nome||'—'} · Cliente: ${v.cliente_nome||'Consumidor Final'}</div>
+      <table style="width:100%;font-size:12px;border-collapse:collapse;margin-bottom:10px">
+        <thead><tr style="border-bottom:1px solid var(--border)"><th style="text-align:left;padding:4px">Produto</th><th>Qtd</th><th>Preço</th><th>Total</th></tr></thead>
+        <tbody>${itensHTML}</tbody>
+      </table>
+      <div style="margin-bottom:8px">${pgsHTML}</div>
+      <div style="display:flex;justify-content:space-between;font-weight:700"><span>Total</span><span>${fmt(v.total)}</span></div>
+      ${v.troco>0?`<div style="display:flex;justify-content:space-between;color:var(--success)"><span>Troco</span><span>${fmt(v.troco)}</span></div>`:''}
+      ${v.garantia_dias>0?`<div style="color:var(--txt3);font-size:11px;margin-top:6px"><i class="ti ti-shield"></i> Garantia: ${v.garantia_dias} dias</div>`:''}
+    </div>`,
+    ()=>imprimirCupomVenda(id)
+  );
+}
+
+function iniciarDevolucaoVenda(id){
+  const v=G.vendas.find(x=>x.id===id);
+  if(!v){notify('Venda não encontrada.','warn');return;}
+  // Pré-preenche o modal de devolução com os dados da venda selecionada
+  openModal('modal-devolucao');
+  setTimeout(()=>{
+    const selV=document.getElementById('dev-venda-id');
+    if(selV){ selV.value=v.id;
+      // Trigger manual para atualizar campos dependentes se existir
+      selV.dispatchEvent(new Event('change'));
+    }
+    const cli=document.getElementById('dev-cliente'); if(cli) cli.value=v.cliente_nome||'';
+    const val=document.getElementById('dev-valor'); if(val) val.value=(v.total||0).toFixed(2);
+  },100);
+}
+
+function exportarVendasCSV(){
+  const list=G.vendas||[];
+  if(!list.length){notify('Nenhuma venda para exportar.','warn');return;}
+  const esc2=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+  const head=['ID','Data','Cliente','Operador','Subtotal','Desconto','Acréscimo','Total','Lucro','Pagamento','Parcelas','Troco','Garantia(dias)'];
+  const linhas=list.map(v=>[
+    v.id||'',fmtDT(v.criado_em||''),v.cliente_nome||'',v.operador_nome||'',
+    (v.subtotal||0).toFixed(2),(v.desconto_valor||0).toFixed(2),(v.acrescimo_valor||0).toFixed(2),
+    (v.total||0).toFixed(2),(v.lucro||0).toFixed(2),v.pagamento||'',
+    v.cartao_parcelas||1,(v.troco||0).toFixed(2),v.garantia_dias||0
+  ].map(esc2).join(';'));
+  const csv='\uFEFF'+[head.map(esc2).join(';'),...linhas].join('\r\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='historico_vendas.csv';a.click();
+  notify('CSV gerado com sucesso.','success');
 }
 
 /* ── CLIENTES ────────────────────────────────────────── */
@@ -7057,20 +7226,30 @@ function renderFinanceiro(){
 function renderFluxo(){
   const dias=30;const labels=[],ent=[],sai=[];
   const hoje=new Date();
+  // Agrupa vendas reais por data (entradas já realizadas)
+  const vendasPorData={};
+  (G.vendas||[]).forEach(v=>{
+    if(!v.criado_em||v._pendente_offline)return;
+    const ds=v.criado_em.split('T')[0];
+    vendasPorData[ds]=(vendasPorData[ds]||0)+(v.total||0);
+  });
   for(let i=0;i<dias;i++){
     const d=new Date(hoje);d.setDate(d.getDate()+i);
     const ds=d.toISOString().split('T')[0];
     labels.push(d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}));
-    ent.push(G.receber.filter(r=>r.status!=='pago'&&r.data_vencimento===ds).reduce((s,r)=>s+r.valor_original,0));
+    // Entradas = vendas realizadas (dia atual/passado) + contas a receber (futuro)
+    const entVendas=vendasPorData[ds]||0;
+    const entContas=G.receber.filter(r=>r.status!=='pago'&&r.data_vencimento===ds).reduce((s,r)=>s+r.valor_original,0);
+    ent.push(entVendas+entContas);
     sai.push(G.pagar.filter(p=>p.status!=='pago'&&p.data_vencimento===ds).reduce((s,p)=>s+p.valor_original,0));
   }
   if(G.charts.fluxo)G.charts.fluxo.destroy();
   const ctx=document.getElementById('chart-fluxo');if(!ctx)return;
-  G.charts.fluxo=new Chart(ctx,{type:'bar',data:{labels,datasets:[{label:'Entradas',data:ent,backgroundColor:'rgba(16,185,129,.7)',borderRadius:4},{label:'Saídas',data:sai,backgroundColor:'rgba(239,68,68,.7)',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'}},scales:{x:{grid:{display:false},ticks:{maxTicksLimit:8,font:{size:10}}},y:{ticks:{callback:v=>'R$'+v,font:{size:10}}}}}});
-  // Resumo
-  const proxRec=G.receber.filter(r=>r.status!=='pago').slice(0,5);
+  G.charts.fluxo=new Chart(ctx,{type:'bar',data:{labels,datasets:[{label:'Entradas (vendas + receber)',data:ent,backgroundColor:'rgba(16,185,129,.7)',borderRadius:4},{label:'Saídas (contas a pagar)',data:sai,backgroundColor:'rgba(239,68,68,.7)',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'}},scales:{x:{grid:{display:false},ticks:{maxTicksLimit:8,font:{size:10}}},y:{ticks:{callback:v=>'R$'+v,font:{size:10}}}}}});
+  // Resumo — mostra vendas recentes + contas próximas
+  const vendasRecentes=(G.vendas||[]).filter(v=>!v._pendente_offline).slice(0,5);
   const proxPag=G.pagar.filter(p=>p.status!=='pago').slice(0,5);
-  document.getElementById('fluxo-ent').innerHTML=proxRec.length===0?'<div class="empty-st" style="padding:20px"><p>Nenhuma entrada prevista</p></div>':proxRec.map(r=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)"><div><div style="font-size:13px;font-weight:600">${esc(r.descricao)}</div><div style="font-size:11px;color:var(--txt3)">${fmtD(r.data_vencimento+'T12:00')}</div></div><div style="font-weight:700;color:var(--success)">${fmt(r.valor_original)}</div></div>`).join('');
+  document.getElementById('fluxo-ent').innerHTML=vendasRecentes.length===0?'<div class="empty-st" style="padding:20px"><p>Nenhuma venda registrada</p></div>':vendasRecentes.map(v=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)"><div><div style="font-size:13px;font-weight:600">${esc(v.cliente_nome||'Consumidor Final')}</div><div style="font-size:11px;color:var(--txt3)">${fmtDT(v.criado_em||'')} · ${v.pagamento||'—'}</div></div><div style="font-weight:700;color:var(--success)">${fmt(v.total||0)}</div></div>`).join('');
   document.getElementById('fluxo-sai').innerHTML=proxPag.length===0?'<div class="empty-st" style="padding:20px"><p>Nenhuma saída prevista</p></div>':proxPag.map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)"><div><div style="font-size:13px;font-weight:600">${esc(p.descricao)}</div><div style="font-size:11px;color:var(--txt3)">${fmtD(p.data_vencimento+'T12:00')}</div></div><div style="font-weight:700;color:var(--danger)">${fmt(p.valor_original)}</div></div>`).join('');
 }
 
