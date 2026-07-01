@@ -14377,15 +14377,15 @@ function pdfBase({ titulo, numero, tipo, conteudo, assinatura, wmSrc, wmOp }) {
     ? `<img src="${e.logo}" style="width:48px;height:48px;object-fit:contain;border-radius:10px">`
     : `<div style="width:48px;height:48px;background:linear-gradient(135deg,#5B47E0,#7C3AED);border-radius:10px;display:flex;align-items:center;justify-content:center">${PDF_LOGO_SVG}</div>`;
 
-  // Grade de marca d'água 5×8
+  // Grade de marca d'água — imagem menor e contida, sem vazar para fora da página
   const wmEl = wmSrc
-    ? `<img src="${wmSrc}" style="width:80px;height:80px;object-fit:contain">`
-    : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 110" fill="#5B47E0" style="width:80px;height:80px">${PDF_LOGO_SVG}</svg>`;
+    ? `<img src="${wmSrc}" style="width:64px;height:64px;object-fit:contain;display:block">`
+    : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 110" fill="#5B47E0" style="width:64px;height:64px;display:block">${PDF_LOGO_SVG}</svg>`;
 
   let gradeHtml = '';
-  for (let r = 0; r < 8; r++) {
+  for (let r = 0; r < 7; r++) {
     for (let c = 0; c < 5; c++) {
-      gradeHtml += `<div style="display:flex;align-items:center;justify-content:center;width:20%;transform:rotate(-20deg)">${wmEl}</div>`;
+      gradeHtml += `<div style="width:20%;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:8px;transform:rotate(-18deg)">${wmEl}</div>`;
     }
   }
 
@@ -14414,9 +14414,16 @@ function pdfBase({ titulo, numero, tipo, conteudo, assinatura, wmSrc, wmOp }) {
   @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:'DM Sans',sans-serif;color:#1A0F3C;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .page{width:210mm;min-height:297mm;padding:0;position:relative;overflow:hidden;background:#fff}
-  /* MARCA D'ÁGUA EM GRADE */
-  .wm-grade{position:absolute;inset:0;display:flex;flex-wrap:wrap;align-content:flex-start;z-index:0;pointer-events:none;opacity:${(wmOp||8)/100}}
+  .page{width:210mm;min-height:297mm;padding:0;position:relative;overflow:hidden;background:#fff;isolation:isolate}
+  /* MARCA D'ÁGUA — contida dentro da página, sem vazar */
+  .wm-grade{
+    position:absolute;inset:0;
+    display:flex;flex-wrap:wrap;align-content:flex-start;
+    z-index:0;pointer-events:none;
+    opacity:${(wmOp||8)/100};
+    overflow:hidden;
+    clip-path:inset(0);
+  }
   /* CONTEÚDO ACIMA DA MARCA */
   .doc-inner{position:relative;z-index:1;padding:0 20mm 20mm}
   /* CABEÇALHO */
