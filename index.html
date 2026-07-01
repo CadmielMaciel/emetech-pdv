@@ -4404,6 +4404,17 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(navigator.onLine) syncOfflineQueue(false);
   const somBtn=document.getElementById('som-pdv-btn');
   if(somBtn)somBtn.innerHTML=G.somPDV?'<i class="ti ti-volume"></i>':'<i class="ti ti-volume-off"></i>';
+
+  // Restauração de sessão: dispara AQUI (no DOMContentLoaded) em vez do final do arquivo,
+  // para que o getSession() — que pode fazer refresh do token no servidor — comece o quanto
+  // antes e não fique bloqueado aguardando o parser processar o restante do HTML.
+  (async()=>{
+    try{
+      const {data:{session}}=await db.auth.getSession();
+      if(session?.user) await loadProfile(session.user);
+    }catch(e){ console.error('Erro ao restaurar sessão:',e); }
+    if(typeof iniciarVerificacaoVersao==='function') iniciarVerificacaoVersao();
+  })();
 });
 
 /* ── SONS DO PDV (sintetizados via Web Audio API, sem arquivos externos) ── */
@@ -4749,7 +4760,6 @@ async function loadProfile(user){
   G.user=user;
 
   // ── MODELO NOVO: a conta logada é a CONTA DA EMPRESA ──
-  // Resolve a empresa cujo auth_user_id == este usuário Auth.
   let empresa = null;
   try {
     const { data: emp } = await db.from('empresas').select('*').eq('auth_user_id', user.id).maybeSingle();
@@ -4757,28 +4767,30 @@ async function loadProfile(user){
   } catch(e) { console.error('Erro ao resolver empresa por auth_user_id:', e); }
 
   if (empresa) {
-    // É uma conta de empresa. Carrega a empresa e seus funcionários (perfis).
     G.empresa = empresa;
     G.empresaId = empresa.id;
-    G.profile = null;   // ainda não escolheu o perfil (vem pelo PIN/Netflix)
+    G.profile = null;
     G.role = null;
 
     if (empresa.status === 'bloqueada') { mostrarTelaBloqueio(empresa); return; }
 
-    await carregarEntitlements();
-    await carregarSuporteConfigApp();
-    await aplicarMarcasSalvas();
+    // Paraleliza as 3 chamadas de configuração que antes rodavam em série (~1s cada)
+    await Promise.all([
+      carregarEntitlements(),
+      carregarSuporteConfigApp(),
+      aplicarMarcasSalvas().catch(()=>{})
+    ]);
     aplicarPaletaSalva();
 
     document.getElementById('ls').classList.add('hidden');
     await loadAll();
     initPlanos();
     iniciarVerificacaoBloqueio();
-    mostrarTelaNetflix();   // lista funcionários da empresa; PIN define o perfil
+    mostrarTelaNetflix();
     return;
   }
 
-  // ── FALLBACK (MODELO ANTIGO): a conta logada é um usuário individual ──
+  // ── FALLBACK (MODELO ANTIGO) ──
   const {data:p}=await db.from('usuarios').select('*').eq('email',user.email).single();
   if(!p||!p.ativo){await db.auth.signOut();document.getElementById('l-err').textContent='Conta sem empresa vinculada. Verifique as credenciais.';document.getElementById('l-err').style.display='block';document.getElementById('l-btn').disabled=false;document.getElementById('l-btn').innerHTML='<i class="ti ti-lock" style="font-size:17px"></i>Entrar';return;}
   G.profile=p;G.role=p.role;
@@ -4787,9 +4799,12 @@ async function loadProfile(user){
   const ok = await carregarEmpresaELoginCheck();
   if(!ok) return;
 
-  await carregarEntitlements();
-  await carregarSuporteConfigApp();
-  await aplicarMarcasSalvas();
+  // Paraleliza aqui também
+  await Promise.all([
+    carregarEntitlements(),
+    carregarSuporteConfigApp(),
+    aplicarMarcasSalvas().catch(()=>{})
+  ]);
   aplicarPaletaSalva();
 
   document.getElementById('ls').classList.add('hidden');
@@ -4938,35 +4953,37 @@ async function doLogout(){
 async function loadAll(){
   setLoad(true);
   try{
+    // Queries paralelas — todas disparam ao mesmo tempo.
+    // Limites ajustados para não travar o boot com tabelas grandes:
+    // - vendas: 150 (suficiente para relatório do dia/semana; histórico completo está em hist-vendas que busca sob demanda)
+    // - movs: 200 (suficiente para tela de estoque; exportação usa query própria)
     const [pr,cl,os,ve,us,mv,fo,oc,dv,re,pa,cx,en]= await Promise.all([
       db.from('produtos').select('*').order('nome'),
       db.from('clientes').select('*').order('nome'),
       db.from('ordens_servico').select('*').neq('status','Entregue').order('criado_em',{ascending:false}),
-      db.from('vendas').select('*').order('criado_em',{ascending:false}).limit(200),
+      db.from('vendas').select('*').order('criado_em',{ascending:false}).limit(150),
       db.from('usuarios').select('*').order('nome'),
-      db.from('movimentacoes_estoque').select('*').order('criado_em',{ascending:false}).limit(300),
+      db.from('movimentacoes_estoque').select('*').order('criado_em',{ascending:false}).limit(200),
       db.from('fornecedores').select('*').order('razao_social'),
-      db.from('orcamentos').select('*').order('criado_em',{ascending:false}),
-      db.from('devolucoes').select('*').order('criado_em',{ascending:false}),
-      db.from('contas_receber').select('*').order('data_vencimento'),
-      db.from('contas_pagar').select('*').order('data_vencimento'),
+      db.from('orcamentos').select('*').order('criado_em',{ascending:false}).limit(50),
+      db.from('devolucoes').select('*').order('criado_em',{ascending:false}).limit(100),
+      db.from('contas_receber').select('*').order('data_vencimento').limit(200),
+      db.from('contas_pagar').select('*').order('data_vencimento').limit(200),
       db.from('caixas').select('*').order('criado_em',{ascending:false}).limit(10),
-      db.from('entregas_avulsas').select('*').neq('status','cancelado').order('data')
+      db.from('entregas_avulsas').select('*').neq('status','cancelado').order('data').limit(100)
     ]);
     G.produtos=pr.data||[];G.clientes=cl.data||[];G.os=os.data||[];
-    carregarContratosModelos();
     G.vendas=ve.data||[];G.usuarios=us.data||[];G.movs=mv.data||[];
     G.fornecedores=fo.data||[];G.orcamentos=oc.data||[];G.devolucoes=dv.data||[];
     G.receber=re.data||[];G.pagar=pa.data||[];G.caixas=cx.data||[];
     G.entregasAvulsas=en.data||[];
     G.caixaAtual=G.caixas.find(c=>c.status==='aberto'&&c.operador_id===G.profile?.id)||null;
-    // Próximo número da OS: por EMPRESA (a partir das OS já carregadas, que o RLS
-    // filtra para a empresa atual). Pega o maior número existente + 1. Evita o bug
-    // de numeração global entre empresas e é robusto contra exclusões.
+    // carregarContratosModelos depois das queries para não bloquear a atribuição dos dados
+    carregarContratosModelos();
     const _maxOS=(G.os||[]).reduce((m,o)=>{ const n=parseInt(String(o.numero||'').replace(/\D/g,''),10)||0; return n>m?n:m; }, 0);
     G.osCounter=_maxOS+1;
     updateCaixaPill();
-    // Cache offline (PDV continua funcionando sem internet)
+    // Cache offline em background — não bloqueia o boot
     offCacheProdutos(G.produtos).catch(()=>{});
     offCacheClientes(G.clientes).catch(()=>{});
   }catch(e){notify('Erro ao carregar dados.','error');}
@@ -7941,9 +7958,17 @@ function detOS(id){
             <i class="ti ti-edit"></i>
             <span>Editar</span>
           </div>
+          ${['admin','gerente','tecnico'].includes(G.role)?`<div class="os-qa-btn" onclick="closeModal('modal-os-det');setTimeout(()=>abrirAlterarOS('${o.id}'),50)" style="background:rgba(91,71,224,.08);color:var(--pri)">
+            <i class="ti ti-edit-circle"></i>
+            <span>Alterar</span>
+          </div>`:''}
           ${(o.status!=='Entregue'&&o.status!=='Cancelada')?`<div class="os-qa-btn danger" onclick="abrirCancelarOS('${o.id}')">
             <i class="ti ti-ban"></i>
             <span>Cancelar OS</span>
+          </div>`:''}
+          ${(o.status==='Entregue'||o.status==='Cancelada')?`<div class="os-qa-btn warn" onclick="abrirReabrirOS('${o.id}')">
+            <i class="ti ti-refresh"></i>
+            <span>Reabrir</span>
           </div>`:''}
         </div>
 
@@ -8021,7 +8046,22 @@ function detOS(id){
         ${o.garantia_produto?`<div style="font-size:11px;color:var(--txt3);margin-top:2px"><i class="ti ti-package" style="font-size:10px"></i> Produto: ${o.garantia_produto}</div>`:''}
         </div>
       </div>
-      <div><div style="font-size:10.5px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Timeline</div><div class="tl">${tl}</div></div>
+      <div><div style="font-size:10.5px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Timeline</div><div class="tl">${tl}</div>
+      ${(o.reaberturas||[]).length>0?`<div style="margin-top:10px;background:rgba(245,158,11,.08);border-radius:8px;padding:8px 10px;border:1px solid rgba(245,158,11,.2)">
+        <div style="font-size:11px;font-weight:700;color:var(--warn);margin-bottom:4px"><i class="ti ti-refresh"></i> ${o.reaberturas.length} reabertura(s)</div>
+        ${o.reaberturas.slice(-2).map(r=>`<div style="font-size:11px;color:var(--txt2);margin-bottom:2px">${fmtDT(r.data)} · ${esc(r.operador_nome||'')}${r.usa_garantia?' <b style="color:var(--success)">· Garantia</b>':''}<br><span style="color:var(--txt3)">${esc(r.justificativa||'')}</span></div>`).join('')}
+      </div>`:''}
+      ${(o.historico_alteracoes||[]).length>0?`<div style="margin-top:10px;background:var(--surface);border-radius:8px;padding:8px 10px">
+        <div style="font-size:11px;font-weight:700;color:var(--txt2);margin-bottom:4px"><i class="ti ti-history"></i> ${o.historico_alteracoes.length} alteração(ões) de dados</div>
+        ${o.historico_alteracoes.slice(-3).reverse().map(h=>`<div style="font-size:11px;color:var(--txt2);padding:4px 0;border-bottom:1px solid var(--border)">
+          <span style="font-weight:700;text-transform:capitalize">${h.campo}</span> · ${fmtDT(h.data)}<br>
+          <span style="color:var(--danger);text-decoration:line-through">${String(h.valor_anterior||'—').slice(0,30)}</span>
+          <span style="color:var(--txt3)"> → </span>
+          <span style="color:var(--success)">${String(h.valor_novo||'—').slice(0,30)}</span><br>
+          <span style="color:var(--txt3)">${esc(h.justificativa||'—')}</span>
+        </div>`).join('')}
+      </div>`:''}
+      </div>
     </div>
     </div>
     <!-- ABA PEÇAS -->
@@ -8046,6 +8086,13 @@ function detOS(id){
   const cb=document.createElement('button');cb.className='btn btn-out btn-sm';cb.textContent='Fechar';cb.onclick=()=>closeModal('modal-os-det');footer.appendChild(cb);
   if(next&&['admin','gerente','tecnico'].includes(G.role)){
     const ab=document.createElement('button');ab.className='btn btn-pri btn-sm';ab.innerHTML=`<i class="ti ti-arrow-right"></i>Avançar: ${next}`;ab.onclick=()=>advOS(id,next);footer.appendChild(ab);
+  }
+  // Botão Alterar (valor/diag/obs)
+  if(['admin','gerente','tecnico'].includes(G.role)){
+    const altbtn=document.createElement('button');altbtn.className='btn btn-out btn-sm';
+    altbtn.innerHTML='<i class="ti ti-edit"></i> Alterar';
+    altbtn.onclick=()=>abrirAlterarOS(id);
+    footer.appendChild(altbtn);
   }
   // Botão Documentos
   const dbtn=document.createElement('button');
@@ -8223,6 +8270,240 @@ async function confirmarCancelarOS(id) {
 
 // Remover função antiga abrirCancelarOS baseada em prompt
 
+/* ══════════════════════════════════════════════════════════════
+   ALTERAR VALOR / DIAGNÓSTICO / OBSERVAÇÕES DA OS
+   Registra histórico completo (antes → depois + justificativa)
+   e notifica o cliente via WhatsApp opcionalmente.
+   ══════════════════════════════════════════════════════════════ */
+function abrirAlterarOS(id){
+  const o=G.os.find(x=>x.id===id);if(!o)return;
+  const hist=(o.historico_alteracoes||[]);
+  const histHTML=hist.length===0?'':`
+    <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px">
+      <div class="lbl" style="margin-bottom:8px">Histórico de alterações</div>
+      ${hist.slice().reverse().map(h=>`
+        <div style="background:var(--surface);border-radius:9px;padding:10px 12px;margin-bottom:7px;font-size:12px;border-left:3px solid var(--pri)">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+            <span style="font-weight:700;color:var(--txt);text-transform:capitalize">${h.campo||'Alteração'}</span>
+            <span style="color:var(--txt3);font-size:11px">${fmtDT(h.data)}</span>
+          </div>
+          <div style="color:var(--txt2)">
+            <span style="color:var(--danger);text-decoration:line-through">${esc(String(h.valor_anterior||'—'))}</span>
+            <span style="color:var(--txt3);margin:0 5px">→</span>
+            <span style="color:var(--success);font-weight:600">${esc(String(h.valor_novo||'—'))}</span>
+          </div>
+          <div style="color:var(--txt3);margin-top:3px"><i class="ti ti-message" style="font-size:11px"></i> ${esc(h.justificativa||'—')}</div>
+          <div style="color:var(--txt4);margin-top:2px;font-size:10.5px">${esc(h.operador_nome||'')}${h.notificou_cliente?' · <span style="color:var(--success)">Cliente notificado</span>':''}</div>
+        </div>`).join('')}
+    </div>`;
+  document.getElementById('os-det-content').innerHTML=`
+    <div class="card-title" style="gap:7px"><i class="ti ti-edit" style="color:var(--pri)"></i> Alterar OS ${o.numero}</div>
+    <div style="background:var(--pri-light);border-radius:10px;padding:10px 13px;margin-bottom:14px;font-size:12.5px;color:var(--pri)">
+      <i class="ti ti-info-circle"></i> Toda alteração fica registrada no histórico com valor anterior, novo e justificativa. O cliente pode ser notificado via WhatsApp.
+    </div>
+    <div class="g2" style="gap:10px;margin-bottom:10px">
+      <div class="fg"><label class="lbl">Campo a alterar</label>
+        <select id="alt-os-campo" onchange="renderCampoAltOS('${id}')">
+          <option value="">— Selecione —</option>
+          <option value="total">Valor total (R$)</option>
+          <option value="diagnostico">Diagnóstico</option>
+          <option value="observacoes">Observações</option>
+          <option value="prazo_entrega">Prazo de entrega</option>
+          <option value="garantia_dias">Garantia (dias)</option>
+        </select>
+      </div>
+      <div class="fg" id="alt-os-novo-wrap" style="display:none">
+        <label class="lbl" id="alt-os-novo-label">Novo valor</label>
+        <div id="alt-os-novo-field"></div>
+      </div>
+    </div>
+    <div class="fg" id="alt-os-just-wrap" style="display:none">
+      <label class="lbl">Justificativa da alteração *</label>
+      <textarea id="alt-os-justificativa" rows="2" placeholder="Ex: Diagnóstico revelou problema adicional no hardware..."></textarea>
+    </div>
+    <div class="fg" id="alt-os-wpp-wrap" style="display:none">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+        <input type="checkbox" id="alt-os-notif-wpp" style="width:auto;accent-color:var(--pri)">
+        <span><i class="ti ti-brand-whatsapp" style="color:#25D366"></i> Notificar cliente via WhatsApp sobre esta alteração</span>
+      </label>
+    </div>
+    ${histHTML}`;
+  document.getElementById('os-det-footer').innerHTML=`
+    <button class="btn btn-out btn-sm" onclick="detOS('${id}')">Voltar</button>
+    <button class="btn btn-pri btn-sm" onclick="confirmarAlterarOS('${id}')"><i class="ti ti-check"></i> Registrar Alteração</button>`;
+}
+
+function renderCampoAltOS(osId){
+  const o=G.os.find(x=>x.id===osId);if(!o)return;
+  const campo=document.getElementById('alt-os-campo')?.value;
+  const nWrap=document.getElementById('alt-os-novo-wrap');
+  const nLbl=document.getElementById('alt-os-novo-label');
+  const nField=document.getElementById('alt-os-novo-field');
+  const jWrap=document.getElementById('alt-os-just-wrap');
+  const wWrap=document.getElementById('alt-os-wpp-wrap');
+  if(!campo){nWrap.style.display='none';jWrap.style.display='none';wWrap.style.display='none';return;}
+  const labels={total:'Novo valor total (R$)',diagnostico:'Novo diagnóstico',observacoes:'Novas observações',prazo_entrega:'Novo prazo',garantia_dias:'Garantia (dias)'};
+  nLbl.textContent=labels[campo]||'Novo valor';
+  const valorAtual=o[campo]??'';
+  if(campo==='total'||campo==='garantia_dias'){
+    nField.innerHTML=`<div style="font-size:11px;color:var(--txt3);margin-bottom:4px">Atual: <b>${campo==='total'?fmt(valorAtual):valorAtual} ${campo==='garantia_dias'?'dias':''}</b></div>
+      <input type="number" id="alt-os-novo" min="0" step="${campo==='total'?'0.01':'1'}" value="${valorAtual}" style="width:100%">`;
+  } else if(campo==='prazo_entrega'){
+    nField.innerHTML=`<div style="font-size:11px;color:var(--txt3);margin-bottom:4px">Atual: <b>${valorAtual?fmtD(valorAtual+'T12:00'):'Não definido'}</b></div>
+      <input type="date" id="alt-os-novo" value="${valorAtual||''}" style="width:100%">`;
+  } else {
+    nField.innerHTML=`<div style="font-size:11px;color:var(--txt3);margin-bottom:4px">Atual: <b>${valorAtual||'—'}</b></div>
+      <textarea id="alt-os-novo" rows="3">${esc(valorAtual)}</textarea>`;
+  }
+  nWrap.style.display='';
+  jWrap.style.display='';
+  wWrap.style.display='';
+}
+
+async function confirmarAlterarOS(id){
+  const o=G.os.find(x=>x.id===id);if(!o)return;
+  const campo=document.getElementById('alt-os-campo')?.value;
+  const justificativa=document.getElementById('alt-os-justificativa')?.value?.trim();
+  const novoRaw=document.getElementById('alt-os-novo')?.value;
+  const notifWpp=document.getElementById('alt-os-notif-wpp')?.checked;
+  if(!campo){notify('Selecione o campo a alterar.','warn');return;}
+  if(!novoRaw&&novoRaw!=='0'){notify('Informe o novo valor.','warn');return;}
+  if(!justificativa){notify('A justificativa da alteração é obrigatória.','warn');return;}
+  const valorAnterior=o[campo];
+  let valorNovo=novoRaw;
+  if(campo==='total'||campo==='garantia_dias') valorNovo=parseFloat(novoRaw)||0;
+  const entrada={
+    campo,
+    valor_anterior:valorAnterior,
+    valor_novo:valorNovo,
+    justificativa,
+    operador_nome:G.profile?.nome||'Sistema',
+    data:new Date().toISOString(),
+    notificou_cliente:notifWpp
+  };
+  const historico=[...(o.historico_alteracoes||[]),entrada];
+  const pl={[campo]:valorNovo,historico_alteracoes:historico,atualizado_em:new Date().toISOString()};
+  // Adiciona entrada na timeline também para ficar visível no fluxo principal
+  const tlEntry={status:'Alteração',data:entrada.data,campo,justificativa,operador:entrada.operador_nome};
+  pl.timeline=[...(o.timeline||[]),tlEntry];
+  setLoad(true);
+  const {error}=await db.from('ordens_servico').update(pl).eq('id',id);
+  setLoad(false);
+  if(error){notify('Erro ao salvar alteração: '+error.message,'error');return;}
+  Object.assign(o,pl);
+  notify(`${o.numero}: ${campo} atualizado com sucesso.`,'success');
+  // Enviar WhatsApp se solicitado
+  if(notifWpp){
+    const cli=(G.clientes||[]).find(c=>c.id===o.cliente_id||c.nome===o.cliente_nome);
+    const tel=(cli?.whatsapp||cli?.telefone||'').replace(/\D/g,'');
+    if(tel){
+      const labC={total:'Valor',diagnostico:'Diagnóstico',observacoes:'Observações',prazo_entrega:'Prazo',garantia_dias:'Garantia'};
+      const msgValorAnt=campo==='total'?fmt(valorAnterior):String(valorAnterior||'—');
+      const msgValorNov=campo==='total'?fmt(valorNovo):String(valorNovo||'—');
+      const msg=`Olá ${o.cliente_nome}! 👋\n\nHouve uma *atualização* na sua OS *${o.numero}* (${o.aparelho}).\n\n*Campo alterado:* ${labC[campo]||campo}\n*Valor anterior:* ${msgValorAnt}\n*Novo valor:* ${msgValorNov}\n\n*Motivo:* ${justificativa}\n\nQualquer dúvida estamos à disposição!`;
+      window.open(`https://api.whatsapp.com/send?phone=55${tel}&text=${encodeURIComponent(msg)}`,'_blank');
+    } else {
+      notify('Cliente sem telefone cadastrado — WhatsApp não enviado.','warn');
+    }
+  }
+  detOS(id);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   REABRIR OS (de Entregue ou Cancelada de volta para Aguardando)
+   Exige justificativa e registra se usa garantia.
+   ══════════════════════════════════════════════════════════════ */
+async function abrirReabrirOS(id){
+  // Busca a OS — pode estar no histórico (G._osHist) ou no cache principal
+  let o=(G.os||[]).find(x=>x.id===id)||(G._osHist||[]).find(x=>x.id===id);
+  if(!o){
+    // Busca no banco se não estiver em cache
+    setLoad(true);
+    const {data}=await db.from('ordens_servico').select('*').eq('id',id).single();
+    setLoad(false);
+    if(!data){notify('OS não encontrada.','error');return;}
+    o=data;
+  }
+  // Mostra no modal de detalhe da OS (já aberto pelo histórico)
+  const reabs=(o.reaberturas||[]);
+  const reabHTML=reabs.length===0?'':`
+    <div style="margin-top:14px;background:var(--surface);border-radius:9px;padding:10px 12px">
+      <div class="lbl" style="margin-bottom:6px">Reaberturas anteriores (${reabs.length})</div>
+      ${reabs.slice().reverse().map(r=>`<div style="font-size:12px;padding:5px 0;border-bottom:1px solid var(--border)">
+        <span style="color:var(--txt2)">${fmtDT(r.data)}</span> · <b>${esc(r.operador_nome||'—')}</b>
+        ${r.usa_garantia?'· <span style="color:var(--success);font-weight:700"><i class="ti ti-shield"></i> Garantia</span>':''}
+        <div style="color:var(--txt3);font-size:11.5px;margin-top:2px">${esc(r.justificativa||'—')}</div>
+      </div>`).join('')}
+    </div>`;
+  document.getElementById('os-det-content').innerHTML=`
+    <div class="card-title" style="gap:7px"><i class="ti ti-refresh" style="color:var(--warn)"></i> Reabrir OS ${o.numero}</div>
+    <div style="background:var(--surface);border-radius:10px;padding:10px 13px;margin-bottom:14px;font-size:12.5px;color:var(--txt2)">
+      <div style="font-weight:700;color:var(--txt)">${o.aparelho}</div>
+      <div>${o.cliente_nome} · Status atual: <b>${o.status}</b></div>
+    </div>
+    <div class="fg">
+      <label class="lbl">Justificativa para reabrir *</label>
+      <textarea id="reab-os-just" rows="3" placeholder="Ex: Cliente retornou com o mesmo defeito, problema não foi resolvido..."></textarea>
+    </div>
+    <div class="fg">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;background:rgba(16,185,129,.07);border:1.5px solid rgba(16,185,129,.2);border-radius:9px;padding:10px 13px">
+        <input type="checkbox" id="reab-os-garantia" style="width:auto;accent-color:var(--success)">
+        <span><i class="ti ti-shield" style="color:var(--success)"></i> <b>Reabrir em garantia</b> — o serviço anterior ainda está no prazo de garantia e o defeito é o mesmo</span>
+      </label>
+    </div>
+    ${reabHTML}`;
+  document.getElementById('os-det-footer').innerHTML=`
+    <button class="btn btn-out btn-sm" onclick="closeModal('modal-os-det')">Cancelar</button>
+    <button class="btn btn-sm" style="background:var(--warn);color:#fff" onclick="confirmarReabrirOS('${id}')"><i class="ti ti-refresh"></i> Confirmar Reabertura</button>`;
+  openModal('modal-os-det');
+}
+
+async function confirmarReabrirOS(id){
+  let o=(G.os||[]).find(x=>x.id===id)||(G._osHist||[]).find(x=>x.id===id);
+  if(!o){notify('OS não encontrada.','error');return;}
+  const justificativa=document.getElementById('reab-os-just')?.value?.trim();
+  const usaGarantia=document.getElementById('reab-os-garantia')?.checked;
+  if(!justificativa){notify('A justificativa é obrigatória para reabrir a OS.','warn');return;}
+  const entrada={
+    data:new Date().toISOString(),
+    operador_nome:G.profile?.nome||'Sistema',
+    justificativa,
+    usa_garantia:usaGarantia,
+    status_anterior:o.status
+  };
+  const reaberturas=[...(o.reaberturas||[]),entrada];
+  const tl=[...(o.timeline||[]),{
+    status:'Aguardando',
+    data:entrada.data,
+    motivo:`Reaberta${usaGarantia?' (em garantia)':''}: ${justificativa}`,
+    operador:entrada.operador_nome
+  }];
+  const pl={
+    status:'Aguardando',
+    progresso:0,
+    reaberturas,
+    timeline:tl,
+    atualizado_em:new Date().toISOString(),
+    data_conclusao:null,
+    motivo_cancelamento:null
+  };
+  setLoad(true);
+  const {error}=await db.from('ordens_servico').update(pl).eq('id',id);
+  setLoad(false);
+  if(error){notify('Erro ao reabrir OS: '+error.message,'error');return;}
+  // Devolve a OS para a lista principal em memória
+  const oAtualizado={...o,...pl};
+  if(!G.os.find(x=>x.id===id)) G.os.unshift(oAtualizado);
+  else Object.assign(o,pl);
+  // Remove do cache de histórico se estiver lá
+  if(G._osHist) G._osHist=G._osHist.filter(x=>x.id!==id);
+  closeModal('modal-os-det');
+  renderOSList();renderDashboard();
+  notify(`${o.numero} reaberta${usaGarantia?' em garantia':''}!`,'success');
+  // Atualiza tabela do histórico se estiver visível
+  if(typeof renderOSHist==='function') setTimeout(renderOSHist,200);
+}
+
 async function advOS(id,next){
   const o=G.os.find(x=>x.id===id);if(!o)return;
   const tl=[...(o.timeline||[]),{status:next,data:new Date().toISOString()}];
@@ -8299,7 +8580,10 @@ async function renderOSHist(){
     <td style="font-weight:700;color:var(--pri)">${fmt(o.total)}</td>
     <td><span class="tag ${o.status==='Cancelada'?'tag-red':'tag-grn'}">${o.status}</span></td>
     <td style="font-size:11px;color:var(--txt3);max-width:160px">${o.motivo_cancelamento?`<span title="${esc(o.motivo_cancelamento)}" style="cursor:help">${esc(o.motivo_cancelamento.length>40?o.motivo_cancelamento.slice(0,40)+'…':o.motivo_cancelamento)}</span>`:'—'}</td>
-    <td><button class="btn btn-out btn-xs" onclick="abrirDocumentosOSHist('${o.id}')" title="Documentos"><i class="ti ti-file-text"></i></button></td>
+    <td><div style="display:flex;gap:3px">
+      <button class="btn btn-out btn-xs" onclick="abrirDocumentosOSHist('${o.id}')" title="Documentos"><i class="ti ti-file-text"></i></button>
+      ${['admin','gerente'].includes(G.role)?`<button class="btn btn-warn btn-xs" onclick="abrirReabrirOS('${o.id}')" title="Reabrir OS"><i class="ti ti-refresh"></i></button>`:''}
+    </div></td>
   </tr>`).join('');
 }
 
@@ -16422,17 +16706,6 @@ function removerPIN(userId) {
     renderUsuarios(); notify('PIN removido.', 'info');
   });
 }
-
-/* ── PATCH: loadProfile SUBSTITUI TELA NETFLIX ──────────*/
-// loadProfile original vai para o app direto.
-// A tela Netflix é chamada APÓS o login Supabase — o usuário escolhe quem é.
-// Assim: login email/senha → autentica no Supabase → carrega todos os usuários → mostra Netflix.
-
-(async()=>{
-  const {data:{session}}=await db.auth.getSession();
-  if(session?.user)await loadProfile(session.user);
-  if(typeof iniciarVerificacaoVersao==='function')iniciarVerificacaoVersao();
-})();
 
 /* ── RIPPLE EFFECT GLOBAL ──────────────────────────────
    Detecta clique em .btn, .ni, .fin-tab e cria uma bolha
