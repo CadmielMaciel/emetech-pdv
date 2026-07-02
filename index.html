@@ -1110,14 +1110,70 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
 
       <!-- DEVOLUÇÕES -->
       <div class="page" id="page-devolucoes">
-        <div style="display:flex;gap:8px;margin-bottom:12px">
-          <div class="ig" style="flex:1"><i class="ti ti-search"></i><input type="text" placeholder="Buscar por nº da venda ou cliente..." oninput="renderDevolucoes(this.value)"></div>
-          <button class="btn btn-pri" onclick="openModal('modal-devolucao')"><i class="ti ti-plus"></i>Nova Devolução</button>
+
+        <!-- Sub-abas -->
+        <div class="fin-tabs" style="margin-bottom:14px">
+          <button class="fin-tab active" id="devtab-btn-historico" onclick="devTab('historico',this)"><i class="ti ti-arrow-back-up"></i> Devoluções</button>
+          <button class="fin-tab" id="devtab-btn-vendas" onclick="devTab('vendas',this)"><i class="ti ti-receipt"></i> Vendas</button>
+          <button class="fin-tab" id="devtab-btn-os" onclick="devTab('os',this)"><i class="ti ti-tool"></i> Ordens de Serviço</button>
         </div>
-        <div class="card" style="padding:0"><div class="tw"><table>
-          <thead><tr><th>#Dev</th><th>Venda</th><th>Cliente</th><th>Tipo</th><th>Motivo</th><th>Valor</th><th>Estorno</th><th>Data</th><th>Comprovante</th></tr></thead>
-          <tbody id="dev-table"></tbody>
-        </table></div></div>
+
+        <!-- ── ABA: HISTÓRICO DE DEVOLUÇÕES ── -->
+        <div id="devtab-historico">
+          <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+            <div class="ig" style="flex:1;min-width:180px"><i class="ti ti-search"></i>
+              <input type="text" id="dev-busca" placeholder="Buscar por nº, cliente, motivo..." oninput="renderDevolucoes(this.value)">
+            </div>
+            <button class="btn btn-pri btn-sm" onclick="openModal('modal-devolucao')"><i class="ti ti-plus"></i>Nova Devolução</button>
+          </div>
+          <div class="card" style="padding:0"><div class="tw"><table>
+            <thead><tr><th>#Dev</th><th>Venda/OS</th><th>Cliente</th><th>Tipo</th><th>Motivo</th><th>Valor</th><th>Estorno</th><th>Data</th><th></th></tr></thead>
+            <tbody id="dev-table"></tbody>
+          </table></div></div>
+        </div>
+
+        <!-- ── ABA: HISTÓRICO DE VENDAS (para devolver) ── -->
+        <div id="devtab-vendas" style="display:none">
+          <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+            <div class="ig" style="flex:1;min-width:180px"><i class="ti ti-search"></i>
+              <input type="text" id="devv-busca" placeholder="Buscar cliente, nº da venda, produto..." oninput="renderDevVendas()">
+            </div>
+            <input type="date" id="devv-de" onchange="renderDevVendas()" style="padding:7px 10px;font-size:12.5px;border-radius:8px;border:1px solid var(--border);background:var(--bg2)">
+            <input type="date" id="devv-ate" onchange="renderDevVendas()" style="padding:7px 10px;font-size:12.5px;border-radius:8px;border:1px solid var(--border);background:var(--bg2)">
+          </div>
+          <div class="card" style="padding:0"><div class="tw"><table>
+            <thead><tr>
+              <th>#Venda</th><th>Data</th><th>Cliente</th><th>Itens</th>
+              <th>Pagamento</th><th>Total</th><th>Devoluções</th><th>Ações</th>
+            </tr></thead>
+            <tbody id="devv-table"></tbody>
+          </table></div></div>
+        </div>
+
+        <!-- ── ABA: OS (para devolver/garantia) ── -->
+        <div id="devtab-os" style="display:none">
+          <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+            <div class="ig" style="flex:1;min-width:180px"><i class="ti ti-search"></i>
+              <input type="text" id="devos-busca" placeholder="Buscar cliente, nº da OS, aparelho..." oninput="renderDevOS()">
+            </div>
+            <select id="devos-status" onchange="renderDevOS()" style="padding:7px 10px;font-size:12.5px;border-radius:8px;border:1px solid var(--border);background:var(--bg2)">
+              <option value="">Todos os status</option>
+              <option value="Entregue">Entregues</option>
+              <option value="Ag. Pagamento">Ag. Pagamento</option>
+              <option value="Pronto">Prontas</option>
+            </select>
+            <input type="date" id="devos-de" onchange="renderDevOS()" style="padding:7px 10px;font-size:12.5px;border-radius:8px;border:1px solid var(--border);background:var(--bg2)">
+            <input type="date" id="devos-ate" onchange="renderDevOS()" style="padding:7px 10px;font-size:12.5px;border-radius:8px;border:1px solid var(--border);background:var(--bg2)">
+          </div>
+          <div class="card" style="padding:0"><div class="tw"><table>
+            <thead><tr>
+              <th>#OS</th><th>Data</th><th>Cliente</th><th>Aparelho</th>
+              <th>Técnico</th><th>Status</th><th>Garantia</th><th>Total</th><th>Ações</th>
+            </tr></thead>
+            <tbody id="devos-table"></tbody>
+          </table></div></div>
+        </div>
+
       </div>
 
       <!-- HISTÓRICO DE VENDAS -->
@@ -2863,16 +2919,22 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
 <!-- Devolução -->
 <div class="modal-overlay" id="modal-devolucao"><div class="modal">
   <div class="modal-title"><i class="ti ti-arrow-back-up"></i>Registrar Devolução</div>
-  <div class="fg"><label class="lbl">Número da Venda</label><div style="display:flex;gap:7px"><input type="number" id="dev-venda-num" placeholder="Ex: 1234"><button class="btn btn-out btn-sm" onclick="buscarVendaDev()"><i class="ti ti-search"></i>Buscar</button></div></div>
+  <!-- Área de contexto: preenchida automaticamente ao vir de Venda ou OS -->
+  <div id="dev-modal-info"></div>
+  <div class="fg"><label class="lbl">Número da Venda <span style="font-size:10px;color:var(--txt3)">(ou deixe vazio se vier de OS)</span></label>
+    <div style="display:flex;gap:7px"><input type="number" id="dev-venda-num" placeholder="Ex: 1234"><button class="btn btn-out btn-sm" onclick="buscarVendaDev()"><i class="ti ti-search"></i>Buscar</button></div>
+  </div>
   <div id="dev-venda-info" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:12px;margin-bottom:12px"></div>
   <div id="dev-itens-sel"></div>
+  <div class="fg"><label class="lbl">Cliente</label><input type="text" id="dev-cliente" placeholder="Nome do cliente"></div>
   <div class="g2">
     <div class="fg"><label class="lbl">Tipo</label><select id="dev-tipo"><option value="total">Total</option><option value="parcial">Parcial</option></select></div>
-    <div class="fg"><label class="lbl">Estorno via</label><select id="dev-estorno"><option value="dinheiro">Dinheiro</option><option value="credito_loja">Crédito na Loja</option><option value="pix">Pix</option></select></div>
+    <div class="fg"><label class="lbl">Estorno via</label><select id="dev-estorno"><option value="dinheiro">Dinheiro</option><option value="credito_loja">Crédito na Loja</option><option value="pix">Pix</option><option value="cartao">Cartão</option></select></div>
   </div>
-  <div class="fg"><label class="lbl">Motivo</label><textarea id="dev-motivo" rows="2" placeholder="Motivo da devolução..."></textarea></div>
+  <div class="fg"><label class="lbl">Valor a devolver R$</label><input type="number" id="dev-valor" min="0" step="0.01" placeholder="0,00"></div>
+  <div class="fg"><label class="lbl">Motivo *</label><textarea id="dev-motivo" rows="2" placeholder="Motivo da devolução..."></textarea></div>
   <div class="modal-footer">
-    <button class="btn btn-out" onclick="closeModal('modal-devolucao')">Cancelar</button>
+    <button class="btn btn-out" onclick="closeModal('modal-devolucao');document.getElementById('dev-modal-info').innerHTML=''">Cancelar</button>
     <button class="btn btn-pri" onclick="saveDevolucao()"><i class="ti ti-check"></i>Confirmar Devolução</button>
   </div>
 </div></div>
@@ -4990,6 +5052,7 @@ async function loadAll(){
     G.entregasAvulsas=en.data||[];
     // Maquininhas disponíveis globalmente desde o primeiro carregamento
     G_MAQUINAS=mq.data||[];
+    G._osHistDev=null; // limpa cache do histórico de OS para devoluções
     G.caixaAtual=G.caixas.find(c=>c.status==='aberto'&&c.operador_id===G.profile?.id)||null;
     carregarContratosModelos();
     const _maxOS=(G.os||[]).reduce((m,o)=>{ const n=parseInt(String(o.numero||'').replace(/\D/g,''),10)||0; return n>m?n:m; }, 0);
@@ -5085,7 +5148,7 @@ function go(page){
     dashboard:renderDashboard,
     pdv:()=>{ setTimeout(initPDVMobile, 80);renderPDVGrid();popSelects();checkCaixaStatus();},
     orcamentos:()=>{ setTimeout(initOSMobile, 80);renderOrcamentos();popSelects();popProdSel();},
-    devolucoes:renderDevolucoes,
+    devolucoes:()=>{ renderDevolucoes(); renderDevVendas(); },
     'hist-vendas':renderHistoricoVendas,
     os:()=>{renderOSList();popSelects();popTecSel();popOSChecklist();},
     'os-hist':()=>{popOSFiltros();renderOSHist();},
@@ -6799,21 +6862,217 @@ function imprimirComprovanteDevolucao(devId){
   abrirPDFModal(html, 'Comprovante-Devolucao-'+pad(d.numero||0));
 }
 
+/* ══════════════════════════════════════════════════════════════
+   ABA DEVOLUÇÕES — 3 sub-abas: Histórico / Vendas / OS
+   ══════════════════════════════════════════════════════════════ */
+function devTab(aba, btn){
+  ['historico','vendas','os'].forEach(t=>{
+    const el=document.getElementById('devtab-'+t);
+    const b=document.getElementById('devtab-btn-'+t);
+    if(el) el.style.display=t===aba?'':'none';
+    if(b){ b.classList.toggle('active',t===aba); }
+  });
+  if(aba==='vendas') renderDevVendas();
+  if(aba==='os')     renderDevOS();
+}
+
 function renderDevolucoes(q=''){
-  const f=q.toLowerCase();
-  const list=G.devolucoes.filter(d=>!f||d.cliente_nome.toLowerCase().includes(f)||String(d.venda_numero).includes(f));
-  const eC={dinheiro:'tag-grn',credito_loja:'tag-pur',pix:'tag-blu'};
-  document.getElementById('dev-table').innerHTML=list.length===0?'<tr><td colspan="9" style="text-align:center;padding:28px;color:var(--txt3)">Nenhuma devolução</td></tr>':list.map(d=>`<tr>
+  const f=(q||document.getElementById('dev-busca')?.value||'').toLowerCase();
+  const list=G.devolucoes.filter(d=>!f
+    ||(d.cliente_nome||'').toLowerCase().includes(f)
+    ||String(d.venda_numero||'').includes(f)
+    ||String(d.numero||'').includes(f)
+    ||(d.motivo||'').toLowerCase().includes(f));
+  const eC={dinheiro:'tag-grn',credito_loja:'tag-pur',pix:'tag-blu',cartao:'tag-pur'};
+  document.getElementById('dev-table').innerHTML=list.length===0
+    ?'<tr><td colspan="9" style="text-align:center;padding:28px;color:var(--txt3)"><i class="ti ti-mood-empty" style="font-size:28px;display:block;margin-bottom:8px;opacity:.3"></i>Nenhuma devolução registrada</td></tr>'
+    :list.map(d=>`<tr>
     <td style="font-weight:700;color:var(--pri)">#${pad(d.numero||0)}</td>
-    <td style="font-weight:600">#${pad(d.venda_numero||0)}</td>
-    <td>${d.cliente_nome}</td>
-    <td><span class="tag ${d.tipo==='total'?'tag-red':'tag-amb'}">${d.tipo}</span></td>
-    <td style="font-size:12px;color:var(--txt2)">${d.motivo||'—'}</td>
-    <td style="font-weight:700;color:var(--danger)">${fmt(d.valor_total)}</td>
-    <td><span class="tag ${eC[d.forma_estorno]||'tag-gry'}">${d.forma_estorno||'—'}</span></td>
-    <td style="font-size:12px;color:var(--txt3)">${fmtDT(d.criado_em)}</td>
+    <td style="font-weight:600;font-size:12px">${d.os_numero?`<span style="color:var(--warn)"><i class="ti ti-tool" style="font-size:10px"></i> OS ${d.os_numero}</span>`:`#${pad(d.venda_numero||0)}`}</td>
+    <td>${esc(d.cliente_nome||'—')}</td>
+    <td><span class="tag ${d.tipo==='total'?'tag-red':'tag-amb'}">${d.tipo==='total'?'Total':'Parcial'}</span></td>
+    <td style="font-size:12px;color:var(--txt2);max-width:160px"><span title="${esc(d.motivo||'')}">${esc((d.motivo||'—').slice(0,40))}${(d.motivo||'').length>40?'…':''}</span></td>
+    <td style="font-weight:700;color:var(--danger)">${fmt(d.valor_total||0)}</td>
+    <td><span class="tag ${eC[d.forma_estorno]||'tag-gry'}">${{dinheiro:'Dinheiro',credito_loja:'Crédito Loja',pix:'Pix',cartao:'Cartão'}[d.forma_estorno]||d.forma_estorno||'—'}</span></td>
+    <td style="font-size:11.5px;color:var(--txt3)">${fmtDT(d.criado_em)}</td>
     <td><button class="btn btn-out btn-xs" onclick="imprimirComprovanteDevolucao('${d.id}')" title="Comprovante"><i class="ti ti-receipt"></i></button></td>
   </tr>`).join('');
+}
+
+/* ── ABA VENDAS: lista vendas do histórico para iniciar devolução ── */
+function renderDevVendas(){
+  const q=(document.getElementById('devv-busca')?.value||'').toLowerCase();
+  const de=document.getElementById('devv-de')?.value||'';
+  const ate=document.getElementById('devv-ate')?.value||'';
+  const fmLabels={dinheiro:'Dinheiro',pix:'Pix',cartao:'Cartão',crediario:'Crediário',misto:'Misto'};
+  const fmTags={dinheiro:'tag-grn',pix:'tag-blu',cartao:'tag-pur',crediario:'tag-amb',misto:'tag-gry'};
+  let list=[...(G.vendas||[])].filter(v=>v.tipo!=='servico_os');
+  if(q) list=list.filter(v=>(v.cliente_nome||'').toLowerCase().includes(q)||String(v.id||'').toLowerCase().includes(q)||(v.itens||[]).some(i=>(i.nome||'').toLowerCase().includes(q)));
+  if(de) list=list.filter(v=>v.criado_em&&v.criado_em.split('T')[0]>=de);
+  if(ate) list=list.filter(v=>v.criado_em&&v.criado_em.split('T')[0]<=ate);
+
+  const el=document.getElementById('devv-table');if(!el)return;
+  if(list.length===0){
+    el.innerHTML='<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--txt3)"><i class="ti ti-receipt" style="font-size:28px;display:block;margin-bottom:8px;opacity:.3"></i>Nenhuma venda encontrada</td></tr>';
+    return;
+  }
+  el.innerHTML=list.map(v=>{
+    const num=String(v.id||'').slice(-6).toUpperCase()||'—';
+    const itensTxt=(v.itens||[]).slice(0,2).map(i=>`${i.qty||1}x ${i.nome||''}`).join(', ')+(( v.itens?.length||0)>2?` +${v.itens.length-2}`:'');
+    // Verifica se já tem devoluções registradas para essa venda
+    const devs=(G.devolucoes||[]).filter(d=>d.venda_id===v.id||String(d.venda_numero)===String(v.id));
+    const totalDevolvido=devs.reduce((s,d)=>s+(d.valor_total||0),0);
+    const temDev=devs.length>0;
+    return `<tr>
+      <td style="font-weight:700;color:var(--pri);font-size:12px">${num}</td>
+      <td style="font-size:11.5px;color:var(--txt3)">${fmtDT(v.criado_em||'')}</td>
+      <td style="font-weight:600">${esc(v.cliente_nome||'Consumidor Final')}</td>
+      <td style="font-size:11.5px;color:var(--txt2);max-width:160px"><span title="${esc(itensTxt)}">${esc(itensTxt.slice(0,35))}${itensTxt.length>35?'…':''}</span></td>
+      <td><span class="tag ${fmTags[v.pagamento]||'tag-gry'}">${fmLabels[v.pagamento]||v.pagamento||'—'}</span></td>
+      <td style="font-weight:700">${fmt(v.total||0)}</td>
+      <td>${temDev?`<span class="tag tag-red" title="${devs.length} dev.">-${fmt(totalDevolvido)}</span>`:'<span style="font-size:11px;color:var(--txt4)">—</span>'}</td>
+      <td>
+        <div style="display:flex;gap:3px">
+          <button class="btn btn-out btn-xs" onclick="verDetalheVenda('${v.id}')" title="Ver detalhes"><i class="ti ti-eye"></i></button>
+          <button class="btn btn-pri btn-xs" onclick="abrirDevVenda('${v.id}')" title="Registrar devolução"><i class="ti ti-arrow-back-up"></i> Devolver</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+/* ── ABA OS: lista OS entregues/prontas para garantia ou devolução ── */
+async function renderDevOS(){
+  const q=(document.getElementById('devos-busca')?.value||'').toLowerCase();
+  const filtroStatus=document.getElementById('devos-status')?.value||'';
+  const de=document.getElementById('devos-de')?.value||'';
+  const ate=document.getElementById('devos-ate')?.value||'';
+
+  // OS abertas do cache + busca no histórico para entregues
+  let list=[...(G.os||[])];
+  // Busca OS entregues do banco (não estão no cache principal)
+  if(!G._osHistDev){
+    try{
+      const {data}=await db.from('ordens_servico')
+        .select('*').in('status',['Entregue','Ag. Pagamento','Pronto'])
+        .order('data_conclusao',{ascending:false}).limit(300);
+      G._osHistDev=data||[];
+    }catch(e){ G._osHistDev=[]; }
+  }
+  // Junta cache + histórico sem duplicar
+  const ids=new Set(list.map(o=>o.id));
+  (G._osHistDev||[]).forEach(o=>{ if(!ids.has(o.id)) list.push(o); });
+
+  if(q) list=list.filter(o=>(o.cliente_nome||'').toLowerCase().includes(q)||(o.numero||'').toLowerCase().includes(q)||(o.aparelho||'').toLowerCase().includes(q));
+  if(filtroStatus) list=list.filter(o=>o.status===filtroStatus);
+  else list=list.filter(o=>['Entregue','Ag. Pagamento','Pronto'].includes(o.status));
+  if(de) list=list.filter(o=>(o.data_conclusao||o.criado_em||'').split('T')[0]>=de);
+  if(ate) list=list.filter(o=>(o.data_conclusao||o.criado_em||'').split('T')[0]<=ate);
+  list.sort((a,b)=>(b.data_conclusao||b.criado_em||'').localeCompare(a.data_conclusao||a.criado_em||''));
+
+  const el=document.getElementById('devos-table');if(!el)return;
+  if(list.length===0){
+    el.innerHTML='<tr><td colspan="9" style="text-align:center;padding:28px;color:var(--txt3)"><i class="ti ti-tool" style="font-size:28px;display:block;margin-bottom:8px;opacity:.3"></i>Nenhuma OS encontrada</td></tr>';
+    return;
+  }
+
+  const hoje=new Date();hoje.setHours(0,0,0,0);
+  el.innerHTML=list.map(o=>{
+    const dataConc=o.data_conclusao?new Date(o.data_conclusao):null;
+    const diasGar=o.garantia_dias||0;
+    let garTag='';
+    if(diasGar>0&&dataConc){
+      const expira=new Date(dataConc);expira.setDate(expira.getDate()+diasGar);
+      const restam=Math.ceil((expira-hoje)/(1000*60*60*24));
+      if(restam>0) garTag=`<span class="tag tag-grn" title="Vence em ${fmtD(expira.toISOString())}"><i class="ti ti-shield"></i> ${restam}d</span>`;
+      else garTag=`<span class="tag tag-gry" title="Garantia vencida"><i class="ti ti-shield-off"></i> Vencida</span>`;
+    } else if(diasGar===0){
+      garTag='<span style="font-size:11px;color:var(--txt4)">Sem garantia</span>';
+    }
+    const reabs=(o.reaberturas||[]).length;
+    return `<tr>
+      <td style="font-weight:700;color:var(--pri)">${o.numero}</td>
+      <td style="font-size:11.5px;color:var(--txt3)">${o.data_conclusao?fmtDT(o.data_conclusao):fmtDT(o.criado_em||'')}</td>
+      <td style="font-weight:600">${esc(o.cliente_nome||'—')}</td>
+      <td style="font-size:12px;color:var(--txt2)">${esc(o.aparelho||'—')}</td>
+      <td style="font-size:12px;color:var(--txt2)">${esc(o.tecnico_nome||'—')}</td>
+      <td><span class="tag ${OC[o.status]||'tag-gry'}">${o.status}</span></td>
+      <td>${garTag}${reabs>0?` <span class="tag tag-amb" style="font-size:10px">${reabs}x reab.</span>`:''}</td>
+      <td style="font-weight:700">${fmt(o.total||0)}</td>
+      <td>
+        <div style="display:flex;gap:3px;flex-wrap:wrap">
+          <button class="btn btn-out btn-xs" onclick="detOS('${o.id}')" title="Ver OS"><i class="ti ti-eye"></i></button>
+          <button class="btn btn-warn btn-xs" onclick="abrirReabrirOS('${o.id}')" title="Reabrir / Garantia"><i class="ti ti-refresh"></i></button>
+          <button class="btn btn-pri btn-xs" onclick="abrirDevOS('${o.id}')" title="Registrar devolução"><i class="ti ti-arrow-back-up"></i></button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+/* ── Abre modal de devolução pré-preenchido com dados de uma VENDA ── */
+function abrirDevVenda(vendaId){
+  const v=G.vendas.find(x=>x.id===vendaId);
+  if(!v){notify('Venda não encontrada.','warn');return;}
+  openModal('modal-devolucao');
+  setTimeout(()=>{
+    const campos={
+      'dev-venda-id': v.id,
+      'dev-cliente':  v.cliente_nome||'',
+      'dev-valor':    (v.total||0).toFixed(2),
+      'dev-tipo':     'total'
+    };
+    Object.entries(campos).forEach(([id,val])=>{ const el=document.getElementById(id); if(el){el.value=val;el.dispatchEvent(new Event('change'));} });
+    // Mostra os itens da venda para referência
+    const info=document.getElementById('dev-modal-info');
+    if(info){
+      const itensHTML=(v.itens||[]).map(i=>`<div style="font-size:12px;color:var(--txt2);padding:3px 0;border-bottom:1px solid var(--border)"><span style="font-weight:600">${i.qty||1}x ${esc(i.nome||'')}</span> · ${fmt(i.preco||0)}</div>`).join('');
+      info.innerHTML=`<div style="background:var(--pri-light);border-radius:9px;padding:10px 12px;margin-bottom:10px">
+        <div style="font-size:11px;font-weight:700;color:var(--pri);margin-bottom:6px"><i class="ti ti-receipt"></i> Venda ${String(v.id||'').slice(-6).toUpperCase()} · ${fmtDT(v.criado_em||'')}</div>
+        ${itensHTML}
+        <div style="display:flex;justify-content:space-between;margin-top:6px;font-weight:700"><span>Total da venda</span><span>${fmt(v.total||0)}</span></div>
+      </div>`;
+    }
+  },120);
+}
+
+/* ── Abre modal de devolução pré-preenchido com dados de uma OS ── */
+function abrirDevOS(osId){
+  // Busca no cache principal ou no histórico
+  const o=(G.os||[]).find(x=>x.id===osId)||(G._osHistDev||[]).find(x=>x.id===osId);
+  if(!o){notify('OS não encontrada.','warn');return;}
+  openModal('modal-devolucao');
+  setTimeout(()=>{
+    const campos={
+      'dev-cliente': o.cliente_nome||'',
+      'dev-valor':   (o.total||0).toFixed(2),
+      'dev-tipo':    'total'
+    };
+    Object.entries(campos).forEach(([id,val])=>{ const el=document.getElementById(id); if(el){el.value=val;el.dispatchEvent(new Event('change'));} });
+    // Guarda referência da OS para salvar no registro de devolução
+    const modal=document.getElementById('modal-devolucao');
+    if(modal) modal.dataset.osId=osId;
+    // Mostra dados da OS para referência
+    const info=document.getElementById('dev-modal-info');
+    if(info){
+      const hoje=new Date();hoje.setHours(0,0,0,0);
+      const dataConc=o.data_conclusao?new Date(o.data_conclusao):null;
+      const diasGar=o.garantia_dias||0;
+      let garInfo='Sem garantia';
+      if(diasGar>0&&dataConc){
+        const expira=new Date(dataConc);expira.setDate(expira.getDate()+diasGar);
+        const restam=Math.ceil((expira-hoje)/(1000*60*60*24));
+        garInfo=restam>0?`✅ Garantia válida: ${diasGar} dias (${restam} dias restantes)`:`⚠️ Garantia vencida (${diasGar} dias, venceu em ${fmtD(expira.toISOString())})`;
+      }
+      info.innerHTML=`<div style="background:rgba(245,158,11,.08);border:1.5px solid rgba(245,158,11,.2);border-radius:9px;padding:10px 12px;margin-bottom:10px">
+        <div style="font-size:11px;font-weight:700;color:var(--warn);margin-bottom:6px"><i class="ti ti-tool"></i> OS ${o.numero} · ${esc(o.aparelho||'')}</div>
+        <div style="font-size:12px;color:var(--txt2);margin-bottom:3px">Defeito: ${esc(o.defeito||'—')}</div>
+        <div style="font-size:12px;color:var(--txt2);margin-bottom:6px">Técnico: ${esc(o.tecnico_nome||'—')}</div>
+        <div style="font-size:12px;font-weight:600;color:${diasGar>0&&dataConc&&Math.ceil((new Date(dataConc).setDate(new Date(dataConc).getDate()+diasGar),new Date(o.data_conclusao||'')-hoje)>0)?'var(--success)':'var(--warn)'}">${garInfo}</div>
+        <div style="display:flex;justify-content:space-between;margin-top:6px;font-weight:700"><span>Total do serviço</span><span>${fmt(o.total||0)}</span></div>
+      </div>`;
+    }
+  },120);
 }
 
 function renderHistoricoVendas(){
