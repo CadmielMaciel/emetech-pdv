@@ -483,6 +483,33 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
 /* ── SEGURANÇA: ocultar telas que não devem aparecer ── */
 .op-id-screen { display: none !important; }
 
+/* ── MODO PDV TELA CHEIA ─────────────────────────────── */
+/* Ao entrar no PDV, esconde sidebar e topbar para foco total na operação */
+body.pdv-fullscreen .sidebar{display:none!important}
+body.pdv-fullscreen .topbar{display:none!important}
+body.pdv-fullscreen .content{padding:12px 16px}
+body.pdv-fullscreen .pdv-wrap{height:calc(100vh - 88px)}
+/* Mini-barra superior do modo PDV: identidade + status + botões essenciais */
+.pdv-fs-bar{display:none;align-items:center;justify-content:space-between;gap:10px;padding:8px 4px 12px;flex-wrap:wrap}
+body.pdv-fullscreen .pdv-fs-bar{display:flex}
+.pdv-fs-left{display:flex;align-items:center;gap:12px}
+.pdv-fs-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:16px;color:var(--pri);display:flex;align-items:center;gap:8px}
+.pdv-fs-logo i{font-size:20px}
+.pdv-fs-right{display:flex;align-items:center;gap:8px}
+.pdv-fs-btn{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:10px;font-size:12.5px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--bg2);color:var(--txt2);transition:var(--trans);font-family:'DM Sans',sans-serif;box-shadow:var(--shadow-card)}
+.pdv-fs-btn:hover{border-color:var(--pri);color:var(--pri);background:var(--pri-light)}
+.pdv-fs-btn kbd{background:var(--surface2);border:1px solid var(--border2);border-radius:5px;padding:1px 6px;font-size:10.5px;font-weight:700;font-family:'DM Sans',sans-serif;color:var(--txt3)}
+/* Modal de atalhos (F1) */
+.atalho-row{display:flex;align-items:center;justify-content:space-between;padding:9px 4px;border-bottom:1px solid var(--border);font-size:13px}
+.atalho-row:last-child{border-bottom:none}
+.atalho-row kbd{background:var(--pri-light);color:var(--pri);border:1.5px solid var(--border);border-radius:7px;padding:3px 10px;font-size:12px;font-weight:800;font-family:'DM Sans',sans-serif;min-width:44px;text-align:center}
+/* Modal consulta de preço */
+.consulta-result{display:flex;gap:14px;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:10px}
+.consulta-img{width:84px;height:84px;border-radius:10px;background:var(--pri-light);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0}
+.consulta-img i{font-size:36px;color:var(--pri)}
+.consulta-img img{width:100%;height:100%;object-fit:cover}
+.consulta-preco{font-family:'Syne',sans-serif;font-weight:800;font-size:28px;color:var(--pri)}
+
 /* ── POLISH GLOBAL MISU ── */
 /* Separador de seção da sidebar mais suave */
 .nav-div-thin{height:1px;background:rgba(255,255,255,.06);margin:7px 4px}
@@ -819,6 +846,20 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
 
       <!-- PDV / CAIXA -->
       <div class="page" id="page-pdv">
+        <!-- Mini-barra do modo tela cheia -->
+        <div class="pdv-fs-bar">
+          <div class="pdv-fs-left">
+            <div class="pdv-fs-logo"><i class="ti ti-shopping-cart"></i> PDV — Caixa</div>
+            <div id="pdv-fs-caixa-status" style="font-size:12px;color:var(--txt3)"></div>
+          </div>
+          <div class="pdv-fs-right">
+            <button class="pdv-fs-btn" onclick="abrirAjudaAtalhos()"><kbd>F1</kbd> Atalhos</button>
+            <button class="pdv-fs-btn" onclick="go('orcamentos')"><kbd>F2</kbd> Orçamento</button>
+            <button class="pdv-fs-btn" onclick="abrirConsultaPreco()"><kbd>F4</kbd> Consultar Preço</button>
+            <button class="pdv-fs-btn" onclick="focarOSPagamento()"><kbd>F6</kbd> Pagar OS</button>
+            <button class="pdv-fs-btn" onclick="sairModoPDV()" style="border-color:rgba(239,68,68,.3);color:var(--danger)"><kbd>ESC</kbd> Sair</button>
+          </div>
+        </div>
         <!-- Status do caixa -->
         <div id="caixa-fechado-warn" style="display:none">
           <div class="alert-box alert-warn" style="margin-bottom:12px"><i class="ti ti-alert-triangle" style="font-size:18px"></i><div><strong>Caixa fechado!</strong> Abra o caixa para realizar vendas.</div></div>
@@ -2937,6 +2978,31 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
     <button class="btn btn-out" onclick="closeModal('modal-devolucao');document.getElementById('dev-modal-info').innerHTML=''">Cancelar</button>
     <button class="btn btn-pri" onclick="saveDevolucao()"><i class="ti ti-check"></i>Confirmar Devolução</button>
   </div>
+</div></div>
+
+<!-- MODO PDV: Modal de atalhos (F1) -->
+<div class="modal-overlay" id="modal-atalhos-pdv"><div class="modal sm">
+  <div class="modal-title"><i class="ti ti-keyboard"></i>Atalhos do PDV</div>
+  <div class="atalho-row"><span>Mostrar atalhos</span><kbd>F1</kbd></div>
+  <div class="atalho-row"><span>Novo Orçamento</span><kbd>F2</kbd></div>
+  <div class="atalho-row"><span>Buscar produto</span><kbd>F3</kbd></div>
+  <div class="atalho-row"><span>Consultar preço</span><kbd>F4</kbd></div>
+  <div class="atalho-row"><span>Pagamento de OS</span><kbd>F6</kbd></div>
+  <div class="atalho-row"><span>Abrir / Fechar caixa</span><kbd>F9</kbd></div>
+  <div class="atalho-row"><span>Finalizar venda</span><kbd>F10</kbd></div>
+  <div class="atalho-row"><span>Limpar carrinho</span><kbd>Del</kbd></div>
+  <div class="atalho-row"><span>Sair do PDV (voltar ao início)</span><kbd>ESC</kbd></div>
+  <div class="modal-footer"><button class="btn btn-pri" onclick="closeModal('modal-atalhos-pdv')">Entendi</button></div>
+</div></div>
+
+<!-- MODO PDV: Consulta de preço (F4) -->
+<div class="modal-overlay" id="modal-consulta-preco"><div class="modal sm">
+  <div class="modal-title"><i class="ti ti-search"></i>Consultar Preço</div>
+  <div class="ig"><i class="ti ti-barcode"></i>
+    <input type="text" id="consulta-preco-input" placeholder="Nome, SKU ou código de barras..." oninput="buscarConsultaPreco()" autocomplete="off">
+  </div>
+  <div id="consulta-preco-result"></div>
+  <div style="font-size:11px;color:var(--txt3);margin-top:10px;text-align:center">Pressione <kbd style="background:var(--surface2);border:1px solid var(--border2);border-radius:4px;padding:1px 6px;font-size:10px">ESC</kbd> para fechar</div>
 </div></div>
 
 <!-- Caixa: Abertura -->
@@ -5105,6 +5171,7 @@ function goHub(hub){
   const page='hub-'+hub;
   const pageEl=document.getElementById('page-'+page);
   if(!pageEl){ notify('Seção não encontrada: '+hub,'warn'); return; }
+  document.body.classList.remove('pdv-fullscreen');
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
   pageEl.classList.add('active');
@@ -5122,6 +5189,8 @@ function go(page){
     if (typeof openModal==='function') openModal('modal-planos');
     return;
   }
+  // Sai do modo tela cheia do PDV ao navegar para qualquer outra página
+  if(page!=='pdv') document.body.classList.remove('pdv-fullscreen');
   // Esconder todas as tabs mobile ao navegar (só reaparecem na página correta)
   if (window.innerWidth <= 768) {
     const pt = document.getElementById('pdv-mobile-tabs');
@@ -5146,7 +5215,7 @@ function go(page){
   if(_hubParent){document.querySelectorAll('.ni-group').forEach(el=>{if(el.dataset.hub===_hubParent)el.classList.add('active');});}
   const R={
     dashboard:renderDashboard,
-    pdv:()=>{ setTimeout(initPDVMobile, 80);renderPDVGrid();popSelects();checkCaixaStatus();},
+    pdv:()=>{ setTimeout(initPDVMobile, 80);renderPDVGrid();popSelects();checkCaixaStatus();entrarModoPDV();},
     orcamentos:()=>{ setTimeout(initOSMobile, 80);renderOrcamentos();popSelects();popProdSel();},
     devolucoes:()=>{ renderDevolucoes(); renderDevVendas(); },
     'hist-vendas':renderHistoricoVendas,
@@ -5191,6 +5260,152 @@ function updateCaixaPill(){
   }else{
     el.className='caixa-pill caixa-fechado';
     txt.textContent='Caixa Fechado';
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   MODO PDV TELA CHEIA + ATALHOS DE TECLADO
+   Ao entrar no PDV: esconde sidebar/topbar, ativa atalhos F1–F10.
+   Ao sair (ESC ou navegação): restaura o layout normal.
+   ══════════════════════════════════════════════════════════════ */
+function entrarModoPDV(){
+  // No mobile o layout já é otimizado (sidebar oculta) — fullscreen só no desktop
+  if(window.innerWidth<=768) return;
+  document.body.classList.add('pdv-fullscreen');
+  // Atualiza status do caixa na mini-barra
+  const st=document.getElementById('pdv-fs-caixa-status');
+  if(st){
+    st.innerHTML=G.caixaAtual
+      ?`<span style="color:var(--success)"><i class="ti ti-circle-filled" style="font-size:8px"></i> Caixa aberto — ${esc(G.caixaAtual.operador_nome||'')}</span>`
+      :`<span style="color:var(--danger)"><i class="ti ti-circle-filled" style="font-size:8px"></i> Caixa fechado</span>`;
+  }
+  // Ativa listener de atalhos (uma única vez)
+  if(!window._pdvKeysAtivo){
+    document.addEventListener('keydown', _pdvKeyHandler);
+    window._pdvKeysAtivo=true;
+  }
+}
+
+function sairModoPDV(){
+  document.body.classList.remove('pdv-fullscreen');
+  // Vai para a Home conforme o cargo (dashboard para admin/gerente, etc.)
+  const home=(typeof RH!=='undefined'&&RH[G.role])||'dashboard';
+  // Operador não tem dashboard — vai para a página inicial do cargo, mas se
+  // a home dele é o próprio pdv, apenas restaura o layout sem navegar
+  if(home==='pdv'){ notify('Layout normal restaurado. O PDV é sua tela inicial.','info',2500); return; }
+  go(home);
+}
+
+function _pdvKeyHandler(e){
+  // Só age quando a página PDV está ativa
+  const pdvAtivo=document.getElementById('page-pdv')?.classList.contains('active');
+  if(!pdvAtivo) return;
+
+  // Se um modal está aberto, ESC fecha o modal (comportamento padrão), não sai do PDV
+  const modalAberto=document.querySelector('.modal-overlay.open');
+
+  switch(e.key){
+    case 'F1':
+      e.preventDefault();
+      abrirAjudaAtalhos();
+      break;
+    case 'F2':
+      e.preventDefault();
+      document.body.classList.remove('pdv-fullscreen');
+      go('orcamentos');
+      break;
+    case 'F3':
+      e.preventDefault();
+      document.getElementById('ps-field')?.focus();
+      break;
+    case 'F4':
+      e.preventDefault();
+      abrirConsultaPreco();
+      break;
+    case 'F6':
+      e.preventDefault();
+      focarOSPagamento();
+      break;
+    case 'F9':
+      e.preventDefault();
+      if(G.caixaAtual) fecharCaixa(); else abrirCaixa();
+      break;
+    case 'F10':
+      e.preventDefault();
+      if(!document.getElementById('fin-btn')?.disabled) finalizeSale();
+      else notify('Adicione produtos ao carrinho primeiro.','info',2500);
+      break;
+    case 'Delete':
+      // Só limpa carrinho se não estiver digitando em um input
+      if(document.activeElement?.tagName!=='INPUT'&&document.activeElement?.tagName!=='TEXTAREA'){
+        e.preventDefault();
+        if(G.cart.length>0) clearCart();
+      }
+      break;
+    case 'Escape':
+      if(modalAberto){
+        // Deixa o comportamento padrão de fechar modal acontecer
+        closeModal(modalAberto.id);
+      } else {
+        e.preventDefault();
+        sairModoPDV();
+      }
+      break;
+  }
+}
+
+function abrirAjudaAtalhos(){ openModal('modal-atalhos-pdv'); }
+
+function abrirConsultaPreco(){
+  openModal('modal-consulta-preco');
+  const inp=document.getElementById('consulta-preco-input');
+  const res=document.getElementById('consulta-preco-result');
+  if(inp){ inp.value=''; setTimeout(()=>inp.focus(),120); }
+  if(res) res.innerHTML='';
+}
+
+function buscarConsultaPreco(){
+  const q=(document.getElementById('consulta-preco-input')?.value||'').toLowerCase().trim();
+  const res=document.getElementById('consulta-preco-result');
+  if(!res) return;
+  if(q.length<2){ res.innerHTML=''; return; }
+  const encontrados=(G.produtos||[]).filter(p=>
+    (p.nome||'').toLowerCase().includes(q)
+    ||(p.sku||'').toLowerCase().includes(q)
+    ||(p.barcode||'').toLowerCase().includes(q)
+  ).slice(0,4);
+  if(encontrados.length===0){
+    res.innerHTML='<div style="text-align:center;padding:20px;color:var(--txt3);font-size:13px"><i class="ti ti-mood-empty" style="font-size:24px;display:block;margin-bottom:6px;opacity:.4"></i>Nenhum produto encontrado</div>';
+    return;
+  }
+  res.innerHTML=encontrados.map(p=>{
+    const foto=(p.fotos&&p.fotos[0])||null;
+    const estoqueTxt=p.estoque_infinito?'∞ Ilimitado':`${p.estoque||0} un.`;
+    const estoqueCor=p.estoque_infinito?'var(--pri)':(p.estoque>0?'var(--success)':'var(--danger)');
+    return `<div class="consulta-result">
+      <div class="consulta-img">${foto?`<img src="${foto}">`:'<i class="ti ti-package"></i>'}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:14px;color:var(--txt);line-height:1.3">${esc(p.nome||'')}</div>
+        <div style="font-size:11px;color:var(--txt3);margin:2px 0 6px">SKU: ${esc(p.sku||'—')}</div>
+        <div class="consulta-preco">${fmt(p.preco||0)}</div>
+        <div style="font-size:12px;font-weight:600;color:${estoqueCor};margin-top:2px"><i class="ti ti-package" style="font-size:12px"></i> ${estoqueTxt}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function focarOSPagamento(){
+  const lista=(G.os||[]).filter(o=>o.status==='Ag. Pagamento');
+  if(lista.length===0){ notify('Nenhuma OS aguardando pagamento no momento.','info',3000); return; }
+  if(lista.length===1){ abrirPagamentoOS(lista[0].id); return; }
+  // Mais de uma: rola até a seção e destaca
+  const sec=document.getElementById('os-aguard-pag-section');
+  if(sec){
+    sec.scrollIntoView({behavior:'smooth',block:'start'});
+    sec.style.outline='2.5px solid var(--warn)';
+    sec.style.outlineOffset='4px';
+    sec.style.borderRadius='12px';
+    setTimeout(()=>{sec.style.outline='';sec.style.outlineOffset='';},1800);
   }
 }
 
