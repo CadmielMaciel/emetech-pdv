@@ -836,6 +836,19 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
           </div>
         </div>
 
+        <!-- OS AGUARDANDO PAGAMENTO NO CAIXA -->
+        <div id="os-aguard-pag-section" style="display:none;margin-bottom:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:var(--txt);display:flex;align-items:center;gap:7px">
+              <i class="ti ti-tool" style="color:var(--warn)"></i>
+              OS Prontas — Aguardando Pagamento
+              <span id="os-pag-badge" style="background:var(--warn);color:#fff;font-size:9.5px;font-weight:700;border-radius:99px;padding:1px 7px">0</span>
+            </div>
+            <button class="btn-ghost" onclick="renderOSAguardPag()" title="Atualizar"><i class="ti ti-refresh"></i></button>
+          </div>
+          <div id="os-pag-lista" style="display:flex;flex-direction:column;gap:6px"></div>
+        </div>
+
         <!-- TOAST de adição
 
         <!-- TOAST de adição (mobile) -->
@@ -4953,14 +4966,10 @@ async function doLogout(){
 async function loadAll(){
   setLoad(true);
   try{
-    // Queries paralelas — todas disparam ao mesmo tempo.
-    // Limites ajustados para não travar o boot com tabelas grandes:
-    // - vendas: 150 (suficiente para relatório do dia/semana; histórico completo está em hist-vendas que busca sob demanda)
-    // - movs: 200 (suficiente para tela de estoque; exportação usa query própria)
-    const [pr,cl,os,ve,us,mv,fo,oc,dv,re,pa,cx,en]= await Promise.all([
+    const [pr,cl,os,ve,us,mv,fo,oc,dv,re,pa,cx,en,mq]= await Promise.all([
       db.from('produtos').select('*').order('nome'),
       db.from('clientes').select('*').order('nome'),
-      db.from('ordens_servico').select('*').neq('status','Entregue').order('criado_em',{ascending:false}),
+      db.from('ordens_servico').select('*').not('status','in','("Entregue","Cancelada")').order('criado_em',{ascending:false}),
       db.from('vendas').select('*').order('criado_em',{ascending:false}).limit(150),
       db.from('usuarios').select('*').order('nome'),
       db.from('movimentacoes_estoque').select('*').order('criado_em',{ascending:false}).limit(200),
@@ -4970,20 +4979,22 @@ async function loadAll(){
       db.from('contas_receber').select('*').order('data_vencimento').limit(200),
       db.from('contas_pagar').select('*').order('data_vencimento').limit(200),
       db.from('caixas').select('*').order('criado_em',{ascending:false}).limit(10),
-      db.from('entregas_avulsas').select('*').neq('status','cancelado').order('data').limit(100)
+      db.from('entregas_avulsas').select('*').neq('status','cancelado').order('data').limit(100),
+      // ─── MAQUININHAS: carregadas no boot para estarem disponíveis no PDV ───
+      db.from('maquininhas_cartao').select('*').order('criado_em')
     ]);
     G.produtos=pr.data||[];G.clientes=cl.data||[];G.os=os.data||[];
     G.vendas=ve.data||[];G.usuarios=us.data||[];G.movs=mv.data||[];
     G.fornecedores=fo.data||[];G.orcamentos=oc.data||[];G.devolucoes=dv.data||[];
     G.receber=re.data||[];G.pagar=pa.data||[];G.caixas=cx.data||[];
     G.entregasAvulsas=en.data||[];
+    // Maquininhas disponíveis globalmente desde o primeiro carregamento
+    G_MAQUINAS=mq.data||[];
     G.caixaAtual=G.caixas.find(c=>c.status==='aberto'&&c.operador_id===G.profile?.id)||null;
-    // carregarContratosModelos depois das queries para não bloquear a atribuição dos dados
     carregarContratosModelos();
     const _maxOS=(G.os||[]).reduce((m,o)=>{ const n=parseInt(String(o.numero||'').replace(/\D/g,''),10)||0; return n>m?n:m; }, 0);
     G.osCounter=_maxOS+1;
     updateCaixaPill();
-    // Cache offline em background — não bloqueia o boot
     offCacheProdutos(G.produtos).catch(()=>{});
     offCacheClientes(G.clientes).catch(()=>{});
   }catch(e){notify('Erro ao carregar dados.','error');}
@@ -5127,10 +5138,15 @@ function checkCaixaStatus(){
     fc.style.display='none';ao.style.display='';
     document.getElementById('caixa-op-nome').textContent=G.caixaAtual.operador_nome;
     document.getElementById('caixa-op-hora').textContent=fmtDT(G.caixaAtual.criado_em);
+    // Mostra fila de OS aguardando pagamento ao abrir o caixa
+    renderOSAguardPag();
   }else{
     fc.style.display='';ao.style.display='none';
     const reBtn=document.getElementById('reimprimir-fechamento-btn');
     if(reBtn) reBtn.style.display=_ultimoFechamentoCaixa?'':'none';
+    // Esconde a fila de OS quando caixa está fechado
+    const osSec=document.getElementById('os-aguard-pag-section');
+    if(osSec) osSec.style.display='none';
   }
 }
 
@@ -5151,12 +5167,15 @@ async function confirmarAbertura(){
 async function fecharCaixa(){
   if(!G.caixaAtual){notify('Nenhum caixa aberto.','warn');return;}
   // Toda venda gravada na tabela 'vendas' é, por definição, uma venda concluída
-  // (não há fluxo de cancelamento/estorno que mude esse status). O filtro por
-  // status==='concluida' fazia o relatório zerar, pois vendas antigas foram
-  // gravadas sem esse campo (status undefined ≠ 'concluida'). Agora aceitamos
-  // qualquer status que não seja explicitamente 'cancelada' ou 'estornada'.
-  const vendasCx=G.vendas.filter(v=>v.caixa_id===G.caixaAtual.id&&v.status!=='cancelada'&&v.status!=='estornada');
+  const vendasCx=G.vendas.filter(v=>v.caixa_id===G.caixaAtual.id&&v.status!=='cancelada'&&v.status!=='estornada'&&v.tipo!=='servico_os');
   const totalVendas=vendasCx.reduce((s,v)=>s+(v.total||0),0);
+  // OS pagas no caixa neste período
+  let servicosOS=[];
+  try{
+    const {data}=await db.from('movimentacoes_caixa').select('*').eq('caixa_id',G.caixaAtual.id).eq('tipo','servico_os');
+    servicosOS=data||[];
+  }catch(e){}
+  const totalServicos=servicosOS.reduce((s,m)=>s+(parseFloat(m.valor)||0),0);
   // Detalhamento por forma de pagamento (considera vendas com pagamento misto)
   const porForma={dinheiro:0,pix:0,cartao:0,crediario:0,fiado:0};
   vendasCx.forEach(v=>{
@@ -5184,18 +5203,18 @@ async function fecharCaixa(){
   const totalReforcos=movs.filter(m=>m.tipo==='reforco').reduce((s,m)=>s+(parseFloat(m.valor)||0),0);
   const ajustes=totalReforcos-totalSangrias;
   const valorSistema=(G.caixaAtual.valor_abertura||0)+totalDinheiro+ajustes;
-  confirmAct('Fechar Caixa',`Vendas no caixa: ${fmt(totalVendas)} (sendo ${fmt(totalDinheiro)} em dinheiro). Esperado na gaveta: ${fmt(valorSistema)}. Confirmar fechamento?`, async()=>{
+  confirmAct('Fechar Caixa',`Produtos: ${fmt(totalVendas)} · Serviços OS: ${fmt(totalServicos)} · Esperado na gaveta: ${fmt(valorSistema)}. Confirmar fechamento?`, async()=>{
     setLoad(true);
     const dataFechamento=new Date().toISOString();
     const payload={status:'fechado',data_fechamento:dataFechamento,valor_sistema:valorSistema};
     await db.from('caixas').update(payload).eq('id',G.caixaAtual.id);
     const idx=G.caixas.findIndex(c=>c.id===G.caixaAtual.id);
     if(idx>=0)Object.assign(G.caixas[idx],payload);
-    // Monta o snapshot do relatório ANTES de zerar G.caixaAtual, para a impressão usar os dados corretos
     const snapshot={
       caixa:{...G.caixaAtual,...payload},
       vendas:vendasCx,totalVendas,porForma,totalDinheiro,
       totalSangrias,totalReforcos,movs,valorSistema,
+      servicosOS,totalServicos,
       operador:G.profile?.nome||G.caixaAtual.operador_nome,
       dataFechamento
     };
@@ -5316,8 +5335,10 @@ function gerarRelatorioFechamentoHTML(snapshot){
       <div class="rel-resumo">
         <table>
           <tr><td>Saldo Inicial (Abertura)</td><td>${fmt(abertura)}</td></tr>
-          <tr><td>Total de Vendas (todas as formas)</td><td>${fmt(snapshot.totalVendas)}</td></tr>
-          <tr><td>Total em Dinheiro</td><td>${fmt(snapshot.totalDinheiro)}</td></tr>
+          <tr><td>Vendas de Produtos</td><td>${fmt(snapshot.totalVendas)}</td></tr>
+          <tr><td>Serviços (OS)</td><td>${fmt(snapshot.totalServicos||0)}</td></tr>
+          <tr><td><b>Total de Faturamento</b></td><td><b>${fmt((snapshot.totalVendas||0)+(snapshot.totalServicos||0))}</b></td></tr>
+          <tr><td>Total em Dinheiro (gaveta)</td><td>${fmt(snapshot.totalDinheiro)}</td></tr>
           <tr><td>Reforços</td><td>+ ${fmt(snapshot.totalReforcos)}</td></tr>
           <tr><td>Sangrias</td><td>− ${fmt(snapshot.totalSangrias)}</td></tr>
         </table>
@@ -5333,8 +5354,18 @@ function gerarRelatorioFechamentoHTML(snapshot){
       <tbody>${linhasMovs}</tbody>
     </table></div>`:''}
 
+    ${(snapshot.servicosOS||[]).length>0?`<div class="rel-sec"><h2>Serviços (OS) Recebidos no Caixa (${(snapshot.servicosOS||[]).length})</h2><table>
+      <thead><tr><th>OS</th><th>Aparelho / Cliente</th><th>Pagamento</th><th>Valor</th></tr></thead>
+      <tbody>${(snapshot.servicosOS||[]).map(s=>`<tr>
+        <td style="font-weight:700;color:#5B47E0">${s.os_numero||'—'}</td>
+        <td>${(s.descricao||'').replace(/OS [^ ]+ — /,'').slice(0,40)}</td>
+        <td>${s.forma_pagamento||'—'}${s.cartao_parcelas>1?` (${s.cartao_parcelas}x)`:''}</td>
+        <td style="text-align:right">${fmt(parseFloat(s.valor)||0)}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>`:''}
+
     <div class="rel-sec">
-      <h2>Vendas do Período (${snapshot.vendas.length})</h2>
+      <h2>Vendas de Produtos (${snapshot.vendas.length})</h2>
       <table>
         <thead><tr><th>Data/Hora</th><th>Cliente</th><th>Pagamento</th><th>Valor</th></tr></thead>
         <tbody>${linhasVendas}</tbody>
@@ -7678,9 +7709,10 @@ async function verHistoricoPreco(id){
 }
 
 /* ── OS ──────────────────────────────────────────────── */
-const ON={'Aguardando':'Em Análise','Em Análise':'Em Reparo','Em Reparo':'Aguardando Peça','Aguardando Peça':'Pronto',Pronto:'Entregue'};
-const OP={Aguardando:8,'Em Análise':25,'Em Reparo':55,'Aguardando Peça':45,Pronto:90,Entregue:100,Cancelada:0};
-const OC={Aguardando:'tag-amb','Em Análise':'tag-blu','Em Reparo':'tag-pur','Aguardando Peça':'tag-red',Pronto:'tag-grn',Entregue:'tag-gry',Cancelada:'tag-red'};
+const ON={'Aguardando':'Em Análise','Em Análise':'Em Reparo','Em Reparo':'Aguardando Peça','Aguardando Peça':'Pronto',Pronto:'Ag. Pagamento'};
+// Nota: 'Ag. Pagamento' → 'Entregue' só acontece pelo caixa (receberPagamentoOS), não pelo botão Avançar
+const OP={Aguardando:8,'Em Análise':25,'Em Reparo':55,'Aguardando Peça':45,Pronto:90,'Ag. Pagamento':95,Entregue:100,Cancelada:0};
+const OC={Aguardando:'tag-amb','Em Análise':'tag-blu','Em Reparo':'tag-pur','Aguardando Peça':'tag-red',Pronto:'tag-grn','Ag. Pagamento':'tag-amb',Entregue:'tag-gry',Cancelada:'tag-red'};
 
 function popTecSel(){
   const sel=document.getElementById('os-tec');if(!sel)return;
@@ -7873,7 +7905,7 @@ function popOSChecklist(){
 
 function renderOSList(q=''){
   const f=q.toLowerCase();
-  const list=G.os.filter(o=>o.status!=='Entregue'&&(!f||o.numero.toLowerCase().includes(f)||o.cliente_nome.toLowerCase().includes(f)||o.aparelho.toLowerCase().includes(f)));
+  const list=G.os.filter(o=>o.status!=='Entregue'&&o.status!=='Cancelada'&&(!f||o.numero.toLowerCase().includes(f)||o.cliente_nome.toLowerCase().includes(f)||o.aparelho.toLowerCase().includes(f)));
   document.getElementById('os-count').textContent='('+list.length+')';
   document.getElementById('os-list').innerHTML=list.length===0?'<div class="empty-st"><i class="ti ti-tools"></i><h3>Nenhuma OS aberta</h3></div>':list.map(o=>`<div style="padding:11px 13px;border-bottom:1px solid var(--border);cursor:pointer;transition:var(--trans)" onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background=''" onclick="detOS('${o.id}')">
     <div style="display:flex;align-items:center;justify-content:space-between">
@@ -8506,16 +8538,284 @@ async function confirmarReabrirOS(id){
 
 async function advOS(id,next){
   const o=G.os.find(x=>x.id===id);if(!o)return;
-  const tl=[...(o.timeline||[]),{status:next,data:new Date().toISOString()}];
+  // Bloqueia avanço direto de 'Ag. Pagamento' → 'Entregue' pelo técnico
+  // Esse passo só acontece pelo caixa via receberPagamentoOS()
+  if(o.status==='Ag. Pagamento'&&next==='Entregue'){
+    notify('Esta OS está aguardando pagamento no caixa. Use a seção "OS Prontas" no PDV.','warn',4000);
+    return;
+  }
+  const tl=[...(o.timeline||[]),{status:next,data:new Date().toISOString(),operador:G.profile?.nome||''}];
   const pl={status:next,progresso:OP[next]||o.progresso,timeline:tl,atualizado_em:new Date().toISOString()};
   if(next==='Entregue')pl.data_conclusao=new Date().toISOString();
+  if(next==='Ag. Pagamento'){
+    // Notifica o sistema que a OS entrou na fila do caixa
+    pl.data_pronto=new Date().toISOString();
+  }
   setLoad(true);
   await db.from('ordens_servico').update(pl).eq('id',id);
   setLoad(false);
   Object.assign(o,pl);
   if(next==='Entregue')G.os=G.os.filter(x=>x.id!==id);
   closeModal('modal-os-det');renderOSList();renderDashboard();
+  // Atualiza a fila de pagamento no PDV em tempo real
+  renderOSAguardPag();
   notify(o.numero+' → '+next,next==='Entregue'?'success':'info');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   FILA DE OS AGUARDANDO PAGAMENTO NO CAIXA
+   Aparece na tela do PDV quando há OS com status 'Ag. Pagamento'
+   ══════════════════════════════════════════════════════════════ */
+function renderOSAguardPag(){
+  const lista=G.os.filter(o=>o.status==='Ag. Pagamento');
+  const sec=document.getElementById('os-aguard-pag-section');
+  const listEl=document.getElementById('os-pag-lista');
+  const badge=document.getElementById('os-pag-badge');
+  if(!sec||!listEl)return;
+  if(badge)badge.textContent=lista.length;
+  sec.style.display=lista.length>0?'':'none';
+  if(lista.length===0){listEl.innerHTML='';return;}
+  listEl.innerHTML=lista.map(o=>`
+    <div style="background:var(--bg2);border:1.5px solid rgba(245,158,11,.3);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow-card)">
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+          <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:var(--pri)">${o.numero}</span>
+          <span style="font-size:11px;color:var(--txt3)">${o.aparelho}</span>
+        </div>
+        <div style="font-size:12px;color:var(--txt2)"><i class="ti ti-user" style="font-size:11px"></i> ${esc(o.cliente_nome||'—')} ${o.tecnico_nome?'· <i class="ti ti-badge" style="font-size:11px"></i> '+esc(o.tecnico_nome):''}</div>
+        ${o.data_pronto?`<div style="font-size:11px;color:var(--txt3);margin-top:2px"><i class="ti ti-clock"></i> Pronto desde ${fmtDT(o.data_pronto)}</div>`:''}
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:var(--pri);margin-bottom:6px">${fmt(o.total||0)}</div>
+        <button class="btn btn-pri btn-sm" onclick="abrirPagamentoOS('${o.id}')">
+          <i class="ti ti-cash"></i> Receber Pagamento
+        </button>
+      </div>
+    </div>`).join('');
+}
+
+/* Abre o modal de pagamento de OS (reutiliza o modal-os-det como drawer lateral) */
+function abrirPagamentoOS(id){
+  const o=G.os.find(x=>x.id===id);if(!o)return;
+  const maqOpts=(G_MAQUINAS||[]).map(m=>`<option value="${m.id}">${m.nome}</option>`).join('');
+  document.getElementById('os-det-content').innerHTML=`
+    <div class="card-title" style="gap:7px"><i class="ti ti-cash" style="color:var(--success)"></i> Receber Pagamento — ${o.numero}</div>
+    <div style="background:var(--pri-light);border-radius:11px;padding:13px 15px;margin-bottom:14px">
+      <div style="font-size:11px;color:var(--txt3);text-transform:uppercase;letter-spacing:.6px;font-weight:700;margin-bottom:2px">OS · ${o.aparelho}</div>
+      <div style="font-size:12.5px;color:var(--txt2);margin-bottom:6px"><i class="ti ti-user" style="font-size:12px"></i> ${esc(o.cliente_nome||'—')}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:13px;font-weight:600;color:var(--txt2)">Total a receber</span>
+        <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:24px;color:var(--pri)">${fmt(o.total||0)}</span>
+      </div>
+    </div>
+
+    <div class="fg"><label class="lbl">Forma de Pagamento</label>
+      <div class="pay-grid" style="grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px">
+        <button class="pb sel" id="ospag-din" onclick="selOSPag(this,'dinheiro')"><i class="ti ti-cash"></i>Dinheiro</button>
+        <button class="pb" id="ospag-pix" onclick="selOSPag(this,'pix')"><i class="ti ti-qrcode"></i>Pix</button>
+        <button class="pb" id="ospag-cart" onclick="selOSPag(this,'cartao')"><i class="ti ti-credit-card"></i>Cartão</button>
+        <button class="pb" id="ospag-cred" onclick="selOSPag(this,'crediario')"><i class="ti ti-file-invoice"></i>Crediário</button>
+      </div>
+    </div>
+
+    <!-- Painel cartão -->
+    <div id="ospag-cartao-panel" style="display:none;background:var(--pri-light);border-radius:9px;padding:10px;margin-bottom:10px">
+      <div style="display:flex;gap:6px;margin-bottom:6px">
+        <select id="ospag-maq" style="flex:1;padding:6px 8px;font-size:12.5px;border-radius:7px;border:1px solid var(--border)">
+          <option value="">— Maquininha —</option>${maqOpts}
+        </select>
+        <select id="ospag-modalidade" style="width:80px;padding:6px;font-size:12px;border-radius:7px;border:1px solid var(--border)" onchange="renderOSPagTaxa()">
+          <option value="credito">Crédito</option>
+          <option value="debito">Débito</option>
+        </select>
+      </div>
+      <div id="ospag-parc-row" style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
+        <span style="font-size:12px;color:var(--txt2)">Parcelas</span>
+        <select id="ospag-parc" style="flex:1;padding:5px 6px;font-size:12px;border-radius:7px;border:1px solid var(--border)" onchange="renderOSPagTaxa()">
+          ${[1,2,3,4,5,6,7,8,9,10,11,12].map(n=>`<option value="${n}">${n}x${n===1?' (à vista)':''}</option>`).join('')}
+        </select>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;white-space:nowrap">
+          <input type="checkbox" id="ospag-repassar" onchange="renderOSPagTaxa()" style="accent-color:var(--pri)"> Juros p/ cliente
+        </label>
+      </div>
+      <div id="ospag-taxa-info" style="font-size:12px;color:var(--txt2)"></div>
+    </div>
+
+    <!-- Valor recebido (dinheiro) -->
+    <div id="ospag-din-panel" style="display:none">
+      <div class="cr" style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="color:var(--txt2);white-space:nowrap;font-size:12.5px">Valor recebido</span>
+        <input type="number" id="ospag-recebido" min="0" step="0.01" placeholder="${(o.total||0).toFixed(2)}"
+          oninput="renderOSPagTroco('${o.id}')"
+          style="flex:1;text-align:right;padding:7px 9px;border-radius:8px;border:1.5px solid var(--border);font-weight:700;font-size:14px">
+      </div>
+      <div id="ospag-troco" style="display:none;background:rgba(16,185,129,.08);border:1.5px solid rgba(16,185,129,.2);border-radius:8px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center">
+        <span style="color:var(--success);font-weight:600">Troco</span>
+        <span id="ospag-troco-val" style="color:var(--success);font-weight:800;font-size:16px">R$ 0,00</span>
+      </div>
+    </div>
+
+    <!-- Observações do pagamento -->
+    <div class="fg" style="margin-top:10px">
+      <label class="lbl">Observação (opcional)</label>
+      <input type="text" id="ospag-obs" placeholder="Ex: Pago parcialmente, falta do chip..." style="font-size:13px">
+    </div>`;
+
+  // Armazena id da OS sendo paga
+  document.getElementById('os-det-content').dataset.osId=id;
+  document.getElementById('os-det-content').dataset.osPagForma='dinheiro';
+
+  document.getElementById('os-det-footer').innerHTML=`
+    <button class="btn btn-out btn-sm" onclick="closeModal('modal-os-det')">Cancelar</button>
+    <button class="btn btn-pri btn-sm" onclick="confirmarPagamentoOS('${id}')">
+      <i class="ti ti-check"></i> Confirmar Pagamento e Entregar
+    </button>`;
+
+  // Inicializa painel de dinheiro
+  selOSPag(document.getElementById('ospag-din'),'dinheiro');
+  // Pré-seleciona a maquininha padrão salva
+  setTimeout(()=>{
+    const maqSalva=localStorage.getItem('emetech_maq_pdv_'+EID());
+    const maqSel=document.getElementById('ospag-maq');
+    if(maqSel&&maqSalva) maqSel.value=maqSalva;
+    renderOSPagTaxa();
+  },50);
+
+  openModal('modal-os-det');
+}
+
+function selOSPag(btn,forma){
+  document.querySelectorAll('.pb[id^="ospag-"]').forEach(b=>b.classList.remove('sel'));
+  if(btn)btn.classList.add('sel');
+  document.getElementById('os-det-content').dataset.osPagForma=forma;
+  const cartPanel=document.getElementById('ospag-cartao-panel');
+  const dinPanel=document.getElementById('ospag-din-panel');
+  if(cartPanel)cartPanel.style.display=forma==='cartao'?'':'none';
+  if(dinPanel)dinPanel.style.display=forma==='dinheiro'?'':'none';
+  if(forma==='cartao')renderOSPagTaxa();
+}
+
+function renderOSPagTroco(osId){
+  const o=G.os.find(x=>x.id===osId);if(!o)return;
+  const recebido=parseFloat(document.getElementById('ospag-recebido')?.value)||0;
+  const total=o.total||0;
+  const troco=Math.max(0,recebido-total);
+  const trocoEl=document.getElementById('ospag-troco');
+  const trocoVal=document.getElementById('ospag-troco-val');
+  if(trocoEl&&trocoVal){
+    trocoEl.style.display=troco>0?'flex':'none';
+    trocoVal.textContent=fmt(troco);
+  }
+}
+
+function renderOSPagTaxa(){
+  const maqId=document.getElementById('ospag-maq')?.value;
+  const modalidade=document.getElementById('ospag-modalidade')?.value||'credito';
+  const parc=parseInt(document.getElementById('ospag-parc')?.value)||1;
+  const repassar=document.getElementById('ospag-repassar')?.checked;
+  const info=document.getElementById('ospag-taxa-info');
+  const parcRow=document.getElementById('ospag-parc-row');
+  if(parcRow)parcRow.style.display=modalidade==='debito'?'none':'flex';
+  if(!info)return;
+  const maq=(G_MAQUINAS||[]).find(m=>m.id===maqId);
+  if(!maq){info.textContent='';return;}
+  const taxa=typeof _taxaParaForma==='function'
+    ?_taxaParaForma(maq,modalidade==='debito'?'debito':'credito',parc)
+    :(()=>{const t=maq.taxas_credito||{};return modalidade==='debito'?Number(maq.taxa_debito||0):Number(t[parc]??t[String(parc)]??0);})();
+  // Salva maquininha como padrão
+  if(maqId)try{localStorage.setItem('emetech_maq_pdv_'+EID(),maqId);}catch(e){}
+  const osId=document.getElementById('os-det-content')?.dataset?.osId;
+  const total=(osId&&G.os.find(x=>x.id===osId)?.total)||0;
+  const custo=total*(taxa/100);
+  const totalFinal=repassar?total+custo:total;
+  info.innerHTML=repassar
+    ?`<span style="color:var(--success)">Taxa ${taxa}% (${parc}x) = ${fmt(custo)} → cliente paga ${fmt(totalFinal)}${parc>1?' em '+parc+'x de '+fmt(totalFinal/parc):''}</span>`
+    :`<span style="color:var(--warn)">Taxa ${taxa}% (${parc}x) = ${fmt(custo)} absorvida pela loja${parc>1?` | ${parc}x de ${fmt(total/parc)}`:''}</span>`;
+}
+
+async function confirmarPagamentoOS(id){
+  const o=G.os.find(x=>x.id===id);if(!o)return;
+  if(!G.caixaAtual){notify('Abra o caixa antes de receber pagamentos.','warn');return;}
+  const conteudo=document.getElementById('os-det-content');
+  const forma=conteudo?.dataset?.osPagForma||'dinheiro';
+  const obs=document.getElementById('ospag-obs')?.value||'';
+  const total=o.total||0;
+  // Validações por forma
+  let troco=0;
+  let maqId=null,maqNome=null,parc=1,taxa=0,modalidade='credito';
+  if(forma==='dinheiro'){
+    const recebido=parseFloat(document.getElementById('ospag-recebido')?.value)||0;
+    if(recebido>0&&recebido<total-0.01){
+      notify(`Valor insuficiente: faltam ${fmt(total-recebido)}.`,'warn');return;
+    }
+    troco=recebido>0?Math.max(0,recebido-total):0;
+  }
+  if(forma==='cartao'){
+    maqId=document.getElementById('ospag-maq')?.value||null;
+    if(!maqId){notify('Selecione a maquininha para pagamento em cartão.','warn');return;}
+    modalidade=document.getElementById('ospag-modalidade')?.value||'credito';
+    parc=parseInt(document.getElementById('ospag-parc')?.value)||1;
+    const maq=(G_MAQUINAS||[]).find(m=>m.id===maqId);
+    maqNome=maq?.nome||'';
+    taxa=typeof _taxaParaForma==='function'?_taxaParaForma(maq,modalidade==='debito'?'debito':'credito',parc):0;
+  }
+  setLoad(true);
+  try{
+    // 1. Avança OS para Entregue com info de pagamento
+    const tl=[...(o.timeline||[]),{
+      status:'Entregue',data:new Date().toISOString(),
+      operador:G.profile?.nome||'Caixa',
+      pagamento:forma,obs
+    }];
+    const plOS={
+      status:'Entregue',progresso:100,timeline:tl,
+      atualizado_em:new Date().toISOString(),
+      data_conclusao:new Date().toISOString(),
+      forma_pagamento_recebido:forma,
+      maquininha_id:maqId,maquininha_nome:maqNome,
+      cartao_parcelas:forma==='cartao'?parc:null,
+      cartao_taxa:forma==='cartao'?taxa:null,
+      troco_os:troco
+    };
+    const {error:errOS}=await db.from('ordens_servico').update(plOS).eq('id',id);
+    if(errOS)throw errOS;
+
+    // 2. Registra no caixa como entrada de serviço
+    const descMov=`OS ${o.numero} — ${o.aparelho} (${o.cliente_nome||'—'})${obs?` · ${obs}`:''}`;
+    const {error:errCx}=await db.from('movimentacoes_caixa').insert({
+      empresa_id:EID(),
+      caixa_id:G.caixaAtual.id,
+      tipo:'servico_os',
+      valor:total,
+      descricao:descMov,
+      os_id:id,
+      os_numero:o.numero,
+      forma_pagamento:forma,
+      maquininha_id:maqId,
+      maquininha_nome:maqNome,
+      cartao_parcelas:forma==='cartao'?parc:null,
+      cartao_taxa:forma==='cartao'?taxa:null,
+      troco:troco||0,
+      usuario_id:G.profile.id,
+      usuario_nome:G.profile.nome
+    });
+    if(errCx){console.warn('Mov. caixa falhou (não crítico):',errCx.message);}
+
+    // 3. Atualiza memória local
+    Object.assign(o,plOS);
+    G.os=G.os.filter(x=>x.id!==id);
+    // Atualiza resumo de vendas do dia (para o relatório de fechamento)
+    G.vendas.unshift({...o,criado_em:new Date().toISOString(),tipo:'servico_os'});
+
+    setLoad(false);
+    closeModal('modal-os-det');
+    renderOSList();renderOSAguardPag();renderDashboard();
+    notify(`${o.numero} entregue e pago (${fmt(total)})!`,'success',4500);
+    if(troco>0)notify(`Troco: ${fmt(troco)}`,'info',4000);
+  }catch(e){
+    setLoad(false);
+    notify('Erro ao registrar pagamento: '+e.message,'error');
+  }
 }
 
 // ── PÁGINA DE CONFIGURAÇÕES ───────────────────────────
@@ -10348,7 +10648,7 @@ function renderRelOperadores(){
 // ── ABA OS / TÉCNICOS ────────────────────────────────────────────────
 function renderRelOS(){
   const os=_getRelOS();
-  const concl=os.filter(o=>['Entregue','Pronto','Concluída','Concluido'].includes(o.status)).length;
+  const concl=os.filter(o=>['Entregue','Pronto','Ag. Pagamento','Concluída','Concluido'].includes(o.status)).length;
   const pend=os.filter(o=>!['Entregue','Cancelada','Cancelado'].includes(o.status)).length;
   const fat=os.filter(o=>o.status==='Entregue').reduce((s,o)=>s+(Number(o.total)||Number(o.valor)||0),0);
   const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
