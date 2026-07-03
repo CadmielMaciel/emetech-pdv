@@ -5142,8 +5142,114 @@ async function loadAll(){
     updateCaixaPill();
     offCacheProdutos(G.produtos).catch(()=>{});
     offCacheClientes(G.clientes).catch(()=>{});
+    // Sincronização em tempo real entre dispositivos/perfis da mesma empresa
+    iniciarRealtime();
   }catch(e){notify('Erro ao carregar dados.','error');}
   finally{setLoad(false);}
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SINCRONIZAÇÃO EM TEMPO REAL (Supabase Realtime)
+   Qualquer alteração feita por outro perfil/dispositivo da mesma
+   empresa aparece automaticamente aqui, sem recarregar a página.
+   Ex.: outro operador altera o preço de um produto → o grid do PDV
+   e a tabela de produtos atualizam sozinhos.
+   ══════════════════════════════════════════════════════════════ */
+let _rtChannel=null;
+let _rtRenderTimers={};
+
+function _pgAtiva(p){ return document.getElementById('page-'+p)?.classList.contains('active'); }
+
+// Debounce por chave: várias mudanças em sequência geram um único re-render
+function _rtRender(chave,fn){
+  clearTimeout(_rtRenderTimers[chave]);
+  _rtRenderTimers[chave]=setTimeout(()=>{ try{fn();}catch(e){console.warn('RT render:',e);} },250);
+}
+
+// Config das tabelas sincronizadas: array em G + o que re-renderizar
+const _RT_TABELAS=[
+  {t:'produtos',arr:'produtos',render:()=>{
+    if(_pgAtiva('pdv'))renderPDVGrid();
+    if(_pgAtiva('produtos'))renderProdTable();
+    if(_pgAtiva('reposicao'))renderReposicao();
+  }},
+  {t:'clientes',arr:'clientes',render:()=>{
+    if(_pgAtiva('clientes'))renderClientes();
+    if(_pgAtiva('pdv'))popSelects();
+  }},
+  {t:'ordens_servico',arr:'os',render:()=>{
+    if(_pgAtiva('os'))renderOSList();
+    if(_pgAtiva('pdv'))renderOSAguardPag();
+    if(_pgAtiva('dashboard'))renderDashboard();
+  },filtroLocal:o=>o&&o.status!=='Entregue'&&o.status!=='Cancelada'},
+  {t:'vendas',arr:'vendas',render:()=>{
+    if(_pgAtiva('dashboard'))renderDashboard();
+    if(_pgAtiva('hist-vendas'))renderHistoricoVendas();
+  }},
+  {t:'caixas',arr:'caixas',render:()=>{
+    G.caixaAtual=G.caixas.find(c=>c.status==='aberto'&&c.operador_id===G.profile?.id)||null;
+    updateCaixaPill();
+    if(_pgAtiva('pdv'))checkCaixaStatus();
+    if(_pgAtiva('caixas')&&typeof renderCaixas==='function')renderCaixas();
+  }},
+  {t:'movimentacoes_estoque',arr:'movs',render:()=>{
+    if(_pgAtiva('estoque'))renderMov();
+  }},
+  {t:'devolucoes',arr:'devolucoes',render:()=>{
+    if(_pgAtiva('devolucoes'))renderDevolucoes();
+  }},
+  {t:'maquininhas_cartao',arr:null,render:null,custom:async()=>{
+    try{const {data}=await db.from('maquininhas_cartao').select('*').order('criado_em');G_MAQUINAS=data||[];}catch(e){}
+  }}
+];
+
+function iniciarRealtime(){
+  const eid=EID();
+  if(!eid) return;
+  // Remove canal anterior (evita assinatura duplicada em re-login/reload de dados)
+  if(_rtChannel){ try{db.removeChannel(_rtChannel);}catch(e){} _rtChannel=null; }
+  _rtChannel=db.channel('empresa-'+eid);
+  _RT_TABELAS.forEach(cfg=>{
+    _rtChannel.on('postgres_changes',
+      {event:'*',schema:'public',table:cfg.t,filter:`empresa_id=eq.${eid}`},
+      payload=>_aplicarMudancaRT(cfg,payload)
+    );
+  });
+  _rtChannel.subscribe(status=>{
+    if(status==='SUBSCRIBED')console.log('✓ Realtime conectado — sincronização entre dispositivos ativa');
+  });
+}
+
+function _aplicarMudancaRT(cfg,payload){
+  const tipo=payload.eventType;
+  const novo=payload.new;
+  const antigo=payload.old;
+  // Tabela com tratamento custom (ex.: maquininhas recarregam a lista global)
+  if(cfg.custom){ cfg.custom(); return; }
+  const arr=G[cfg.arr];
+  if(!Array.isArray(arr)) return;
+
+  if(tipo==='INSERT'&&novo){
+    // filtroLocal: alguns caches só guardam um subconjunto (ex.: OS não-entregues)
+    if(cfg.filtroLocal&&!cfg.filtroLocal(novo)){/* fora do escopo do cache */}
+    else if(!arr.find(x=>x.id===novo.id)) arr.unshift(novo);
+  }
+  else if(tipo==='UPDATE'&&novo){
+    const i=arr.findIndex(x=>x.id===novo.id);
+    if(cfg.filtroLocal&&!cfg.filtroLocal(novo)){
+      // Saiu do escopo (ex.: OS virou Entregue) → remove do cache local
+      if(i>=0) arr.splice(i,1);
+    } else if(i>=0){
+      arr[i]={...arr[i],...novo};
+    } else {
+      arr.unshift(novo); // voltou ao escopo (ex.: OS reaberta em outro dispositivo)
+    }
+  }
+  else if(tipo==='DELETE'&&antigo?.id){
+    G[cfg.arr]=arr.filter(x=>x.id!==antigo.id);
+  }
+
+  if(cfg.render) _rtRender(cfg.t,cfg.render);
 }
 
 /* ── VERIFICAÇÃO PERIÓDICA DE BLOQUEIO (NOVO) ── */
