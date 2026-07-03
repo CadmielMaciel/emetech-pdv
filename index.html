@@ -897,6 +897,18 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
 
         <div class="pdv-wrap" id="pdv-wrap">
           <div class="pdv-left">
+            <!-- Display do último produto adicionado (como vai aparecer na nota) -->
+            <div id="pdv-last-item" style="display:none;background:var(--bg2);border:1.5px solid var(--pri);border-radius:14px;padding:12px 16px;align-items:center;gap:14px;box-shadow:var(--shadow-card)">
+              <div id="pdv-last-img" style="width:64px;height:64px;border-radius:10px;background:var(--pri-light);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
+                <i class="ti ti-package" style="font-size:28px;color:var(--pri)"></i>
+              </div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:2px">Último item — como sai na nota</div>
+                <div id="pdv-last-nome" style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+                <div id="pdv-last-detalhe" style="font-size:12px;color:var(--txt2);margin-top:1px"></div>
+              </div>
+              <div id="pdv-last-total" style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:var(--pri);flex-shrink:0"></div>
+            </div>
             <div class="pdv-tb">
               <div class="bc-wrap"><i class="ti ti-barcode"></i><input type="text" id="bc-field" placeholder="qtd*codigo ou código de barras [Enter]" onkeydown="handleBC(event)"></div>
               <div class="ps-wrap"><i class="ti ti-search"></i><input type="text" id="ps-field" placeholder="Buscar produto…" oninput="renderPDVGrid()"></div>
@@ -957,30 +969,25 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
               <div class="cr" id="troca-row" style="display:none;align-items:center;gap:6px"><span style="color:var(--txt2);white-space:nowrap"><i class="ti ti-arrows-exchange" style="font-size:12px;color:var(--pri)"></i> Troca</span><span id="c-troca-desc" style="flex:1;font-size:11px;color:var(--txt3);text-align:right"></span><span id="c-troca-val" style="font-weight:700;color:#dc2626">- R$ 0,00</span><button class="btn btn-out btn-xs" onclick="removerTrocaPDV()" title="Remover troca" style="padding:1px 5px"><i class="ti ti-x"></i></button></div>
               <button class="btn btn-out btn-sm" id="btn-add-troca" onclick="abrirSelecaoTrocaPDV()" style="width:100%;justify-content:center;margin:4px 0;font-size:11.5px"><i class="ti ti-arrows-exchange"></i> Abater aparelho usado (troca)</button>
               <div class="cg"><span class="cg-lbl">Total</span><span class="cg-val" id="c-tot">R$ 0,00</span></div>
+              <!-- Pagamentos já confirmados (fluxo incremental estilo mercado) -->
+              <div id="pag-confirmados"></div>
+              <!-- Quanto falta pagar -->
+              <div class="cr" id="pag-falta-row" style="display:none;background:rgba(239,68,68,.07);border:1.5px solid rgba(239,68,68,.18);border-radius:9px;padding:7px 11px;margin-bottom:6px">
+                <span style="color:var(--danger);font-weight:700;font-size:12.5px">Falta pagar</span>
+                <span id="pag-falta-val" style="font-weight:800;font-size:16px;color:var(--danger)">R$ 0,00</span>
+              </div>
               <div style="font-size:10.5px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px">Pagamento</div>
               <div class="pay-grid" style="grid-template-columns:1fr 1fr 1fr">
                 <button class="pb sel" onclick="selPay(this,'dinheiro')"><i class="ti ti-cash"></i>Dinheiro</button>
                 <button class="pb" onclick="selPay(this,'pix')"><i class="ti ti-qrcode"></i>Pix</button>
                 <button class="pb" onclick="selPay(this,'cartao')"><i class="ti ti-credit-card"></i>Cartão</button>
               </div>
-              <!-- Pagamento parcial: campos dinâmicos por forma -->
-              <div id="pay-parcial-area" style="margin-top:6px"></div>
-              <!-- Restante a pagar em outra forma -->
-              <div id="pay-restante-area" style="display:none;margin-top:4px;padding:8px 10px;background:var(--surface);border-radius:9px;border:1px solid var(--border)">
-                <div style="font-size:11px;color:var(--txt3);margin-bottom:5px;font-weight:600">Restante a pagar</div>
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-                  <span id="pay-restante-val" style="font-size:15px;font-weight:800;color:var(--danger)">R$ 0,00</span>
-                  <select id="pay-restante-forma" onchange="renderRestanteForma()" style="padding:5px 8px;font-size:12px;border-radius:7px;border:1px solid var(--border)">
-                    <option value="">— Outra forma —</option>
-                    <option value="dinheiro">Dinheiro</option>
-                    <option value="pix">Pix</option>
-                    <option value="cartao">Cartão</option>
-                    <option value="crediario">Crediário</option>
-                  </select>
-                </div>
-                <div id="pay-restante-detalhe" style="display:none"></div>
+              <!-- Valor + Confirmar (o valor vazio = paga o restante inteiro) -->
+              <div class="cr" id="recebido-row" style="display:flex;align-items:center;gap:6px;margin-top:6px">
+                <span style="color:var(--txt2);white-space:nowrap;font-size:12px">Valor</span>
+                <input type="number" id="c-recebido" min="0" step="0.01" placeholder="R$" oninput="renderCart()" style="flex:1;text-align:right;padding:6px 8px;border-radius:7px;border:1px solid var(--border);font-weight:700">
+                <button class="btn btn-pri btn-sm" onclick="confirmarPagamentoParcial()" title="Confirmar este pagamento"><i class="ti ti-check"></i> Confirmar</button>
               </div>
-              <div class="cr" id="recebido-row" style="display:flex;align-items:center;gap:8px"><span style="color:var(--txt2);white-space:nowrap">Valor recebido</span><input type="number" id="c-recebido" min="0" step="0.01" placeholder="R$" oninput="renderCart();renderParcialRestante()" style="flex:1;text-align:right;padding:6px 8px;border-radius:7px;border:1px solid var(--border);font-weight:700"></div>
               <div class="cr" id="troco-row" style="display:none"><span style="color:var(--txt2)">Troco</span><span id="c-troco" style="font-weight:700;color:var(--success)">R$ 0,00</span></div>
               <!-- Botão crediário separado -->
               <button class="pb" id="btn-pay-crediario" onclick="irParaCrediarioPDV()" style="width:100%;margin-top:6px;background:linear-gradient(135deg,#7C3AED,#5B47E0);color:#fff;border:none;justify-content:center">
@@ -5409,6 +5416,109 @@ function focarOSPagamento(){
   }
 }
 
+/* ══════════════════════════════════════════════════════════════
+   PAGAMENTO INCREMENTAL DO PDV (estilo mercado)
+   O operador confirma cada pagamento parcial usando os botões
+   principais (Dinheiro/Pix/Cartão). Cada confirmação abate do total
+   e a venda só finaliza quando a soma cobre o valor.
+   ══════════════════════════════════════════════════════════════ */
+// Lista de pagamentos confirmados da venda atual: [{forma,valor,maqId,...}]
+G.pagamentosPDV = G.pagamentosPDV || [];
+G._trocoConfirmado = 0;
+
+function _totalPDV(){
+  const t=parseFloat(document.getElementById('c-tot')?.textContent?.replace('R$','').replace(/\./g,'').replace(',','.'))||0;
+  return t;
+}
+function _somaConfirmados(){
+  return (G.pagamentosPDV||[]).reduce((s,p)=>s+(p.valor||0),0);
+}
+function _faltaPagar(){
+  return Math.max(0,_totalPDV()-_somaConfirmados());
+}
+
+function confirmarPagamentoParcial(){
+  const total=_totalPDV();
+  if(total<=0){notify('Adicione produtos ao carrinho primeiro.','warn');return;}
+  const falta=_faltaPagar();
+  if(falta<=0.01){notify('O total já está coberto. Clique em Finalizar Venda.','info');return;}
+  const forma=G.payMethod||'dinheiro';
+  const inp=document.getElementById('c-recebido');
+  let valor=parseFloat(inp?.value)||0;
+  // Campo vazio = paga o restante inteiro
+  if(valor<=0) valor=falta;
+
+  const pag={forma,valor:Math.min(valor,falta)};
+
+  if(forma==='cartao'){
+    // Exige maquininha selecionada no painel roxo
+    const t=G._taxaCartaoAtual;
+    if(!t||!t.maqId){somErro();notify('Selecione a maquininha no painel de cartão antes de confirmar.','warn',4500);return;}
+    pag.maquininha_id=t.maqId;pag.maquininha_nome=t.maqNome;
+    pag.parcelas=t.parc;pag.taxa=t.taxa;pag.repassar=t.repassar;pag.modalidade=t.modalidade||'credito';
+  }
+  if(forma==='dinheiro'&&valor>falta){
+    // Excedente vira troco
+    G._trocoConfirmado=(G._trocoConfirmado||0)+(valor-falta);
+  }
+
+  G.pagamentosPDV.push(pag);
+  if(inp)inp.value='';
+  somAddItem();
+  renderPagamentosPDV();
+  const novaFalta=_faltaPagar();
+  if(novaFalta<=0.01){
+    notify('✓ Pagamento completo! Clique em Finalizar Venda.','success',3500);
+  } else {
+    notify(`✓ ${fmt(pag.valor)} confirmado (${forma}). Falta ${fmt(novaFalta)}.`,'info',3500);
+  }
+}
+
+function removerPagamentoParcial(idx){
+  const p=G.pagamentosPDV[idx];
+  if(!p)return;
+  // Se remover um pagamento em dinheiro que gerou troco, zera o troco acumulado (recalculado ao reconfirmar)
+  if(p.forma==='dinheiro')G._trocoConfirmado=0;
+  G.pagamentosPDV.splice(idx,1);
+  renderPagamentosPDV();
+}
+
+function renderPagamentosPDV(){
+  const cont=document.getElementById('pag-confirmados');
+  const faltaRow=document.getElementById('pag-falta-row');
+  const faltaVal=document.getElementById('pag-falta-val');
+  const trocoRow=document.getElementById('troco-row');
+  const trocoEl=document.getElementById('c-troco');
+  if(!cont)return;
+  const lista=G.pagamentosPDV||[];
+  const icons={dinheiro:'ti-cash',pix:'ti-qrcode',cartao:'ti-credit-card',crediario:'ti-file-invoice'};
+  const labels={dinheiro:'Dinheiro',pix:'Pix',cartao:'Cartão',crediario:'Crediário'};
+  cont.innerHTML=lista.map((p,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;background:rgba(16,185,129,.07);border:1.5px solid rgba(16,185,129,.2);border-radius:9px;padding:6px 10px;margin-bottom:5px">
+      <i class="ti ti-circle-check" style="color:var(--success);font-size:16px;flex-shrink:0"></i>
+      <div style="flex:1;min-width:0">
+        <span style="font-size:12.5px;font-weight:700;color:var(--txt)"><i class="ti ${icons[p.forma]||'ti-cash'}" style="font-size:12px"></i> ${labels[p.forma]||p.forma}${p.parcelas>1?` (${p.parcelas}x)`:''}</span>
+        ${p.maquininha_nome?`<span style="font-size:10.5px;color:var(--txt3)"> · ${esc(p.maquininha_nome)}</span>`:''}
+      </div>
+      <span style="font-weight:800;font-size:14px;color:var(--success)">${fmt(p.valor)}</span>
+      <button class="btn-ghost" onclick="removerPagamentoParcial(${i})" title="Remover" style="padding:2px 4px"><i class="ti ti-x" style="color:var(--danger);font-size:13px"></i></button>
+    </div>`).join('');
+  const falta=_faltaPagar();
+  const temPag=lista.length>0;
+  if(faltaRow&&faltaVal){
+    faltaRow.style.display=temPag&&falta>0.01?'flex':'none';
+    faltaVal.textContent=fmt(falta);
+  }
+  // Troco acumulado dos pagamentos em dinheiro confirmados
+  if(trocoRow&&trocoEl&&(G._trocoConfirmado||0)>0){
+    trocoRow.style.display='flex';
+    trocoEl.textContent=fmt(G._trocoConfirmado);
+  }
+  // Atualiza placeholder do campo de valor com o que falta
+  const inp=document.getElementById('c-recebido');
+  if(inp)inp.placeholder=falta>0.01?falta.toFixed(2).replace('.',','):'0,00';
+}
+
 function checkCaixaStatus(){
   const fc=document.getElementById('caixa-fechado-warn');
   const ao=document.getElementById('caixa-aberto-ops');
@@ -6193,10 +6303,31 @@ function addToCart(id){
   somAddItem();
   renderCart();
   salvarCarrinhoSessao();
+  // Display do último item bipado (como sai na nota) — estilo PDV de mercado
+  atualizarDisplayUltimoItem(p);
   // Atualiza sugestões após adicionar item
   setTimeout(renderSugestoesPDV, 100);
   // Monitora padrões
   monitorarPadroesOp();
+}
+
+// Mostra o último produto adicionado com foto, nome e valores exatamente como saem na nota
+function atualizarDisplayUltimoItem(p){
+  const box=document.getElementById('pdv-last-item');
+  if(!box||!p)return;
+  const ci=G.cart.find(x=>x.id===p.id);
+  const qty=ci?.qty||1;
+  const totalItem=(p.preco||0)*qty;
+  const img=document.getElementById('pdv-last-img');
+  const foto=(p.fotos&&p.fotos[0])||null;
+  if(img)img.innerHTML=foto?`<img src="${foto}" style="width:100%;height:100%;object-fit:cover">`:'<i class="ti ti-package" style="font-size:28px;color:var(--pri)"></i>';
+  const nome=document.getElementById('pdv-last-nome');
+  if(nome)nome.textContent=p.nome||'';
+  const det=document.getElementById('pdv-last-detalhe');
+  if(det)det.textContent=`${qty} UN x ${fmt(p.preco||0)}`;
+  const tot=document.getElementById('pdv-last-total');
+  if(tot)tot.textContent=fmt(totalItem);
+  box.style.display='flex';
 }
 
 function renderCart(){
@@ -6241,46 +6372,28 @@ function renderCart(){
   }
   document.getElementById('c-sub').textContent=fmt(sub);
   document.getElementById('c-tot').textContent=fmt(total);
-  // Campo "valor recebido" (dinheiro) / "valor pago agora" (pix/cartão parcial) e troco
+  // Fluxo incremental: o campo "Valor" + botão Confirmar fica SEMPRE visível
+  // para todas as formas (dinheiro/pix/cartão). Vazio = paga o restante inteiro.
   const recRow=document.getElementById('recebido-row');
   const trocoRow=document.getElementById('troco-row');
-  const parcialArea=document.getElementById('pay-parcial-area');
-  if(G.payMethod==='dinheiro'){
-    if(recRow)recRow.style.display='flex';
-    if(parcialArea)parcialArea.innerHTML='';
+  if(recRow)recRow.style.display='flex';
+  // Troco em tempo real para dinheiro à vista (sem pagamentos confirmados)
+  if(G.payMethod==='dinheiro'&&(G.pagamentosPDV||[]).length===0){
     const recebido=parseFloat(document.getElementById('c-recebido')?.value)||0;
     const troco=Math.max(0,recebido-total);
-    if(trocoRow)trocoRow.style.display=(recebido>0)?'flex':'none';
-    document.getElementById('c-troco').textContent=fmt(troco);
-  } else if(G.payMethod==='pix'){
-    if(recRow)recRow.style.display='none';
+    if(trocoRow)trocoRow.style.display=(recebido>0&&troco>0)?'flex':'none';
+    const tEl=document.getElementById('c-troco');
+    if(tEl)tEl.textContent=fmt(troco);
+  } else if((G._trocoConfirmado||0)<=0){
     if(trocoRow)trocoRow.style.display='none';
-    // Campo de valor parcial somente para pix (cartão usa o painel roxo acima)
-    if(parcialArea&&!document.getElementById('c-valor-parcial')){
-      parcialArea.innerHTML=`<div class="cr" style="display:flex;align-items:center;gap:8px">
-        <span style="color:var(--txt2);white-space:nowrap;font-size:12.5px">Valor pago agora</span>
-        <input type="number" id="c-valor-parcial" min="0" step="0.01" placeholder="${fmt(total)}"
-          oninput="renderParcialRestante()"
-          style="flex:1;text-align:right;padding:6px 8px;border-radius:7px;border:1px solid var(--border);font-weight:700">
-      </div>`;
-    }
-  } else if(G.payMethod==='cartao'){
-    if(recRow)recRow.style.display='none';
-    if(trocoRow)trocoRow.style.display='none';
-    // Cartão: NÃO gera campo duplicado — o painel roxo (cartao-maq-row) já é o controle
-    if(parcialArea)parcialArea.innerHTML='';
-  } else {
-    if(recRow)recRow.style.display='none';
-    if(trocoRow)trocoRow.style.display='none';
-    if(parcialArea)parcialArea.innerHTML='';
   }
-  renderMistoTotal(total);
-  renderParcialRestante();
+  // Atualiza lista de pagamentos confirmados e "falta pagar"
+  renderPagamentosPDV();
 }
 
 function cQty(id,d){const p=G.produtos.find(x=>x.id===id);const ci=G.cart.find(x=>x.id===id);if(!ci)return;ci.qty+=d;if(!ci.inf&&p&&ci.qty>p.estoque){ci.qty=p.estoque;notify('Limite!','warn');return;}if(ci.qty<1)G.cart=G.cart.filter(x=>x.id!==id);renderCart();salvarCarrinhoSessao();}
 function rmCart(id){G.cart=G.cart.filter(x=>x.id!==id);renderCart();salvarCarrinhoSessao();}
-function clearCart(){G.cart=[];G.trocaPDV=null;document.getElementById('c-desc').value=0;document.getElementById('c-acr').value=0;var r=document.getElementById('c-recebido');if(r)r.value='';var g=document.getElementById('c-garantia');if(g)g.value=0;renderCart();limparEstadoSessao();resetPainelPagamento();}
+function clearCart(){G.cart=[];G.trocaPDV=null;G.pagamentosPDV=[];G._trocoConfirmado=0;document.getElementById('c-desc').value=0;document.getElementById('c-acr').value=0;var r=document.getElementById('c-recebido');if(r)r.value='';var g=document.getElementById('c-garantia');if(g)g.value=0;var li=document.getElementById('pdv-last-item');if(li)li.style.display='none';renderCart();renderPagamentosPDV();limparEstadoSessao();resetPainelPagamento();}
 
 // Reseta completamente o painel de pagamento ao começar uma nova venda, garantindo que
 // nenhuma seleção (forma do restante, valores confirmados, maquininha) "vaze" de uma
@@ -6314,15 +6427,13 @@ function selPay(btn,m){
   document.querySelectorAll('.pb').forEach(b=>b.classList.remove('sel'));
   btn.classList.add('sel');
   G.payMethod=m;
-  G._payParcial=null; // resetar pagamento parcial ao trocar forma principal
   // Mostrar campo de maquininha se cartão
   const maqRow=document.getElementById('cartao-maq-row');
   if(maqRow){
     maqRow.style.display=m==='cartao'?'flex':'none';
     if(m==='cartao') popMaquininhaPDV();
   }
-  renderCart();
-  renderParcialRestante();
+  renderCart(); // já atualiza a lista de pagamentos confirmados e o "falta pagar"
 }
 
 // Renderiza o painel de restante a pagar e atualiza estado
@@ -6606,62 +6717,45 @@ async function finalizeSale(){
   const cliId=cli?.value||null;
   const cliNome=cli?.options[cli.selectedIndex]?.text||'Consumidor Final';
 
-  // ── MONTA PAGAMENTOS ──
-  // Cartão com painel roxo (forma principal, sem parcial): usa G._taxaCartaoAtual já calculado
-  let pagoPrincipal;
-  if(G.payMethod==='dinheiro'){
-    pagoPrincipal=parseFloat(document.getElementById('c-recebido')?.value)||0;
-    if(pagoPrincipal<=0) pagoPrincipal=total;
-  } else if(G.payMethod==='pix'){
-    const campoParcial=document.getElementById('c-valor-parcial');
-    pagoPrincipal=(campoParcial&&campoParcial.value!=='')?(parseFloat(campoParcial.value)||0):total;
-  } else if(G.payMethod==='cartao'){
-    // No cartão, NÃO existe campo "valor pago agora" separado — o total JÁ inclui a taxa
-    // quando repassar=true (via c-acr). O pagoPrincipal é sempre o total da venda.
-    const campoParcial=document.getElementById('c-valor-parcial');
-    pagoPrincipal=(campoParcial&&campoParcial.value!=='')?(parseFloat(campoParcial.value)||0):total;
-  } else {
-    pagoPrincipal=total;
-  }
-  pagoPrincipal=Math.min(pagoPrincipal,total);
-
+  // ── MONTA PAGAMENTOS (fluxo incremental) ──
+  // Prioridade 1: pagamentos confirmados pelo operador (fluxo parcial estilo mercado)
+  // Prioridade 2: nenhum confirmado = venda à vista na forma selecionada (fluxo rápido)
   let pagamentos=[];
-  if(G._payRestante&&G._payRestante.valor>0.01){
-    pagamentos.push({forma:G.payMethod,valor:pagoPrincipal});
-    const r=G._payRestante;
-    if(!r.forma){
-      somErro();notify(`Selecione a forma de pagamento do restante (faltam ${fmt(r.valor)}).`,'warn',5000);return;
+  let troco=0;
+  const confirmados=G.pagamentosPDV||[];
+  if(confirmados.length>0){
+    const somaConf=confirmados.reduce((s,p)=>s+(p.valor||0),0);
+    if(somaConf+0.01<total){
+      somErro();notify(`Pagamento incompleto: faltam ${fmt(total-somaConf)}. Confirme o restante ou remova itens.`,'warn',5500);return;
     }
-    const parc2={forma:r.forma,valor:r.valor};
-    if(r.forma==='cartao'){
-      if(!r.maqId){somErro();notify('Selecione a maquininha para o pagamento do restante.','warn',5000);return;}
-      parc2.maquininha_id=r.maqId;parc2.parcelas=r.parc;parc2.taxa=r.taxa;parc2.repassar=r.repassar;
-    }
-    if(r.forma==='dinheiro'||r.forma==='pix'){
-      if(!r.confirmado||(r.valorConfirmado||0)+0.01<r.valor){
-        somErro();notify(`Confirme o valor de ${fmt(r.valor)} recebido (${r.forma==='dinheiro'?'dinheiro':'Pix'}) do restante antes de finalizar.`,'warn',6000);return;
-      }
-    }
-    if(r.forma==='crediario'){parc2.pendente=true;}
-    pagamentos.push(parc2);
+    pagamentos=[...confirmados];
+    troco=G._trocoConfirmado||0;
   } else {
-    // Cartão sem parcial: monta pagamento com dados da maquininha
+    // Fluxo à vista: um único pagamento na forma selecionada cobrindo o total
+    let pagoPrincipal=total;
+    if(G.payMethod==='dinheiro'){
+      const recebido=parseFloat(document.getElementById('c-recebido')?.value)||0;
+      if(recebido>0&&recebido<total-0.01){
+        somErro();notify(`Valor insuficiente: faltam ${fmt(total-recebido)}. Digite o valor e clique em Confirmar para pagamento parcial.`,'warn',5500);return;
+      }
+      troco=recebido>0?Math.max(0,recebido-total):0;
+    }
     if(G.payMethod==='cartao'&&G._taxaCartaoAtual){
       const t=G._taxaCartaoAtual;
+      if(!t.maqId){somErro();notify('Selecione a maquininha no painel de cartão.','warn',4500);return;}
       pagamentos=[{forma:'cartao',modalidade:t.modalidade||'credito',valor:pagoPrincipal,maquininha_id:t.maqId,maquininha_nome:t.maqNome,parcelas:t.parc,taxa:t.taxa,repassar:t.repassar}];
+    } else if(G.payMethod==='cartao'){
+      somErro();notify('Selecione a maquininha no painel de cartão.','warn',4500);return;
     } else {
       pagamentos=[{forma:G.payMethod,valor:pagoPrincipal}];
     }
   }
-
-  // Validação: soma cobre o total (exceto crediário que é pendente)
+  // Validação final de segurança: soma cobre o total
   const somaImediata=pagamentos.filter(p=>p.forma!=='crediario').reduce((s,p)=>s+(p.valor||0),0);
   const temCrediario=pagamentos.find(p=>p.forma==='crediario');
   if(somaImediata+0.01<total&&!temCrediario){
-    somErro();notify(`Pagamento insuficiente: faltam ${fmt(total-somaImediata)}. Complete o valor ou selecione uma forma para o restante.`,'warn',5500);return;
+    somErro();notify(`Pagamento insuficiente: faltam ${fmt(total-somaImediata)}.`,'warn',5500);return;
   }
-  const recebidoDin=parseFloat(document.getElementById('c-recebido')?.value)||0;
-  const troco=G.payMethod==='dinheiro'?Math.max(0,recebidoDin-total):0;
   // Verifica inadimplência do cliente antes de finalizar (somente online)
   if (navigator.onLine && cliId && typeof verificarInadimplencia==='function' && verificarInadimplencia(cliId)) {
     notify('⚠️ Cliente com parcelas em atraso no crediário!', 'warn', 5000);
