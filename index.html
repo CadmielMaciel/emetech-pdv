@@ -485,10 +485,19 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
 
 /* ── MODO PDV TELA CHEIA ─────────────────────────────── */
 /* Ao entrar no PDV, esconde sidebar e topbar para foco total na operação */
+body.pdv-fullscreen{overflow:hidden}
 body.pdv-fullscreen .sidebar{display:none!important}
 body.pdv-fullscreen .topbar{display:none!important}
-body.pdv-fullscreen .content{padding:12px 16px}
-body.pdv-fullscreen .pdv-wrap{height:calc(100vh - 88px)}
+/* Sem scroll da página: o content vira um flex de altura exata da janela
+   e o pdv-wrap ocupa o espaço restante. Só grid de produtos e carrinho rolam. */
+body.pdv-fullscreen .content{padding:12px 16px;height:100vh;overflow:hidden;display:flex;flex-direction:column}
+body.pdv-fullscreen #page-pdv.active{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden}
+body.pdv-fullscreen .pdv-wrap{flex:1;min-height:0;height:auto}
+body.pdv-fullscreen .pdv-left{min-height:0}
+body.pdv-fullscreen .cart{min-height:0}
+/* Fila de OS aguardando pagamento não pode empurrar o layout: rola internamente */
+body.pdv-fullscreen #os-aguard-pag-section{max-height:24vh;overflow-y:auto;flex-shrink:0}
+body.pdv-fullscreen #os-aguard-pag-section::-webkit-scrollbar{width:6px}
 /* Mini-barra superior do modo PDV: identidade + status + botões essenciais */
 .pdv-fs-bar{display:none;align-items:center;justify-content:space-between;gap:10px;padding:8px 4px 12px;flex-wrap:wrap}
 body.pdv-fullscreen .pdv-fs-bar{display:flex}
