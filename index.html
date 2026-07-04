@@ -2839,7 +2839,19 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
         <div class="fg"><label class="lbl">Fornecedor</label><select id="p-forn"><option value="">— Nenhum —</option></select></div>
       </div>
       <div class="ms">Preços</div>
-      <div class="g2"><div class="fg"><label class="lbl">Custo R$</label><input type="number" id="p-custo" step="0.01" placeholder="0,00"></div><div class="fg"><label class="lbl">Preço R$ *</label><input type="number" id="p-preco" step="0.01" placeholder="0,00"></div></div>
+      <div class="g2" style="grid-template-columns:1fr 1fr 1fr">
+        <div class="fg"><label class="lbl">Custo R$</label><input type="number" id="p-custo" step="0.01" placeholder="0,00" oninput="calcMargemProd('custo')"></div>
+        <div class="fg"><label class="lbl">Preço R$ *</label><input type="number" id="p-preco" step="0.01" placeholder="0,00" oninput="calcMargemProd('preco')"></div>
+        <div class="fg"><label class="lbl">Margem %</label><input type="number" id="p-margem" step="0.1" min="0" max="99.9" placeholder="0,0" oninput="calcMargemProd('margem')"></div>
+      </div>
+      <!-- Resumo: custo total | lucro previsto | margem -->
+      <div id="p-resumo-margem" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:10px">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">
+          <div><div style="font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px">Custo</div><div id="p-res-custo" style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px;color:var(--txt)">R$ 0,00</div></div>
+          <div><div style="font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px">Lucro previsto</div><div id="p-res-lucro" style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px;color:var(--success)">R$ 0,00</div></div>
+          <div><div style="font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px">Margem</div><div id="p-res-margem" style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px;color:var(--success)">0%</div></div>
+        </div>
+      </div>
     </div>
     <div>
       <div class="ms">Estoque</div>
@@ -5934,11 +5946,74 @@ function renderThumbs(){
   document.getElementById('p-thumbs').innerHTML=G.prodFotos.map((s,i)=>`<div class="it-wrap"><img src="${s}" onclick="fotoFull('${s}')"><button class="it-del" onclick="G.prodFotos.splice(${i},1);renderThumbs()"><i class="ti ti-x" style="font-size:10px"></i></button></div>`).join('');
 }
 function toggleInf(){const v=document.getElementById('p-inf').checked;document.getElementById('p-est-fields').style.display=v?'none':'';}
+
+/* ══════════════════════════════════════════════════════════════
+   MARGEM DE LUCRO BIDIRECIONAL — cadastro de produto/peça
+   Margem calculada sobre o PREÇO DE VENDA (padrão de varejo):
+     margem% = (preço - custo) / preço × 100
+   - Editou CUSTO ou MARGEM → recalcula o PREÇO
+   - Editou PREÇO → recalcula a MARGEM
+   ══════════════════════════════════════════════════════════════ */
+function calcMargemProd(origem){
+  const custoEl=document.getElementById('p-custo');
+  const precoEl=document.getElementById('p-preco');
+  const margemEl=document.getElementById('p-margem');
+  if(!custoEl||!precoEl||!margemEl)return;
+
+  const custo=parseFloat(custoEl.value)||0;
+  let preco=parseFloat(precoEl.value)||0;
+  let margem=parseFloat(margemEl.value)||0;
+
+  if(origem==='custo'){
+    // Custo mudou: se já havia uma margem definida, recalcula o preço mantendo a margem.
+    // Senão, recalcula a margem a partir do preço já digitado.
+    if(margem>0 && margem<100){
+      preco = custo>0 ? custo/(1-margem/100) : preco;
+      precoEl.value = preco>0 ? preco.toFixed(2) : '';
+    } else if(preco>0){
+      margem = preco>0 ? ((preco-custo)/preco*100) : 0;
+      margemEl.value = margem.toFixed(1);
+    }
+  } else if(origem==='preco'){
+    // Preço mudou: recalcula a margem a partir do custo atual
+    margem = preco>0 ? ((preco-custo)/preco*100) : 0;
+    margemEl.value = preco>0 ? margem.toFixed(1) : '';
+  } else if(origem==='margem'){
+    // Margem mudou: recalcula o preço a partir do custo atual
+    if(margem>=100){ margem=99.9; margemEl.value='99.9'; notify('Margem não pode ser 100% ou mais (preço ficaria infinito).','warn',3500); }
+    preco = custo>0 ? custo/(1-margem/100) : 0;
+    precoEl.value = preco>0 ? preco.toFixed(2) : '';
+  }
+
+  // Re-lê valores finais para o resumo
+  const custoFinal=parseFloat(custoEl.value)||0;
+  const precoFinal=parseFloat(precoEl.value)||0;
+  const lucro=precoFinal-custoFinal;
+  const margemFinal=precoFinal>0 ? (lucro/precoFinal*100) : 0;
+
+  const resumo=document.getElementById('p-resumo-margem');
+  if(resumo){
+    if(custoFinal>0||precoFinal>0){
+      resumo.style.display='';
+      document.getElementById('p-res-custo').textContent=fmt(custoFinal);
+      const lucroEl=document.getElementById('p-res-lucro');
+      const margemResEl=document.getElementById('p-res-margem');
+      lucroEl.textContent=fmt(lucro);
+      lucroEl.style.color=lucro>=0?'var(--success)':'var(--danger)';
+      margemResEl.textContent=margemFinal.toFixed(1)+'%';
+      margemResEl.style.color=lucro>=0?'var(--success)':'var(--danger)';
+    } else {
+      resumo.style.display='none';
+    }
+  }
+}
+
 function fotoFull(s){document.getElementById('foto-full-img').src=s;document.getElementById('foto-full').style.display='flex';}
 
 /* ── PRODUTOS ────────────────────────────────────────── */
 function clearProdForm(){
-  ['p-id','p-nome','p-sku','p-bc','p-marca','p-custo','p-preco','p-subcat','p-ncm','p-cest','p-cfop','p-cst','p-gtin'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
+  ['p-id','p-nome','p-sku','p-bc','p-marca','p-custo','p-preco','p-margem','p-subcat','p-ncm','p-cest','p-cfop','p-cst','p-gtin'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
+  const resumo=document.getElementById('p-resumo-margem');if(resumo)resumo.style.display='none';
   const po=document.getElementById('p-origem');if(po)po.value='';
   const pu=document.getElementById('p-unidade');if(pu)pu.value='UN';
   const pf=document.getElementById('p-forn');if(pf)pf.value='';
@@ -6012,6 +6087,7 @@ function editProd(id){
   document.getElementById('p-forn').value=p.fornecedor_id||'';
   document.getElementById('p-custo').value=p.custo||'';
   document.getElementById('p-preco').value=p.preco;
+  calcMargemProd('preco'); // já calcula e mostra a margem ao abrir para edição
   document.getElementById('p-inf').checked=!!p.estoque_infinito;toggleInf();
   if(!p.estoque_infinito){document.getElementById('p-est').value=p.estoque;document.getElementById('p-estmin').value=p.estoque_minimo||3;}
   document.getElementById('p-status').value=p.status||'ativo';
