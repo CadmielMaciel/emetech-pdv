@@ -8174,7 +8174,7 @@ function exportReposicao(formato){
       <tbody>${linhas}</tbody></table>
       <script>window.onload=()=>{window.print();}<\/script>
       </body></html>`;
-    const w=window.open('','_blank');w.document.write(html);w.document.close();
+    const w=window.open('','_blank');w.document.write(_aplicarPaletaDoc(html));w.document.close();
     notify('Abrindo PDF para impressão.','success');
   }
 }
@@ -15760,17 +15760,10 @@ function pdfBase({ titulo, numero, tipo, conteudo, assinatura, wmSrc, wmOp }) {
     ? `<img src="${e.logo}" style="width:48px;height:48px;object-fit:contain;border-radius:10px">`
     : `<div style="width:48px;height:48px;background:linear-gradient(135deg,#5B47E0,#7C3AED);border-radius:10px;display:flex;align-items:center;justify-content:center">${PDF_LOGO_SVG}</div>`;
 
-  // Grade de marca d'água — imagem menor e contida, sem vazar para fora da página
+  // Marca d'água ÚNICA no centro da página (contida, sem vazar)
   const wmEl = wmSrc
-    ? `<img src="${wmSrc}" style="width:64px;height:64px;object-fit:contain;display:block">`
-    : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 110" fill="#5B47E0" style="width:64px;height:64px;display:block">${PDF_LOGO_SVG}</svg>`;
-
-  let gradeHtml = '';
-  for (let r = 0; r < 7; r++) {
-    for (let c = 0; c < 5; c++) {
-      gradeHtml += `<div style="width:20%;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:8px;transform:rotate(-18deg)">${wmEl}</div>`;
-    }
-  }
+    ? `<img src="${wmSrc}" style="width:100%;height:100%;object-fit:contain;display:block">`
+    : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 110" fill="#5B47E0" style="width:100%;height:100%;display:block">${PDF_LOGO_SVG}</svg>`;
 
   const qrPlaceholder = `<div style="width:56px;height:56px;border:2px solid #E4DEFF;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:2px">
     <svg viewBox="0 0 21 21" width="40" height="40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -15798,14 +15791,14 @@ function pdfBase({ titulo, numero, tipo, conteudo, assinatura, wmSrc, wmOp }) {
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:'DM Sans',sans-serif;color:#1A0F3C;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .page{width:210mm;min-height:297mm;padding:0;position:relative;overflow:hidden;background:#fff;isolation:isolate}
-  /* MARCA D'ÁGUA — contida dentro da página, sem vazar */
-  .wm-grade{
-    position:absolute;inset:0;
-    display:flex;flex-wrap:wrap;align-content:flex-start;
+  /* MARCA D'ÁGUA ÚNICA — centralizada na página, contida nos limites */
+  .wm-center{
+    position:absolute;top:50%;left:50%;
+    width:120mm;height:120mm;max-width:65%;max-height:55%;
+    transform:translate(-50%,-50%) rotate(-14deg);
     z-index:0;pointer-events:none;
     opacity:${(wmOp||8)/100};
-    overflow:hidden;
-    clip-path:inset(0);
+    display:flex;align-items:center;justify-content:center;
   }
   /* CONTEÚDO ACIMA DA MARCA */
   .doc-inner{position:relative;z-index:1;padding:0 20mm 20mm}
@@ -17175,7 +17168,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
 <body>
 <div class="page">
   <!-- MARCA D'ÁGUA EM GRADE -->
-  <div class="wm-grade">${gradeHtml}</div>
+  <div class="wm-center">${wmEl}</div>
   <!-- CABEÇALHO -->
   <div class="doc-header">
     <div class="hdr-left">
@@ -17238,7 +17231,30 @@ function pdfAssinatura(nome1, cargo1, nome2 = 'Cliente', cargo2 = 'Solicitante')
 }
 
 // ── AÇÕES: IMPRIMIR / BAIXAR ──────────────────────────
+/* ══════════════════════════════════════════════════════════════
+   PALETA DA EMPRESA EM TODOS OS DOCUMENTOS
+   Todos os documentos (OS, cupom, contratos, termos, entregas,
+   fechamento, devolução, carnê, etiqueta...) passam por
+   pdfImprimir/abrirPDFModal. Aqui as cores padrão (roxo) são
+   trocadas pela paleta escolhida em Aparência — de forma central,
+   sem precisar editar cada gerador.
+   ══════════════════════════════════════════════════════════════ */
+function _aplicarPaletaDoc(html){
+  try{
+    const p=(typeof MARCA!=='undefined'&&MARCA?.paleta)||(typeof paletaAtual!=='undefined'&&paletaAtual)||null;
+    if(!p||!p.c1)return html; // paleta padrão: nada a trocar
+    const c1=p.c1, c2=p.c2||p.c1, dark=p.dark||p.c1;
+    return String(html)
+      .replace(/#5B47E0/gi,c1)
+      .replace(/#7C3AED/gi,c2)
+      .replace(/#2D1B8E/gi,dark)
+      .replace(/#EDE9FF/gi,c1+'22')
+      .replace(/#9D8FC5/gi,c1+'99');
+  }catch(e){return html;}
+}
+
 function pdfImprimir(html) {
+  html=_aplicarPaletaDoc(html);
   // Imprime de forma confiável e independente de qual modal está aberto:
   // injeta o HTML completo do documento num iframe oculto dedicado e imprime
   // apenas esse iframe (não o app). Funciona para A4, cupom, carnê, etiqueta.
@@ -17281,6 +17297,7 @@ let _pdfHtmlAtual = '';
 let _pdfNomeAtual = '';
 
 function abrirPDFModal(html, nome) {
+  html=_aplicarPaletaDoc(html);
   _pdfHtmlAtual = html;
   _pdfNomeAtual = nome;
   // Preview em iframe
@@ -20251,7 +20268,7 @@ function emitirContrato(){
   }
   const win=window.open('','_blank');
   if(!win){notify('Permita pop-ups para abrir o documento.','warn',6000);return;}
-  win.document.write(html); win.document.close();
+  win.document.write(_aplicarPaletaDoc(html)); win.document.close();
   closeModal('modal-contrato-gerar');
 }
 
