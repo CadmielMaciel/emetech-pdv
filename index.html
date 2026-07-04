@@ -498,6 +498,7 @@ body.pdv-fullscreen .cart{min-height:0}
 /* Fila de OS aguardando pagamento não pode empurrar o layout: rola internamente */
 body.pdv-fullscreen #os-aguard-pag-section{max-height:24vh;overflow-y:auto;flex-shrink:0}
 body.pdv-fullscreen #os-aguard-pag-section::-webkit-scrollbar{width:6px}
+@media(max-width:768px){.dash-metas-grid{grid-template-columns:1fr!important}}
 /* Mini-barra superior do modo PDV: identidade + status + botões essenciais */
 .pdv-fs-bar{display:none;align-items:center;justify-content:space-between;gap:10px;padding:8px 4px 12px;flex-wrap:wrap}
 body.pdv-fullscreen .pdv-fs-bar{display:flex}
@@ -728,6 +729,8 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
             </div>
           </div>
         </div>
+        <!-- Lucro líquido do mês + Metas (integrado do misu-stock) -->
+        <div id="dash-metas-wrap" style="margin-bottom:14px"></div>
         <!-- KPI cards estilo misu-store: ícone circular no canto -->
         <div class="sg">
           <div class="sc" style="cursor:pointer" onclick="go('pdv')">
@@ -866,6 +869,7 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
             <button class="pdv-fs-btn" onclick="go('orcamentos')"><kbd>F2</kbd> Orçamento</button>
             <button class="pdv-fs-btn" onclick="abrirConsultaPreco()"><kbd>F4</kbd> Consultar Preço</button>
             <button class="pdv-fs-btn" onclick="focarOSPagamento()"><kbd>F6</kbd> Pagar OS</button>
+            <button class="pdv-fs-btn" onclick="abrirScannerPDV()"><kbd>F7</kbd> Scanner</button>
             <button class="pdv-fs-btn" onclick="sairModoPDV()" style="border-color:rgba(239,68,68,.3);color:var(--danger)"><kbd>ESC</kbd> Sair</button>
           </div>
         </div>
@@ -921,6 +925,7 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
             <div class="pdv-tb">
               <div class="bc-wrap"><i class="ti ti-barcode"></i><input type="text" id="bc-field" placeholder="qtd*codigo ou código de barras [Enter]" onkeydown="handleBC(event)"></div>
               <div class="ps-wrap"><i class="ti ti-search"></i><input type="text" id="ps-field" placeholder="Buscar produto…" oninput="renderPDVGrid()"></div>
+              <button class="btn btn-out btn-sm" onclick="abrirScannerPDV()" title="Escanear etiqueta QR ou código de barras pela câmera (F7)" style="flex-shrink:0"><i class="ti ti-scan"></i> Scanner</button>
             </div>
             <div style="font-size:11px;color:var(--txt3)">💡 <code style="background:var(--surface);border:1px solid var(--border);padding:1px 4px;border-radius:3px">2*SKU-001</code> adiciona 2 unidades · <code style="background:var(--surface);border:1px solid var(--border);padding:1px 4px;border-radius:3px">Esc</code> limpa busca</div>
             <div class="pg" id="pg"></div>
@@ -2829,7 +2834,9 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
                 <i class="ti ti-scan"></i>
               </button>
             </div></div>
-      <div class="g2"><div class="fg"><label class="lbl">Categoria</label><select id="p-cat" onchange="popSubcatsByPai(this.value)"></select></div><div class="fg"><label class="lbl">Marca</label><input type="text" id="p-marca"></div></div>
+      <div class="g2"><div class="fg"><label class="lbl">Categoria</label><select id="p-cat" onchange="popSubcatsByPai(this.value);renderCamposEspecificos(this.value)"></select></div><div class="fg"><label class="lbl">Marca</label><input type="text" id="p-marca"></div></div>
+      <!-- Campos específicos da categoria (IMEI para celular, tamanho para roupa, etc.) -->
+      <div id="p-espec"></div>
       <div class="g2">
         <div class="fg"><label class="lbl">Subcategoria</label>
           <select id="p-subcat-sel" onchange="document.getElementById('p-subcat').value=this.value" style="margin-bottom:4px"></select>
@@ -2839,9 +2846,14 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
         <div class="fg"><label class="lbl">Fornecedor</label><select id="p-forn"><option value="">— Nenhum —</option></select></div>
       </div>
       <div class="ms">Preços</div>
-      <div class="g2" style="grid-template-columns:1fr 1fr 1fr">
-        <div class="fg"><label class="lbl">Custo R$</label><input type="number" id="p-custo" step="0.01" placeholder="0,00" oninput="calcMargemProd('custo')"></div>
-        <div class="fg"><label class="lbl">Preço R$ *</label><input type="number" id="p-preco" step="0.01" placeholder="0,00" oninput="calcMargemProd('preco')"></div>
+      <div class="g2" style="grid-template-columns:1fr 1fr 1fr 1fr">
+        <div class="fg"><label class="lbl">Custo compra R$</label><input type="number" id="p-custo" step="0.01" placeholder="0,00" oninput="calcMargemProd('custo')"></div>
+        <div class="fg"><label class="lbl">Frete R$</label><input type="number" id="p-frete" step="0.01" placeholder="0,00" oninput="calcMargemProd('custo')"></div>
+        <div class="fg"><label class="lbl">Impostos R$</label><input type="number" id="p-imp" step="0.01" placeholder="0,00" oninput="calcMargemProd('custo')"></div>
+        <div class="fg"><label class="lbl">Reparo R$</label><input type="number" id="p-reparo" step="0.01" placeholder="0,00" oninput="calcMargemProd('custo')"></div>
+      </div>
+      <div class="g2">
+        <div class="fg"><label class="lbl">Preço venda R$ *</label><input type="number" id="p-preco" step="0.01" placeholder="0,00" oninput="calcMargemProd('preco')"></div>
         <div class="fg"><label class="lbl">Margem %</label><input type="number" id="p-margem" step="0.1" min="0" max="99.9" placeholder="0,0" oninput="calcMargemProd('margem')"></div>
       </div>
       <!-- Resumo: custo total | lucro previsto | margem -->
@@ -2919,6 +2931,7 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
   </div>
   <div class="modal-footer">
     <button class="btn btn-out" onclick="closeModal('modal-prod');clearProdForm()">Cancelar</button>
+    <button class="btn btn-out" onclick="var pid=document.getElementById('p-id').value;if(pid)imprimirEtiquetaProduto(pid);else notify('Salve o produto antes de gerar a etiqueta.','info')"><i class="ti ti-printer"></i>Etiqueta</button>
     <button class="btn btn-pri" onclick="saveProd()"><i class="ti ti-check"></i>Salvar</button>
   </div>
 </div></div>
@@ -3008,6 +3021,16 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
   </div>
 </div></div>
 
+<!-- MODO PDV: Scanner de câmera (F7) -->
+<div class="modal-overlay" id="modal-scanner-pdv"><div class="modal sm">
+  <div class="modal-title"><i class="ti ti-scan"></i>Scanner — aponte para a etiqueta</div>
+  <div id="scanner-area" style="width:100%;min-height:260px;border-radius:12px;overflow:hidden;background:#000"></div>
+  <div id="scanner-ultimo" style="display:none;margin-top:10px;background:rgba(16,185,129,.08);border:1.5px solid rgba(16,185,129,.25);border-radius:9px;padding:8px 12px;font-size:13px;font-weight:600;color:var(--success)"></div>
+  <div id="scanner-erro" style="display:none;margin-top:10px;font-size:12px;color:var(--danger)"></div>
+  <div style="font-size:11px;color:var(--txt3);margin-top:8px;text-align:center">O produto é adicionado ao carrinho a cada leitura. Continue bipando ou feche.</div>
+  <div class="modal-footer"><button class="btn btn-out" onclick="fecharScannerPDV()">Fechar Scanner</button></div>
+</div></div>
+
 <!-- MODO PDV: Modal de atalhos (F1) -->
 <div class="modal-overlay" id="modal-atalhos-pdv"><div class="modal sm">
   <div class="modal-title"><i class="ti ti-keyboard"></i>Atalhos do PDV</div>
@@ -3016,6 +3039,7 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
   <div class="atalho-row"><span>Buscar produto</span><kbd>F3</kbd></div>
   <div class="atalho-row"><span>Consultar preço</span><kbd>F4</kbd></div>
   <div class="atalho-row"><span>Pagamento de OS</span><kbd>F6</kbd></div>
+  <div class="atalho-row"><span>Scanner de câmera</span><kbd>F7</kbd></div>
   <div class="atalho-row"><span>Abrir / Fechar caixa</span><kbd>F9</kbd></div>
   <div class="atalho-row"><span>Finalizar venda</span><kbd>F10</kbd></div>
   <div class="atalho-row"><span>Limpar carrinho</span><kbd>Del</kbd></div>
@@ -5460,6 +5484,10 @@ function _pdvKeyHandler(e){
       e.preventDefault();
       focarOSPagamento();
       break;
+    case 'F7':
+      e.preventDefault();
+      abrirScannerPDV();
+      break;
     case 'F9':
       e.preventDefault();
       if(G.caixaAtual) fecharCaixa(); else abrirCaixa();
@@ -5478,8 +5506,9 @@ function _pdvKeyHandler(e){
       break;
     case 'Escape':
       if(modalAberto){
-        // Deixa o comportamento padrão de fechar modal acontecer
-        closeModal(modalAberto.id);
+        // Scanner precisa parar a câmera antes de fechar
+        if(modalAberto.id==='modal-scanner-pdv')fecharScannerPDV();
+        else closeModal(modalAberto.id);
       } else {
         e.preventDefault();
         sairModoPDV();
@@ -5644,6 +5673,88 @@ function renderPagamentosPDV(){
   // Atualiza placeholder do campo de valor com o que falta
   const inp=document.getElementById('c-recebido');
   if(inp)inp.placeholder=falta>0.01?falta.toFixed(2).replace('.',','):'0,00';
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SCANNER DE CÂMERA DO PDV (integrado do misu-stock)
+   Lê a etiqueta QR gerada pelo sistema (JSON) ou código de barras
+   comum e adiciona o produto direto ao carrinho.
+   ══════════════════════════════════════════════════════════════ */
+let _pdvScanner=null;
+let _scanUltimoTexto='';
+let _scanUltimoTs=0;
+
+function _loadScannerLib(){
+  return new Promise((res,rej)=>{
+    if(window.Html5Qrcode)return res();
+    const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js';
+    s.onload=res;s.onerror=()=>rej(new Error('Falha ao carregar o leitor de códigos'));
+    document.head.appendChild(s);
+  });
+}
+
+async function abrirScannerPDV(){
+  openModal('modal-scanner-pdv');
+  const erroEl=document.getElementById('scanner-erro');
+  const okEl=document.getElementById('scanner-ultimo');
+  if(erroEl)erroEl.style.display='none';
+  if(okEl)okEl.style.display='none';
+  try{
+    await _loadScannerLib();
+    if(_pdvScanner)await fecharScannerPDV(true); // garante instância única
+    _pdvScanner=new Html5Qrcode('scanner-area');
+    await _pdvScanner.start(
+      {facingMode:'environment'},
+      {fps:10,qrbox:{width:230,height:230}},
+      (texto)=>_processarCodigoScanner(texto),
+      ()=>{} // erros de frame são normais, ignora
+    );
+  }catch(e){
+    if(erroEl){erroEl.style.display='';erroEl.textContent='Não foi possível acessar a câmera: '+(e?.message||e)+'. Verifique a permissão de câmera do navegador.';}
+  }
+}
+
+function _processarCodigoScanner(texto){
+  // Debounce: a lib dispara várias leituras do mesmo código em sequência
+  const agora=Date.now();
+  if(texto===_scanUltimoTexto&&agora-_scanUltimoTs<2500)return;
+  _scanUltimoTexto=texto;_scanUltimoTs=agora;
+
+  let prod=null;
+  try{
+    // Etiqueta QR do sistema: JSON {sku,id,nome,preco,imei,barcode}
+    const j=JSON.parse(texto);
+    prod=(G.produtos||[]).find(p=>p.id===j.id)
+      ||(G.produtos||[]).find(p=>j.sku&&p.sku===j.sku)
+      ||(G.produtos||[]).find(p=>j.barcode&&p.barcode===j.barcode)
+      ||(G.produtos||[]).find(p=>j.imei&&p.imei===j.imei);
+  }catch(_){
+    // Código de barras / texto simples
+    const t=String(texto).trim();
+    prod=(G.produtos||[]).find(p=>p.barcode===t)
+      ||(G.produtos||[]).find(p=>p.sku===t)
+      ||(G.produtos||[]).find(p=>p.imei===t);
+  }
+
+  const okEl=document.getElementById('scanner-ultimo');
+  if(prod){
+    addToCart(prod.id); // já toca som, atualiza display do último item e o carrinho
+    if(okEl){okEl.style.display='';okEl.innerHTML=`<i class="ti ti-circle-check"></i> ${esc(prod.nome)} — ${fmt(prod.preco||0)} adicionado`;}
+  }else{
+    somErro();
+    if(okEl){okEl.style.display='';okEl.style.color='var(--danger)';okEl.style.background='rgba(239,68,68,.07)';okEl.style.borderColor='rgba(239,68,68,.25)';okEl.innerHTML=`<i class="ti ti-alert-triangle"></i> Nenhum produto encontrado para: ${esc(String(texto).slice(0,40))}`;
+      setTimeout(()=>{okEl.style.color='var(--success)';okEl.style.background='rgba(16,185,129,.08)';okEl.style.borderColor='rgba(16,185,129,.25)';},2600);
+    }
+  }
+}
+
+async function fecharScannerPDV(soParar){
+  try{
+    if(_pdvScanner){await _pdvScanner.stop();await _pdvScanner.clear();}
+  }catch(e){}
+  _pdvScanner=null;
+  if(!soParar)closeModal('modal-scanner-pdv');
 }
 
 function checkCaixaStatus(){
@@ -5945,6 +6056,132 @@ function handleFotos(e){
 function renderThumbs(){
   document.getElementById('p-thumbs').innerHTML=G.prodFotos.map((s,i)=>`<div class="it-wrap"><img src="${s}" onclick="fotoFull('${s}')"><button class="it-del" onclick="G.prodFotos.splice(${i},1);renderThumbs()"><i class="ti ti-x" style="font-size:10px"></i></button></div>`).join('');
 }
+/* ══════════════════════════════════════════════════════════════
+   CAMPOS ESPECÍFICOS POR CATEGORIA (integrado do misu-stock)
+   Celular → IMEI, armazenamento, cor, condição
+   Acessório → tipo | Roupa → tipo, tamanho, gênero | Calçado → nº
+   ══════════════════════════════════════════════════════════════ */
+const ESPEC_ARMAZ=['32GB','64GB','128GB','256GB','512GB','1TB'];
+const ESPEC_CORES=['Preto','Branco','Prata','Dourado','Azul','Vermelho','Verde','Roxo','Rosa','Grafite','Titânio','Outro'];
+const ESPEC_ACESS=['Fone de Ouvido','Carregador','Cabo','Cabeça de Carregador','Capa','Película','Suporte','Power Bank','Adaptador','Outro'];
+const ESPEC_ROUPA=['Camiseta','Calça','Jaqueta','Moletom','Short','Bermuda','Vestido','Saia','Blusa','Camisa','Outro'];
+const ESPEC_TAM=['PP','P','M','G','GG','XGG','Único'];
+const ESPEC_NUM=['34','35','36','37','38','39','40','41','42','43','44','45','46'];
+const ESPEC_COND=[['novo','Novo'],['seminovo','Semi-novo'],['usado','Usado']];
+
+function _sel(id,ops,val){return `<select id="${id}"><option value="">—</option>${ops.map(o=>{const[v,l]=Array.isArray(o)?o:[o,o];return `<option value="${v}"${v===val?' selected':''}>${l}</option>`;}).join('')}</select>`;}
+
+function renderCamposEspecificos(cat,valores={}){
+  const box=document.getElementById('p-espec');if(!box)return;
+  const c=(cat||'').toLowerCase();
+  let html='';
+  if(c.includes('celular')||c.includes('smartphone')){
+    html=`<div class="g2" style="grid-template-columns:1fr 1fr">
+      <div class="fg"><label class="lbl">IMEI / Série</label><input type="text" id="pe-imei" placeholder="IMEI ou nº de série" value="${esc(valores.imei||'')}"></div>
+      <div class="fg"><label class="lbl">Armazenamento</label>${_sel('pe-armaz',ESPEC_ARMAZ,valores.armazenamento)}</div>
+      <div class="fg"><label class="lbl">Cor</label>${_sel('pe-cor',ESPEC_CORES,valores.cor)}</div>
+      <div class="fg"><label class="lbl">Condição</label>${_sel('pe-cond',ESPEC_COND,valores.condicao)}</div>
+    </div>`;
+  } else if(c.includes('acess')){
+    html=`<div class="g2" style="grid-template-columns:1fr 1fr">
+      <div class="fg"><label class="lbl">Tipo de Acessório</label>${_sel('pe-tipoacess',ESPEC_ACESS,valores.tipo_acessorio)}</div>
+      <div class="fg"><label class="lbl">Condição</label>${_sel('pe-cond',ESPEC_COND,valores.condicao||'novo')}</div>
+    </div>`;
+  } else if(c.includes('roupa')||c.includes('vestu')){
+    html=`<div class="g2" style="grid-template-columns:1fr 1fr 1fr">
+      <div class="fg"><label class="lbl">Tipo</label>${_sel('pe-tiporoupa',ESPEC_ROUPA,valores.tipo_acessorio)}</div>
+      <div class="fg"><label class="lbl">Tamanho</label>${_sel('pe-tam',ESPEC_TAM,valores.tamanho)}</div>
+      <div class="fg"><label class="lbl">Gênero</label>${_sel('pe-gen',[['U','Unissex'],['M','Masculino'],['F','Feminino']],valores.genero)}</div>
+    </div>`;
+  } else if(c.includes('cal')&&(c.includes('ado')||c.includes('çado'))||c.includes('tenis')||c.includes('tênis')){
+    html=`<div class="g2" style="grid-template-columns:1fr 1fr">
+      <div class="fg"><label class="lbl">Numeração</label>${_sel('pe-tam',ESPEC_NUM,valores.tamanho)}</div>
+      <div class="fg"><label class="lbl">Gênero</label>${_sel('pe-gen',[['U','Unissex'],['M','Masculino'],['F','Feminino']],valores.genero)}</div>
+    </div>`;
+  }
+  box.innerHTML=html?`<div style="background:var(--pri-light);border-radius:10px;padding:10px 12px;margin-bottom:10px;border:1px solid var(--border2)">
+    <div style="font-size:10px;font-weight:700;color:var(--pri);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Campos específicos — ${esc(cat)}</div>${html}</div>`:'';
+}
+
+// Lê os campos específicos preenchidos (qualquer categoria)
+function _lerCamposEspecificos(){
+  const v=id=>document.getElementById(id)?.value||null;
+  return {
+    imei:v('pe-imei'),
+    armazenamento:v('pe-armaz'),
+    cor:v('pe-cor'),
+    condicao:v('pe-cond'),
+    tipo_acessorio:v('pe-tipoacess')||v('pe-tiporoupa'),
+    tamanho:v('pe-tam'),
+    genero:v('pe-gen')
+  };
+}
+
+/* Custo TOTAL do produto = compra + frete + impostos + reparo */
+function _custoTotalForm(){
+  const g=id=>parseFloat(document.getElementById(id)?.value)||0;
+  return g('p-custo')+g('p-frete')+g('p-imp')+g('p-reparo');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ETIQUETA COM QR CODE (integrado do misu-stock)
+   QR contém JSON com os dados do produto — lido pelo scanner do PDV
+   ══════════════════════════════════════════════════════════════ */
+function _loadQRCodeLib(){
+  return new Promise((res,rej)=>{
+    if(window.QRCode&&window.QRCode.toDataURL)return res();
+    const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js';
+    s.onload=res;s.onerror=()=>rej(new Error('Falha ao carregar gerador de QR'));
+    document.head.appendChild(s);
+  });
+}
+
+async function imprimirEtiquetaProduto(id){
+  const p=G.produtos.find(x=>x.id===id);
+  if(!p){notify('Produto não encontrado.','warn');return;}
+  setLoad(true);
+  try{
+    await _loadQRCodeLib();
+    const payload=JSON.stringify({sku:p.sku,id:p.id,nome:p.nome,preco:p.preco,imei:p.imei||undefined,barcode:p.barcode||undefined});
+    const qr=await window.QRCode.toDataURL(payload,{width:220,margin:1});
+    const empresa=G.empresa?.nome||'MISU TECNOLOGY';
+    const detalhes=[p.marca,p.armazenamento,p.cor,p.tamanho?('Tam '+p.tamanho):null].filter(Boolean).join(' · ');
+    const html=`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Etiqueta ${esc(p.sku||'')}</title>
+    <style>
+      *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
+      body{padding:16px;color:#111;background:#fff}
+      .label{border:2px dashed #333;border-radius:12px;padding:16px;width:300px}
+      .emp{font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:#666}
+      .nome{font-size:17px;font-weight:800;margin-top:5px;line-height:1.15}
+      .meta{font-size:11px;color:#444;margin-top:4px}
+      .row{display:flex;align-items:center;gap:10px;margin-top:10px}
+      .qr{width:110px;height:110px;border:1px solid #eee;border-radius:6px}
+      .info{flex:1;font-size:10px;color:#333;line-height:1.5}
+      .sku{margin-top:8px;font-family:ui-monospace,Menlo,monospace;font-size:12px;letter-spacing:.05em;background:#111;color:#fff;padding:5px 9px;border-radius:6px;text-align:center}
+      .preco{margin-top:8px;font-size:26px;font-weight:900;text-align:right}
+      @media print{@page{size:80mm 100mm;margin:3mm}body{padding:0}.label{border-color:#000;width:100%}}
+    </style></head><body>
+    <div class="label">
+      <div class="emp">${esc(empresa)}</div>
+      <div class="nome">${esc(p.nome)}</div>
+      ${detalhes?`<div class="meta">${esc(detalhes)}</div>`:''}
+      <div class="row">
+        <img class="qr" src="${qr}" alt="QR">
+        <div class="info">
+          ${p.imei?`IMEI:<br><b>${esc(p.imei)}</b><br>`:''}
+          ${p.condicao?`Condição: <b>${esc(p.condicao)}</b><br>`:''}
+          ${p.barcode?`Cód: ${esc(p.barcode)}`:''}
+        </div>
+      </div>
+      <div class="sku">${esc(p.sku||'—')}</div>
+      <div class="preco">${fmt(p.preco||0)}</div>
+    </div></body></html>`;
+    pdfImprimir(html);
+  }catch(e){notify('Erro ao gerar etiqueta: '+e.message,'error');}
+  finally{setLoad(false);}
+}
+
 function toggleInf(){const v=document.getElementById('p-inf').checked;document.getElementById('p-est-fields').style.display=v?'none':'';}
 
 /* ══════════════════════════════════════════════════════════════
@@ -5960,7 +6197,8 @@ function calcMargemProd(origem){
   const margemEl=document.getElementById('p-margem');
   if(!custoEl||!precoEl||!margemEl)return;
 
-  const custo=parseFloat(custoEl.value)||0;
+  // Custo TOTAL = compra + frete + impostos + reparo (custo composto)
+  const custo=_custoTotalForm();
   let preco=parseFloat(precoEl.value)||0;
   let margem=parseFloat(margemEl.value)||0;
 
@@ -5985,8 +6223,8 @@ function calcMargemProd(origem){
     precoEl.value = preco>0 ? preco.toFixed(2) : '';
   }
 
-  // Re-lê valores finais para o resumo
-  const custoFinal=parseFloat(custoEl.value)||0;
+  // Re-lê valores finais para o resumo (custo TOTAL composto)
+  const custoFinal=_custoTotalForm();
   const precoFinal=parseFloat(precoEl.value)||0;
   const lucro=precoFinal-custoFinal;
   const margemFinal=precoFinal>0 ? (lucro/precoFinal*100) : 0;
@@ -6012,8 +6250,9 @@ function fotoFull(s){document.getElementById('foto-full-img').src=s;document.get
 
 /* ── PRODUTOS ────────────────────────────────────────── */
 function clearProdForm(){
-  ['p-id','p-nome','p-sku','p-bc','p-marca','p-custo','p-preco','p-margem','p-subcat','p-ncm','p-cest','p-cfop','p-cst','p-gtin'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
+  ['p-id','p-nome','p-sku','p-bc','p-marca','p-custo','p-frete','p-imp','p-reparo','p-preco','p-margem','p-subcat','p-ncm','p-cest','p-cfop','p-cst','p-gtin'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
   const resumo=document.getElementById('p-resumo-margem');if(resumo)resumo.style.display='none';
+  renderCamposEspecificos(document.getElementById('p-cat')?.value||'Celular');
   const po=document.getElementById('p-origem');if(po)po.value='';
   const pu=document.getElementById('p-unidade');if(pu)pu.value='UN';
   const pf=document.getElementById('p-forn');if(pf)pf.value='';
@@ -6029,8 +6268,19 @@ async function saveProd(){
   if(!nome||!preco){notify('Nome e preço obrigatórios!','error');return;}
   const inf=document.getElementById('p-inf').checked;
   const id=document.getElementById('p-id').value;
-  const custo=parseFloat(document.getElementById('p-custo').value)||0;
+  // Custo composto: 'custo' (coluna que todo o sistema usa para lucro) = TOTAL
+  const custoCompra=parseFloat(document.getElementById('p-custo').value)||0;
+  const custoFrete=parseFloat(document.getElementById('p-frete')?.value)||0;
+  const custoImp=parseFloat(document.getElementById('p-imp')?.value)||0;
+  const custoRep=parseFloat(document.getElementById('p-reparo')?.value)||0;
+  const custo=custoCompra+custoFrete+custoImp+custoRep;
   const payload={nome,sku:document.getElementById('p-sku').value||'SKU-'+Date.now(),barcode:document.getElementById('p-bc').value,categoria:document.getElementById('p-cat').value,subcategoria:document.getElementById('p-subcat').value||null,fornecedor_id:document.getElementById('p-forn').value||null,marca:document.getElementById('p-marca').value,custo,preco,estoque_infinito:inf,estoque:inf?null:parseInt(document.getElementById('p-est').value)||0,estoque_minimo:inf?0:parseInt(document.getElementById('p-estmin').value)||0,status:document.getElementById('p-status').value,fotos:G.prodFotos};
+  // Custo composto + campos específicos por categoria (migração X06) — defensivos
+  const extras={
+    custo_compra:custoCompra,custo_frete:custoFrete,custo_impostos:custoImp,custo_reparo:custoRep,
+    ..._lerCamposEspecificos()
+  };
+  Object.assign(payload,extras);
   // Dados fiscais (opcionais) — só se preenchidos
   const fiscal={
     ncm:document.getElementById('p-ncm')?.value||null,
@@ -6054,13 +6304,14 @@ async function saveProd(){
   }
   if(id){({error:err,data}=await db.from('produtos').update(payload).eq('id',id).select().single());}
   else{({error:err,data}=await db.from('produtos').insert({...payload,empresa_id:EID()}).select().single());}
-  // Inserção defensiva: se as colunas fiscais ainda não existem (migração T01 não rodada),
+  // Inserção defensiva: se colunas de migrações pendentes ainda não existem,
   // refaz sem elas para não bloquear o cadastro do produto.
-  if(err && /ncm|cest|cfop|cst|origem_fiscal|unidade|gtin|column|schema/i.test(err.message||'')){
+  if(err && /ncm|cest|cfop|cst|origem_fiscal|unidade|gtin|custo_compra|custo_frete|custo_impostos|custo_reparo|imei|armazenamento|condicao|tipo_acessorio|tamanho|genero|column|schema/i.test(err.message||'')){
     Object.keys(fiscal).forEach(k=>delete payload[k]);
+    Object.keys(extras).forEach(k=>delete payload[k]);
     if(id){({error:err,data}=await db.from('produtos').update(payload).eq('id',id).select().single());}
     else{({error:err,data}=await db.from('produtos').insert({...payload,empresa_id:EID()}).select().single());}
-    if(!err) notify('Produto salvo. (Rode a migração T01 para guardar os dados fiscais.)','warn',6000);
+    if(!err) notify('Produto salvo. (Rode as migrações T01/X06 para guardar dados fiscais e custo composto.)','warn',6000);
   }
   setLoad(false);
   if(err){notify('Erro: '+err.message,'error');return;}
@@ -6085,8 +6336,11 @@ function editProd(id){
   document.getElementById('p-subcat').value=p.subcategoria||'';
   popSelects();
   document.getElementById('p-forn').value=p.fornecedor_id||'';
-  document.getElementById('p-custo').value=p.custo||'';
+  document.getElementById('p-custo').value=p.custo_compra??p.custo??'';
+  const sv2=(id,v)=>{const e=document.getElementById(id);if(e)e.value=(v??'')===0?'':(v??'');};
+  sv2('p-frete',p.custo_frete);sv2('p-imp',p.custo_impostos);sv2('p-reparo',p.custo_reparo);
   document.getElementById('p-preco').value=p.preco;
+  renderCamposEspecificos(p.categoria||'Celular',p); // campos específicos preenchidos
   calcMargemProd('preco'); // já calcula e mostra a margem ao abrir para edição
   document.getElementById('p-inf').checked=!!p.estoque_infinito;toggleInf();
   if(!p.estoque_infinito){document.getElementById('p-est').value=p.estoque;document.getElementById('p-estmin').value=p.estoque_minimo||3;}
@@ -6435,6 +6689,7 @@ function renderProdTable(q=''){
       <td>${p.estoque_infinito?'<span class="tag tag-inf">♾️</span>':`<span style="font-weight:600;color:${ez?'var(--danger)':eb?'var(--warn)':'var(--success)'}">${p.estoque}</span>${eb?'<span class="tag tag-amb" style="font-size:9.5px;margin-left:3px">Baixo</span>':''}${ez?'<span class="tag tag-red" style="font-size:9.5px;margin-left:3px">Zerado</span>':''}`}</td>
       <td><span class="tag ${p.status==='ativo'?'tag-grn':p.status==='inativo'||p.status==='fora_linha'?'tag-gry':'tag-amb'}">${getPrdCfg().status.find(s=>s.valor===p.status)?.label || p.status || 'Ativo'}</span></td>
       <td><div style="display:flex;gap:3px">${ce?`<button class="btn btn-out btn-xs" onclick="editProd('${p.id}')"><i class="ti ti-edit"></i></button>`:''}
+        <button class="btn-ghost btn-xs" onclick="imprimirEtiquetaProduto('${p.id}')" title="Imprimir Etiqueta QR"><i class="ti ti-qrcode"></i></button>
         <button class="btn-ghost btn-xs" onclick="verMovProd('${p.id}')" title="Histórico de Estoque"><i class="ti ti-history"></i></button>
         <button class="btn-ghost btn-xs" onclick="verHistoricoPreco('${p.id}')" title="Histórico de Preços"><i class="ti ti-chart-line"></i></button>
         <button class="btn-ghost btn-xs" onclick="abrirEtiqueta('${p.id}')" title="Etiqueta"><i class="ti ti-tag"></i></button>
@@ -11749,6 +12004,75 @@ function renderDashboard(){
   if(G.charts.fc)G.charts.fc.destroy();
   const ctxfc=document.getElementById('chart-fc');
   if(ctxfc){G.charts.fc=new Chart(ctxfc,{type:'bar',data:{labels:['A Receber','A Pagar','Saldo'],datasets:[{data:[entH,saiH,entH-saiH],backgroundColor:['rgba(16,185,129,.75)','rgba(239,68,68,.75)',entH-saiH>=0?'rgba(91,71,224,.75)':'rgba(239,68,68,.75)'],borderRadius:5,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:11}}},y:{ticks:{callback:v=>'R$'+v,font:{size:10}}}}}});}
+  renderLucroMetas(); // lucro líquido do mês + metas com estrelas
+}
+
+/* ══════════════════════════════════════════════════════════════
+   LUCRO LÍQUIDO MENSAL + METAS COM MARCOS (integrado do misu-stock)
+   Líquido do mês = lucro bruto das vendas do mês − despesas pagas do mês
+   Metas: progresso do lucro líquido ACUMULADO até o próximo marco ⭐
+   ══════════════════════════════════════════════════════════════ */
+const METAS_MARCOS=[1000,5000,10000,25000,50000,100000,150000,200000,300000,500000,1000000];
+
+async function renderLucroMetas(){
+  const wrap=document.getElementById('dash-metas-wrap');
+  if(!wrap)return;
+  const agora=new Date();
+  const mesStr=`${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,'0')}`;
+  const mesLabel=agora.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+
+  // ── Mês atual (com base no cache local) ──
+  const vendasMes=(G.vendas||[]).filter(v=>v.tipo!=='servico_os'&&v.status!=='cancelada'&&v.status!=='estornada'&&(v.criado_em||'').startsWith(mesStr));
+  const lucroBrutoMes=vendasMes.reduce((s,v)=>s+(v.lucro||0),0);
+  const despesasMes=(G.pagar||[]).filter(p=>p.status==='pago'&&((p.data_pagamento||p.data_vencimento||'').startsWith(mesStr))).reduce((s,p)=>s+(p.valor_original||0),0);
+  const liquidoMes=lucroBrutoMes-despesasMes;
+
+  // ── Acumulado (via RPC agregada; fallback: cache local) ──
+  let lucroAcum=null;
+  try{
+    const {data,error}=await db.rpc('resumo_lucro',{emp:EID()});
+    if(!error&&data)lucroAcum=(parseFloat(data.lucro_bruto)||0)-(parseFloat(data.despesas)||0);
+  }catch(e){}
+  if(lucroAcum===null){
+    lucroAcum=(G.vendas||[]).filter(v=>v.tipo!=='servico_os'&&v.status!=='cancelada').reduce((s,v)=>s+(v.lucro||0),0)
+      -(G.pagar||[]).filter(p=>p.status==='pago').reduce((s,p)=>s+(p.valor_original||0),0);
+  }
+
+  const conquistadas=METAS_MARCOS.filter(m=>lucroAcum>=m);
+  const proxima=METAS_MARCOS.find(m=>lucroAcum<m)||METAS_MARCOS[METAS_MARCOS.length-1];
+  const prog=Math.min(100,Math.max(0,lucroAcum/proxima*100));
+  const corLiquido=liquidoMes>=0?'var(--success)':'var(--danger)';
+
+  wrap.innerHTML=`
+  <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:12px" class="dash-metas-grid">
+    <!-- Card: Lucro líquido do mês -->
+    <div class="card" style="display:flex;flex-direction:column;justify-content:center">
+      <div style="font-size:10.5px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px"><i class="ti ti-wallet"></i> Lucro Líquido — ${mesLabel}</div>
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:26px;color:${corLiquido}">${fmt(liquidoMes)}</div>
+      <div style="display:flex;gap:14px;margin-top:6px;font-size:11.5px;color:var(--txt3)">
+        <span>Bruto: <b style="color:var(--txt2)">${fmt(lucroBrutoMes)}</b></span>
+        <span>Despesas: <b style="color:var(--danger)">− ${fmt(despesasMes)}</b></span>
+      </div>
+    </div>
+    <!-- Card: Metas -->
+    <div class="card" style="position:relative;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div style="font-size:10.5px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.7px"><i class="ti ti-star" style="color:var(--warn)"></i> Meta de Lucro Acumulado</div>
+        <div style="display:flex;gap:2px" title="${conquistadas.length} marco(s) conquistado(s)">
+          ${conquistadas.slice(-5).map(()=>'<i class="ti ti-star-filled" style="color:var(--warn);font-size:13px"></i>').join('')}
+          ${conquistadas.length>5?`<span style="font-size:11px;color:var(--warn);font-weight:700">+${conquistadas.length-5}</span>`:''}
+        </div>
+      </div>
+      <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px">
+        <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:var(--pri)">${fmt(lucroAcum)}</span>
+        <span style="font-size:12px;color:var(--txt3)">/ ${fmt(proxima)}</span>
+      </div>
+      <div style="height:10px;background:var(--surface);border-radius:99px;overflow:hidden;border:1px solid var(--border)">
+        <div style="height:100%;width:${prog.toFixed(1)}%;background:linear-gradient(90deg,var(--pri),#7C3AED);border-radius:99px;transition:width 1s ease"></div>
+      </div>
+      <div style="font-size:10.5px;color:var(--txt3);margin-top:4px;text-align:right">${prog.toFixed(1)}% para a próxima estrela ⭐</div>
+    </div>
+  </div>`;
 }
 
 /* ── AGENDA DE ENTREGAS ──────────────────────────────── */
