@@ -3,7 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>MISU TECNOLOGY — ERP PDV v4.0</title>
+<title>MISU SYS — ERP & PDV</title>
+<!-- ═══ PWA — App instalável (mobile + desktop) ═══ -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#1E5EFF">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="MISU SYS">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -12,7 +21,7 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --pri:#5B47E0;--pri2:#7C3AED;--pri-light:#EFEAFF;--pri-dark:#2D1B8E;
+  --pri:#1E5EFF;--pri2:#3D8BFF;--pri-light:#E8EFFF;--pri-dark:#0A2FA8;
   --accent:#E8915B;--accent-soft:#FBEEE3;
   --bg:#F5F2EC;--bg2:#FFFFFF;--surface:#FDFBF8;--surface2:#EFE9DF;
   --txt:#1E1530;--txt2:#54487A;--txt3:#9585B8;--txt4:#C4B8DB;
@@ -24,7 +33,7 @@
   --shadow-card:0 1px 3px rgba(74,54,110,.06),0 2px 10px rgba(74,54,110,.07);
   --sw:244px;--sw-mini:58px;--th:62px;--trans:all .2s cubic-bezier(.4,0,.2,1);
 }
-[data-theme="dark"]{--bg:#14101E;--bg2:#1A1330;--surface:#201740;--surface2:#291E4E;--txt:#F0ECFA;--txt2:#B8AADC;--txt3:#7A6FAA;--txt4:#483E6C;--border:#2C2050;--border2:#392966;--pri-light:#281870;--accent:#E8915B;--accent-soft:#3A2218;
+[data-theme="dark"]{--bg:#070B1A;--bg2:#0B1228;--surface:#101A38;--surface2:#152147;--txt:#EAF0FF;--txt2:#A8BAE8;--txt3:#6B7FB8;--txt4:#3A4A78;--border:#1B2A55;--border2:#25376B;--pri-light:#0F2058;--accent:#E8915B;--accent-soft:#3A2218;
 --shadow:0 2px 12px rgba(0,0,0,.25);
 --shadow-lg:0 8px 28px rgba(0,0,0,.36);
 --shadow-card:0 1px 3px rgba(0,0,0,.18),0 2px 10px rgba(0,0,0,.2);}
@@ -574,18 +583,18 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
 <!-- LOGIN -->
 <div class="ls" id="ls">
   <div class="lb">
-    <div class="l-icon" style="background:none;box-shadow:none;width:110px;height:110px;border-radius:0">
-      <img src="data:image/jpeg;base64,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" style="width:100%;height:100%;object-fit:contain" alt="MisuTech">
+    <div class="l-icon" style="background:none;box-shadow:none;width:130px;height:130px;border-radius:0">
+      <img src="/icon-512.png" style="width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 6px 24px rgba(30,94,255,.45))" alt="MISU SYS">
     </div>
-    <div class="l-title">MISU TECNOLOGY ERP</div>
-    <div class="l-sub">Assistência Técnica & PDV v4.0</div>
+    <div class="l-title" style="letter-spacing:2px">MISU <span style="background:linear-gradient(135deg,#1E5EFF,#3D8BFF);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">SYS</span></div>
+    <div class="l-sub">Sistema oficial da Misu Tech — ERP & PDV</div>
     <div id="l-err" class="l-err"></div>
     <label class="l-lbl">E-mail</label>
     <input class="l-inp" type="email" id="l-email" placeholder="seu@email.com">
     <label class="l-lbl">Senha</label>
     <input class="l-inp" type="password" id="l-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
     <button class="l-btn" id="l-btn" onclick="doLogin()"><i class="ti ti-lock" style="font-size:17px"></i>Entrar</button>
-    <p style="text-align:center;font-size:11.5px;color:#9D8FC5;margin-top:16px">MISU TECNOLOGY © 2025 — Todos os direitos reservados</p>
+    <p style="text-align:center;font-size:11.5px;color:#9D8FC5;margin-top:16px">MISU SYS © 2025 — Todos os direitos reservados</p>
   </div>
 </div>
 
@@ -603,7 +612,7 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
       <button class="bq-btn bq-btn-pri" onclick="abrirWhatsAppSuporte()"><i class="ti ti-brand-whatsapp"></i> Falar com o suporte</button>
       <button class="bq-btn bq-btn-out" onclick="doLogout()"><i class="ti ti-logout"></i> Sair</button>
     </div>
-    <div class="bq-foot">MISU TECNOLOGY © 2025 — Regularize sua situação para continuar usando o sistema.</div>
+    <div class="bq-foot">MISU SYS © 2025 — Regularize sua situação para continuar usando o sistema.</div>
   </div>
 </div>
 
@@ -661,10 +670,10 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
   <aside class="sidebar">
     <div class="logo-area">
       <div class="logo-badge" style="background:none;box-shadow:none;padding:0;gap:12px">
-        <div class="logo-icon" id="sb-logo-icon" style="background:none;box-shadow:none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 110" fill="white" style="width:100%;height:100%"><rect x="5" y="4" width="90" height="10" rx="2"/><polygon points="5,14 18,14 18,26 5,14"/><polygon points="95,14 82,14 82,26 95,14"/><rect x="5" y="14" width="13" height="62" rx="1"/><rect x="82" y="14" width="13" height="62" rx="1"/><polygon points="18,14 34,14 52,44 52,56 38,56 18,22"/><polygon points="82,14 66,14 48,44 48,56 62,56 82,22"/><rect x="44" y="50" width="12" height="26" rx="1"/><rect x="5" y="76" width="90" height="10" rx="2"/><polygon points="5,86 18,86 5,98"/><polygon points="95,86 82,86 95,98"/><rect x="5" y="96" width="90" height="10" rx="2"/></svg></div>
+        <div class="logo-icon" id="sb-logo-icon" style="background:none;box-shadow:none"><img src="/icon-192.png" style="width:100%;height:100%;object-fit:contain" alt="MISU SYS"></div>
         <div class="logo-texts">
-          <div class="logo-text" style="line-height:1.15">MISU<br>TECNOLOGY</div>
-          <div class="logo-sub">ERP PDV v4</div>
+          <div class="logo-text" style="line-height:1.15;letter-spacing:1.5px">MISU <span style="color:#3D8BFF">SYS</span></div>
+          <div class="logo-sub">Sistema oficial Misu Tech</div>
         </div>
       </div>
     </div>
@@ -2371,7 +2380,7 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
                   <div style="width:28px;height:28px;border-radius:7px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 110" fill="white" style="width:18px;height:18px"><rect x="5" y="4" width="90" height="10" rx="2"/><rect x="5" y="14" width="13" height="62" rx="1"/><rect x="82" y="14" width="13" height="62" rx="1"/><polygon points="18,14 34,14 52,44 52,56 38,56 18,22"/><polygon points="82,14 66,14 48,44 48,56 62,56 82,22"/><rect x="44" y="50" width="12" height="26" rx="1"/><rect x="5" y="76" width="90" height="10" rx="2"/></svg>
                   </div>
-                  <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:13px;color:#fff">MISU TECNOLOGY</div>
+                  <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:13px;color:#fff">MISU SYS</div>
                 </div>
                 <!-- Mini botão -->
                 <div style="padding:10px;background:var(--bg2)">
@@ -2415,7 +2424,7 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
             <span class="wpp-api-status wpp-api-off" id="wpp-api-badge">⚪ Desconectado</span>
           </div>
           <div style="font-size:12.5px;color:var(--txt2)">
-            A integração com o WhatsApp é configurada pelo suporte MISU TECNOLOGY (Painel Master). Caso o status esteja "Desconectado" e você precise enviar mensagens pelo chat de OS, entre em contato com o suporte para ativar.
+            A integração com o WhatsApp é configurada pelo suporte MISU SYS (Painel Master). Caso o status esteja "Desconectado" e você precise enviar mensagens pelo chat de OS, entre em contato com o suporte para ativar.
           </div>
         </div>
           <div class="g2" style="gap:20px">
@@ -2459,7 +2468,7 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
                   </svg>
                 </div>
                 <div>
-                  <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:14px;color:#fff">MISU TECNOLOGY</div>
+                  <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:14px;color:#fff">MISU SYS</div>
                   <div style="font-size:9px;color:rgba(255,255,255,.5);letter-spacing:1.5px;text-transform:uppercase">ERP PDV v4</div>
                 </div>
               </div>
@@ -3852,7 +3861,7 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
 <!-- MODAL PLANOS -->
 <div class="modal-overlay" id="modal-planos">
   <div class="modal" style="max-width:760px">
-    <div class="modal-title"><i class="ti ti-crown" style="color:var(--gold,#f59e0b)"></i> Planos MISU TECNOLOGY PDV</div>
+    <div class="modal-title"><i class="ti ti-crown" style="color:var(--gold,#f59e0b)"></i> Planos MISU SYS PDV</div>
     <div style="font-size:13px;color:var(--txt2);margin-bottom:20px">
       Escolha o plano ideal para sua assistência técnica. O plano atual é salvo localmente e sincronizado pelo painel master.
     </div>
@@ -4559,34 +4568,87 @@ window.addEventListener('online',()=>{setNetPill('online');syncOfflineQueue(fals
 window.addEventListener('offline',()=>{setNetPill('offline');notify('Sem conexão. Vendas serão guardadas localmente.','warn',4000);});
 
 /* ── PWA: MANIFEST + SERVICE WORKER (embutidos, sem arquivos externos) ── */
+/* ══════════════════════════════════════════════════════════════
+   PWA — APP INSTALÁVEL (Fase 1 do roadmap)
+   Requer os arquivos na raiz do deploy (junto do index.html):
+   manifest.json, sw.js, icon-192.png, icon-512.png,
+   icon-512-maskable.png, apple-touch-icon.png
+   ══════════════════════════════════════════════════════════════ */
+let _pwaInstallPrompt=null;
+
 function registerPWA(){
   try{
-    // Manifest via Blob
-    const manifest={
-      name:'MISU TECNOLOGY ERP PDV',
-      short_name:'MISU TECNOLOGY PDV',
-      start_url:'.',
-      display:'standalone',
-      background_color:'#F4F2FB',
-      theme_color:'#5B47E0',
-      icons:[{
-        src:'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"><rect width="192" height="192" rx="32" fill="%235B47E0"/><text x="96" y="118" font-size="84" font-family="Arial,sans-serif" font-weight="800" fill="%23fff" text-anchor="middle">E</text></svg>'),
-        sizes:'192x192',
-        type:'image/svg+xml'
-      }]
-    };
-    const manifestBlob=new Blob([JSON.stringify(manifest)],{type:'application/json'});
-    const manifestUrl=URL.createObjectURL(manifestBlob);
-    const link=document.createElement('link');
-    link.rel='manifest';link.href=manifestUrl;
-    document.head.appendChild(link);
+    // 1. Service Worker (arquivo real na raiz — habilita instalação + shell offline)
+    if('serviceWorker' in navigator && location.protocol==='https:'){
+      navigator.serviceWorker.register('/sw.js').then(reg=>{
+        console.log('✓ Service Worker registrado (PWA ativo)');
+        // Se houver atualização do SW, ativa na próxima navegação
+        reg.addEventListener('updatefound',()=>{
+          const nw=reg.installing;
+          nw?.addEventListener('statechange',()=>{
+            if(nw.state==='installed'&&navigator.serviceWorker.controller){
+              console.log('Nova versão do app disponível — será aplicada ao recarregar.');
+            }
+          });
+        });
+      }).catch(e=>console.warn('SW não registrado:',e.message));
+    }
 
-    // OBS: Service Worker via Blob/data URL não é suportado pelos navegadores
-    // (scripts de SW precisam ser http(s) same-origin). Sem um arquivo sw.js
-    // separado na raiz do projeto, o "app shell" não pode ser pré-cacheado.
-    // O modo offline do PDV continua funcionando via IndexedDB (fila de vendas
-    // e cache de produtos/clientes), que não depende de Service Worker.
+    // 2. Botão "Instalar App" — aparece quando o navegador permite instalação
+    window.addEventListener('beforeinstallprompt',(e)=>{
+      e.preventDefault();
+      _pwaInstallPrompt=e;
+      _mostrarBotaoInstalar();
+    });
+
+    // Já instalado? Esconde o botão e registra
+    window.addEventListener('appinstalled',()=>{
+      _pwaInstallPrompt=null;
+      const btn=document.getElementById('btn-instalar-app');
+      if(btn)btn.style.display='none';
+      notify('✓ App instalado! Procure o ícone MISU na sua tela inicial.','success',5000);
+    });
+
+    // iOS (Safari não dispara beforeinstallprompt): mostra botão com instruções
+    const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+    const jaInstalado=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+    if(isIOS&&!jaInstalado)setTimeout(_mostrarBotaoInstalar,1500);
+
+    // 3. Atalhos do manifest (?atalho=pdv / ?atalho=os)
+    const atalho=new URLSearchParams(location.search).get('atalho');
+    if(atalho)sessionStorage.setItem('misu_atalho_pwa',atalho);
   }catch(e){console.warn('PWA setup falhou:',e);}
+}
+
+function _mostrarBotaoInstalar(){
+  if(document.getElementById('btn-instalar-app'))return;
+  const btn=document.createElement('button');
+  btn.id='btn-instalar-app';
+  btn.innerHTML='<i class="ti ti-download"></i> Instalar App';
+  btn.style.cssText='position:fixed;bottom:18px;right:18px;z-index:9000;display:flex;align-items:center;gap:7px;padding:11px 18px;border:none;border-radius:99px;background:linear-gradient(135deg,var(--pri,#5B47E0),var(--pri2,#7C3AED));color:#fff;font-family:\'DM Sans\',sans-serif;font-size:13.5px;font-weight:700;cursor:pointer;box-shadow:0 6px 20px rgba(91,71,224,.4);transition:transform .15s';
+  btn.onmouseenter=()=>btn.style.transform='scale(1.05)';
+  btn.onmouseleave=()=>btn.style.transform='scale(1)';
+  btn.onclick=instalarApp;
+  document.body.appendChild(btn);
+}
+
+async function instalarApp(){
+  const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  if(_pwaInstallPrompt){
+    _pwaInstallPrompt.prompt();
+    const {outcome}=await _pwaInstallPrompt.userChoice;
+    if(outcome==='accepted')_pwaInstallPrompt=null;
+  } else if(isIOS){
+    confirmAct('Instalar no iPhone/iPad',
+      `<div style="font-size:13.5px;line-height:1.7">
+        <b>1.</b> Toque no botão <b>Compartilhar</b> <i class="ti ti-share-2"></i> na barra do Safari<br>
+        <b>2.</b> Role e toque em <b>"Adicionar à Tela de Início"</b><br>
+        <b>3.</b> Confirme em <b>Adicionar</b><br><br>
+        O MISU PDV vai aparecer como app na sua tela inicial. 📱
+      </div>`,()=>{});
+  } else {
+    notify('Use o menu do navegador (⋮) → "Instalar aplicativo" para instalar.','info',6000);
+  }
 }
 
 // Inicializa PWA e indicador de rede assim que possível
@@ -5042,9 +5104,9 @@ function mostrarTelaBloqueio(emp){
   bq.style.display = 'flex';
 }
 
-// Número de WhatsApp do suporte/comercial MISU TECNOLOGY (carregado do servidor; fallback abaixo)
+// Número de WhatsApp do suporte/comercial MISU SYS (carregado do servidor; fallback abaixo)
 let WHATSAPP_SUPORTE = '5575999999999';
-let SUPORTE_MSG = 'Olá! Preciso de suporte com o MISU TECNOLOGY PDV.';
+let SUPORTE_MSG = 'Olá! Preciso de suporte com o MISU SYS PDV.';
 
 // Carrega config global de suporte (definida no painel admin)
 async function carregarSuporteConfigApp() {
@@ -5133,7 +5195,7 @@ function abrirUpgrade(){
 // Dentro do modal de planos: falar no WhatsApp para fazer upgrade
 function solicitarUpgradeWhatsApp(){
   const planoAtual = (typeof getPlanoAtual === 'function' ? getPlanoAtual()?.nome : '') || '';
-  const msg = `Olá! Sou da empresa "${G.empresa?.nome||'—'}"${planoAtual ? ` (plano ${planoAtual})` : ''} e gostaria de fazer um upgrade de plano no MISU TECNOLOGY PDV.`;
+  const msg = `Olá! Sou da empresa "${G.empresa?.nome||'—'}"${planoAtual ? ` (plano ${planoAtual})` : ''} e gostaria de fazer um upgrade de plano no MISU SYS PDV.`;
   window.open(`https://wa.me/${WHATSAPP_SUPORTE}?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
@@ -6145,7 +6207,7 @@ async function imprimirEtiquetaProduto(id){
     await _loadQRCodeLib();
     const payload=JSON.stringify({sku:p.sku,id:p.id,nome:p.nome,preco:p.preco,imei:p.imei||undefined,barcode:p.barcode||undefined});
     const qr=await window.QRCode.toDataURL(payload,{width:220,margin:1});
-    const empresa=G.empresa?.nome||'MISU TECNOLOGY';
+    const empresa=G.empresa?.nome||'MISU SYS';
     const detalhes=[p.marca,p.armazenamento,p.cor,p.tamanho?('Tam '+p.tamanho):null].filter(Boolean).join(' · ');
     const html=`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Etiqueta ${esc(p.sku||'')}</title>
     <style>
@@ -15061,7 +15123,7 @@ const PRESETS = {
   escuro:   { c1:'#111827', c2:'#374151', dark:'#030712', light:'#F9FAFB', txt:'#030712' }
 };
 
-let paletaAtual = { c1:'#5B47E0', c2:'#7C3AED', dir:'135deg', modo:'gradiente' };
+let paletaAtual = { c1:'#1E5EFF', c2:'#3D8BFF', dir:'135deg', modo:'gradiente', dark:'#0A2FA8' };
 let gradDir = '135deg';
 
 function setPreset(nome, el) {
@@ -16033,7 +16095,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
 .slot-user-item.selected .slot-user-nome { color: var(--pri) !important; font-weight: 700; }
 
 /* ══════════════════════════════════════════════════
-   RESPONSIVIDADE MOBILE — MISU TECNOLOGY PDV v4.0
+   RESPONSIVIDADE MOBILE — MISU SYS PDV v4.0
    Breakpoints: 768px (tablet), 480px (celular)
    ══════════════════════════════════════════════════ */
 
@@ -17199,7 +17261,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
       <div class="footer-msg">${e.rodape}</div>
       <div class="footer-num">
         ${e.site ? e.site + '<br>' : ''}
-        ${titulo} · ${numero} · MISU TECNOLOGY PDV v4
+        ${titulo} · ${numero} · MISU SYS PDV v4
       </div>
     </div>
   </div>
@@ -17914,6 +17976,13 @@ function entrarComPerfil(u) {
   let paginaAlvo = paginaPadrao;
   if (estadoSalvo && estadoSalvo.page && typeof canAccess==='function' && canAccess(u.role, estadoSalvo.page)) {
     paginaAlvo = estadoSalvo.page;
+  }
+  // Atalho do PWA (ícone "Abrir PDV" / "Nova OS" do app instalado): prioridade máxima
+  const atalhoPWA = sessionStorage.getItem('misu_atalho_pwa');
+  if (atalhoPWA) {
+    sessionStorage.removeItem('misu_atalho_pwa');
+    const mapa = { pdv:'pdv', os:'os' };
+    if (mapa[atalhoPWA] && canAccess(u.role, mapa[atalhoPWA])) paginaAlvo = mapa[atalhoPWA];
   }
   go(paginaAlvo);
   if (estadoSalvo && Array.isArray(estadoSalvo.cart) && estadoSalvo.cart.length>0 && paginaAlvo==='pdv') {
@@ -18690,7 +18759,7 @@ const _origGoFn = typeof go === 'function' ? go : null;
 
 
 /* ══════════════════════════════════════════════════════════════════════
-   PLANO: INTEGRAÇÃO WHATSAPP BIDIRECIONAL — MISU TECNOLOGY PDV v4.0
+   PLANO: INTEGRAÇÃO WHATSAPP BIDIRECIONAL — MISU SYS PDV v4.0
    ════════════════════════════════════════════════════════════════════
    
    OBJETIVO: O cliente envia mensagem via WhatsApp perguntando sobre
@@ -18753,7 +18822,7 @@ const _origGoFn = typeof go === 'function' ? go : null;
 
 
 /* ══════════════════════════════════════════════════════════════════
-   MÓDULO WHATSAPP — MISU TECNOLOGY PDV v4.0
+   MÓDULO WHATSAPP — MISU SYS PDV v4.0
    Evolution API · Respostas automáticas de OS
    ══════════════════════════════════════════════════════════════════ */
 
@@ -19400,7 +19469,7 @@ window.addEventListener('resize', () => {
 
 
 /* ══════════════════════════════════════════════════════════════════
-   MÓDULO DE PLANOS — MISU TECNOLOGY PDV v4.0
+   MÓDULO DE PLANOS — MISU SYS PDV v4.0
    Controle de funcionalidades por plano
    ══════════════════════════════════════════════════════════════════ */
 
@@ -20449,7 +20518,7 @@ function getDocDados() {
   const cor2 = pal.c2 || (m.paleta && m.paleta.c2) || cor;
   const logoHtml = usaLogo && m.logoSidebar
     ? `<img src="${m.logoSidebar}" style="height:52px;object-fit:contain">`
-    : `<div style="font-family:'Arial Black',sans-serif;font-weight:900;font-size:22px;color:#fff">${(emp.nome||'MISU TECNOLOGY').slice(0,2).toUpperCase()}</div>`;
+    : `<div style="font-family:'Arial Black',sans-serif;font-weight:900;font-size:22px;color:#fff">${(emp.nome||'MISU SYS').slice(0,2).toUpperCase()}</div>`;
 
   return { os, m, emp, cli, tec, usaLogo, usaAssin, dual, hoje, logoHtml, cor, cor2 };
 }
