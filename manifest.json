@@ -1,14 +1,14 @@
 {
-  "name": "MISU TECNOLOGY — ERP & PDV",
-  "short_name": "MISU PDV",
+  "name": "MISU SYS — ERP & PDV",
+  "short_name": "MISU SYS",
   "description": "Sistema de gestão completo: PDV, Ordens de Serviço, Estoque, Financeiro e Crediário.",
   "id": "/",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#F4F2FB",
-  "theme_color": "#5B47E0",
+  "background_color": "#070B1A",
+  "theme_color": "#1E5EFF",
   "lang": "pt-BR",
   "categories": ["business", "productivity", "finance"],
   "icons": [
