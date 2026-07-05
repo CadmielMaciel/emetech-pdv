@@ -2319,8 +2319,8 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
           <div style="margin-bottom:16px">
             <div class="lbl" style="margin-bottom:8px">Temas Prontos</div>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
-              <div class="palette-preset active" id="preset-roxo" style="background:linear-gradient(135deg,#5B47E0,#7C3AED)" onclick="setPreset('roxo',this)" title="Roxo (padrão)"></div>
-              <div class="palette-preset" id="preset-azul" style="background:linear-gradient(135deg,#1D4ED8,#3B82F6)" onclick="setPreset('azul',this)" title="Azul"></div>
+              <div class="palette-preset" id="preset-roxo" style="background:linear-gradient(135deg,#5B47E0,#7C3AED)" onclick="setPreset('roxo',this)" title="Roxo"></div>
+              <div class="palette-preset active" id="preset-azul" style="background:linear-gradient(135deg,#1E5EFF,#3D8BFF)" onclick="setPreset('azul',this)" title="Azul (padrão)"></div>
               <div class="palette-preset" id="preset-verde" style="background:linear-gradient(135deg,#059669,#10B981)" onclick="setPreset('verde',this)" title="Verde"></div>
               <div class="palette-preset" id="preset-laranja" style="background:linear-gradient(135deg,#D97706,#F59E0B)" onclick="setPreset('laranja',this)" title="Laranja"></div>
               <div class="palette-preset" id="preset-vermelho" style="background:linear-gradient(135deg,#DC2626,#EF4444)" onclick="setPreset('vermelho',this)" title="Vermelho"></div>
@@ -8779,7 +8779,7 @@ async function verHistoricoPreco(id){
   if(ctx){
     G.charts.histPreco=new Chart(ctx,{type:'line',data:{labels,datasets:[
       {label:'Custo',data:custos,borderColor:'#EF4444',backgroundColor:'rgba(239,68,68,.1)',tension:.25,fill:true},
-      {label:'Preço',data:precos,borderColor:'#5B47E0',backgroundColor:'rgba(91,71,224,.1)',tension:.25,fill:true}
+      {label:'Preço',data:precos,borderColor:'#1E5EFF',backgroundColor:'rgba(30,94,255,.1)',tension:.25,fill:true}
     ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:11}}}},scales:{y:{ticks:{callback:v=>'R$'+v,font:{size:10}}},x:{ticks:{font:{size:10}}}}}});
   }
 }
@@ -11277,7 +11277,7 @@ async function renderCatalogo(){
   document.getElementById('cat-desc').value=_catConfig?.descricao||'';
   document.getElementById('cat-whats').value=_catConfig?.whatsapp||emp.tel||'';
   document.getElementById('cat-insta').value=_catConfig?.instagram||'';
-  document.getElementById('cat-cor').value=_catConfig?.cor_primaria||'#5B47E0';
+  document.getElementById('cat-cor').value=_catConfig?.cor_primaria||'#1E5EFF';
   document.getElementById('cat-mostrar-preco').checked=_catConfig?_catConfig.mostrar_preco:true;
   atualizarLinkCatalogo();
 }
@@ -11334,7 +11334,7 @@ async function salvarCatalogoConfig(){
     descricao:document.getElementById('cat-desc').value||null,
     whatsapp:document.getElementById('cat-whats').value.replace(/\D/g,'')||null,
     instagram:document.getElementById('cat-insta').value||null,
-    cor_primaria:document.getElementById('cat-cor').value||'#5B47E0',
+    cor_primaria:document.getElementById('cat-cor').value||'#1E5EFF',
     mostrar_preco:document.getElementById('cat-mostrar-preco').checked,
     atualizado_em:new Date().toISOString()
   };
@@ -11735,7 +11735,7 @@ function renderRelOS(){
   os.forEach(o=>{const s=o.status||'—';porStatus[s]=(porStatus[s]||0)+1;});
   if(G.charts.osStatus)G.charts.osStatus.destroy();
   const c1=document.getElementById('chart-os-status');
-  if(c1&&typeof Chart!=='undefined')G.charts.osStatus=new Chart(c1,{type:'doughnut',data:{labels:Object.keys(porStatus),datasets:[{data:Object.values(porStatus),backgroundColor:['#F59E0B','#3B82F6','#10B981','#5B47E0','#EF4444','#8B5CF6','#6B7280']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10}}}}}});
+  if(c1&&typeof Chart!=='undefined')G.charts.osStatus=new Chart(c1,{type:'doughnut',data:{labels:Object.keys(porStatus),datasets:[{data:Object.values(porStatus),backgroundColor:['#F59E0B','#3B82F6','#10B981','#1E5EFF','#EF4444','#8B5CF6','#6B7280']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10}}}}}});
 
   // OS por aparelho
   const porAp={};
@@ -11874,7 +11874,7 @@ function renderRelPagamentos(){
   </tr>`).join(''):'<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--txt3)">Sem vendas no período</td></tr>';
 
   const labels=rows.map(([k])=>pL[k]||k);
-  const cores=['#5B47E0','#10B981','#3B82F6','#F59E0B','#EF4444','#8B5CF6'];
+  const cores=['#1E5EFF','#10B981','#3B82F6','#F59E0B','#EF4444','#8B5CF6'];
   if(G.charts.pagDist)G.charts.pagDist.destroy();
   const c1=document.getElementById('chart-pag-dist');
   if(c1&&typeof Chart!=='undefined')G.charts.pagDist=new Chart(c1,{type:'doughnut',data:{labels,datasets:[{data:rows.map(([,d])=>d.qtd),backgroundColor:cores}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10}}}}}});
@@ -14212,7 +14212,7 @@ function gerarCarneGraficaModal(){
 function gerarCarneGraficaFromContrato(c){
   const emp = getEmpDados();
   const pal = (typeof paletaAtual==='object' && paletaAtual) ? paletaAtual : {};
-  const cor = pal.c1 || (getMarca&&getMarca().paleta?.c1) || '#5B47E0';
+  const cor = pal.c1 || (getMarca&&getMarca().paleta?.c1) || '#1E5EFF';
   const cor2 = pal.c2 || (getMarca&&getMarca().paleta?.c2) || '#7C3AED';
   const hoje = new Date().toLocaleDateString('pt-BR');
   const cli = (G.clientes||[]).find(x=>x.nome===c.clienteNome) || {};
@@ -15114,7 +15114,7 @@ function baixarModeloXLS() {
 
 const PRESETS = {
   roxo:     { c1:'#5B47E0', c2:'#7C3AED', dark:'#2D1B8E', light:'#EDE9FF', txt:'#1A0F3C' },
-  azul:     { c1:'#1D4ED8', c2:'#3B82F6', dark:'#1E3A8A', light:'#EFF6FF', txt:'#1E3A5F' },
+  azul:     { c1:'#1E5EFF', c2:'#3D8BFF', dark:'#0A2FA8', light:'#E8EFFF', txt:'#0A1F4D' },
   verde:    { c1:'#059669', c2:'#10B981', dark:'#064E3B', light:'#ECFDF5', txt:'#022C22' },
   laranja:  { c1:'#D97706', c2:'#F59E0B', dark:'#78350F', light:'#FFFBEB', txt:'#1C1103' },
   vermelho: { c1:'#DC2626', c2:'#EF4444', dark:'#7F1D1D', light:'#FEF2F2', txt:'#1C0202' },
@@ -15231,13 +15231,20 @@ function atualizarFavicon(c1, c2) {
 function aplicarPaletaSalva() {
   const m = getMarca();
   if (!m.paleta) return;
-  const p = m.paleta;
+  let p = m.paleta;
+  // ── MIGRAÇÃO DE PADRÃO: roxo antigo (#5B47E0) era o default do sistema.
+  // Se a paleta salva é exatamente ele, a empresa nunca personalizou —
+  // aplica o novo padrão AZUL MISU SYS. Cores personalizadas são mantidas.
+  if ((p.c1 || '').toUpperCase() === '#5B47E0') {
+    p = { ...p, c1: '#1E5EFF', c2: '#3D8BFF', dark: '#0A2FA8' };
+    m.paleta = p;
+  }
   paletaAtual = p;
   if (p.c1) { document.documentElement.style.setProperty('--pri', p.c1); document.documentElement.style.setProperty('--pri-light', p.c1 + '22'); }
   if (p.c2) document.documentElement.style.setProperty('--pri2', p.c2);
   if (p.dark) document.documentElement.style.setProperty('--pri-dark', p.dark);
-  updateSidebarGradient(p.c1 || '#5B47E0', p.c2 || '#7C3AED', p.dir || '135deg', p.modo || 'gradiente');
-  atualizarFavicon(p.c1 || '#5B47E0', p.c2 || '#7C3AED');
+  updateSidebarGradient(p.c1 || '#1E5EFF', p.c2 || '#3D8BFF', p.dir || '135deg', p.modo || 'gradiente');
+  atualizarFavicon(p.c1 || '#1E5EFF', p.c2 || '#3D8BFF');
 }
 
 function renderAparencia() {
@@ -15249,8 +15256,8 @@ function renderAparencia() {
   // Sincroniza paleta salva
   if (MARCA.paleta) {
     const p = MARCA.paleta;
-    if (document.getElementById('cor-pri1')) document.getElementById('cor-pri1').value = p.c1 || '#5B47E0';
-    if (document.getElementById('cor-pri2')) document.getElementById('cor-pri2').value = p.c2 || '#7C3AED';
+    if (document.getElementById('cor-pri1')) document.getElementById('cor-pri1').value = p.c1 || '#1E5EFF';
+    if (document.getElementById('cor-pri2')) document.getElementById('cor-pri2').value = p.c2 || '#3D8BFF';
     paletaAtual = p;
     previewPaleta();
   }
@@ -17916,7 +17923,7 @@ function nfSelecionarCard(userId) {
   const u = G.usuarios.find(x => x.id === userId);
   if (!u) return;
   const m = getMarca ? getMarca() : {};
-  const cor = m.corPrimaria || '#5B47E0';
+  const cor = m.corPrimaria || '#1E5EFF';
   // Remove highlight anterior
   document.querySelectorAll('.nf-slot, #nf-admin-slot').forEach(el => {
     el.style.outline = '3px solid transparent';
@@ -20291,7 +20298,7 @@ function emitirContrato(){
   if(!modelo){notify('Escolha um modelo.','warn');return;}
   const texto=_preencheContrato(modelo.corpo, _cgContexto);
   const m=getMarca?getMarca():{};
-  const cor=m.cor||'#5B47E0';
+  const cor=m.cor||'#1E5EFF';
   const loja=(m.nomeFantasia||m.razaoSocial||'A loja');
   const logo=(document.getElementById('doc-opt-logo')?.checked!==false)&&(m.logoSidebar||m.logoLogin||m.logo);
   const w = _cgFmt==='58'?58 : _cgFmt==='80'?80 : 0;
