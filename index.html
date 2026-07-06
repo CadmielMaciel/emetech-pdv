@@ -1290,7 +1290,7 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
                 <div class="fg"><label class="lbl">Aparelho *</label><input type="text" id="os-ap" placeholder="iPhone 13..."></div>
                 <div class="fg"><label class="lbl">IMEI / Série</label>
                   <div style="display:flex;gap:6px">
-                    <input type="text" id="os-imei" placeholder="IMEI ou S/N" style="flex:1">
+                    <input type="text" id="os-imei" placeholder="IMEI ou S/N" style="flex:1" oninput="validarImeiCampo(this)">
                     <button type="button" class="btn btn-out btn-sm" onclick="consultarImeiAnatel(document.getElementById('os-imei').value)" title="Consultar situação na Anatel (roubo/bloqueio)"><i class="ti ti-shield-search"></i></button>
                   </div>
                 </div>
@@ -4165,6 +4165,7 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
   <div class="modal" style="max-width:460px">
     <div class="modal-title"><i class="ti ti-device-mobile-search"></i><span>Consulta de IMEI</span></div>
     <div id="imei-result-body" style="padding:4px 2px"></div>
+    <div id="imei-hist-body"></div>
     <div class="modal-foot">
       <button class="btn btn-out" onclick="closeModal('modal-imei-result')">Fechar</button>
     </div>
@@ -6139,7 +6140,7 @@ function renderCamposEspecificos(cat,valores={}){
   let html='';
   if(c.includes('celular')||c.includes('smartphone')){
     html=`<div class="g2" style="grid-template-columns:1fr 1fr">
-      <div class="fg"><label class="lbl">IMEI / Série</label><input type="text" id="pe-imei" placeholder="IMEI ou nº de série" value="${esc(valores.imei||'')}"></div>
+      <div class="fg"><label class="lbl">IMEI / Série</label><input type="text" id="pe-imei" placeholder="IMEI ou nº de série" oninput="validarImeiCampo(this)" value="${esc(valores.imei||'')}"></div>
       <div class="fg"><label class="lbl">Armazenamento</label>${_sel('pe-armaz',ESPEC_ARMAZ,valores.armazenamento)}</div>
       <div class="fg"><label class="lbl">Cor</label>${_sel('pe-cor',ESPEC_CORES,valores.cor)}</div>
       <div class="fg"><label class="lbl">Condição</label>${_sel('pe-cond',ESPEC_COND,valores.condicao)}</div>
@@ -8808,6 +8809,77 @@ function imeiValido(imei){
   return s.length>=14 && s.length<=16 ? s : null;
 }
 
+/* ── FASE 2: validação Luhn do IMEI (dígito verificador oficial) ── */
+// Retorna true/false para IMEI de 15 dígitos; null se não aplicável (S/N, 14/16 dígitos)
+function imeiLuhnOk(raw){
+  const s=(raw||'').replace(/\D/g,'');
+  if(s.length!==15) return null;
+  let soma=0;
+  for(let i=0;i<15;i++){
+    let d=parseInt(s[i],10);
+    if(i%2===1){ d*=2; if(d>9)d-=9; }
+    soma+=d;
+  }
+  return soma%10===0;
+}
+
+// Feedback visual ao digitar o IMEI (verde = válido, vermelho = dígito errado)
+function validarImeiCampo(inp){
+  if(!inp)return;
+  const ok=imeiLuhnOk(inp.value);
+  if(ok===null){ inp.style.borderColor=''; inp.title=''; return; }
+  inp.style.borderColor=ok?'var(--success)':'var(--danger)';
+  inp.title=ok?'IMEI válido (dígito verificador confere)':'IMEI inválido — confira os dígitos (digite *#06# no aparelho)';
+}
+
+/* ── FASE 2: histórico interno do aparelho (diferencial da loja) ──
+   Busca se este IMEI já passou pela loja: OS anteriores e estoque. */
+async function consultarHistoricoImei(imei){
+  const box=document.getElementById('imei-hist-body');
+  if(!box||!imei)return;
+  box.innerHTML='<div style="font-size:12px;color:var(--txt3);text-align:center;padding:8px">Verificando histórico deste aparelho na loja…</div>';
+  try{
+    const [osQ,prodQ]=await Promise.all([
+      db.from('ordens_servico').select('id,numero,status,aparelho,defeito,criado_em,data_conclusao,garantia_dias,total')
+        .eq('empresa_id',EID()).eq('imei',imei).order('criado_em',{ascending:false}).limit(8),
+      db.from('produtos').select('id,nome,sku,estoque,preco,condicao')
+        .eq('empresa_id',EID()).eq('imei',imei).limit(3)
+    ]);
+    const osList=osQ.data||[];
+    const prods=prodQ.data||[];
+    if(!osList.length&&!prods.length){
+      box.innerHTML='<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-top:8px;font-size:12px;color:var(--txt3);text-align:center"><i class="ti ti-history"></i> Primeira vez deste aparelho na loja — sem histórico interno.</div>';
+      return;
+    }
+    const hoje=new Date();hoje.setHours(0,0,0,0);
+    let html='<div style="background:var(--pri-light);border:1px solid var(--border2);border-radius:10px;padding:11px 13px;margin-top:8px">';
+    html+='<div style="font-size:10.5px;font-weight:800;color:var(--pri);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px"><i class="ti ti-history"></i> Histórico deste aparelho na loja</div>';
+    if(prods.length){
+      prods.forEach(p=>{
+        html+=`<div style="font-size:12.5px;padding:5px 0;border-bottom:1px solid var(--border)"><i class="ti ti-package" style="color:var(--pri)"></i> <b>No estoque:</b> ${esc(p.nome)} (${esc(p.sku||'')}) · ${p.estoque||0} un. · ${fmt(p.preco||0)}</div>`;
+      });
+    }
+    osList.forEach(o=>{
+      // Garantia da OS anterior ainda vigente?
+      let garTxt='';
+      if(o.data_conclusao&&o.garantia_dias>0){
+        const exp=new Date(o.data_conclusao);exp.setDate(exp.getDate()+o.garantia_dias);
+        const rest=Math.ceil((exp-hoje)/(1000*60*60*24));
+        if(rest>0)garTxt=` · <b style="color:var(--warn)"><i class="ti ti-shield"></i> GARANTIA ATIVA (${rest}d)</b>`;
+      }
+      html+=`<div style="font-size:12.5px;padding:5px 0;border-bottom:1px solid var(--border)">
+        <i class="ti ti-tool" style="color:var(--txt3)"></i> <b>${esc(o.numero)}</b> — ${esc((o.defeito||'').slice(0,42))}${(o.defeito||'').length>42?'…':''}
+        <span style="color:var(--txt3)">· ${o.status} · ${fmtD?fmtD(o.criado_em):new Date(o.criado_em).toLocaleDateString('pt-BR')}</span>${garTxt}
+      </div>`;
+    });
+    if(osList.length>1)html+=`<div style="font-size:11px;color:var(--warn);margin-top:6px;font-weight:600">⚠️ ${osList.length} OS anteriores — aparelho reincidente, avalie com atenção.</div>`;
+    html+='</div>';
+    box.innerHTML=html;
+  }catch(e){
+    box.innerHTML='';
+  }
+}
+
 // Abre o site oficial da Anatel com o IMEI copiado (fallback gratuito).
 async function abrirImeiAnatelManual(imei){
   let copiou=false;
@@ -8834,6 +8906,7 @@ async function consultarImeiAnatel(imeiRaw){
       <div style="font-size:13px;color:var(--txt2)">Consultando IMEI <b>${imei}</b> na base da Anatel...</div>
     </div>`;
     openModal('modal-imei-result');
+    consultarHistoricoImei(imei); // histórico interno em paralelo (não bloqueia a Anatel)
   }
 
   try{
