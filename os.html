@@ -47,6 +47,19 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);min-
 .footer b{color:var(--pri2)}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 .loading i{animation:pulse 1.2s infinite;font-size:40px;color:var(--pri)}
+.midia-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.midia-item{aspect-ratio:1;border-radius:10px;overflow:hidden;background:#000;cursor:pointer;position:relative;border:1px solid var(--border)}
+.midia-item img,.midia-item video{width:100%;height:100%;object-fit:cover}
+.midia-play{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font-size:26px;text-shadow:0 2px 8px rgba(0,0,0,.6)}
+.aut-card{border:1.5px solid var(--warn);border-radius:14px;padding:16px;margin-bottom:12px;background:rgba(245,158,11,.06)}
+.aut-card.resp{border-color:var(--border);background:var(--card)}
+.sign-pad{width:100%;height:160px;background:#fff;border-radius:12px;border:2px dashed var(--border);touch-action:none;cursor:crosshair;margin-top:10px}
+.btn-aceitar{flex:1;padding:14px;border:none;border-radius:12px;background:var(--success);color:#fff;font-weight:700;font-size:14.5px;cursor:pointer}
+.btn-recusar{flex:1;padding:14px;border:1.5px solid var(--danger);border-radius:12px;background:transparent;color:var(--danger);font-weight:700;font-size:14.5px;cursor:pointer}
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9999;display:none;align-items:center;justify-content:center;padding:20px}
+.lightbox.open{display:flex}
+.lightbox img,.lightbox video{max-width:100%;max-height:90vh;border-radius:10px}
+.lightbox-close{position:absolute;top:16px;right:20px;color:#fff;font-size:32px;cursor:pointer}
 </style>
 </head>
 <body>
@@ -60,6 +73,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);min-
     <div class="center loading"><i class="ti ti-loader-2"></i><p>Buscando sua ordem de serviço…</p></div>
   </div>
   <div class="footer">Acompanhamento em tempo real · Sistema <b>MISU SYS</b></div>
+</div>
+<div class="lightbox" id="lightbox" onclick="fecharLightbox(event)">
+  <span class="lightbox-close" onclick="fecharLightbox()">&times;</span>
+  <div id="lightbox-content"></div>
 </div>
 
 <script>
@@ -105,7 +122,11 @@ async function carregar(primeira){
   }
 }
 
+let _osData = null;
+let _sigCtx = null, _sigDraw = false, _sigHasInk = false, _sigAutId = null;
+
 function render(o){
+  _osData = o;
   const emp = o.empresa || {};
   document.getElementById('emp-nome').textContent = emp.nome || 'Assistência Técnica';
   document.getElementById('emp-sub').textContent = emp.cidade || '';
@@ -155,6 +176,22 @@ function render(o){
       ${o.garantia_dias?`<div class="info-row"><span style="color:var(--txt2)">Garantia</span><b style="color:var(--success)"><i class="ti ti-shield"></i> ${o.garantia_dias} dias</b></div>`:''}
     </div>
 
+    ${(o.midias&&o.midias.length)?`
+    <div class="card">
+      <div class="sec-lbl"><i class="ti ti-photo"></i> Fotos e vídeos do seu aparelho</div>
+      <div class="midia-grid">
+        ${o.midias.map((m,i)=>`<div class="midia-item" onclick="abrirLightbox(${i})">
+          ${m.tipo==='video'?`<video src="${m.url}" muted></video><span class="midia-play"><i class="ti ti-player-play-filled"></i></span>`:`<img src="${m.url}" loading="lazy">`}
+        </div>`).join('')}
+      </div>
+    </div>`:''}
+
+    ${(o.autorizacoes&&o.autorizacoes.length)?`
+    <div class="card">
+      <div class="sec-lbl"><i class="ti ti-signature"></i> Autorizações</div>
+      ${o.autorizacoes.map(a=>renderAutorizacao(a)).join('')}
+    </div>`:''}
+
     ${tel?`<a class="btn-wpp" href="https://api.whatsapp.com/send?phone=55${tel}&text=${encodeURIComponent('Olá! Estou acompanhando a OS '+o.numero+' e gostaria de mais informações.')}" target="_blank">
       <i class="ti ti-brand-whatsapp" style="font-size:19px"></i> Falar com a loja
     </a>`:''}
@@ -162,8 +199,125 @@ function render(o){
   `;
 }
 
+function renderAutorizacao(a){
+  if(a.status==='pendente'){
+    return `<div class="aut-card" id="aut-${a.id}">
+      <div style="font-weight:700;font-size:14.5px;margin-bottom:5px">${esc(a.titulo)}</div>
+      <div style="font-size:13px;color:var(--txt2);line-height:1.5;margin-bottom:8px">${esc(a.descricao)}</div>
+      ${a.valor?`<div style="font-size:16px;font-weight:800;color:var(--pri2);margin-bottom:10px">${fmt(a.valor)}</div>`:''}
+      <div style="font-size:12px;color:var(--warn);font-weight:600;margin-bottom:4px"><i class="ti ti-info-circle"></i> Assine abaixo para confirmar sua decisão:</div>
+      <canvas class="sign-pad" id="sign-${a.id}"></canvas>
+      <div style="display:flex;justify-content:space-between;margin-top:4px">
+        <button onclick="limparAssinatura('${a.id}')" style="background:none;border:none;color:var(--txt3);font-size:12px;cursor:pointer"><i class="ti ti-eraser"></i> Limpar</button>
+      </div>
+      <textarea id="obs-${a.id}" placeholder="Observação (opcional)" style="width:100%;margin-top:8px;padding:9px 11px;border-radius:9px;border:1px solid var(--border);background:var(--card);color:var(--txt);font-family:inherit;font-size:13px;resize:vertical" rows="2"></textarea>
+      <div style="display:flex;gap:10px;margin-top:10px">
+        <button class="btn-recusar" onclick="responderAut('${a.id}',false)">Recusar</button>
+        <button class="btn-aceitar" onclick="responderAut('${a.id}',true)">✓ Autorizar</button>
+      </div>
+    </div>`;
+  }
+  const cor=a.status==='aceita'?'var(--success)':'var(--danger)';
+  const ico=a.status==='aceita'?'ti-circle-check':'ti-circle-x';
+  const txt=a.status==='aceita'?'Você autorizou':'Você recusou';
+  return `<div class="aut-card resp">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+      <div style="font-weight:700;font-size:14px">${esc(a.titulo)}</div>
+      <span style="color:${cor};font-weight:700;font-size:12.5px;white-space:nowrap"><i class="ti ${ico}"></i> ${txt}</span>
+    </div>
+    <div style="font-size:12.5px;color:var(--txt3);margin-top:4px">${esc(a.descricao)}</div>
+    ${a.resp_em?`<div style="font-size:11px;color:var(--txt3);margin-top:6px"><i class="ti ti-clock"></i> Respondido em ${fmtDT(a.resp_em)}</div>`:''}
+  </div>`;
+}
+
+// Inicializa os canvas de assinatura após o render
+function initSignPads(){
+  (_osData?.autorizacoes||[]).filter(a=>a.status==='pendente').forEach(a=>{
+    const cv=document.getElementById('sign-'+a.id);
+    if(!cv)return;
+    const rect=cv.getBoundingClientRect();
+    cv.width=rect.width*2; cv.height=rect.height*2;
+    const ctx=cv.getContext('2d');
+    ctx.scale(2,2); ctx.strokeStyle='#111'; ctx.lineWidth=2.2; ctx.lineCap='round'; ctx.lineJoin='round';
+    let drawing=false,hasInk=false;
+    const pos=e=>{const r=cv.getBoundingClientRect();const t=e.touches?e.touches[0]:e;return{x:t.clientX-r.left,y:t.clientY-r.top};};
+    const start=e=>{e.preventDefault();drawing=true;const p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);};
+    const move=e=>{if(!drawing)return;e.preventDefault();const p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke();hasInk=true;cv.dataset.ink='1';};
+    const end=()=>{drawing=false;};
+    cv.addEventListener('mousedown',start);cv.addEventListener('mousemove',move);cv.addEventListener('mouseup',end);cv.addEventListener('mouseleave',end);
+    cv.addEventListener('touchstart',start,{passive:false});cv.addEventListener('touchmove',move,{passive:false});cv.addEventListener('touchend',end);
+  });
+}
+
+function limparAssinatura(id){
+  const cv=document.getElementById('sign-'+id);
+  if(cv){const ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);cv.dataset.ink='';}
+}
+
+async function responderAut(id, aceitar){
+  const cv=document.getElementById('sign-'+id);
+  if(aceitar && (!cv||cv.dataset.ink!=='1')){
+    alert('Por favor, assine no quadro antes de autorizar.');
+    return;
+  }
+  const assinatura = cv ? cv.toDataURL('image/png') : null;
+  const obs = document.getElementById('obs-'+id)?.value || null;
+  const card = document.getElementById('aut-'+id);
+  if(card) card.innerHTML='<div style="text-align:center;padding:20px;color:var(--txt3)"><i class="ti ti-loader-2" style="animation:pulse 1s infinite;font-size:26px"></i><br>Registrando…</div>';
+  try{
+    const { data, error } = await db.rpc('os_responder_autorizacao', {
+      tok: token, autoriz_id: id, aceitar,
+      assinatura_data: aceitar ? assinatura : null,
+      obs, ip: '', dispositivo: navigator.userAgent.slice(0,180)
+    });
+    if(error) throw error;
+    if(data && data.ok){ carregar(false); }
+    else { alert(data?.erro||'Não foi possível registrar.'); carregar(false); }
+  }catch(e){ alert('Erro ao registrar. Tente novamente.'); carregar(false); }
+}
+
+// Lightbox de mídias
+function abrirLightbox(i){
+  const m=(_osData?.midias||[])[i]; if(!m)return;
+  const lb=document.getElementById('lightbox');
+  const c=document.getElementById('lightbox-content');
+  c.innerHTML = m.tipo==='video'
+    ? `<video src="${m.url}" controls autoplay style="max-width:100%;max-height:90vh"></video>`
+    : `<img src="${m.url}">`;
+  lb.classList.add('open');
+}
+function fecharLightbox(e){
+  if(e && e.target.tagName==='VIDEO') return;
+  document.getElementById('lightbox').classList.remove('open');
+  document.getElementById('lightbox-content').innerHTML='';
+}
+
+// Web Push (opcional) — pede permissão e registra a inscrição
+async function pedirPush(){
+  if(!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  try{
+    const perm = await Notification.requestPermission();
+    if(perm!=='granted') return;
+    const reg = await navigator.serviceWorker.register('/sw.js');
+    // A chave VAPID pública deve ser configurada no deploy; sem ela, só registra permissão.
+    // Inscrição básica sem VAPID falha em alguns navegadores — envolvemos em try.
+    try{
+      const sub = await reg.pushManager.subscribe({ userVisibleOnly: true });
+      await db.rpc('os_registrar_push', { tok: token, sub: sub.toJSON() });
+    }catch(_){}
+  }catch(e){}
+}
+
+// Após cada render, inicializa assinaturas e oferece push uma vez
+const _origRender = render;
+render = function(o){ _origRender(o); setTimeout(initSignPads, 60); };
+
 carregar(true);
 setInterval(()=>carregar(false), 20000); // atualização automática a cada 20s
+// Oferece notificação por push na primeira visita (não bloqueia)
+if(!localStorage.getItem('misu_push_asked')){
+  setTimeout(()=>{ localStorage.setItem('misu_push_asked','1'); pedirPush(); }, 8000);
+}
 </script>
 </body>
 </html>
