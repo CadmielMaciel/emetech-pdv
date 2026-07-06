@@ -8914,12 +8914,13 @@ async function createOS(){
   setLoad(true);
   while(tentativas<6){
     const base={empresa_id:EID(),numero,cliente_id:cliSel?.value||null,cliente_nome:cliSel?.options[cliSel.selectedIndex]?.text||'Consumidor Final',tecnico_id:tecSel?.value||null,tecnico_nome:tecSel?.value?tecSel.options[tecSel.selectedIndex].text:null,aparelho:ap,imei:document.getElementById('os-imei').value,defeito:def,diagnostico:document.getElementById('os-diag').value,valor_servico:parseFloat(document.getElementById('os-val').value)||0,total:parseFloat(document.getElementById('os-val').value)||0,garantia_dias:parseInt(document.getElementById('os-gar').value)||90,prazo:document.getElementById('os-prazo').value||null,observacoes:document.getElementById('os-obs').value,status:'Aguardando',progresso:8,timeline:tl,
+    token_publico:(crypto.randomUUID()+crypto.randomUUID()).replace(/-/g,''),
     garantia_produto:document.getElementById('os-garantia-produto')?.value?.trim()||null,
     garantia_termo_id:document.getElementById('os-garantia-termo')?.value||null};
     const payload={...base, checklist_entrada};
     ({data,error}=await db.from('ordens_servico').insert(payload).select().single());
     // coluna checklist_entrada ainda não existe (migração S01 não rodada)
-    if(error && /checklist_entrada|column|schema/i.test(error.message||'')){
+    if(error && /checklist_entrada|token_publico|column|schema/i.test(error.message||'')){
       ({data,error}=await db.from('ordens_servico').insert(base).select().single());
       if(!error) notify('OS criada. (Rode a migração S01 para salvar o checklist estruturado.)','warn',6000);
     }
@@ -9215,6 +9216,13 @@ function detOS(id){
   wbtn.innerHTML='<i class="ti ti-brand-whatsapp"></i> WhatsApp';
   wbtn.onclick=()=>abrirWppOS(id);
   footer.appendChild(wbtn);
+  // Botão Link do Cliente (portal de acompanhamento público)
+  const lbtn=document.createElement('button');
+  lbtn.className='btn btn-out btn-sm';
+  lbtn.innerHTML='<i class="ti ti-link"></i> Link Cliente';
+  lbtn.title='Copiar link público de acompanhamento da OS';
+  lbtn.onclick=()=>copiarLinkClienteOS(id);
+  footer.appendChild(lbtn);
   const pbtn=document.createElement('button');pbtn.className='btn btn-out btn-sm';pbtn.innerHTML='<i class="ti ti-file-text"></i>Gerar PDF';pbtn.onclick=()=>gerarPdfOS(id);footer.appendChild(pbtn);
   openModal('modal-os-det');
 }
@@ -9610,6 +9618,39 @@ async function confirmarReabrirOS(id){
   notify(`${o.numero} reaberta${usaGarantia?' em garantia':''}!`,'success');
   // Atualiza tabela do histórico se estiver visível
   if(typeof renderOSHist==='function') setTimeout(renderOSHist,200);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PORTAL DO CLIENTE — link público de acompanhamento da OS
+   O cliente abre /os.html?t=TOKEN e acompanha status, timeline e
+   valor em tempo real, sem login. Requer migração X08.
+   ══════════════════════════════════════════════════════════════ */
+function linkPublicoOS(o){
+  if(!o?.token_publico) return null;
+  return `${location.origin}/os.html?t=${o.token_publico}`;
+}
+
+async function copiarLinkClienteOS(id){
+  let o=(G.os||[]).find(x=>x.id===id)||(G._osHistDev||[]).find(x=>x.id===id);
+  if(!o){notify('OS não encontrada.','warn');return;}
+  // OS antiga sem token (migração X08 gera para todas, mas por garantia): gera e salva
+  if(!o.token_publico){
+    const tok=(crypto.randomUUID()+crypto.randomUUID()).replace(/-/g,'');
+    const {error}=await db.from('ordens_servico').update({token_publico:tok}).eq('id',id);
+    if(error){notify('Rode a migração X08 para ativar o portal do cliente.','warn',6000);return;}
+    o.token_publico=tok;
+  }
+  const link=linkPublicoOS(o);
+  const msg=`Olá ${o.cliente_nome||''}! 👋\n\nAcompanhe sua OS *${o.numero}* (${o.aparelho}) em tempo real por este link:\n${link}\n\nQualquer dúvida estamos à disposição!`;
+  try{ await navigator.clipboard.writeText(link); notify('✓ Link copiado! Cole no WhatsApp do cliente.','success',4000); }
+  catch(e){ notify('Link: '+link,'info',9000); }
+  // Oferece envio direto se o cliente tem telefone
+  const cli=(G.clientes||[]).find(c=>c.id===o.cliente_id||c.nome===o.cliente_nome);
+  const tel=(cli?.whatsapp||cli?.telefone||'').replace(/\D/g,'');
+  if(tel){
+    confirmAct('Enviar link ao cliente?',`Abrir o WhatsApp de <b>${esc(o.cliente_nome||'')}</b> com o link de acompanhamento pronto?`,
+      ()=>window.open(`https://api.whatsapp.com/send?phone=55${tel}&text=${encodeURIComponent(msg)}`,'_blank'));
+  }
 }
 
 async function advOS(id,next){
