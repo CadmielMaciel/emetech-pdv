@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acompanhe sua Ordem de Serviço</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="icon" type="image/png" href="/icon-192.png">
+<style>
+:root{--pri:#1E5EFF;--pri2:#3D8BFF;--bg:#070B1A;--card:#0E1730;--card2:#13204A;--txt:#EAF0FF;--txt2:#A8BAE8;--txt3:#6B7FB8;--border:#1B2A55;--success:#10B981;--warn:#F59E0B;--danger:#EF4444}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;background-image:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(30,94,255,.18),transparent)}
+.wrap{max-width:560px;margin:0 auto;padding:28px 18px 60px}
+.header{text-align:center;margin-bottom:26px}
+.header img{width:74px;height:74px;object-fit:contain;filter:drop-shadow(0 4px 18px rgba(30,94,255,.5))}
+.emp-nome{font-family:'Syne',sans-serif;font-weight:800;font-size:19px;margin-top:10px;letter-spacing:.5px}
+.emp-sub{font-size:12px;color:var(--txt3);margin-top:2px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:20px;margin-bottom:14px;box-shadow:0 8px 32px rgba(0,0,0,.35)}
+.os-num{font-family:'Syne',sans-serif;font-weight:800;font-size:24px;color:var(--pri2)}
+.status-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 16px;border-radius:99px;font-size:13px;font-weight:700;margin-top:8px}
+.aparelho{font-size:15px;font-weight:600;margin-top:14px}
+.defeito{font-size:13px;color:var(--txt2);margin-top:4px;line-height:1.5}
+.prog-bar{height:10px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden;margin-top:16px;border:1px solid var(--border)}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--pri),var(--pri2));border-radius:99px;transition:width 1s ease;box-shadow:0 0 12px rgba(30,94,255,.6)}
+.prog-txt{font-size:11px;color:var(--txt3);margin-top:5px;text-align:right}
+.sec-lbl{font-size:10.5px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+.tl-item{display:flex;gap:14px;position:relative;padding-bottom:20px}
+.tl-item:last-child{padding-bottom:0}
+.tl-item::before{content:'';position:absolute;left:9px;top:22px;bottom:0;width:2px;background:var(--border)}
+.tl-item:last-child::before{display:none}
+.tl-dot{width:20px;height:20px;border-radius:50%;background:var(--card2);border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;z-index:1}
+.tl-item.done .tl-dot{background:var(--pri);border-color:var(--pri);box-shadow:0 0 10px rgba(30,94,255,.5)}
+.tl-item.done .tl-dot::after{content:'✓';font-size:10px;color:#fff;font-weight:800}
+.tl-status{font-size:14px;font-weight:600}
+.tl-data{font-size:11.5px;color:var(--txt3);margin-top:1px}
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:13.5px}
+.info-row:last-child{border-bottom:none}
+.info-row b{font-size:15px}
+.btn-wpp{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;border-radius:14px;background:#25D366;color:#fff;font-weight:700;font-size:14.5px;text-decoration:none;font-family:'DM Sans',sans-serif;border:none;cursor:pointer;margin-top:6px;box-shadow:0 6px 20px rgba(37,211,102,.3)}
+.center{text-align:center;padding:60px 20px}
+.center i{font-size:48px;color:var(--txt3);opacity:.5}
+.center p{color:var(--txt2);margin-top:14px;font-size:14px}
+.atualizado{text-align:center;font-size:11px;color:var(--txt3);margin-top:16px}
+.footer{text-align:center;margin-top:26px;font-size:11px;color:var(--txt3)}
+.footer b{color:var(--pri2)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.loading i{animation:pulse 1.2s infinite;font-size:40px;color:var(--pri)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <img src="/icon-192.png" alt="">
+    <div class="emp-nome" id="emp-nome">Carregando…</div>
+    <div class="emp-sub" id="emp-sub"></div>
+  </div>
+  <div id="conteudo">
+    <div class="center loading"><i class="ti ti-loader-2"></i><p>Buscando sua ordem de serviço…</p></div>
+  </div>
+  <div class="footer">Acompanhamento em tempo real · Sistema <b>MISU SYS</b></div>
+</div>
+
+<script>
+const SURL = 'https://icgfpfwcnhkjglrmnuca.supabase.co';
+const SKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljZ2ZwZndjbmhramdscm1udWNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwODA2OTEsImV4cCI6MjA5NTY1NjY5MX0.xDGiGCIlqXaqdWhWo0NoNi_XUdlw5raCogO_Jnc0ezw';
+const db = supabase.createClient(SURL, SKEY);
+
+const token = new URLSearchParams(location.search).get('t') || '';
+const esc = s => String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = v => 'R$ ' + (parseFloat(v)||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
+const fmtDT = d => d ? new Date(d).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+const fmtD = d => d ? new Date(d+(d.length===10?'T12:00':'')).toLocaleDateString('pt-BR') : null;
+
+const STATUS_INFO = {
+  'Aguardando':      { cor:'#F59E0B', bg:'rgba(245,158,11,.14)', icone:'ti-clock',        msg:'Recebemos seu aparelho e ele está na fila de análise.' },
+  'Em Análise':      { cor:'#3D8BFF', bg:'rgba(61,139,255,.14)', icone:'ti-search',       msg:'Nosso técnico está diagnosticando o problema.' },
+  'Em Reparo':       { cor:'#8B5CF6', bg:'rgba(139,92,246,.14)', icone:'ti-tool',         msg:'Seu aparelho está sendo reparado agora.' },
+  'Aguardando Peça': { cor:'#EF4444', bg:'rgba(239,68,68,.14)',  icone:'ti-package',      msg:'Aguardando a chegada de uma peça necessária.' },
+  'Pronto':          { cor:'#10B981', bg:'rgba(16,185,129,.14)', icone:'ti-circle-check', msg:'Reparo concluído! Estamos preparando a entrega.' },
+  'Ag. Pagamento':   { cor:'#F59E0B', bg:'rgba(245,158,11,.14)', icone:'ti-cash',         msg:'Pronto! Retire seu aparelho e finalize o pagamento no balcão.' },
+  'Entregue':        { cor:'#10B981', bg:'rgba(16,185,129,.14)', icone:'ti-check',        msg:'Aparelho entregue. Obrigado pela confiança!' },
+  'Cancelada':       { cor:'#6B7280', bg:'rgba(107,114,128,.14)',icone:'ti-ban',          msg:'Esta ordem de serviço foi cancelada.' }
+};
+
+async function carregar(primeira){
+  if(!token || token.length < 32){
+    document.getElementById('conteudo').innerHTML =
+      '<div class="center"><i class="ti ti-link-off"></i><p>Link inválido ou incompleto.<br>Solicite o link de acompanhamento à loja.</p></div>';
+    return;
+  }
+  try{
+    const { data, error } = await db.rpc('os_publica', { tok: token });
+    if(error) throw error;
+    if(!data){ 
+      document.getElementById('conteudo').innerHTML =
+        '<div class="center"><i class="ti ti-file-off"></i><p>Ordem de serviço não encontrada.<br>Verifique o link com a loja.</p></div>';
+      return;
+    }
+    render(data);
+  }catch(e){
+    if(primeira) document.getElementById('conteudo').innerHTML =
+      `<div class="center"><i class="ti ti-wifi-off"></i><p>Não foi possível carregar agora.<br>Tente novamente em instantes.</p></div>`;
+  }
+}
+
+function render(o){
+  const emp = o.empresa || {};
+  document.getElementById('emp-nome').textContent = emp.nome || 'Assistência Técnica';
+  document.getElementById('emp-sub').textContent = emp.cidade || '';
+  document.title = `OS ${o.numero} — ${emp.nome||''}`;
+
+  const st = STATUS_INFO[o.status] || STATUS_INFO['Aguardando'];
+  const tel = String(emp.whatsapp || emp.telefone || '').replace(/\D/g,'');
+  const prazo = fmtD(o.prazo_entrega);
+
+  // Timeline: mais recente por último (ordem cronológica)
+  const tl = (o.timeline||[]).slice(-8);
+
+  document.getElementById('conteudo').innerHTML = `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
+        <div>
+          <div class="os-num">OS ${esc(o.numero)}</div>
+          <div style="font-size:12px;color:var(--txt3)">Aberta em ${fmtDT(o.criado_em)}</div>
+        </div>
+        <span class="status-pill" style="color:${st.cor};background:${st.bg};border:1.5px solid ${st.cor}44">
+          <i class="ti ${st.icone}"></i> ${esc(o.status)}
+        </span>
+      </div>
+      <div class="aparelho"><i class="ti ti-device-mobile" style="color:var(--pri2)"></i> ${esc(o.aparelho||'')}</div>
+      ${o.defeito?`<div class="defeito">${esc(o.defeito)}</div>`:''}
+      <div style="margin-top:12px;padding:12px 14px;background:${st.bg};border-radius:11px;font-size:13px;color:${st.cor};font-weight:600">
+        ${st.msg}
+      </div>
+      <div class="prog-bar"><div class="prog-fill" style="width:${o.progresso||0}%"></div></div>
+      <div class="prog-txt">${o.progresso||0}% concluído</div>
+    </div>
+
+    <div class="card">
+      <div class="sec-lbl"><i class="ti ti-timeline"></i> Histórico</div>
+      ${tl.length? tl.map((t,i)=>`
+        <div class="tl-item ${i<tl.length?'done':''}">
+          <div class="tl-dot"></div>
+          <div><div class="tl-status">${esc(t.status||'')}</div><div class="tl-data">${fmtDT(t.data)}</div></div>
+        </div>`).join('') : '<div style="color:var(--txt3);font-size:13px">Sem movimentações ainda.</div>'}
+    </div>
+
+    <div class="card">
+      <div class="sec-lbl"><i class="ti ti-file-invoice"></i> Detalhes</div>
+      ${o.diagnostico?`<div class="info-row"><span style="color:var(--txt2)">Diagnóstico</span><span style="max-width:60%;text-align:right;font-size:12.5px">${esc(o.diagnostico)}</span></div>`:''}
+      ${prazo?`<div class="info-row"><span style="color:var(--txt2)">Previsão de entrega</span><b>${prazo}</b></div>`:''}
+      <div class="info-row"><span style="color:var(--txt2)">Valor do serviço</span><b style="color:var(--pri2)">${fmt(o.total)}</b></div>
+      ${o.garantia_dias?`<div class="info-row"><span style="color:var(--txt2)">Garantia</span><b style="color:var(--success)"><i class="ti ti-shield"></i> ${o.garantia_dias} dias</b></div>`:''}
+    </div>
+
+    ${tel?`<a class="btn-wpp" href="https://api.whatsapp.com/send?phone=55${tel}&text=${encodeURIComponent('Olá! Estou acompanhando a OS '+o.numero+' e gostaria de mais informações.')}" target="_blank">
+      <i class="ti ti-brand-whatsapp" style="font-size:19px"></i> Falar com a loja
+    </a>`:''}
+    <div class="atualizado"><i class="ti ti-refresh"></i> Atualiza automaticamente · último: ${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</div>
+  `;
+}
+
+carregar(true);
+setInterval(()=>carregar(false), 20000); // atualização automática a cada 20s
+</script>
+</body>
+</html>
