@@ -3160,6 +3160,11 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
   <div class="modal-footer" id="os-det-footer"></div>
 </div></div>
 
+<div class="modal-overlay" id="modal-generic"><div class="modal">
+  <div id="modal-generic-content"></div>
+  <div class="modal-footer" id="modal-generic-footer"></div>
+</div></div>
+
 <!-- Venda OK -->
 <div class="modal-overlay" id="modal-venda-ok"><div class="modal sm" style="text-align:center;padding:32px">
   <div style="width:62px;height:62px;background:#ECFDF5;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px">
@@ -9206,11 +9211,34 @@ function detOS(id){
       <span class="tag tag-gry"><i class="ti ti-user" style="font-size:10px"></i>${o.cliente_nome}</span>
       ${o.tecnico_nome?`<span class="tag tag-blu"><i class="ti ti-badge" style="font-size:10px"></i>${o.tecnico_nome}</span>`:''}
     </div>
-    <!-- Abas: Dados | Peças | Checklist -->
+    <!-- Abas: Dados | Peças | Checklist | Fotos | Autorizações -->
     <div class="fin-tabs" style="margin-bottom:14px">
       <button class="fin-tab active" onclick="osDTab('dados',this)"><i class="ti ti-info-circle" style="font-size:12px"></i> Dados</button>
       <button class="fin-tab" onclick="osDTab('pecas',this)"><i class="ti ti-tool" style="font-size:12px"></i> Peças <span id="os-pecas-badge" style="background:var(--pri);color:#fff;border-radius:99px;padding:1px 7px;font-size:10px;margin-left:3px">${(o.pecas||[]).length}</span></button>
       <button class="fin-tab" onclick="osDTab('checklist',this)"><i class="ti ti-clipboard-check" style="font-size:12px"></i> Checklist</button>
+      <button class="fin-tab" onclick="osDTab('midias',this);carregarMidiasOS('${o.id}')"><i class="ti ti-photo" style="font-size:12px"></i> Fotos/Vídeos</button>
+      <button class="fin-tab" onclick="osDTab('autoriz',this);carregarAutorizacoesOS('${o.id}')"><i class="ti ti-signature" style="font-size:12px"></i> Autorizações</button>
+    </div>
+    <!-- ABA FOTOS/VÍDEOS -->
+    <div id="osd-midias" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div style="font-size:13px;font-weight:700;color:var(--txt)">Fotos e vídeos do aparelho</div>
+        <div>
+          <input type="file" id="os-midia-input" accept="image/*,video/*" multiple style="display:none" onchange="uploadMidiasOS('${o.id}',this.files)">
+          <button class="btn btn-pri btn-sm" onclick="document.getElementById('os-midia-input').click()"><i class="ti ti-upload"></i> Anexar</button>
+        </div>
+      </div>
+      <div style="font-size:11.5px;color:var(--txt3);margin-bottom:10px"><i class="ti ti-eye"></i> As mídias marcadas como visíveis aparecem no portal do cliente.</div>
+      <div id="osd-midias-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px"></div>
+    </div>
+    <!-- ABA AUTORIZAÇÕES -->
+    <div id="osd-autoriz" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div style="font-size:13px;font-weight:700;color:var(--txt)">Solicitações de autorização</div>
+        <button class="btn btn-pri btn-sm" onclick="abrirNovaAutorizacao('${o.id}')"><i class="ti ti-plus"></i> Nova solicitação</button>
+      </div>
+      <div style="font-size:11.5px;color:var(--txt3);margin-bottom:10px"><i class="ti ti-signature"></i> O cliente aceita ou recusa pelo portal, com assinatura na tela.</div>
+      <div id="osd-autoriz-list"></div>
     </div>
     <!-- ABA DADOS -->
     <div id="osd-dados">
@@ -9302,7 +9330,7 @@ function detOS(id){
 
 // ── ABAS DO DETALHE DE OS ──────────────────────────────
 function osDTab(aba, btn) {
-  ['dados','pecas','checklist'].forEach(t => {
+  ['dados','pecas','checklist','midias','autoriz'].forEach(t => {
     const el = document.getElementById('osd-' + t);
     if (el) el.style.display = t === aba ? '' : 'none';
   });
@@ -9698,6 +9726,193 @@ async function confirmarReabrirOS(id){
    O cliente abre /os.html?t=TOKEN e acompanha status, timeline e
    valor em tempo real, sem login. Requer migração X08.
    ══════════════════════════════════════════════════════════════ */
+function abrirModalGenerico(html, footerHtml){
+  const c=document.getElementById('modal-generic-content');
+  const f=document.getElementById('modal-generic-footer');
+  if(c)c.innerHTML=html;
+  if(f)f.innerHTML=footerHtml||'';
+  openModal('modal-generic');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PORTAL INTERATIVO — Fotos/Vídeos e Autorizações da OS (loja)
+   ══════════════════════════════════════════════════════════════ */
+async function uploadMidiasOS(osId, files){
+  if(!files||!files.length)return;
+  setLoad(true);
+  let ok=0;
+  for(const file of files){
+    try{
+      const ehVideo=file.type.startsWith('video');
+      // Limite defensivo: 25MB por arquivo
+      if(file.size>25*1024*1024){ notify(`"${file.name}" excede 25MB e foi ignorado.`,'warn',4000); continue; }
+      const ext=(file.name.split('.').pop()||'bin').toLowerCase();
+      const path=`${EID()}/${osId}/${Date.now()}_${Math.random().toString(36).slice(2,8)}.${ext}`;
+      const {error:upErr}=await db.storage.from('os-midias').upload(path,file,{contentType:file.type,upsert:false});
+      if(upErr)throw upErr;
+      const {data:pub}=db.storage.from('os-midias').getPublicUrl(path);
+      const {error:insErr}=await db.from('os_midias').insert({
+        empresa_id:EID(),os_id:osId,tipo:ehVideo?'video':'foto',
+        url:pub.publicUrl,path,visivel_cliente:true,criado_por:G.profile?.nome||''
+      });
+      if(insErr)throw insErr;
+      ok++;
+    }catch(e){ notify('Falha ao enviar mídia: '+(e.message||e),'error',4500); }
+  }
+  setLoad(false);
+  if(ok)notify(`${ok} mídia(s) anexada(s).`,'success');
+  carregarMidiasOS(osId);
+}
+
+async function carregarMidiasOS(osId){
+  const grid=document.getElementById('osd-midias-grid');
+  if(!grid)return;
+  grid.innerHTML='<div style="grid-column:1/-1;text-align:center;color:var(--txt3);padding:20px">Carregando…</div>';
+  const {data,error}=await db.from('os_midias').select('*').eq('os_id',osId).order('criado_em');
+  if(error){grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;color:var(--danger);padding:16px">Rode a migração X10 para ativar as mídias.</div>`;return;}
+  if(!data||!data.length){grid.innerHTML='<div style="grid-column:1/-1;text-align:center;color:var(--txt3);padding:24px"><i class="ti ti-photo-off" style="font-size:28px;opacity:.4;display:block;margin-bottom:8px"></i>Nenhuma mídia anexada</div>';return;}
+  grid.innerHTML=data.map(m=>`
+    <div style="border:1px solid var(--border);border-radius:11px;overflow:hidden;background:var(--bg2);position:relative">
+      <div style="aspect-ratio:1;background:#000;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="window.open('${m.url}','_blank')">
+        ${m.tipo==='video'
+          ?`<video src="${m.url}" style="width:100%;height:100%;object-fit:cover" muted></video><div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font-size:26px"><i class="ti ti-player-play-filled"></i></div>`
+          :`<img src="${m.url}" style="width:100%;height:100%;object-fit:cover">`}
+      </div>
+      <div style="padding:7px 8px;display:flex;align-items:center;justify-content:space-between;gap:4px">
+        <label style="display:flex;align-items:center;gap:4px;font-size:10.5px;color:var(--txt2);cursor:pointer" title="Visível no portal do cliente">
+          <input type="checkbox" ${m.visivel_cliente?'checked':''} onchange="toggleMidiaVisivel('${m.id}',this.checked)" style="width:auto;accent-color:var(--pri)">
+          <i class="ti ti-eye" style="font-size:12px"></i> Portal
+        </label>
+        <button class="btn-ghost" onclick="excluirMidiaOS('${m.id}','${(m.path||'').replace(/'/g,'')}','${osId}')" title="Excluir" style="padding:2px 4px"><i class="ti ti-trash" style="color:var(--danger);font-size:13px"></i></button>
+      </div>
+    </div>`).join('');
+}
+
+async function toggleMidiaVisivel(id,vis){
+  await db.from('os_midias').update({visivel_cliente:vis}).eq('id',id);
+  notify(vis?'Mídia visível no portal.':'Mídia oculta do portal.','info',2500);
+}
+
+async function excluirMidiaOS(id,path,osId){
+  confirmAct('Excluir mídia','Remover esta foto/vídeo permanentemente?',async()=>{
+    if(path){ try{await db.storage.from('os-midias').remove([path]);}catch(e){} }
+    await db.from('os_midias').delete().eq('id',id);
+    notify('Mídia removida.','success');
+    carregarMidiasOS(osId);
+  });
+}
+
+// ── AUTORIZAÇÕES ──
+async function carregarAutorizacoesOS(osId){
+  const box=document.getElementById('osd-autoriz-list');
+  if(!box)return;
+  box.innerHTML='<div style="text-align:center;color:var(--txt3);padding:16px">Carregando…</div>';
+  const {data,error}=await db.from('os_autorizacoes').select('*').eq('os_id',osId).order('criado_em',{ascending:false});
+  if(error){box.innerHTML='<div style="text-align:center;color:var(--danger);padding:16px">Rode a migração X10 para ativar as autorizações.</div>';return;}
+  if(!data||!data.length){box.innerHTML='<div style="text-align:center;color:var(--txt3);padding:24px"><i class="ti ti-signature" style="font-size:28px;opacity:.4;display:block;margin-bottom:8px"></i>Nenhuma solicitação criada</div>';return;}
+  const badge={pendente:['tag-amb','Aguardando cliente'],aceita:['tag-grn','Aceita'],recusada:['tag-red','Recusada']};
+  box.innerHTML=data.map(a=>{
+    const[cls,txt]=badge[a.status]||['tag-gry',a.status];
+    return `<div style="border:1px solid var(--border);border-radius:11px;padding:12px 14px;margin-bottom:8px;background:var(--bg2)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:5px">
+        <div style="font-weight:700;font-size:13.5px;color:var(--txt)">${esc(a.titulo)}</div>
+        <span class="tag ${cls}">${txt}</span>
+      </div>
+      <div style="font-size:12.5px;color:var(--txt2);margin-bottom:6px">${esc(a.descricao)}</div>
+      ${a.valor?`<div style="font-size:13px;font-weight:700;color:var(--pri);margin-bottom:6px">${fmt(a.valor)}</div>`:''}
+      ${a.status!=='pendente'?`
+        <div style="border-top:1px solid var(--border);padding-top:7px;margin-top:6px;font-size:11px;color:var(--txt3)">
+          <div><i class="ti ti-clock"></i> Respondido em ${fmtDT(a.resp_em)}</div>
+          ${a.resp_dispositivo?`<div style="margin-top:2px"><i class="ti ti-device-mobile"></i> ${esc((a.resp_dispositivo||'').slice(0,60))}</div>`:''}
+          ${a.resp_ip?`<div style="margin-top:2px"><i class="ti ti-map-pin"></i> IP: ${esc(a.resp_ip)}</div>`:''}
+          ${a.cliente_obs?`<div style="margin-top:4px;color:var(--txt2)"><i class="ti ti-message"></i> "${esc(a.cliente_obs)}"</div>`:''}
+          ${a.assinatura?`<div style="margin-top:6px"><img src="${a.assinatura}" style="max-width:180px;background:#fff;border-radius:6px;padding:3px"></div>`:''}
+          ${a.status==='aceita'&&a.assinatura?`<button class="btn btn-out btn-xs" style="margin-top:6px" onclick="imprimirComprovanteAutoriz('${a.id}')"><i class="ti ti-printer"></i> Comprovante</button>`:''}
+        </div>`:'<div style="font-size:11px;color:var(--warn)"><i class="ti ti-send"></i> Envie o link do portal ao cliente para ele responder.</div>'}
+    </div>`;
+  }).join('');
+}
+
+function abrirNovaAutorizacao(osId){
+  const o=(G.os||[]).find(x=>x.id===osId);
+  const html=`<div class="card-title" style="gap:7px"><i class="ti ti-signature" style="color:var(--pri)"></i> Nova Autorização</div>
+    <div class="fg"><label class="lbl">Título *</label><input type="text" id="aut-titulo" placeholder="Ex: Autorização de troca de tela"></div>
+    <div class="fg"><label class="lbl">Descrição do que será autorizado *</label><textarea id="aut-desc" rows="3" placeholder="Ex: Substituição da tela original por uma nova. Procedimento pode revelar outros defeitos."></textarea></div>
+    <div class="fg"><label class="lbl">Valor envolvido (opcional)</label><input type="number" id="aut-valor" step="0.01" placeholder="0,00"></div>`;
+  const foot=`<button class="btn btn-out" onclick="closeModal('modal-generic')">Cancelar</button>
+    <button class="btn btn-pri" onclick="salvarAutorizacao('${osId}')"><i class="ti ti-check"></i> Criar e notificar cliente</button>`;
+  abrirModalGenerico(html,foot);
+}
+
+async function salvarAutorizacao(osId){
+  const titulo=document.getElementById('aut-titulo')?.value?.trim();
+  const desc=document.getElementById('aut-desc')?.value?.trim();
+  const valor=parseFloat(document.getElementById('aut-valor')?.value)||null;
+  if(!titulo||!desc){notify('Preencha título e descrição.','warn');return;}
+  setLoad(true);
+  const {error}=await db.from('os_autorizacoes').insert({
+    empresa_id:EID(),os_id:osId,titulo,descricao:desc,valor,status:'pendente',criado_por:G.profile?.nome||''
+  });
+  setLoad(false);
+  if(error){notify('Erro ao criar autorização: '+error.message,'error');return;}
+  closeModal('modal-generic');
+  notify('Autorização criada!','success');
+  carregarAutorizacoesOS(osId);
+  // Notifica o cliente pelo WhatsApp com o link do portal
+  const o=(G.os||[]).find(x=>x.id===osId);
+  if(o){
+    if(!o.token_publico){
+      const tok=(crypto.randomUUID()+crypto.randomUUID()).replace(/-/g,'');
+      await db.from('ordens_servico').update({token_publico:tok}).eq('id',osId);
+      o.token_publico=tok;
+    }
+    const link=linkPublicoOS(o);
+    const cli=(G.clientes||[]).find(c=>c.id===o.cliente_id||c.nome===o.cliente_nome);
+    const tel=(cli?.whatsapp||cli?.telefone||'').replace(/\D/g,'');
+    const msg=`Olá ${o.cliente_nome||''}! 📋\n\nSua OS *${o.numero}* (${o.aparelho}) precisa de uma autorização sua:\n\n*${titulo}*\n${desc}${valor?`\n\nValor: ${fmt(valor)}`:''}\n\nPor favor, acesse o link e confirme:\n${link}`;
+    if(tel){
+      confirmAct('Notificar cliente?',`Abrir o WhatsApp de <b>${esc(o.cliente_nome||'')}</b> com a solicitação de autorização?`,
+        ()=>window.open(`https://api.whatsapp.com/send?phone=55${tel}&text=${encodeURIComponent(msg)}`,'_blank'));
+    } else {
+      notify('Cliente sem telefone. Copie o link na aba do portal.','info',5000);
+    }
+  }
+}
+
+async function imprimirComprovanteAutoriz(autId){
+  const {data:a}=await db.from('os_autorizacoes').select('*').eq('id',autId).single();
+  if(!a)return;
+  const o=(G.os||[]).find(x=>x.id===a.os_id)||{};
+  const emp=G.empresa?.nome||'MISU SYS';
+  const html=`<!doctype html><html><head><meta charset="utf-8"><title>Comprovante de Autorização</title>
+  <style>body{font-family:system-ui,sans-serif;padding:30px;color:#111;max-width:600px;margin:0 auto}
+  h1{font-size:18px}.box{border:1px solid #ccc;border-radius:8px;padding:16px;margin:12px 0}
+  .lbl{font-size:11px;color:#666;text-transform:uppercase;letter-spacing:.5px}
+  .val{font-size:14px;font-weight:600;margin-bottom:8px}
+  .sig{border:1px solid #eee;border-radius:6px;max-width:220px;margin-top:6px}
+  .foot{font-size:11px;color:#888;margin-top:20px;border-top:1px solid #eee;padding-top:12px}</style></head><body>
+  <h1>${esc(emp)} — Comprovante de Autorização</h1>
+  <div class="box">
+    <div class="lbl">Ordem de Serviço</div><div class="val">${esc(o.numero||'')} · ${esc(o.aparelho||'')}</div>
+    <div class="lbl">Autorização</div><div class="val">${esc(a.titulo)}</div>
+    <div class="lbl">Descrição</div><div class="val">${esc(a.descricao)}</div>
+    ${a.valor?`<div class="lbl">Valor</div><div class="val">${fmt(a.valor)}</div>`:''}
+    <div class="lbl">Status</div><div class="val" style="color:${a.status==='aceita'?'#10B981':'#EF4444'}">${a.status==='aceita'?'✓ AUTORIZADO PELO CLIENTE':'✗ RECUSADO'}</div>
+  </div>
+  <div class="box">
+    <div class="lbl">Prova de resposta (capturada digitalmente)</div>
+    <div class="val" style="font-weight:400;font-size:12px;margin-top:6px">
+      Data/hora: ${fmtDT(a.resp_em)}<br>
+      Dispositivo: ${esc(a.resp_dispositivo||'—')}<br>
+      IP: ${esc(a.resp_ip||'—')}${a.cliente_obs?`<br>Observação do cliente: "${esc(a.cliente_obs)}"`:''}
+    </div>
+    ${a.assinatura?`<div class="lbl" style="margin-top:10px">Assinatura</div><img class="sig" src="${a.assinatura}">`:''}
+  </div>
+  <div class="foot">Documento gerado eletronicamente em ${fmtDT(new Date().toISOString())}. A resposta foi registrada com data, dispositivo e IP como prova de autoria.</div>
+  </body></html>`;
+  pdfImprimir(html);
+}
+
 function linkPublicoOS(o){
   if(!o?.token_publico) return null;
   return `${location.origin}/os.html?t=${o.token_publico}`;
