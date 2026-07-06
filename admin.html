@@ -661,6 +661,7 @@ select option { background: var(--bg2); }
       <div class="sb-item active" onclick="go('dashboard')"><i class="ti ti-layout-dashboard"></i> Dashboard</div>
       <div class="sb-item" onclick="go('empresas')"><i class="ti ti-building-store"></i> Empresas</div>
       <div class="sb-item" onclick="go('saude')"><i class="ti ti-heart-rate-monitor"></i> Saúde dos Clientes</div>
+      <div class="sb-item" onclick="go('uso')"><i class="ti ti-chart-bar"></i> Uso & Relatórios</div>
       <div class="sb-item" onclick="go('cobrancas')"><i class="ti ti-receipt"></i> Cobranças</div>
       <div class="sb-item" onclick="go('planos')"><i class="ti ti-credit-card"></i> Planos</div>
       <div class="sb-sec">Operações</div>
@@ -826,6 +827,47 @@ select option { background: var(--bg2); }
       </div>
 
       <!-- ══ PAGE: COBRANÇAS (NOVO) ══ -->
+      <!-- USO & RELATÓRIOS (SaaS analytics cross-tenant) -->
+      <div class="page" id="page-uso">
+        <div class="kpi-grid" id="uso-kpis">
+          <div class="kpi-card"><div class="kpi-val" id="uso-gmv">—</div><div class="kpi-lbl">Faturamento dos clientes (30d)</div></div>
+          <div class="kpi-card"><div class="kpi-val" id="uso-vendas">—</div><div class="kpi-lbl">Vendas nos tenants (30d)</div></div>
+          <div class="kpi-card"><div class="kpi-val" id="uso-os">—</div><div class="kpi-lbl">Ordens de Serviço (30d)</div></div>
+          <div class="kpi-card"><div class="kpi-val" id="uso-inativas" style="color:var(--danger)">—</div><div class="kpi-lbl">Empresas paradas há 15+ dias</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-bottom:16px" class="uso-charts-grid">
+          <div class="chart-card">
+            <div class="sec-title" style="margin-bottom:12px">Volume dos tenants por mês (GMV × novas empresas)</div>
+            <div class="chart-wrap"><canvas id="chart-uso-mes"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="sec-title" style="margin-bottom:12px">Distribuição por plano</div>
+            <div class="chart-wrap"><canvas id="chart-uso-plano"></canvas></div>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+            <div class="sec-title">Ranking de atividade por empresa (últimos 30 dias)</div>
+            <div style="display:flex;gap:8px">
+              <select id="uso-filtro" onchange="renderUsoTabela()" style="padding:7px 10px;font-size:12.5px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--txt)">
+                <option value="">Todas</option>
+                <option value="ativas">Com atividade</option>
+                <option value="inativas7">Paradas 7+ dias</option>
+                <option value="inativas15">Paradas 15+ dias</option>
+                <option value="inativas30">Paradas 30+ dias</option>
+              </select>
+              <button class="btn btn-out btn-sm" onclick="exportarUsoCSV()"><i class="ti ti-download"></i> CSV</button>
+            </div>
+          </div>
+          <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">
+            <thead><tr style="border-bottom:1px solid var(--border);text-align:left;color:var(--txt3);font-size:11px;text-transform:uppercase">
+              <th style="padding:8px">Empresa</th><th>Plano</th><th>Vendas 30d</th><th>Faturamento 30d</th><th>OS 30d</th><th>Usuários</th><th>Última atividade</th>
+            </tr></thead>
+            <tbody id="uso-tabela"></tbody>
+          </table></div>
+        </div>
+      </div>
+
       <div class="page" id="page-cobrancas">
         <div class="sec-hdr">
           <div class="sec-title">Financeiro &amp; Cobrança</div>
@@ -2312,6 +2354,7 @@ async function refreshDados() {
 
 /* ── NAVEGAÇÃO ── */
 const PAGE_TITLES = {
+  uso: { title: 'Uso & Relatórios', icon: 'ti-chart-bar' },
   dashboard: { title:'Dashboard',    icon:'ti-layout-dashboard' },
   empresas:  { title:'Empresas',     icon:'ti-building-store'   },
   saude:     { title:'Saúde dos Clientes', icon:'ti-heart-rate-monitor' },
@@ -2341,6 +2384,7 @@ function go(page) {
 
   if (page === 'logs') carregarLogs();
   if (page === 'saude') renderSaude();
+  if (page === 'uso') renderUso();
   if (page === 'cobrancas') renderCobrancas();
   if (page === 'whatsapp') renderWhatsapp();
   if (page === 'suporte') carregarSuporteConfig();
@@ -2370,6 +2414,125 @@ function _healthEmpresa(e){
   else {nivel='Risco de cancelamento';cor='red';}
   return {score,nivel,cor,fatores};
 }
+/* ══════════════════════════════════════════════════════════════
+   USO & RELATÓRIOS — analytics cross-tenant do SaaS
+   Dados via RPC admin_relatorio_uso() (SECURITY DEFINER, restrita
+   ao admin_master). Mostra volume real de uso de cada empresa:
+   quem cresce (candidata a upgrade) e quem parou (risco de churn).
+   ══════════════════════════════════════════════════════════════ */
+let _usoDados=null;
+let _usoCharts={};
+
+async function renderUso(){
+  const tb=document.getElementById('uso-tabela');
+  if(tb&&!_usoDados)tb.innerHTML='<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--txt3)">Carregando dados de uso…</td></tr>';
+  try{
+    const {data,error}=await db.rpc('admin_relatorio_uso');
+    if(error)throw error;
+    _usoDados=data;
+  }catch(e){
+    if(tb)tb.innerHTML=`<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--danger)">Erro ao carregar: ${e.message}.<br><span style="font-size:11px;color:var(--txt3)">Rode a migração A01 (admin_relatorio_uso) no Supabase SQL Editor.</span></td></tr>`;
+    return;
+  }
+  const d=_usoDados||{};
+  const emp=d.por_empresa||[];
+
+  // KPIs
+  const gmv=emp.reduce((s,e)=>s+(parseFloat(e.fat_30d)||0),0);
+  const vendas=emp.reduce((s,e)=>s+(parseInt(e.vendas_30d)||0),0);
+  const os=emp.reduce((s,e)=>s+(parseInt(e.os_30d)||0),0);
+  const agora=Date.now();
+  const inativas15=emp.filter(e=>_diasInativa(e,agora)>=15).length;
+  const el=(id,v)=>{const x=document.getElementById(id);if(x)x.textContent=v;};
+  el('uso-gmv','R$ '+gmv.toLocaleString('pt-BR',{minimumFractionDigits:2}));
+  el('uso-vendas',vendas.toLocaleString('pt-BR'));
+  el('uso-os',os.toLocaleString('pt-BR'));
+  el('uso-inativas',inativas15);
+
+  renderUsoTabela();
+  _renderUsoCharts(d);
+}
+
+function _diasInativa(e,agora){
+  if(!e.ultima_atividade)return 9999; // nunca usou
+  return Math.floor((agora-new Date(e.ultima_atividade).getTime())/(1000*60*60*24));
+}
+
+function renderUsoTabela(){
+  const tb=document.getElementById('uso-tabela');
+  if(!tb||!_usoDados)return;
+  const filtro=document.getElementById('uso-filtro')?.value||'';
+  const agora=Date.now();
+  let list=[...(_usoDados.por_empresa||[])];
+  if(filtro==='ativas')list=list.filter(e=>_diasInativa(e,agora)<7);
+  if(filtro==='inativas7')list=list.filter(e=>_diasInativa(e,agora)>=7);
+  if(filtro==='inativas15')list=list.filter(e=>_diasInativa(e,agora)>=15);
+  if(filtro==='inativas30')list=list.filter(e=>_diasInativa(e,agora)>=30);
+
+  if(!list.length){tb.innerHTML='<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--txt3)">Nenhuma empresa neste filtro.</td></tr>';return;}
+
+  tb.innerHTML=list.map(e=>{
+    const dias=_diasInativa(e,agora);
+    let ativBadge;
+    if(dias===9999)ativBadge='<span class="badge badge-gray">Nunca usou</span>';
+    else if(dias===0)ativBadge='<span class="badge badge-green">Hoje</span>';
+    else if(dias<7)ativBadge=`<span class="badge badge-green">${dias}d atrás</span>`;
+    else if(dias<15)ativBadge=`<span class="badge badge-gold">${dias}d atrás</span>`;
+    else ativBadge=`<span class="badge badge-red">${dias}d parada</span>`;
+    const ini=(e.nome||'?').slice(0,2).toUpperCase();
+    const cor=typeof stringToColor==='function'?stringToColor(e.id||e.nome):'#1E5EFF';
+    return `<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:9px 8px"><div style="display:flex;align-items:center;gap:9px">
+        <div style="width:30px;height:30px;border-radius:8px;background:${cor};display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;color:#fff;flex-shrink:0">${ini}</div>
+        <span style="font-weight:600;color:var(--txt)">${e.nome||'—'}</span>
+      </div></td>
+      <td><span class="badge badge-gray">${e.plano||'—'}</span></td>
+      <td style="font-weight:700">${e.vendas_30d||0}</td>
+      <td style="font-weight:700;color:var(--success)">R$ ${(parseFloat(e.fat_30d)||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+      <td>${e.os_30d||0}</td>
+      <td>${e.usuarios||0}</td>
+      <td>${ativBadge}</td>
+    </tr>`;
+  }).join('');
+}
+
+function _renderUsoCharts(d){
+  // Meses (união das duas séries)
+  const mesesSet=new Set([...(d.por_mes||[]).map(m=>m.mes),...(d.empresas_por_mes||[]).map(m=>m.mes)]);
+  const meses=[...mesesSet].sort();
+  const lbl=meses.map(m=>{const[a,mm]=m.split('-');return ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][parseInt(mm)-1]+'/'+a.slice(2);});
+  const fat=meses.map(m=>parseFloat((d.por_mes||[]).find(x=>x.mes===m)?.faturamento)||0);
+  const novas=meses.map(m=>parseInt((d.empresas_por_mes||[]).find(x=>x.mes===m)?.novas)||0);
+
+  const ctx1=document.getElementById('chart-uso-mes');
+  if(ctx1){
+    if(_usoCharts.mes)_usoCharts.mes.destroy();
+    _usoCharts.mes=new Chart(ctx1,{data:{labels:lbl,datasets:[
+      {type:'bar',label:'GMV (R$)',data:fat,backgroundColor:'rgba(30,94,255,.65)',borderRadius:6,yAxisID:'y'},
+      {type:'line',label:'Novas empresas',data:novas,borderColor:'#F59E0B',backgroundColor:'#F59E0B',tension:.35,yAxisID:'y2'}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:11}}}},
+      scales:{y:{ticks:{callback:v=>'R$'+(v>=1000?(v/1000)+'k':v),font:{size:10}}},y2:{position:'right',grid:{display:false},ticks:{stepSize:1,font:{size:10}}},x:{grid:{display:false},ticks:{font:{size:10}}}}}});
+  }
+  const ctx2=document.getElementById('chart-uso-plano');
+  if(ctx2){
+    if(_usoCharts.plano)_usoCharts.plano.destroy();
+    const pl=d.por_plano||[];
+    _usoCharts.plano=new Chart(ctx2,{type:'doughnut',data:{labels:pl.map(p=>p.plano),datasets:[{data:pl.map(p=>p.qtd),backgroundColor:['#1E5EFF','#3D8BFF','#10B981','#F59E0B','#8B5CF6','#EF4444','#6B7280'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:12}}},cutout:'62%'}});
+  }
+}
+
+function exportarUsoCSV(){
+  const emp=(_usoDados?.por_empresa)||[];
+  if(!emp.length)return;
+  const agora=Date.now();
+  const esc2=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+  const head=['Empresa','Plano','Status','Vendas 30d','Faturamento 30d','OS 30d','Usuários','Dias sem atividade'];
+  const linhas=emp.map(e=>[e.nome,e.plano||'',e.status||'',e.vendas_30d||0,(parseFloat(e.fat_30d)||0).toFixed(2),e.os_30d||0,e.usuarios||0,(d=>d===9999?'nunca usou':d)(_diasInativa(e,agora))].map(esc2).join(';'));
+  const csv='\uFEFF'+[head.map(esc2).join(';'),...linhas].join('\r\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='uso_empresas_saas.csv';a.click();
+}
+
 function renderSaude(){
   const emp=(G.empresas||[]).filter(e=>e.status!=='cancelada');
   const avaliadas=emp.map(e=>({e,h:_healthEmpresa(e)}));
