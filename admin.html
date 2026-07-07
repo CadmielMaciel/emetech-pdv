@@ -781,11 +781,23 @@ select option { background: var(--bg2); }
           <div class="sec-title">Todas as empresas</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <input type="text" id="empresa-search" placeholder="Buscar empresa..." style="max-width:200px;padding:7px 12px;font-size:13px" oninput="aplicarFiltrosEmpresas()">
+            <button class="btn btn-out btn-sm" id="btn-modo-selecao" onclick="toggleModoSelecao()"><i class="ti ti-checkbox"></i> Selecionar</button>
             <button class="btn btn-out btn-sm" onclick="exportarCSV('empresas')"><i class="ti ti-download"></i> CSV</button>
             <button class="btn btn-pri btn-sm" onclick="abrirNovaEmpresa()">
               <i class="ti ti-plus"></i> Nova empresa
             </button>
           </div>
+        </div>
+        <!-- Barra de ações em massa (aparece no modo seleção) -->
+        <div id="barra-massa" style="display:none;align-items:center;gap:10px;flex-wrap:wrap;background:var(--pri);color:#fff;border-radius:12px;padding:10px 16px;margin-bottom:14px">
+          <span style="font-weight:700;font-size:13.5px"><i class="ti ti-checks"></i> <span id="massa-contador">0</span> selecionada(s)</span>
+          <div style="flex:1"></div>
+          <button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border:none" onclick="selecionarTodasEmpresas()"><i class="ti ti-select-all"></i> Todas</button>
+          <button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border:none" onclick="acaoMassa('bloquear')"><i class="ti ti-lock"></i> Bloquear</button>
+          <button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border:none" onclick="acaoMassa('desbloquear')"><i class="ti ti-lock-open"></i> Desbloquear</button>
+          <button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border:none" onclick="acaoMassa('plano')"><i class="ti ti-arrow-up-circle"></i> Mudar plano</button>
+          <button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border:none" onclick="acaoMassa('mensagem')"><i class="ti ti-brand-whatsapp"></i> Mensagem</button>
+          <button class="btn btn-sm" style="background:rgba(255,255,255,.15);color:#fff;border:none" onclick="toggleModoSelecao()"><i class="ti ti-x"></i></button>
         </div>
         <!-- Filtros avançados (NOVO) -->
         <div class="filters-bar" style="margin-bottom:16px">
@@ -2494,6 +2506,128 @@ function _healthEmpresa(e){
    ══════════════════════════════════════════════════════════════ */
 let _usoDados=null;
 let _usoCharts={};
+
+/* ══════════════════════════════════════════════════════════════
+   AÇÕES EM MASSA — bloquear/desbloquear/mudar plano/mensagem
+   para várias empresas de uma vez.
+   ══════════════════════════════════════════════════════════════ */
+let _modoSelecao=false;
+
+function toggleModoSelecao(){
+  _modoSelecao=!_modoSelecao;
+  document.getElementById('barra-massa').style.display=_modoSelecao?'flex':'none';
+  document.querySelectorAll('.massa-check').forEach(c=>c.style.display=_modoSelecao?'block':'none');
+  const btn=document.getElementById('btn-modo-selecao');
+  if(btn)btn.innerHTML=_modoSelecao?'<i class="ti ti-x"></i> Cancelar':'<i class="ti ti-checkbox"></i> Selecionar';
+  if(!_modoSelecao)document.querySelectorAll('.chk-empresa').forEach(c=>c.checked=false);
+  atualizarContadorMassa();
+}
+
+function atualizarContadorMassa(){
+  const n=document.querySelectorAll('.chk-empresa:checked').length;
+  const el=document.getElementById('massa-contador');
+  if(el)el.textContent=n;
+}
+
+function selecionarTodasEmpresas(){
+  const checks=document.querySelectorAll('.chk-empresa');
+  const todasMarcadas=[...checks].every(c=>c.checked);
+  checks.forEach(c=>c.checked=!todasMarcadas);
+  atualizarContadorMassa();
+}
+
+function _empresasSelecionadas(){
+  return [...document.querySelectorAll('.chk-empresa:checked')].map(c=>c.value);
+}
+
+async function acaoMassa(tipo){
+  const ids=_empresasSelecionadas();
+  if(!ids.length){ alert('Selecione ao menos uma empresa.'); return; }
+  const nomes=ids.map(id=>(G.empresas||[]).find(e=>e.id===id)?.nome||id);
+
+  if(tipo==='bloquear'||tipo==='desbloquear'){
+    const acao=tipo==='bloquear'?'bloquear':'desbloquear';
+    if(!confirm(`Deseja ${acao} ${ids.length} empresa(s)?\n\n${nomes.slice(0,8).join(', ')}${nomes.length>8?'…':''}`))return;
+    let ok=0;
+    for(const id of ids){
+      try{
+        const novoStatus=tipo==='bloquear'?'bloqueada':'ativa';
+        const {error}=await db.from('empresas').update({status:novoStatus}).eq('id',id);
+        if(!error)ok++;
+      }catch(e){}
+    }
+    notify(`${ok} empresa(s) ${acao}da(s).`,'success');
+    toggleModoSelecao();
+    if(typeof refreshDados==='function')refreshDados(); else location.reload();
+  }
+
+  else if(tipo==='plano'){
+    // Carrega planos disponíveis
+    if(!G.planos||!G.planos.length){ try{ const {data}=await db.from('planos').select('*').order('preco'); G.planos=data||[]; }catch(e){} }
+    const opts=(G.planos||[]).map(p=>`<option value="${p.id||p.nome}">${p.nome} — R$ ${(parseFloat(p.preco)||0).toFixed(2)}/mês</option>`).join('');
+    const html=`<div class="modal-title"><i class="ti ti-arrow-up-circle" style="color:var(--pri)"></i> Mudar plano em massa</div>
+      <div style="font-size:13px;color:var(--txt2);margin-bottom:12px">${ids.length} empresa(s) selecionada(s).</div>
+      <div class="fg"><label class="lbl">Novo plano</label><select id="massa-plano" style="width:100%">${opts||'<option>Sem planos cadastrados</option>'}</select></div>`;
+    const foot=`<button class="btn btn-out" onclick="closeModal('modal-generic-adm')">Cancelar</button>
+      <button class="btn btn-pri" onclick="confirmarMudancaPlanoMassa()"><i class="ti ti-check"></i> Aplicar a ${ids.length}</button>`;
+    abrirModalGenericoAdm(html,foot);
+    _massaIdsPendentes=ids;
+  }
+
+  else if(tipo==='mensagem'){
+    const html=`<div class="modal-title"><i class="ti ti-brand-whatsapp" style="color:#25D366"></i> Mensagem para ${ids.length} empresa(s)</div>
+      <div style="font-size:12.5px;color:var(--txt3);margin-bottom:10px">Abre o WhatsApp de cada empresa com a mensagem pronta (uma aba por vez, você confirma o envio).</div>
+      <div class="fg"><label class="lbl">Mensagem</label>
+        <textarea id="massa-msg" rows="4" style="width:100%" placeholder="Ex: Olá! Informamos que haverá manutenção no sistema no domingo às 2h. Qualquer dúvida, estamos à disposição."></textarea>
+      </div>
+      <div style="font-size:11px;color:var(--txt3)">Dica: use {nome} para inserir o nome da empresa automaticamente.</div>`;
+    const foot=`<button class="btn btn-out" onclick="closeModal('modal-generic-adm')">Cancelar</button>
+      <button class="btn btn-pri" onclick="confirmarMensagemMassa()"><i class="ti ti-send"></i> Preparar envios</button>`;
+    abrirModalGenericoAdm(html,foot);
+    _massaIdsPendentes=ids;
+  }
+}
+
+let _massaIdsPendentes=[];
+
+async function confirmarMudancaPlanoMassa(){
+  const plano=document.getElementById('massa-plano')?.value;
+  if(!plano)return;
+  const ids=_massaIdsPendentes;
+  let ok=0;
+  for(const id of ids){
+    try{ const {error}=await db.from('empresas').update({plano}).eq('id',id); if(!error)ok++; }catch(e){}
+  }
+  closeModal('modal-generic-adm');
+  notify(`Plano alterado em ${ok} empresa(s).`,'success');
+  toggleModoSelecao();
+  if(typeof refreshDados==='function')refreshDados();
+}
+
+function confirmarMensagemMassa(){
+  const msg=document.getElementById('massa-msg')?.value?.trim();
+  if(!msg){ alert('Escreva a mensagem.'); return; }
+  const ids=_massaIdsPendentes;
+  const empresas=ids.map(id=>(G.empresas||[]).find(e=>e.id===id)).filter(Boolean);
+  const comTel=empresas.filter(e=>{ const t=(e.whatsapp||e.telefone||'').replace(/\D/g,''); return t.length>=10; });
+  const semTel=empresas.length-comTel.length;
+  closeModal('modal-generic-adm');
+  if(!comTel.length){ notify('Nenhuma empresa selecionada tem WhatsApp cadastrado.','warn',5000); return; }
+
+  // Abre os WhatsApp em sequência (com pequeno intervalo para o navegador não bloquear)
+  let i=0;
+  const abrirProximo=()=>{
+    if(i>=comTel.length){ notify(`${comTel.length} conversa(s) aberta(s)${semTel?` · ${semTel} sem telefone`:''}.`,'success',5000); toggleModoSelecao(); return; }
+    const e=comTel[i]; i++;
+    const tel=(e.whatsapp||e.telefone||'').replace(/\D/g,'');
+    const texto=msg.replace(/\{nome\}/g,e.nome||'');
+    window.open(`https://api.whatsapp.com/send?phone=55${tel}&text=${encodeURIComponent(texto)}`,'_blank');
+    setTimeout(abrirProximo,800);
+  };
+  if(confirm(`Serão abertas ${comTel.length} aba(s) do WhatsApp, uma por empresa.${semTel?`\n${semTel} empresa(s) sem telefone serão ignoradas.`:''}\n\nContinuar?`)){
+    abrirProximo();
+  }
+}
 
 /* ══════════════════════════════════════════════════════════════
    ONBOARDING & ATIVAÇÃO — funil de quem começou a usar de verdade
@@ -5084,7 +5218,10 @@ async function renderWhatsapp() {
     const cor = stringToColor(e.id || e.nome);
     const ini = (e.nome || '?').slice(0,2).toUpperCase();
 
-    return `<div class="empresa-card">
+    return `<div class="empresa-card" data-empid="${e.id}">
+      <label class="massa-check" style="display:none;position:absolute;top:10px;right:10px;z-index:2;cursor:pointer">
+        <input type="checkbox" class="chk-empresa" value="${e.id}" onchange="atualizarContadorMassa()" style="width:20px;height:20px;accent-color:var(--pri);cursor:pointer">
+      </label>
       <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:14px">
         <div class="empresa-avatar" style="background:${cor}">${ini}</div>
         <div style="flex:1;min-width:0">
