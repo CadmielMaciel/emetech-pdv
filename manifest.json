@@ -1,9 +1,9 @@
 {
-  "name": "MISU SYS — ERP &amp; PDV",
+  "name": "MISU SYS — ERP & PDV",
   "short_name": "MISU SYS",
   "description": "Sistema de gestão completo: PDV, Ordens de Serviço, Estoque, Financeiro e Crediário.",
-  "id": "/",
-  "start_url": "/https://emetech-pdv.vercel.app/",
+  "id": "https://emetech-pdv.vercel.app/",
+  "start_url": "https://emetech-pdv.vercel.app/",
   "scope": "https://emetech-pdv.vercel.app/",
   "display": "fullscreen",
   "orientation": "any",
@@ -12,9 +12,8 @@
   "lang": "pt-BR",
   "categories": [
     "business",
-    "finance",
     "productivity",
-    "utilities"
+    "finance"
   ],
   "icons": [
     {
@@ -63,11 +62,8 @@
     }
   ],
   "display_override": [
-    "standalone",
-    "minimal-ui",
     "fullscreen",
-    "browser",
-    "window-controls-overlay"
-  ],
-  "dir": "auto"
+    "standalone",
+    "minimal-ui"
+  ]
 }
