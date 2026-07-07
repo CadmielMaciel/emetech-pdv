@@ -662,6 +662,7 @@ select option { background: var(--bg2); }
       <div class="sb-item" onclick="go('empresas')"><i class="ti ti-building-store"></i> Empresas</div>
       <div class="sb-item" onclick="go('saude')"><i class="ti ti-heart-rate-monitor"></i> Saúde dos Clientes</div>
       <div class="sb-item" onclick="go('uso')"><i class="ti ti-chart-bar"></i> Uso & Relatórios</div>
+      <div class="sb-item" onclick="go('financeiro')"><i class="ti ti-currency-dollar"></i> Financeiro SaaS</div>
       <div class="sb-item" onclick="go('cobrancas')"><i class="ti ti-receipt"></i> Cobranças</div>
       <div class="sb-item" onclick="go('planos')"><i class="ti ti-credit-card"></i> Planos</div>
       <div class="sb-sec">Operações</div>
@@ -864,6 +865,41 @@ select option { background: var(--bg2); }
               <th style="padding:8px">Empresa</th><th>Plano</th><th>Vendas 30d</th><th>Faturamento 30d</th><th>OS 30d</th><th>Usuários</th><th>Última atividade</th>
             </tr></thead>
             <tbody id="uso-tabela"></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- FINANCEIRO DO SAAS -->
+      <div class="page" id="page-financeiro">
+        <div class="kpi-grid">
+          <div class="kpi-card"><div class="kpi-val" id="fin-mrr" style="color:var(--success)">—</div><div class="kpi-lbl">MRR · Receita recorrente/mês</div></div>
+          <div class="kpi-card"><div class="kpi-val" id="fin-arr">—</div><div class="kpi-lbl">ARR · Projeção anual</div></div>
+          <div class="kpi-card"><div class="kpi-val" id="fin-churn" style="color:var(--danger)">—</div><div class="kpi-lbl">Churn · Cancelamento (mês)</div></div>
+          <div class="kpi-card"><div class="kpi-val" id="fin-ltv">—</div><div class="kpi-lbl">LTV médio por cliente</div></div>
+        </div>
+        <div class="kpi-grid" style="margin-top:4px">
+          <div class="kpi-card"><div class="kpi-val" id="fin-pagantes">—</div><div class="kpi-lbl">Empresas pagantes</div></div>
+          <div class="kpi-card"><div class="kpi-val" id="fin-ticket">—</div><div class="kpi-lbl">Ticket médio/mês</div></div>
+          <div class="kpi-card"><div class="kpi-val" id="fin-inadimplente" style="color:var(--warn)">—</div><div class="kpi-lbl">Receita em atraso</div></div>
+          <div class="kpi-card"><div class="kpi-val" id="fin-perdida" style="color:var(--danger)">—</div><div class="kpi-lbl">MRR perdido (cancelados)</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:16px;margin:16px 0" class="fin-charts-grid">
+          <div class="chart-card">
+            <div class="sec-title" style="margin-bottom:12px">Evolução do MRR (6 meses)</div>
+            <div class="chart-wrap"><canvas id="chart-fin-mrr"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="sec-title" style="margin-bottom:12px">MRR por plano</div>
+            <div class="chart-wrap"><canvas id="chart-fin-plano"></canvas></div>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="sec-title" style="margin-bottom:12px">Composição da receita por plano</div>
+          <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">
+            <thead><tr style="border-bottom:1px solid var(--border);text-align:left;color:var(--txt3);font-size:11px;text-transform:uppercase">
+              <th style="padding:8px">Plano</th><th>Preço/mês</th><th>Empresas ativas</th><th>MRR do plano</th><th>% do total</th>
+            </tr></thead>
+            <tbody id="fin-plano-tabela"></tbody>
           </table></div>
         </div>
       </div>
@@ -2355,6 +2391,7 @@ async function refreshDados() {
 /* ── NAVEGAÇÃO ── */
 const PAGE_TITLES = {
   uso: { title: 'Uso & Relatórios', icon: 'ti-chart-bar' },
+  financeiro: { title: 'Financeiro do SaaS', icon: 'ti-currency-dollar' },
   dashboard: { title:'Dashboard',    icon:'ti-layout-dashboard' },
   empresas:  { title:'Empresas',     icon:'ti-building-store'   },
   saude:     { title:'Saúde dos Clientes', icon:'ti-heart-rate-monitor' },
@@ -2385,6 +2422,7 @@ function go(page) {
   if (page === 'logs') carregarLogs();
   if (page === 'saude') renderSaude();
   if (page === 'uso') renderUso();
+  if (page === 'financeiro') renderFinanceiro();
   if (page === 'cobrancas') renderCobrancas();
   if (page === 'whatsapp') renderWhatsapp();
   if (page === 'suporte') carregarSuporteConfig();
@@ -2422,6 +2460,181 @@ function _healthEmpresa(e){
    ══════════════════════════════════════════════════════════════ */
 let _usoDados=null;
 let _usoCharts={};
+
+/* ══════════════════════════════════════════════════════════════
+   FINANCEIRO DO SAAS — MRR, ARR, Churn, LTV
+   Calculado a partir dos planos (preço) × empresas ativas por plano,
+   status financeiro (empresas_status) e histórico de cancelamentos.
+   ══════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════
+   ACESSO DE SUPORTE (impersonation com auditoria)
+   O admin master acessa a conta da empresa para dar suporte.
+   Toda entrada é registrada em suporte_acessos (quem, quando, por quê).
+   Abre o app com ?suporte=EMPRESA_ID em modo somente-leitura.
+   ══════════════════════════════════════════════════════════════ */
+async function acessarComoSuporte(empId){
+  const emp=(G.empresas||[]).find(e=>e.id===empId)||{};
+  const nome=emp.nome||'';
+  const html=`
+    <div class="modal-title"><i class="ti ti-login-2" style="color:var(--pri)"></i> Acessar como suporte</div>
+    <div style="background:var(--pri-light,rgba(30,94,255,.08));border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:13px">
+      Você vai acessar a conta de <b>${nome}</b> em modo suporte. Esse acesso fica registrado na auditoria.
+    </div>
+    <div class="fg"><label class="lbl">Motivo do acesso *</label>
+      <input type="text" id="sup-motivo" placeholder="Ex: chamado #123 — cliente não consegue fechar o caixa" style="width:100%">
+    </div>
+    <div class="fg"><label class="lbl">Modo de acesso</label>
+      <select id="sup-modo" style="width:100%">
+        <option value="leitura">Somente leitura (recomendado)</option>
+        <option value="total">Acesso total (pode alterar dados)</option>
+      </select>
+    </div>
+    <div style="font-size:11.5px;color:var(--txt3);margin-top:4px"><i class="ti ti-info-circle"></i> No modo leitura, você vê tudo mas não altera nada da empresa.</div>`;
+  const foot=`<button class="btn btn-out" onclick="closeModal('modal-generic-adm')">Cancelar</button>
+    <button class="btn btn-pri" onclick="confirmarAcessoSuporte('${empId}')"><i class="ti ti-login-2"></i> Acessar agora</button>`;
+  abrirModalGenericoAdm(html,foot);
+}
+
+async function confirmarAcessoSuporte(empId){
+  const emp=(G.empresas||[]).find(e=>e.id===empId)||{};
+  const motivo=document.getElementById('sup-motivo')?.value?.trim();
+  const modo=document.getElementById('sup-modo')?.value||'leitura';
+  if(!motivo){ alert('Descreva o motivo do acesso (fica registrado na auditoria).'); return; }
+  try{
+    await db.rpc('admin_registrar_acesso_suporte',{
+      emp_id:empId, emp_nome:emp.nome||'', motivo_txt:motivo, modo_txt:modo,
+      disp:navigator.userAgent.slice(0,180)
+    });
+  }catch(e){
+    if(!confirm('Não foi possível registrar o acesso na auditoria (rode a migração A02). Deseja acessar mesmo assim?'))return;
+  }
+  closeModal('modal-generic-adm');
+  // Abre o app com o contexto de suporte (o index reconhece ?suporte=&modo=)
+  const url=`${location.origin}/index.html?suporte=${encodeURIComponent(empId)}&modo=${modo}`;
+  window.open(url,'_blank');
+}
+
+// Modal genérico do admin (se ainda não existir um)
+function abrirModalGenericoAdm(html,footer){
+  let modal=document.getElementById('modal-generic-adm');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.className='modal-overlay';
+    modal.id='modal-generic-adm';
+    modal.innerHTML='<div class="modal" style="max-width:460px"><div id="mga-content"></div><div class="modal-footer" id="mga-footer"></div></div>';
+    document.body.appendChild(modal);
+  }
+  document.getElementById('mga-content').innerHTML=html;
+  document.getElementById('mga-footer').innerHTML=footer||'';
+  openModal('modal-generic-adm');
+}
+
+let _finCharts={};
+
+async function renderFinanceiro(){
+  // Garante planos carregados
+  if(!G.planos||!G.planos.length){
+    try{ const {data}=await db.from('planos').select('*').order('preco'); G.planos=data||[]; }catch(e){}
+  }
+  const precoPlano=id=>{ const p=(G.planos||[]).find(x=>x.id===id||x.nome===id); return p?parseFloat(p.preco)||0:0; };
+  const nomePlano=id=>{ const p=(G.planos||[]).find(x=>x.id===id||x.nome===id); return p?p.nome:(id||'Sem plano'); };
+
+  // Empresas com status financeiro (view empresas_status)
+  let empresas=[];
+  try{
+    const {data}=await db.from('empresas_status').select('*').neq('status','cancelada').limit(2000);
+    empresas=data||[];
+  }catch(e){
+    try{ const {data}=await db.from('empresas').select('*').neq('status','cancelada').limit(2000); empresas=data||[]; }catch(_){}
+  }
+  const ativas=empresas.filter(e=>e.status==='ativa'||e.status==='ativo'||!e.status);
+
+  // ── MRR: soma do preço do plano de cada empresa ativa ──
+  let mrr=0;
+  const porPlano={};
+  ativas.forEach(e=>{
+    const pr=precoPlano(e.plano);
+    mrr+=pr;
+    const nome=nomePlano(e.plano);
+    if(!porPlano[nome])porPlano[nome]={nome,preco:pr,qtd:0,mrr:0};
+    porPlano[nome].qtd++; porPlano[nome].mrr+=pr;
+  });
+  const arr=mrr*12;
+  const pagantes=ativas.filter(e=>precoPlano(e.plano)>0).length;
+  const ticket=pagantes>0?mrr/pagantes:0;
+
+  // ── Inadimplência: empresas com status financeiro atrasado ──
+  let receitaAtraso=0;
+  empresas.forEach(e=>{
+    const sf=e.status_financeiro||e.statusFinanceiroSrv;
+    if(sf==='atrasado'||sf==='inadimplente')receitaAtraso+=precoPlano(e.plano);
+  });
+
+  // ── Churn e MRR perdido: empresas canceladas neste mês ──
+  const inicioMes=new Date(); inicioMes.setDate(1); inicioMes.setHours(0,0,0,0);
+  let canceladasMes=[],totalInicioMes=ativas.length;
+  try{
+    const {data}=await db.from('empresas').select('plano,status,atualizado_em,criado_em').eq('status','cancelada').gte('atualizado_em',inicioMes.toISOString()).limit(500);
+    canceladasMes=data||[];
+  }catch(e){}
+  const mrrPerdido=canceladasMes.reduce((s,e)=>s+precoPlano(e.plano),0);
+  const baseChurn=totalInicioMes+canceladasMes.length;
+  const churnPct=baseChurn>0?(canceladasMes.length/baseChurn*100):0;
+
+  // ── LTV: ticket médio ÷ churn mensal (meses de vida) × ticket ──
+  // LTV = ticket_médio / (churn_mensal) — se churn 0, usa horizonte de 24 meses
+  const churnFrac=churnPct/100;
+  const mesesVida=churnFrac>0?(1/churnFrac):24;
+  const ltv=ticket*mesesVida;
+
+  const setF=(id,v)=>{ const el=document.getElementById(id); if(el)el.textContent=v; };
+  const money=v=>'R$ '+(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
+  setF('fin-mrr',money(mrr));
+  setF('fin-arr',money(arr));
+  setF('fin-churn',churnPct.toFixed(1)+'%');
+  setF('fin-ltv',money(ltv));
+  setF('fin-pagantes',pagantes);
+  setF('fin-ticket',money(ticket));
+  setF('fin-inadimplente',money(receitaAtraso));
+  setF('fin-perdida',money(mrrPerdido));
+
+  // Tabela por plano
+  const planosArr=Object.values(porPlano).sort((a,b)=>b.mrr-a.mrr);
+  const tb=document.getElementById('fin-plano-tabela');
+  if(tb){
+    tb.innerHTML=planosArr.map(p=>`<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:9px 8px"><span class="badge badge-gray">${p.nome}</span></td>
+      <td>${money(p.preco)}</td>
+      <td style="font-weight:700">${p.qtd}</td>
+      <td style="font-weight:700;color:var(--success)">${money(p.mrr)}</td>
+      <td>${mrr>0?(p.mrr/mrr*100).toFixed(1):0}%</td>
+    </tr>`).join('')||'<tr><td colspan="5" style="padding:20px;text-align:center;color:var(--txt3)">Sem dados de plano.</td></tr>';
+  }
+
+  // Gráfico MRR por plano (rosca)
+  const ctxP=document.getElementById('chart-fin-plano');
+  if(ctxP&&window.Chart){
+    if(_finCharts.plano)_finCharts.plano.destroy();
+    _finCharts.plano=new Chart(ctxP,{type:'doughnut',data:{labels:planosArr.map(p=>p.nome),datasets:[{data:planosArr.map(p=>p.mrr),backgroundColor:['#1E5EFF','#3D8BFF','#10B981','#F59E0B','#8B5CF6','#EF4444','#6B7280'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:12}}},cutout:'60%'}});
+  }
+
+  // Gráfico evolução do MRR (estimativa: MRR atual projetado a partir do crescimento de empresas)
+  const ctxM=document.getElementById('chart-fin-mrr');
+  if(ctxM&&window.Chart){
+    let serie=[];
+    try{
+      const {data}=await db.rpc('admin_relatorio_uso');
+      const porMesEmp=(data?.empresas_por_mes)||[];
+      // Reconstrói o número de empresas acumulado por mês e multiplica pelo ticket médio atual
+      let acum=Math.max(0,ativas.length-porMesEmp.reduce((s,m)=>s+(parseInt(m.novas)||0),0));
+      serie=porMesEmp.map(m=>{ acum+=parseInt(m.novas)||0; return {mes:m.mes,mrr:acum*ticket}; });
+    }catch(e){}
+    if(!serie.length)serie=[{mes:'atual',mrr:mrr}];
+    const lbl=serie.map(s=>{const[a,mm]=String(s.mes).split('-');return mm?['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][parseInt(mm)-1]+'/'+a.slice(2):s.mes;});
+    if(_finCharts.mrr)_finCharts.mrr.destroy();
+    _finCharts.mrr=new Chart(ctxM,{type:'line',data:{labels:lbl,datasets:[{label:'MRR',data:serie.map(s=>s.mrr),borderColor:'#10B981',backgroundColor:'rgba(16,185,129,.12)',fill:true,tension:.35}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>'R$'+(v>=1000?(v/1000).toFixed(0)+'k':v),font:{size:10}}},x:{grid:{display:false},ticks:{font:{size:10}}}}}});
+  }
+}
 
 async function renderUso(){
   const tb=document.getElementById('uso-tabela');
@@ -2925,6 +3138,7 @@ function renderEmpresas() {
       <!-- Ações -->
       <div class="empresa-actions">
         <button class="btn btn-out btn-xs" onclick="abrirDetalhes('${e.id}')"><i class="ti ti-eye"></i> Detalhes</button>
+        <button class="btn btn-pri btn-xs" onclick="acessarComoSuporte('${e.id}')" title="Acessar a conta desta empresa em modo suporte"><i class="ti ti-login-2"></i> Acessar</button>
         <button class="btn btn-out btn-xs" onclick="editarEmpresa('${e.id}')"><i class="ti ti-edit"></i> Editar</button>
         <button class="btn btn-out btn-xs" onclick="enviarLembreteWhatsApp('${e.id}')"><i class="ti ti-brand-whatsapp"></i> Lembrete</button>
         <button class="btn btn-out btn-xs" onclick="enviarUpdateParaEmpresa('${e.id}')"><i class="ti ti-cloud-upload"></i> Update</button>
