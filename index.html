@@ -5236,7 +5236,7 @@ async function loadAll(){
   setLoad(true);
   try{
     const [pr,cl,os,ve,us,mv,fo,oc,dv,re,pa,cx,en,mq]= await Promise.all([
-      db.from('produtos').select('*').order('nome'),
+      db.from('produtos').select('*').neq('status','vendido').order('nome'),
       db.from('clientes').select('*').order('nome'),
       db.from('ordens_servico').select('*').not('status','in','("Entregue","Cancelada")').order('criado_em',{ascending:false}),
       db.from('vendas').select('*').order('criado_em',{ascending:false}).limit(150),
@@ -7365,6 +7365,20 @@ function addMistoItem(){}
 function renderMistoItems(){}
 function renderMistoTotal(){}
 
+async // Um produto é ITEM ÚNICO SERIALIZADO quando representa UM aparelho específico
+// (aquele IMEI), que só pode ser vendido uma vez. Regra:
+//  - Categoria Celular COM IMEI preenchido, OU
+//  - Seminovo vindo de troca (origem_fiscal='troca' ou subcategoria Seminovo/SKU SEMI-)
+function _ehItemUnico(p){
+  if(!p) return false;
+  const cat=(p.categoria||'').toLowerCase();
+  const sub=(p.subcategoria||'').toLowerCase();
+  const temImei=!!(p.imei&&String(p.imei).trim())||!!(p.barcode&&/^\d{14,16}$/.test(String(p.barcode).replace(/\D/g,'')));
+  const ehCelular=cat.includes('celular')||cat.includes('smartphone');
+  const ehTroca=(p.origem_fiscal==='troca')||sub.includes('seminovo')||sub.includes('semi-novo')||/^SEMI-/i.test(p.sku||'');
+  return (ehCelular&&temImei)||ehTroca;
+}
+
 async function finalizeSale(){
   if(!G.cart.length)return;
   if(!G.caixaAtual){somErro();notify('Abra o caixa antes de vender!','warn');return;}
@@ -7465,9 +7479,21 @@ async function finalizeSale(){
           if(srv){ if(srv.estoque_infinito){continue;} atual=srv.estoque; }
         }catch(_){}
         const ne=Math.max(0,atual-ci.qty);
-        await db.from('produtos').update({estoque:ne}).eq('id',ci.id);
-        await regMov(ci.id,p.nome,'saida',ci.qty,ne,'Venda PDV');
-        p.estoque=ne;
+        // ── ITEM ÚNICO SERIALIZADO (celular/aparelho): vende uma vez e sai do catálogo.
+        // É item único quando é Celular com IMEI, ou seminovo vindo de troca.
+        const ehUnico=_ehItemUnico(p);
+        if(ehUnico&&ne<=0){
+          // Arquiva: sai da lista de produtos vendáveis, mas fica no histórico (auditoria)
+          await db.from('produtos').update({estoque:0,status:'vendido'}).eq('id',ci.id);
+          await regMov(ci.id,p.nome,'saida',ci.qty,0,'Venda PDV — aparelho único vendido (arquivado)');
+          p.estoque=0; p.status='vendido';
+          // Remove do cache local de produtos ativos
+          G.produtos=G.produtos.filter(x=>x.id!==ci.id);
+        } else {
+          await db.from('produtos').update({estoque:ne}).eq('id',ci.id);
+          await regMov(ci.id,p.nome,'saida',ci.qty,ne,'Venda PDV');
+          p.estoque=ne;
+        }
       }
     }
     const {data:vendaInserida,error}=await db.from('vendas').insert(venda).select().single();
