@@ -2846,6 +2846,26 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
       <div class="g2"><div class="fg"><label class="lbl">Categoria</label><select id="p-cat" onchange="popSubcatsByPai(this.value);renderCamposEspecificos(this.value)"></select></div><div class="fg"><label class="lbl">Marca</label><input type="text" id="p-marca"></div></div>
       <!-- Campos específicos da categoria (IMEI para celular, tamanho para roupa, etc.) -->
       <div id="p-espec"></div>
+      <!-- COMPATIBILIDADE DE PEÇAS (IA sugere + você confirma) -->
+      <div id="p-compat-bloco" style="display:none;background:var(--pri-light);border:1px solid var(--border2);border-radius:12px;padding:12px 14px;margin-bottom:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+          <div style="font-size:11px;font-weight:700;color:var(--pri);text-transform:uppercase;letter-spacing:.6px"><i class="ti ti-git-compare"></i> Compatibilidade da peça</div>
+          <button type="button" class="btn btn-pri btn-sm" onclick="buscarCompatIA()"><i class="ti ti-sparkles"></i> Buscar com IA</button>
+        </div>
+        <div style="font-size:11.5px;color:var(--txt3);margin-bottom:8px">Modelos de aparelho que usam esta mesma peça. A IA sugere, você confirma.</div>
+        <!-- Sugestões da IA para confirmar -->
+        <div id="p-compat-sugestoes"></div>
+        <!-- Modelos já confirmados (tags) -->
+        <div id="p-compat-tags" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>
+        <!-- Adicionar manualmente -->
+        <div style="display:flex;gap:6px">
+          <input type="text" id="p-compat-manual" placeholder="Adicionar modelo manualmente..." style="flex:1;padding:7px 10px;font-size:12.5px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--txt)" onkeydown="if(event.key==='Enter'){event.preventDefault();addCompatManual();}">
+          <button type="button" class="btn btn-out btn-sm" onclick="addCompatManual()"><i class="ti ti-plus"></i></button>
+        </div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--txt2);margin-top:9px;cursor:pointer">
+          <input type="checkbox" id="p-compat-nonome" style="width:auto;accent-color:var(--pri)"> Incluir modelos compatíveis no nome do produto
+        </label>
+      </div>
       <div class="g2">
         <div class="fg"><label class="lbl">Subcategoria</label>
           <select id="p-subcat-sel" onchange="document.getElementById('p-subcat').value=this.value" style="margin-bottom:4px"></select>
@@ -5604,6 +5624,7 @@ function buscarConsultaPreco(){
     (p.nome||'').toLowerCase().includes(q)
     ||(p.sku||'').toLowerCase().includes(q)
     ||(p.barcode||'').toLowerCase().includes(q)
+    ||(Array.isArray(p.modelos_compat)&&p.modelos_compat.some(m=>String(m).toLowerCase().includes(q)))
   ).slice(0,4);
   if(encontrados.length===0){
     res.innerHTML='<div style="text-align:center;padding:20px;color:var(--txt3);font-size:13px"><i class="ti ti-mood-empty" style="font-size:24px;display:block;margin-bottom:6px;opacity:.4"></i>Nenhum produto encontrado</div>';
@@ -6139,9 +6160,108 @@ const ESPEC_COND=[['novo','Novo'],['seminovo','Semi-novo'],['usado','Usado']];
 
 function _sel(id,ops,val){return `<select id="${id}"><option value="">—</option>${ops.map(o=>{const[v,l]=Array.isArray(o)?o:[o,o];return `<option value="${v}"${v===val?' selected':''}>${l}</option>`;}).join('')}</select>`;}
 
+/* ══════════════════════════════════════════════════════════════
+   COMPATIBILIDADE DE PEÇAS — IA sugere + você confirma + base aprende
+   Ex.: tela do POCO C71 é 100% compatível com o Redmi A5 4G.
+   ══════════════════════════════════════════════════════════════ */
+let _compatModelos = []; // modelos confirmados da peça em edição
+
+function renderCompatTags(){
+  const box=document.getElementById('p-compat-tags');
+  if(!box)return;
+  box.innerHTML=_compatModelos.map((m,i)=>`
+    <span style="display:inline-flex;align-items:center;gap:5px;background:var(--pri);color:#fff;font-size:12px;font-weight:600;border-radius:99px;padding:4px 10px">
+      ${esc(m)}
+      <i class="ti ti-x" style="cursor:pointer;font-size:13px" onclick="removeCompat(${i})"></i>
+    </span>`).join('')||'<span style="font-size:11.5px;color:var(--txt4)">Nenhum modelo compatível ainda.</span>';
+}
+
+function addCompatManual(){
+  const inp=document.getElementById('p-compat-manual');
+  const v=(inp?.value||'').trim();
+  if(!v)return;
+  if(!_compatModelos.some(m=>m.toLowerCase()===v.toLowerCase()))_compatModelos.push(v);
+  inp.value='';
+  renderCompatTags();
+}
+function removeCompat(i){ _compatModelos.splice(i,1); renderCompatTags(); }
+
+async function buscarCompatIA(){
+  const nome=document.getElementById('p-nome')?.value?.trim();
+  const marca=document.getElementById('p-marca')?.value?.trim()||'';
+  if(!nome){notify('Preencha o nome da peça primeiro (ex: Tela POCO C71).','warn');return;}
+  const sug=document.getElementById('p-compat-sugestoes');
+  if(sug)sug.innerHTML='<div style="padding:10px;text-align:center;color:var(--txt3);font-size:12.5px"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Consultando a IA…</div>';
+
+  const prompt=`Você é um especialista técnico em peças de celular e assistência técnica.
+Peça: "${marca} ${nome}".
+Liste APENAS os modelos de celular cuja MESMA peça (idêntica de fábrica, 100% compatível física e eletricamente) é usada. Não inclua o próprio modelo da peça. Não inclua "parecidos" ou "adaptáveis" — só compatibilidade real de encaixe direto.
+Responda SOMENTE com um JSON válido, sem texto antes ou depois, no formato:
+{"compatíveis":["Modelo A","Modelo B"],"confianca":"alta|media|baixa","observacao":"curta nota se houver ressalva"}
+Se não tiver certeza de nenhum, retorne lista vazia.`;
+
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:prompt}]})
+    });
+    const data=await resp.json();
+    let txt=(data.content||[]).map(x=>x.text||'').join('').trim();
+    txt=txt.replace(/```json|```/g,'').trim();
+    const json=JSON.parse(txt);
+    const lista=(json.compatíveis||json.compativeis||[]).filter(Boolean);
+    renderSugestoesCompat(lista,json.confianca,json.observacao);
+  }catch(e){
+    if(sug)sug.innerHTML=`<div style="padding:9px;font-size:12px;color:var(--danger)">Não foi possível consultar a IA agora. Adicione os modelos manualmente abaixo.</div>`;
+  }
+}
+
+function renderSugestoesCompat(lista,confianca,obs){
+  const sug=document.getElementById('p-compat-sugestoes');
+  if(!sug)return;
+  if(!lista.length){
+    sug.innerHTML='<div style="padding:9px;font-size:12px;color:var(--txt3)">A IA não encontrou modelos compatíveis conhecidos. Adicione manualmente se souber.</div>';
+    return;
+  }
+  const corConf={alta:'var(--success)',media:'var(--warn)',baixa:'var(--danger)'}[confianca]||'var(--txt3)';
+  // Só sugere os que ainda não estão confirmados
+  const novos=lista.filter(m=>!_compatModelos.some(x=>x.toLowerCase()===m.toLowerCase()));
+  sug.innerHTML=`
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:9px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px">
+        <span style="font-size:11px;font-weight:700;color:var(--txt2)"><i class="ti ti-sparkles" style="color:var(--pri)"></i> Sugestões da IA</span>
+        <span style="font-size:10.5px;font-weight:700;color:${corConf}">Confiança: ${confianca||'—'}</span>
+      </div>
+      ${obs?`<div style="font-size:11px;color:var(--warn);margin-bottom:7px"><i class="ti ti-alert-triangle"></i> ${esc(obs)}</div>`:''}
+      <div style="font-size:11px;color:var(--txt3);margin-bottom:7px">Confirme os que você sabe que encaixam:</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        ${novos.map(m=>`<button type="button" onclick="confirmarCompat(this,'${esc(m).replace(/'/g,"\\'")}')" style="display:inline-flex;align-items:center;gap:5px;background:var(--card);border:1.5px dashed var(--pri);color:var(--pri);font-size:12px;font-weight:600;border-radius:99px;padding:5px 11px;cursor:pointer">
+          <i class="ti ti-plus"></i> ${esc(m)}
+        </button>`).join('')||'<span style="font-size:11.5px;color:var(--txt4)">Todos já confirmados ✓</span>'}
+      </div>
+      ${novos.length>1?`<button type="button" onclick="confirmarTodosCompat()" style="margin-top:8px;background:none;border:none;color:var(--pri);font-size:11.5px;font-weight:600;cursor:pointer"><i class="ti ti-check"></i> Confirmar todos</button>`:''}
+    </div>`;
+  sug._ultimaLista=novos;
+}
+
+function confirmarCompat(btn,modelo){
+  if(!_compatModelos.some(m=>m.toLowerCase()===modelo.toLowerCase()))_compatModelos.push(modelo);
+  if(btn)btn.style.display='none';
+  renderCompatTags();
+}
+function confirmarTodosCompat(){
+  const sug=document.getElementById('p-compat-sugestoes');
+  (sug?._ultimaLista||[]).forEach(m=>{ if(!_compatModelos.some(x=>x.toLowerCase()===m.toLowerCase()))_compatModelos.push(m); });
+  renderCompatTags();
+  if(sug)sug.innerHTML='<div style="padding:6px;font-size:12px;color:var(--success)"><i class="ti ti-check"></i> Modelos confirmados!</div>';
+}
+
 function renderCamposEspecificos(cat,valores={}){
   const box=document.getElementById('p-espec');if(!box)return;
   const c=(cat||'').toLowerCase();
+  // Bloco de compatibilidade: só para peças
+  const compatBloco=document.getElementById('p-compat-bloco');
+  if(compatBloco)compatBloco.style.display=(c.includes('peça')||c.includes('peca'))?'':'none';
   let html='';
   if(c.includes('celular')||c.includes('smartphone')){
     html=`<div class="g2" style="grid-template-columns:1fr 1fr">
@@ -6320,6 +6440,10 @@ function fotoFull(s){document.getElementById('foto-full-img').src=s;document.get
 function clearProdForm(){
   ['p-id','p-nome','p-sku','p-bc','p-marca','p-custo','p-frete','p-imp','p-reparo','p-preco','p-margem','p-subcat','p-ncm','p-cest','p-cfop','p-cst','p-gtin'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
   const resumo=document.getElementById('p-resumo-margem');if(resumo)resumo.style.display='none';
+  _compatModelos=[];
+  const cs=document.getElementById('p-compat-sugestoes');if(cs)cs.innerHTML='';
+  const ct=document.getElementById('p-compat-tags');if(ct)ct.innerHTML='';
+  const cn=document.getElementById('p-compat-nonome');if(cn)cn.checked=false;
   renderCamposEspecificos(document.getElementById('p-cat')?.value||'Celular');
   const po=document.getElementById('p-origem');if(po)po.value='';
   const pu=document.getElementById('p-unidade');if(pu)pu.value='UN';
@@ -6348,6 +6472,17 @@ async function saveProd(){
     custo_compra:custoCompra,custo_frete:custoFrete,custo_impostos:custoImp,custo_reparo:custoRep,
     ..._lerCamposEspecificos()
   };
+  // Compatibilidade de peças (modelos confirmados) + opção de anexar ao nome
+  const _cat=(document.getElementById('p-cat').value||'').toLowerCase();
+  const _ehPeca=_cat.includes('peça')||_cat.includes('peca');
+  if(_ehPeca&&_compatModelos.length){
+    extras.modelos_compat=[..._compatModelos];
+    if(document.getElementById('p-compat-nonome')?.checked){
+      // Anexa os modelos ao nome, sem duplicar o que já estiver lá
+      const base=nome.split('/')[0].trim();
+      payload.nome=base+' / '+_compatModelos.join(' / ');
+    }
+  }
   Object.assign(payload,extras);
   // Dados fiscais (opcionais) — só se preenchidos
   const fiscal={
@@ -6374,7 +6509,7 @@ async function saveProd(){
   else{({error:err,data}=await db.from('produtos').insert({...payload,empresa_id:EID()}).select().single());}
   // Inserção defensiva: se colunas de migrações pendentes ainda não existem,
   // refaz sem elas para não bloquear o cadastro do produto.
-  if(err && /ncm|cest|cfop|cst|origem_fiscal|unidade|gtin|custo_compra|custo_frete|custo_impostos|custo_reparo|imei|armazenamento|condicao|tipo_acessorio|tamanho|genero|column|schema/i.test(err.message||'')){
+  if(err && /ncm|cest|cfop|cst|origem_fiscal|unidade|gtin|custo_compra|custo_frete|custo_impostos|custo_reparo|imei|armazenamento|condicao|tipo_acessorio|tamanho|genero|modelos_compat|column|schema/i.test(err.message||'')){
     Object.keys(fiscal).forEach(k=>delete payload[k]);
     Object.keys(extras).forEach(k=>delete payload[k]);
     if(id){({error:err,data}=await db.from('produtos').update(payload).eq('id',id).select().single());}
@@ -6390,6 +6525,17 @@ async function saveProd(){
     db.from('historico_precos').insert({...regHist,empresa_id:EID()}).then(({error})=>{if(error)console.warn('Erro ao registrar histórico de preço:',error);});
   }
   notify(id?'Produto atualizado!':'Produto cadastrado!');
+  // Alimenta a base colaborativa de compatibilidade (aprende com as confirmações)
+  if(_ehPeca&&_compatModelos.length){
+    const prodId=id||data?.id;
+    const tipoPeca=(nome.split(/\s+/)[0]||'peça').toLowerCase(); // "tela","bateria",...
+    const modeloBase=nome.replace(/^\S+\s*/,'').split('/')[0].trim()||nome;
+    const linhas=_compatModelos.map(mc=>({
+      empresa_id:EID(),tipo_peca:tipoPeca,modelo_base:modeloBase,modelo_compat:mc,
+      origem:'confirmado',produto_id:prodId,criado_por:G.profile?.nome||''
+    }));
+    db.from('pecas_compatibilidade').upsert(linhas,{onConflict:'empresa_id,tipo_peca,modelo_base,modelo_compat',ignoreDuplicates:true}).then(({error})=>{if(error)console.warn('base compat:',error.message);});
+  }
   closeModal('modal-prod');clearProdForm();renderProdTable();renderPDVGrid();
 }
 function editProd(id){
@@ -6409,6 +6555,8 @@ function editProd(id){
   sv2('p-frete',p.custo_frete);sv2('p-imp',p.custo_impostos);sv2('p-reparo',p.custo_reparo);
   document.getElementById('p-preco').value=p.preco;
   renderCamposEspecificos(p.categoria||'Celular',p); // campos específicos preenchidos
+  _compatModelos=Array.isArray(p.modelos_compat)?[...p.modelos_compat]:[];
+  renderCompatTags();
   calcMargemProd('preco'); // já calcula e mostra a margem ao abrir para edição
   document.getElementById('p-inf').checked=!!p.estoque_infinito;toggleInf();
   if(!p.estoque_infinito){document.getElementById('p-est').value=p.estoque;document.getElementById('p-estmin').value=p.estoque_minimo||3;}
@@ -6789,7 +6937,7 @@ function handleBC(e){
 function renderPDVGrid(){
   const q=(document.getElementById('ps-field')?.value||'').toLowerCase();
   const iC={Celular:'device-mobile',Acessório:'headphones',Peça:'cpu',Serviço:'tools',Outro:'package'};
-  const list=G.produtos.filter(p=>p.status==='ativo'&&(!q||p.nome.toLowerCase().includes(q)||(p.sku||'').toLowerCase().includes(q)));
+  const list=G.produtos.filter(p=>p.status==='ativo'&&(!q||p.nome.toLowerCase().includes(q)||(p.sku||'').toLowerCase().includes(q)||(p.barcode||'').toLowerCase().includes(q)||(Array.isArray(p.modelos_compat)&&p.modelos_compat.some(m=>String(m).toLowerCase().includes(q)))));
   document.getElementById('pg').innerHTML=list.length===0?'<div class="empty-st" style="grid-column:1/-1"><i class="ti ti-search-off"></i><h3>Nenhum produto</h3></div>':list.map(p=>{
     const foto=Array.isArray(p.fotos)&&p.fotos.length>0?p.fotos[0]:null;
     const sem=!p.estoque_infinito&&p.estoque===0;
