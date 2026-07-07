@@ -308,8 +308,9 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
 .modal-title{font-family:'Syne',sans-serif;font-weight:800;font-size:17px;color:var(--txt);margin-bottom:18px;display:flex;align-items:center;gap:9px}
 .modal-title i{color:var(--pri)}
 .modal-footer{display:flex;gap:8px;margin-top:18px;justify-content:flex-end;flex-wrap:wrap}
-#os-det-footer{justify-content:flex-start}
-#os-det-footer .btn{flex:0 0 auto;white-space:nowrap}
+#os-det-footer{justify-content:flex-end;align-items:center}
+.menu-acao-item{display:flex;align-items:center;gap:9px;width:100%;padding:9px 12px;background:none;border:none;border-radius:7px;font-size:13px;font-weight:600;color:var(--txt);cursor:pointer;text-align:left;font-family:inherit}
+.menu-acao-item:hover{background:var(--pri-light)}
 .ms{font-size:10.5px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:1.1px;padding:12px 0 7px;border-bottom:1px solid var(--border);margin-bottom:12px}
 .toggle{position:relative;width:42px;height:22px;flex-shrink:0}
 .toggle input{opacity:0;width:0;height:0}
@@ -4322,6 +4323,7 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
     </div>
   </div>
 </div>
+<div class="modal-overlay" id="modal-docs-os">
   <div class="modal" style="max-width:500px">
     <div class="modal-title">
       <i class="ti ti-file-text" style="color:var(--pri)"></i>
@@ -9544,40 +9546,38 @@ function detOS(id){
   }
 
   const footer=document.getElementById('os-det-footer');
-  footer.innerHTML='';
-  const cb=document.createElement('button');cb.className='btn btn-out btn-sm';cb.textContent='Fechar';cb.onclick=()=>closeModal('modal-os-det');footer.appendChild(cb);
-  if(next&&['admin','gerente','tecnico'].includes(G.role)){
-    const ab=document.createElement('button');ab.className='btn btn-pri btn-sm';ab.innerHTML=`<i class="ti ti-arrow-right"></i>Avançar: ${next}`;ab.onclick=()=>advOS(id,next);footer.appendChild(ab);
-  }
-  // Botão Alterar (valor/diag/obs)
-  if(['admin','gerente','tecnico'].includes(G.role)){
-    const altbtn=document.createElement('button');altbtn.className='btn btn-out btn-sm';
-    altbtn.innerHTML='<i class="ti ti-edit"></i> Alterar';
-    altbtn.onclick=()=>abrirAlterarOS(id);
-    footer.appendChild(altbtn);
-  }
-  // Botão Documentos
-  const dbtn=document.createElement('button');
-  dbtn.className='btn btn-sm btn-out';
-  dbtn.innerHTML='<i class="ti ti-file-text"></i> Documentos';
-  dbtn.onclick=()=>abrirDocumentosOS(id);
-  footer.appendChild(dbtn);
-  // Botão WhatsApp
-  const wbtn=document.createElement('button');
-  wbtn.className='btn btn-sm';
-  wbtn.style.cssText='background:rgba(37,211,102,.1);color:#25D366;border:1.5px solid rgba(37,211,102,.3)';
-  wbtn.innerHTML='<i class="ti ti-brand-whatsapp"></i> WhatsApp';
-  wbtn.onclick=()=>abrirWppOS(id);
-  footer.appendChild(wbtn);
-  // Botão Link do Cliente (portal de acompanhamento público)
-  const lbtn=document.createElement('button');
-  lbtn.className='btn btn-out btn-sm';
-  lbtn.innerHTML='<i class="ti ti-link"></i> Link Cliente';
-  lbtn.title='Copiar link público de acompanhamento da OS';
-  lbtn.onclick=()=>copiarLinkClienteOS(id);
-  footer.appendChild(lbtn);
-  const pbtn=document.createElement('button');pbtn.className='btn btn-out btn-sm';pbtn.innerHTML='<i class="ti ti-file-text"></i>Gerar PDF';pbtn.onclick=()=>gerarPdfOS(id);footer.appendChild(pbtn);
+  const podeEditar=['admin','gerente','tecnico'].includes(G.role);
+  const avancarBtn=(next&&podeEditar)
+    ? `<button class="btn btn-pri btn-sm" onclick="advOS('${id}','${next}')"><i class="ti ti-arrow-right"></i> Avançar: ${next}</button>` : '';
+  footer.innerHTML=`
+    <button class="btn btn-out btn-sm" onclick="closeModal('modal-os-det')">Fechar</button>
+    ${avancarBtn}
+    <div style="position:relative;display:inline-block">
+      <button class="btn btn-out btn-sm" onclick="toggleMenuAcoesOS(event)"><i class="ti ti-dots"></i> Ações</button>
+      <div id="menu-acoes-os" style="display:none;position:absolute;bottom:calc(100% + 6px);right:0;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.18);padding:6px;min-width:190px;z-index:50">
+        ${podeEditar?`<button class="menu-acao-item" onclick="_fecharMenuAcoesOS();abrirAlterarOS('${id}')"><i class="ti ti-edit"></i> Alterar</button>`:''}
+        <button class="menu-acao-item" onclick="_fecharMenuAcoesOS();abrirDocumentosOS('${id}')"><i class="ti ti-file-text"></i> Documentos</button>
+        <button class="menu-acao-item" onclick="_fecharMenuAcoesOS();gerarPdfOS('${id}')"><i class="ti ti-file-download"></i> Gerar PDF</button>
+        <button class="menu-acao-item" onclick="_fecharMenuAcoesOS();abrirWppOS('${id}')" style="color:#25D366"><i class="ti ti-brand-whatsapp"></i> WhatsApp</button>
+        <button class="menu-acao-item" onclick="_fecharMenuAcoesOS();copiarLinkClienteOS('${id}')"><i class="ti ti-link"></i> Link do Cliente</button>
+      </div>
+    </div>`;
   openModal('modal-os-det');
+}
+
+function toggleMenuAcoesOS(ev){
+  if(ev)ev.stopPropagation();
+  const m=document.getElementById('menu-acoes-os');
+  if(!m)return;
+  const abrindo=m.style.display==='none';
+  m.style.display=abrindo?'block':'none';
+  if(abrindo){
+    setTimeout(()=>document.addEventListener('click',_fecharMenuAcoesOS,{once:true}),0);
+  }
+}
+function _fecharMenuAcoesOS(){
+  const m=document.getElementById('menu-acoes-os');
+  if(m)m.style.display='none';
 }
 
 // ── ABAS DO DETALHE DE OS ──────────────────────────────
