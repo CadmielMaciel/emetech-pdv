@@ -2245,6 +2245,7 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
           <button class="fin-tab active" onclick="cfgTab('gateway',this)"><i class="ti ti-credit-card-pay" style="font-size:13px"></i> Gateway de Pagamento</button>
           <button class="fin-tab" onclick="cfgTab('impressora',this)"><i class="ti ti-printer" style="font-size:13px"></i> Impressora Térmica</button>
           <button class="fin-tab" onclick="cfgTab('integracoes',this)"><i class="ti ti-plug" style="font-size:13px"></i> Integrações</button>
+          <button class="fin-tab" onclick="cfgTab('os',this)"><i class="ti ti-tool" style="font-size:13px"></i> Ordens de Serviço</button>
         </div>
 
         <!-- ABA: GATEWAY -->
@@ -2302,6 +2303,22 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
             <div id="wpp-cfg-box" style="margin-top:8px">
               <div class="empty-st" style="padding:20px"><i class="ti ti-brand-whatsapp"></i><h3>Configure em Aparência & Marca</h3><p style="font-size:12px">As configurações de WhatsApp ficam na aba Aparência & Marca → WhatsApp.</p><button class="btn btn-out btn-sm" onclick="go('aparencia')" style="margin-top:8px"><i class="ti ti-external-link"></i> Ir para Aparência</button></div>
             </div>
+          </div>
+        </div>
+
+        <!-- ABA: ORDENS DE SERVIÇO -->
+        <div id="cfg-os" style="display:none">
+          <div class="card" style="max-width:640px">
+            <div class="card-hdr" style="margin-bottom:14px"><div class="card-title"><i class="ti ti-signature" style="color:var(--pri)"></i> Assinatura no balcão</div></div>
+            <div style="font-size:12.5px;color:var(--txt2);margin-bottom:14px">Ao criar uma OS, exibir uma tela para o cliente assinar com o dedo confirmando a entrada do aparelho e as condições do serviço. A assinatura fica anexada à OS.</div>
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:12px;background:var(--bg2);border-radius:10px">
+              <input type="checkbox" id="cfg-assin-balcao" onchange="salvarCfgOS()" style="width:20px;height:20px;accent-color:var(--pri)">
+              <div>
+                <div style="font-weight:600;font-size:13.5px;color:var(--txt)">Pedir assinatura ao criar OS</div>
+                <div style="font-size:11.5px;color:var(--txt3)">Uma tela de assinatura aparece após salvar a OS</div>
+              </div>
+            </label>
+            <div style="font-size:11px;color:var(--txt3);margin-top:12px"><i class="ti ti-info-circle"></i> A assinatura do cliente pelo portal (link remoto) continua funcionando independente desta opção.</div>
           </div>
         </div>
       </div>
@@ -9278,6 +9295,7 @@ async function createOS(){
   const termo=document.getElementById('os-termo'); if(termo)termo.checked=false;
   document.querySelectorAll('.os-chk:checked,.os-acess:checked').forEach(c=>c.checked=false);
   renderOSList();renderDashboard();notify((data.numero||numero)+' criada!');
+  pedirAssinaturaBalcao(data.id);
 }
 
 // Popula o checklist de entrada da OS (condição + acessórios)
@@ -9472,6 +9490,7 @@ function detOS(id){
       <button class="fin-tab" onclick="osDTab('checklist',this)"><i class="ti ti-clipboard-check" style="font-size:12px"></i> Checklist</button>
       <button class="fin-tab" onclick="osDTab('midias',this);carregarMidiasOS('${o.id}')"><i class="ti ti-photo" style="font-size:12px"></i> Fotos/Vídeos</button>
       <button class="fin-tab" onclick="osDTab('autoriz',this);carregarAutorizacoesOS('${o.id}')"><i class="ti ti-signature" style="font-size:12px"></i> Autorizações</button>
+      <button class="fin-tab" onclick="osDTab('docs',this)"><i class="ti ti-files" style="font-size:12px"></i> Documentos</button>
     </div>
     <!-- ABA FOTOS/VÍDEOS -->
     <div id="osd-midias" style="display:none">
@@ -9493,6 +9512,32 @@ function detOS(id){
       </div>
       <div style="font-size:11.5px;color:var(--txt3);margin-bottom:10px"><i class="ti ti-signature"></i> O cliente aceita ou recusa pelo portal, com assinatura na tela.</div>
       <div id="osd-autoriz-list"></div>
+    </div>
+    <!-- ABA DOCUMENTOS -->
+    <div id="osd-docs" style="display:none">
+      <div style="font-size:13px;font-weight:700;color:var(--txt);margin-bottom:4px">Documentos da OS</div>
+      <div style="font-size:11.5px;color:var(--txt3);margin-bottom:12px">Gere em A4 (PDF) ou cupom térmico. Escolha o formato:</div>
+      <div style="display:flex;gap:6px;margin-bottom:14px">
+        <button class="btn btn-pri btn-sm doc-fmt-btn2" data-fmt="a4" onclick="setDocFormato('a4',this)">A4 / PDF</button>
+        <button class="btn btn-out btn-sm doc-fmt-btn2" data-fmt="80" onclick="setDocFormato('80',this)">Cupom 80mm</button>
+        <button class="btn btn-out btn-sm doc-fmt-btn2" data-fmt="58" onclick="setDocFormato('58',this)">Cupom 58mm</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="osd-docs-grid">
+        <button class="btn btn-out btn-sm doc-tipo-btn" onclick="docFromHist('ordem')"><i class="ti ti-clipboard-text"></i> Ordem de Serviço</button>
+        <button class="btn btn-out btn-sm doc-tipo-btn" onclick="docFromHist('orcamento')"><i class="ti ti-receipt"></i> Orçamento</button>
+        <button class="btn btn-out btn-sm doc-tipo-btn" onclick="docFromHist('entrada')"><i class="ti ti-login"></i> Termo de Entrada</button>
+        <button class="btn btn-out btn-sm doc-tipo-btn" onclick="docFromHist('retirada')"><i class="ti ti-logout"></i> Termo de Retirada</button>
+        <button class="btn btn-out btn-sm doc-tipo-btn" onclick="docFromHist('recebimento')"><i class="ti ti-cash"></i> Comprovante</button>
+        <button class="btn btn-out btn-sm doc-tipo-btn" onclick="docFromHist('laudo')"><i class="ti ti-file-certificate"></i> Laudo de Entrega</button>
+        <button class="btn btn-out btn-sm doc-tipo-btn" onclick="docFromHist('garantia')"><i class="ti ti-shield-check"></i> Termo de Garantia</button>
+        <button class="btn btn-out btn-sm doc-tipo-btn" onclick="docFromHist('descarte')"><i class="ti ti-trash-x"></i> Autoriz. de Descarte</button>
+        <button class="btn btn-out btn-sm doc-tipo-btn" onclick="docFromHist('backup')"><i class="ti ti-database-off"></i> Declaração de Dados</button>
+        <button class="btn btn-out btn-sm doc-tipo-btn" onclick="docFromHist('contrato')"><i class="ti ti-file-description"></i> Contrato/Termo</button>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--txt2);margin-top:14px;cursor:pointer">
+        <input type="checkbox" id="doc-opt-assinatura2" checked style="width:auto;accent-color:var(--pri)">
+        Incluir campos de assinatura
+      </label>
     </div>
     <!-- ABA DADOS -->
     <div id="osd-dados">
@@ -9556,7 +9601,6 @@ function detOS(id){
       <button class="btn btn-out btn-sm" onclick="toggleMenuAcoesOS(event)"><i class="ti ti-dots"></i> Ações</button>
       <div id="menu-acoes-os" style="display:none;position:absolute;bottom:calc(100% + 6px);right:0;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.18);padding:6px;min-width:190px;z-index:50">
         ${podeEditar?`<button class="menu-acao-item" onclick="_fecharMenuAcoesOS();abrirAlterarOS('${id}')"><i class="ti ti-edit"></i> Alterar</button>`:''}
-        <button class="menu-acao-item" onclick="_fecharMenuAcoesOS();abrirDocumentosOS('${id}')"><i class="ti ti-file-text"></i> Documentos</button>
         <button class="menu-acao-item" onclick="_fecharMenuAcoesOS();gerarPdfOS('${id}')"><i class="ti ti-file-download"></i> Gerar PDF</button>
         <button class="menu-acao-item" onclick="_fecharMenuAcoesOS();abrirWppOS('${id}')" style="color:#25D366"><i class="ti ti-brand-whatsapp"></i> WhatsApp</button>
         <button class="menu-acao-item" onclick="_fecharMenuAcoesOS();copiarLinkClienteOS('${id}')"><i class="ti ti-link"></i> Link do Cliente</button>
@@ -9582,10 +9626,12 @@ function _fecharMenuAcoesOS(){
 
 // ── ABAS DO DETALHE DE OS ──────────────────────────────
 function osDTab(aba, btn) {
-  ['dados','pecas','checklist','midias','autoriz'].forEach(t => {
+  ['dados','pecas','checklist','midias','autoriz','docs'].forEach(t => {
     const el = document.getElementById('osd-' + t);
     if (el) el.style.display = t === aba ? '' : 'none';
   });
+  // Ao abrir a aba Documentos, garante que o contexto da OS está setado
+  if(aba==='docs' && _detOSAtual){ _docOsAtual=_detOSAtual; }
   document.querySelectorAll('#os-det-content .fin-tab').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
 }
@@ -10522,10 +10568,11 @@ async function confirmarPagamentoOS(id){
 
 // ── PÁGINA DE CONFIGURAÇÕES ───────────────────────────
 function cfgTab(aba, btn) {
-  ['gateway','impressora','integracoes'].forEach(t => {
+  ['gateway','impressora','integracoes','os'].forEach(t => {
     const el = document.getElementById('cfg-' + t);
     if (el) el.style.display = t === aba ? '' : 'none';
   });
+  if(aba==='os'){ const chk=document.getElementById('cfg-assin-balcao'); if(chk)chk.checked=(localStorage.getItem('misu_assin_balcao')==='1'); }
   document.querySelectorAll('#page-configuracoes .fin-tab').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
 }
@@ -21145,6 +21192,168 @@ function gerarCupomOS(tipo){
 
 // helper de escape para o cupom
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+/* ══════════════════════════════════════════════════════════════
+   DOCUMENTOS DA OS (a partir da aba Documentos no detalhe)
+   Garante o contexto e roteia para o gerador certo.
+   ══════════════════════════════════════════════════════════════ */
+function salvarCfgOS(){
+  const on=document.getElementById('cfg-assin-balcao')?.checked;
+  localStorage.setItem('misu_assin_balcao', on?'1':'0');
+  notify(on?'Assinatura no balcão ativada.':'Assinatura no balcão desativada.','success',2500);
+}
+
+/* Assinatura no balcão — cliente assina na tela ao criar a OS */
+function pedirAssinaturaBalcao(osId){
+  if(localStorage.getItem('misu_assin_balcao')!=='1')return;
+  const o=(G.os||[]).find(x=>x.id===osId); if(!o)return;
+  const html=`<div class="card-title" style="gap:7px;margin-bottom:6px"><i class="ti ti-signature" style="color:var(--pri)"></i> Assinatura do cliente</div>
+    <div style="font-size:12.5px;color:var(--txt2);margin-bottom:10px">${esc(o.cliente_nome||'Cliente')}, confirme a entrada do aparelho <b>${esc(o.aparelho||'')}</b> e as condições do serviço assinando abaixo:</div>
+    <canvas id="sig-balcao" style="width:100%;height:170px;background:#fff;border:2px dashed var(--border);border-radius:12px;touch-action:none;cursor:crosshair"></canvas>
+    <div style="text-align:right;margin-top:4px"><button class="btn-ghost btn-xs" onclick="limparSigBalcao()"><i class="ti ti-eraser"></i> Limpar</button></div>`;
+  const foot=`<button class="btn btn-out" onclick="closeModal('modal-generic')">Pular</button>
+    <button class="btn btn-pri" onclick="salvarAssinaturaBalcao('${osId}')"><i class="ti ti-check"></i> Confirmar assinatura</button>`;
+  abrirModalGenerico(html,foot);
+  setTimeout(()=>initSigBalcao(),80);
+}
+function initSigBalcao(){
+  const cv=document.getElementById('sig-balcao'); if(!cv)return;
+  const r=cv.getBoundingClientRect(); cv.width=r.width*2; cv.height=r.height*2;
+  const ctx=cv.getContext('2d'); ctx.scale(2,2); ctx.strokeStyle='#111'; ctx.lineWidth=2.2; ctx.lineCap='round'; ctx.lineJoin='round';
+  let draw=false;
+  const pos=e=>{const b=cv.getBoundingClientRect();const t=e.touches?e.touches[0]:e;return{x:t.clientX-b.left,y:t.clientY-b.top};};
+  const st=e=>{e.preventDefault();draw=true;const p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);};
+  const mv=e=>{if(!draw)return;e.preventDefault();const p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke();cv.dataset.ink='1';};
+  const en=()=>{draw=false;};
+  cv.addEventListener('mousedown',st);cv.addEventListener('mousemove',mv);cv.addEventListener('mouseup',en);cv.addEventListener('mouseleave',en);
+  cv.addEventListener('touchstart',st,{passive:false});cv.addEventListener('touchmove',mv,{passive:false});cv.addEventListener('touchend',en);
+}
+function limparSigBalcao(){const cv=document.getElementById('sig-balcao');if(cv){cv.getContext('2d').clearRect(0,0,cv.width,cv.height);cv.dataset.ink='';}}
+async function salvarAssinaturaBalcao(osId){
+  const cv=document.getElementById('sig-balcao');
+  if(!cv||cv.dataset.ink!=='1'){ notify('Peça para o cliente assinar, ou toque em Pular.','warn'); return; }
+  const assin=cv.toDataURL('image/png');
+  const {error}=await db.from('ordens_servico').update({assinatura_balcao:assin,assinatura_balcao_em:new Date().toISOString()}).eq('id',osId);
+  if(error){
+    if(/assinatura_balcao|column|schema/i.test(error.message||'')){ notify('Rode a migração X12 para salvar a assinatura.','warn',5000); }
+    else notify('Erro ao salvar assinatura.','error');
+  } else {
+    const o=(G.os||[]).find(x=>x.id===osId); if(o)o.assinatura_balcao=assin;
+    notify('Assinatura registrada!','success');
+  }
+  closeModal('modal-generic');
+}
+
+function docFromHist(tipo){
+  if(!_docOsAtual && _detOSAtual) _docOsAtual=_detOSAtual;
+  if(!_docOsAtual){ notify('Abra uma OS primeiro.','warn'); return; }
+  // Sincroniza o checkbox de assinatura da aba com o que os geradores leem
+  const chk=document.getElementById('doc-opt-assinatura2');
+  let base=document.getElementById('doc-opt-assinatura');
+  if(chk && base) base.checked=chk.checked;
+  switch(tipo){
+    case 'ordem': return gerarOrdemServicoPDF();
+    case 'orcamento': return gerarOrcamentoPDF();
+    case 'entrada': return gerarTermoEntrada();
+    case 'retirada': return gerarTermoRetirada();
+    case 'recebimento': return gerarComprovanteRecebimento();
+    case 'laudo': return gerarLaudoEntrega();
+    case 'garantia': return gerarTermoGarantiaServico();
+    case 'descarte': return gerarAutorizacaoDescarte();
+    case 'backup': return gerarDeclaracaoDados();
+    case 'contrato': return gerarContratoOS(_docOsAtual?.id);
+  }
+}
+
+// Template simples e reutilizável para os documentos novos (A4)
+function _docSimplesOS(titulo, corpoHtml, comAssinatura){
+  const { os, emp, cli, tec, hoje, logoHtml, cor, cor2 } = getDocDados();
+  const assin = comAssinatura!==false ? `
+    <div style="margin-top:60px;display:grid;grid-template-columns:1fr 1fr;gap:50px;text-align:center;font-size:12px">
+      <div style="border-top:1px solid #333;padding-top:6px">${esc(cli.nome||os.cliente_nome||'Cliente')}<br><span style="color:#666">Cliente</span></div>
+      <div style="border-top:1px solid #333;padding-top:6px">${esc(emp.nome||'Responsável')}<br><span style="color:#666">${esc(emp.nome||'Assistência Técnica')}</span></div>
+    </div>` : '';
+  const html=`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>${esc(titulo)} — OS ${esc(os.numero||'')}</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
+    body{padding:38px 44px;color:#1a1a1a;font-size:13px;line-height:1.6}
+    .hd{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid ${cor};padding-bottom:14px;margin-bottom:22px}
+    .hd-logo{display:flex;gap:12px;align-items:center}
+    .hd-logo-box{width:52px;height:52px;border-radius:11px;background:linear-gradient(135deg,${cor},${cor2});display:flex;align-items:center;justify-content:center}
+    .emp-nome{font-size:17px;font-weight:800}
+    .emp-dados{font-size:11px;color:#666;margin-top:2px}
+    .doc-tit{text-align:right}
+    .doc-tit h1{font-size:16px;color:${cor};text-transform:uppercase;letter-spacing:.5px}
+    .doc-tit .num{font-size:12px;color:#666;margin-top:3px}
+    .info-os{background:#f6f8ff;border-radius:9px;padding:12px 14px;margin-bottom:18px;font-size:12px}
+    .info-os b{color:#333}
+    .sec{margin-bottom:16px}
+    .sec h3{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:${cor};margin-bottom:6px;border-bottom:1px solid #eee;padding-bottom:3px}
+    .foot{margin-top:30px;font-size:10.5px;color:#888;border-top:1px solid #eee;padding-top:10px}
+    @media print{@page{size:A4;margin:14mm}body{padding:0}}
+  </style></head><body>
+  <div class="hd">
+    <div class="hd-logo"><div class="hd-logo-box">${logoHtml}</div>
+      <div><div class="emp-nome">${esc(emp.nome||'Assistência Técnica')}</div>
+      <div class="emp-dados">${emp.cnpj?`CNPJ: ${esc(emp.cnpj)}<br>`:''}${emp.tel?`Tel: ${esc(emp.tel)}<br>`:''}${emp.end?esc(emp.end):''}</div></div>
+    </div>
+    <div class="doc-tit"><h1>${esc(titulo)}</h1><div class="num">OS ${esc(os.numero||'')} · ${hoje}</div></div>
+  </div>
+  <div class="info-os">
+    <b>Cliente:</b> ${esc(cli.nome||os.cliente_nome||'—')}${cli.cpf?` · CPF: ${esc(cli.cpf)}`:''}${cli.telefone||cli.whatsapp?` · Tel: ${esc(cli.telefone||cli.whatsapp)}`:''}<br>
+    <b>Aparelho:</b> ${esc(os.aparelho||'—')}${os.imei?` · IMEI/Série: ${esc(os.imei)}`:''}
+  </div>
+  ${corpoHtml}
+  ${assin}
+  <div class="foot">Documento emitido em ${new Date().toLocaleString('pt-BR')} · ${esc(emp.nome||'MISU SYS')}</div>
+  </body></html>`;
+  pdfImprimir(html);
+}
+
+// 1) Termo de Garantia do Serviço
+function gerarTermoGarantiaServico(){
+  if(_docFormato==='58'||_docFormato==='80'){ return gerarCupomOS('garantia'); }
+  const { os } = getDocDados();
+  const dias=os.garantia_dias||90;
+  const ate=new Date(Date.now()+dias*86400000).toLocaleDateString('pt-BR');
+  const corpo=`
+    <div class="sec"><h3>Serviço executado</h3>
+      <div>${esc(os.diagnostico||os.defeito||'Serviço de assistência técnica conforme OS.')}</div>
+    </div>
+    <div class="sec"><h3>Condições da garantia</h3>
+      <div>Este termo garante o serviço realizado pelo prazo de <b>${dias} dias</b>, válido até <b>${ate}</b>.<br><br>
+      A garantia cobre exclusivamente o defeito reparado e as peças substituídas nesta ordem de serviço. Não cobre: danos por queda, contato com líquidos, mau uso, violação do lacre por terceiros, oxidação posterior, ou defeitos distintos do originalmente reparado.<br><br>
+      A apresentação deste termo é necessária para acionamento da garantia.</div>
+    </div>
+    <div class="sec"><h3>Valor</h3><div>Total do serviço: <b>${fmt(os.total||0)}</b></div></div>`;
+  _docSimplesOS('Termo de Garantia do Serviço', corpo);
+}
+
+// 2) Autorização de Descarte (aparelho não retirado)
+function gerarAutorizacaoDescarte(){
+  if(_docFormato==='58'||_docFormato==='80'){ return gerarCupomOS('descarte'); }
+  const corpo=`
+    <div class="sec"><h3>Autorização de descarte</h3>
+      <div>Declaro estar ciente de que, caso o aparelho acima descrito não seja retirado no prazo de <b>90 (noventa) dias</b> a contar da data de conclusão do serviço ou da comunicação de que estava pronto, a assistência técnica fica <b>autorizada a dar destinação final ao equipamento</b> (descarte, reciclagem ou venda para custeio das despesas), sem direito a indenização.<br><br>
+      Estou ciente de que a retirada após o prazo pode implicar cobrança de taxa de armazenamento.<br><br>
+      Base legal: art. 1.275 do Código Civil (abandono de coisa) e demais dispositivos aplicáveis.</div>
+    </div>`;
+  _docSimplesOS('Autorização de Descarte de Equipamento', corpo);
+}
+
+// 3) Declaração de Perda de Dados / Backup
+function gerarDeclaracaoDados(){
+  if(_docFormato==='58'||_docFormato==='80'){ return gerarCupomOS('backup'); }
+  const corpo=`
+    <div class="sec"><h3>Declaração sobre dados e backup</h3>
+      <div>Declaro estar ciente de que o serviço técnico a ser realizado no aparelho acima descrito <b>pode resultar na perda total ou parcial dos dados</b> armazenados (fotos, contatos, mensagens, aplicativos, arquivos e demais informações).<br><br>
+      Fui informado(a) e recomendado(a) a realizar <b>backup completo</b> dos meus dados antes da entrega do equipamento.<br><br>
+      <b>( ) Autorizo</b> o serviço ciente do risco, isentando a assistência técnica de qualquer responsabilidade por perda de dados.<br>
+      <b>( ) Solicito</b> tentativa de backup pela assistência (sujeito a viabilidade técnica e cobrança à parte).<br><br>
+      A assistência técnica não se responsabiliza por dados não salvos, senhas de contas (Google, Apple ID, etc.) ou bloqueios de ativação.</div>
+    </div>`;
+  _docSimplesOS('Declaração de Ciência sobre Perda de Dados', corpo);
+}
 
 function getDocDados() {
   const os  = _docOsAtual;
