@@ -1892,9 +1892,10 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
             <div id="prd-subcat-list"><div style="color:var(--txt3);font-size:13px;padding:16px 0">Selecione uma categoria acima para ver e gerenciar suas subcategorias.</div></div>
           </div>
         </div>
+      </div>
 
-      <!-- MOVIMENTAÇÕES -->
-      
+      <!-- MOVIMENTAÇÕES DE ESTOQUE -->
+      <div class="page" id="page-estoque">
         <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
           <div class="card-title" style="flex:1;min-width:160px">Histórico de Movimentações</div>
           <input type="date" id="mf-de" onchange="renderMov()" title="De" style="padding:6px 9px;font-size:12.5px;border-radius:8px;width:auto">
@@ -3811,7 +3812,7 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
         <div style="font-size:11px;color:rgba(255,255,255,.7)" id="wpp-os-info">OS #—</div>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
-        <span class="wpp-api-status wpp-api-off" id="wpp-modal-status" style="font-size:10px">⚪ API off</span>
+        <span class="wpp-api-status" id="wpp-modal-status" style="font-size:10px;background:rgba(255,255,255,.15);color:#fff;padding:2px 8px;border-radius:99px" title="Modo de envio">via app</span>
         <button onclick="closeModal('modal-wpp-os')" style="background:none;border:none;color:rgba(255,255,255,.7);font-size:20px;cursor:pointer"><i class="ti ti-x"></i></button>
       </div>
     </div>
@@ -9226,8 +9227,10 @@ function renderOSList(q=''){
   renderOSMobile();
 }
 
+let _detOSAtual = null;
 function detOS(id){
-  const o=G.os.find(x=>x.id===id);if(!o)return;
+  const o=G.os.find(x=>x.id===id)||(G._osHistDev||[]).find(x=>x.id===id);if(!o)return;
+  _detOSAtual = o;
   const next=ON[o.status];
   const steps=['Aguardando','Em Análise','Em Reparo','Pronto'];
   const ci=steps.indexOf(o.status);
@@ -9951,12 +9954,57 @@ async function excluirMidiaOS(id,path,osId){
 }
 
 // ── AUTORIZAÇÕES ──
+// Aplica autorizações aceitas (com valor) ao total da OS — uma única vez cada.
+// Marca localmente as já aplicadas usando um campo de controle na própria OS.
+async function _aplicarAutorizacoesAceitas(osId, autorizacoes){
+  const o=(G.os||[]).find(x=>x.id===osId);
+  if(!o)return;
+  const aplicadas=Array.isArray(o.autorizacoes_aplicadas)?o.autorizacoes_aplicadas:[];
+  const novasAceitas=autorizacoes.filter(a=>a.status==='aceita'&&a.valor>0&&!aplicadas.includes(a.id));
+  if(!novasAceitas.length)return;
+
+  const somaAdd=novasAceitas.reduce((s,a)=>s+(parseFloat(a.valor)||0),0);
+  const novoTotal=(parseFloat(o.total)||0)+somaAdd;
+  const novasAplicadas=[...aplicadas,...novasAceitas.map(a=>a.id)];
+
+  // Reinicia a timeline: o cliente autorizou um novo serviço, o reparo recomeça.
+  // Preserva o histórico anterior e adiciona um marco de "autorização aprovada".
+  const marco={status:'Em Análise',data:new Date().toISOString(),nota:'Cliente autorizou: '+novasAceitas.map(a=>a.titulo).join(', ')};
+  const novaTimeline=[...(o.timeline||[]),marco];
+
+  const pl={
+    total:novoTotal,
+    status:'Em Análise',
+    progresso:OP['Em Análise']||25,
+    timeline:novaTimeline,
+    autorizacoes_aplicadas:novasAplicadas,
+    atualizado_em:new Date().toISOString()
+  };
+  const {error}=await db.from('ordens_servico').update(pl).eq('id',osId);
+  if(error){
+    // Se a coluna de controle não existe, aplica só o total sem o controle (defensivo)
+    if(/autorizacoes_aplicadas|column|schema/i.test(error.message||'')){
+      delete pl.autorizacoes_aplicadas;
+      await db.from('ordens_servico').update(pl).eq('id',osId);
+    } else { console.warn('aplicar autorização:',error.message); return; }
+  }
+  Object.assign(o,pl);
+  o.autorizacoes_aplicadas=novasAplicadas;
+  notify(`Autorização aprovada! ${fmt(somaAdd)} somado à OS. Reparo reiniciado.`,'success',5000);
+  renderOSList(); renderOSAguardPag();
+  // Atualiza o cabeçalho do modal se estiver aberto
+  const sub=document.getElementById('os-det-sub');
+  if(sub&&_detOSAtual?.id===osId)detOS(osId);
+}
+
 async function carregarAutorizacoesOS(osId){
   const box=document.getElementById('osd-autoriz-list');
   if(!box)return;
   box.innerHTML='<div style="text-align:center;color:var(--txt3);padding:16px">Carregando…</div>';
   const {data,error}=await db.from('os_autorizacoes').select('*').eq('os_id',osId).order('criado_em',{ascending:false});
   if(error){box.innerHTML='<div style="text-align:center;color:var(--danger);padding:16px">Rode a migração X10 para ativar as autorizações.</div>';return;}
+  // Processa autorizações aceitas com valor que ainda não foram aplicadas à OS
+  await _aplicarAutorizacoesAceitas(osId,data||[]);
   if(!data||!data.length){box.innerHTML='<div style="text-align:center;color:var(--txt3);padding:24px"><i class="ti ti-signature" style="font-size:28px;opacity:.4;display:block;margin-bottom:8px"></i>Nenhuma solicitação criada</div>';return;}
   const badge={pendente:['tag-amb','Aguardando cliente'],aceita:['tag-grn','Aceita'],recusada:['tag-red','Recusada']};
   box.innerHTML=data.map(a=>{
@@ -19373,7 +19421,7 @@ async function addMsgOS(osId, msg) {
 
 /* ── ABRIR CHAT DA OS ──────────────────────────────────────────── */
 async function abrirWppOS(osId) {
-  const os = G.os.find(x => x.id === osId);
+  const os = G.os.find(x => x.id === osId) || (G._osHistDev||[]).find(x=>x.id===osId);
   if (!os) return;
   _wppOsAtual = os;
 
@@ -19397,7 +19445,7 @@ async function abrirWppOS(osId) {
   } else {
     phoneDisplay.textContent = 'Sem telefone cadastrado';
     if (noPhone) noPhone.style.display = '';
-    if (sendBtn) sendBtn.disabled = true;
+    if (sendBtn) sendBtn.disabled = false; // permite clicar: oferece cadastrar
   }
 
   openModal('modal-wpp-os');
@@ -19407,10 +19455,10 @@ async function abrirWppOS(osId) {
   const statusBadge = document.getElementById('wpp-modal-status');
   const dot = document.getElementById('wpp-dot');
   if (cfg.apiKey && cfg.instancia) {
-    if (statusBadge) { statusBadge.className = 'wpp-api-status wpp-api-ok'; statusBadge.textContent = '🟢 API conectada'; }
+    if (statusBadge) { statusBadge.className = 'wpp-api-status wpp-api-ok'; statusBadge.textContent = '🟢 API conectada'; statusBadge.style.background='rgba(16,185,129,.25)'; }
     if (dot) dot.classList.add('online');
   } else {
-    if (statusBadge) { statusBadge.className = 'wpp-api-status wpp-api-off'; statusBadge.textContent = '⚪ API não configurada'; }
+    if (statusBadge) { statusBadge.className = 'wpp-api-status'; statusBadge.textContent = '📲 via app'; statusBadge.style.background='rgba(255,255,255,.15)'; statusBadge.title='Sem API: abre o WhatsApp com a mensagem pronta'; }
     if (dot) dot.classList.remove('online');
   }
 
@@ -19489,7 +19537,13 @@ async function enviarMsgWpp(textoCustom) {
   const telefone = (cli?.whatsapp || cli?.telefone || os.cliente_tel || '').replace(/\D/g, '');
 
   if (!telefone) {
-    notify('Cadastre o WhatsApp do cliente para enviar mensagens.', 'warn');
+    const cliId=cli?.id||os.cliente_id;
+    if(cliId){
+      confirmAct('Telefone não cadastrado',`O cliente <b>${esc(os.cliente_nome||'')}</b> não tem WhatsApp cadastrado. Deseja cadastrar agora?`,
+        ()=>{ closeModal('modal-wpp-os'); editCli(cliId); notify('Adicione o WhatsApp e salve, depois volte à OS.','info',5000); });
+    } else {
+      notify('Este cliente (Consumidor Final) não tem cadastro. Crie um cliente com WhatsApp para enviar mensagens.','warn',5000);
+    }
     return;
   }
 
@@ -19543,7 +19597,12 @@ async function enviarMsgWpp(textoCustom) {
       notify('Não foi possível enviar. API offline? Mensagem salva no histórico.', 'warn');
     }
   } else {
-    notify('Configure a Zapster API em Aparência & Marca para enviar mensagens reais.', 'info');
+    // Sem API configurada: abre o WhatsApp Web/app do cliente com a mensagem pronta.
+    // Funciona em qualquer situação, sem depender de integração paga.
+    const link=`https://api.whatsapp.com/send?phone=55${telefone}&text=${encodeURIComponent(texto)}`;
+    window.open(link,'_blank');
+    await db.from('mensagens_whatsapp').update({ status_msg: 'sent' }).eq('id', msg.id).catch(()=>{});
+    notify('Abrindo WhatsApp com a mensagem pronta ✓','success',3000);
   }
 }
 
@@ -20740,7 +20799,7 @@ function abrirGerarContrato(contexto, modeloIdPre) {
   const relevantes = modelos.filter(m => m.tipo !== 'funcionario');
   sel.innerHTML = relevantes.map(m => `<option value="${m.id}" ${m.id===modeloIdPre?'selected':''}>${m.nome}</option>`).join('');
   if (!relevantes.length) { notify('Nenhum modelo disponível. Crie um em Contratos & Termos.','warn'); return; }
-  _cgCtx = contexto || {};
+  _cgContexto = contexto || {};
   openModal('modal-contrato-gerar');
 }
 
@@ -20826,8 +20885,10 @@ function emitirContrato(){
 }
 
 function abrirDocumentosOS(osId) {
-  const os = (G.os || []).find(x => x.id === osId);
-  if (!os) return;
+  const os = (G.os || []).find(x => x.id === osId)
+          || (G._osHistDev || []).find(x => x.id === osId)
+          || _detOSAtual;
+  if (!os) { notify('OS não encontrada.','warn'); return; }
   _docOsAtual = os;
   resetDocFormato();
   document.getElementById('modal-docs-titulo').textContent = `Documentos — OS ${os.numero}`;
