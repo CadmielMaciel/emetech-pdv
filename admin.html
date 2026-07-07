@@ -663,6 +663,7 @@ select option { background: var(--bg2); }
       <div class="sb-item" onclick="go('saude')"><i class="ti ti-heart-rate-monitor"></i> Saúde dos Clientes</div>
       <div class="sb-item" onclick="go('uso')"><i class="ti ti-chart-bar"></i> Uso & Relatórios</div>
       <div class="sb-item" onclick="go('financeiro')"><i class="ti ti-currency-dollar"></i> Financeiro SaaS</div>
+      <div class="sb-item" onclick="go('onboarding')"><i class="ti ti-rocket"></i> Onboarding</div>
       <div class="sb-item" onclick="go('cobrancas')"><i class="ti ti-receipt"></i> Cobranças</div>
       <div class="sb-item" onclick="go('planos')"><i class="ti ti-credit-card"></i> Planos</div>
       <div class="sb-sec">Operações</div>
@@ -865,6 +866,37 @@ select option { background: var(--bg2); }
               <th style="padding:8px">Empresa</th><th>Plano</th><th>Vendas 30d</th><th>Faturamento 30d</th><th>OS 30d</th><th>Usuários</th><th>Última atividade</th>
             </tr></thead>
             <tbody id="uso-tabela"></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- ONBOARDING & ATIVAÇÃO -->
+      <div class="page" id="page-onboarding">
+        <div class="kpi-grid">
+          <div class="kpi-card"><div class="kpi-val" id="onb-novas">—</div><div class="kpi-lbl">Novas empresas (30d)</div></div>
+          <div class="kpi-card"><div class="kpi-val" id="onb-ativadas" style="color:var(--success)">—</div><div class="kpi-lbl">Ativadas (fizeram 1ª venda)</div></div>
+          <div class="kpi-card"><div class="kpi-val" id="onb-travadas" style="color:var(--danger)">—</div><div class="kpi-lbl">Travadas (7+ dias sem ativar)</div></div>
+          <div class="kpi-card"><div class="kpi-val" id="onb-taxa">—</div><div class="kpi-lbl">Taxa de ativação</div></div>
+        </div>
+        <div class="chart-card" style="margin:16px 0">
+          <div class="sec-title" style="margin-bottom:14px">Funil de ativação</div>
+          <div id="onb-funil"></div>
+        </div>
+        <div class="chart-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+            <div class="sec-title">Empresas por estágio</div>
+            <select id="onb-filtro" onchange="renderOnbTabela()" style="padding:7px 10px;font-size:12.5px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--txt)">
+              <option value="">Todas</option>
+              <option value="travadas">🔴 Travadas (não ativaram)</option>
+              <option value="parciais">🟡 Ativação parcial</option>
+              <option value="completas">🟢 Totalmente ativadas</option>
+            </select>
+          </div>
+          <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">
+            <thead><tr style="border-bottom:1px solid var(--border);text-align:left;color:var(--txt3);font-size:11px;text-transform:uppercase">
+              <th style="padding:8px">Empresa</th><th>Cadastro</th><th>1ª Venda</th><th>1ª OS</th><th>Marca</th><th>Progresso</th><th></th>
+            </tr></thead>
+            <tbody id="onb-tabela"></tbody>
           </table></div>
         </div>
       </div>
@@ -2392,6 +2424,7 @@ async function refreshDados() {
 const PAGE_TITLES = {
   uso: { title: 'Uso & Relatórios', icon: 'ti-chart-bar' },
   financeiro: { title: 'Financeiro do SaaS', icon: 'ti-currency-dollar' },
+  onboarding: { title: 'Onboarding & Ativação', icon: 'ti-rocket' },
   dashboard: { title:'Dashboard',    icon:'ti-layout-dashboard' },
   empresas:  { title:'Empresas',     icon:'ti-building-store'   },
   saude:     { title:'Saúde dos Clientes', icon:'ti-heart-rate-monitor' },
@@ -2423,6 +2456,7 @@ function go(page) {
   if (page === 'saude') renderSaude();
   if (page === 'uso') renderUso();
   if (page === 'financeiro') renderFinanceiro();
+  if (page === 'onboarding') renderOnboarding();
   if (page === 'cobrancas') renderCobrancas();
   if (page === 'whatsapp') renderWhatsapp();
   if (page === 'suporte') carregarSuporteConfig();
@@ -2460,6 +2494,100 @@ function _healthEmpresa(e){
    ══════════════════════════════════════════════════════════════ */
 let _usoDados=null;
 let _usoCharts={};
+
+/* ══════════════════════════════════════════════════════════════
+   ONBOARDING & ATIVAÇÃO — funil de quem começou a usar de verdade
+   Marcos: cadastrou → 1ª venda → 1ª OS → configurou marca.
+   Identifica empresas travadas no início (risco de cancelar cedo).
+   ══════════════════════════════════════════════════════════════ */
+let _onbDados=null;
+
+async function renderOnboarding(){
+  const tb=document.getElementById('onb-tabela');
+  if(tb)tb.innerHTML='<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--txt3)">Carregando…</td></tr>';
+  try{
+    const {data,error}=await db.rpc('admin_onboarding');
+    if(error)throw error;
+    _onbDados=data;
+  }catch(e){
+    if(tb)tb.innerHTML=`<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--danger)">Erro: ${e.message}.<br><span style="font-size:11px;color:var(--txt3)">Rode a migração A03 (admin_onboarding).</span></td></tr>`;
+    return;
+  }
+  const emp=(_onbDados?.empresas)||[];
+  const novas30=emp.filter(e=>e.dias_cadastro<=30);
+  const ativadas=emp.filter(e=>e.fez_venda);
+  const travadas=emp.filter(e=>!e.fez_venda&&e.dias_cadastro>=7);
+  const taxa=emp.length>0?(ativadas.length/emp.length*100):0;
+
+  const setO=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+  setO('onb-novas',novas30.length);
+  setO('onb-ativadas',ativadas.length);
+  setO('onb-travadas',travadas.length);
+  setO('onb-taxa',taxa.toFixed(0)+'%');
+
+  // Funil visual
+  const total=emp.length||1;
+  const nCad=emp.length;
+  const nVenda=emp.filter(e=>e.fez_venda).length;
+  const nOS=emp.filter(e=>e.fez_os).length;
+  const nMarca=emp.filter(e=>e.config_marca).length;
+  const etapas=[
+    {lbl:'Cadastraram',n:nCad,cor:'#6B7280',ico:'ti-user-plus'},
+    {lbl:'Fizeram 1ª venda',n:nVenda,cor:'#1E5EFF',ico:'ti-shopping-cart'},
+    {lbl:'Abriram 1ª OS',n:nOS,cor:'#8B5CF6',ico:'ti-tool'},
+    {lbl:'Configuraram a marca',n:nMarca,cor:'#10B981',ico:'ti-palette'}
+  ];
+  const funil=document.getElementById('onb-funil');
+  if(funil){
+    funil.innerHTML=etapas.map((et,i)=>{
+      const pct=(et.n/total*100);
+      const larg=Math.max(8,pct);
+      return `<div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px">
+          <span style="color:var(--txt2);font-weight:600"><i class="ti ${et.ico}" style="color:${et.cor}"></i> ${et.lbl}</span>
+          <span style="font-weight:700;color:var(--txt)">${et.n} <span style="color:var(--txt3);font-weight:400">(${pct.toFixed(0)}%)</span></span>
+        </div>
+        <div style="height:26px;background:var(--bg2);border-radius:8px;overflow:hidden">
+          <div style="height:100%;width:${larg}%;background:${et.cor};border-radius:8px;transition:width .8s ease;min-width:30px"></div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+  renderOnbTabela();
+}
+
+function renderOnbTabela(){
+  const tb=document.getElementById('onb-tabela');
+  if(!tb||!_onbDados)return;
+  const filtro=document.getElementById('onb-filtro')?.value||'';
+  let list=[...(_onbDados.empresas||[])];
+  const marcos=e=>(e.fez_venda?1:0)+(e.fez_os?1:0)+(e.config_marca?1:0);
+  if(filtro==='travadas')list=list.filter(e=>!e.fez_venda&&e.dias_cadastro>=7);
+  if(filtro==='parciais')list=list.filter(e=>marcos(e)>0&&marcos(e)<3);
+  if(filtro==='completas')list=list.filter(e=>marcos(e)===3);
+
+  if(!list.length){tb.innerHTML='<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--txt3)">Nenhuma empresa neste estágio.</td></tr>';return;}
+
+  const check=v=>v?'<i class="ti ti-circle-check" style="color:var(--success)"></i>':'<i class="ti ti-circle" style="color:var(--txt4)"></i>';
+  tb.innerHTML=list.map(e=>{
+    const prog=marcos(e);
+    const travada=!e.fez_venda&&e.dias_cadastro>=7;
+    const ini=(e.nome||'?').slice(0,2).toUpperCase();
+    const cor=typeof stringToColor==='function'?stringToColor(e.id||e.nome):'#1E5EFF';
+    return `<tr style="border-bottom:1px solid var(--border)${travada?';background:rgba(239,68,68,.05)':''}">
+      <td style="padding:9px 8px"><div style="display:flex;align-items:center;gap:9px">
+        <div style="width:30px;height:30px;border-radius:8px;background:${cor};display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;color:#fff;flex-shrink:0">${ini}</div>
+        <div><div style="font-weight:600;color:var(--txt)">${e.nome||'—'}</div>${travada?'<div style="font-size:10.5px;color:var(--danger);font-weight:600">⚠ Travada — nunca vendeu</div>':''}</div>
+      </div></td>
+      <td style="font-size:12px;color:var(--txt3)">${e.dias_cadastro}d atrás</td>
+      <td style="text-align:center">${check(e.fez_venda)}</td>
+      <td style="text-align:center">${check(e.fez_os)}</td>
+      <td style="text-align:center">${check(e.config_marca)}</td>
+      <td><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;height:6px;background:var(--bg2);border-radius:99px;overflow:hidden;min-width:50px"><div style="height:100%;width:${prog/3*100}%;background:${prog===3?'var(--success)':'var(--pri)'};border-radius:99px"></div></div><span style="font-size:11px;color:var(--txt3)">${prog}/3</span></div></td>
+      <td>${travada?`<button class="btn btn-out btn-xs" onclick="enviarLembreteWhatsApp('${e.id}')" title="Ajudar a ativar"><i class="ti ti-brand-whatsapp"></i></button>`:''}</td>
+    </tr>`;
+  }).join('');
+}
 
 /* ══════════════════════════════════════════════════════════════
    FINANCEIRO DO SAAS — MRR, ARR, Churn, LTV
