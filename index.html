@@ -4455,6 +4455,69 @@ const db = createClient(SURL, SKEY, {
 // (RLS exige empresa_id correto em WITH CHECK)
 function EID(){ return G.profile?.empresa_id || G.empresaId || null; }
 
+/* ══════════════════════════════════════════════════════════════
+   MODO SUPORTE — o admin master acessa a conta de uma empresa.
+   Sobrescreve o empresa_id ativo para carregar os dados dela.
+   Em modo leitura, bloqueia operações de escrita (só visualiza).
+   ══════════════════════════════════════════════════════════════ */
+let G_SUPORTE = null; // {empresaId, modo, nome}
+
+async function ativarModoSuporte(empresaId, modo){
+  try{
+    // Só permite se o usuário logado for admin master
+    const email=G.profile?.email;
+    let ehMaster=false;
+    try{
+      const {data}=await db.from('usuarios').select('role').eq('email',email).maybeSingle();
+      ehMaster=(data?.role==='admin_master');
+    }catch(_){}
+    if(!ehMaster){ notify('Acesso de suporte negado: seu usuário não é administrador master.','error',6000); return; }
+
+    // Descobre o nome da empresa
+    let nome=empresaId;
+    try{ const {data}=await db.from('empresas').select('nome').eq('id',empresaId).maybeSingle(); if(data?.nome)nome=data.nome; }catch(_){}
+
+    G_SUPORTE={ empresaId, modo:modo==='total'?'total':'leitura', nome };
+    // Sobrescreve o contexto de empresa para carregar os dados da empresa-alvo
+    G.empresaId=empresaId;
+    if(G.profile) G.profile.empresa_id=empresaId;
+
+    mostrarBannerSuporte();
+    await loadAll();
+    if(typeof iniciarRealtime==='function') iniciarRealtime();
+    notify(`Modo suporte ativo — ${nome} (${G_SUPORTE.modo})`,'info',5000);
+  }catch(e){ console.error('Erro ao ativar modo suporte:',e); notify('Falha ao ativar modo suporte.','error'); }
+}
+
+function mostrarBannerSuporte(){
+  if(document.getElementById('banner-suporte'))return;
+  const b=document.createElement('div');
+  b.id='banner-suporte';
+  const leitura=G_SUPORTE.modo==='leitura';
+  b.style.cssText=`position:fixed;top:0;left:0;right:0;z-index:99999;background:linear-gradient(90deg,${leitura?'#F59E0B,#D97706':'#EF4444,#B91C1C'});color:#fff;padding:7px 16px;font-size:12.5px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 2px 12px rgba(0,0,0,.3);font-family:'DM Sans',sans-serif`;
+  b.innerHTML=`<i class="ti ti-headset"></i> MODO SUPORTE — ${esc(G_SUPORTE.nome)} <span style="opacity:.85">(${leitura?'somente leitura':'acesso total'})</span>
+    <button onclick="sairModoSuporte()" style="margin-left:12px;background:rgba(255,255,255,.2);border:none;color:#fff;padding:3px 12px;border-radius:99px;font-size:11.5px;font-weight:700;cursor:pointer">Sair</button>`;
+  document.body.appendChild(b);
+  document.body.style.paddingTop='34px';
+}
+
+function sairModoSuporte(){
+  // Fecha a aba (foi aberta pelo admin) ou volta ao próprio contexto
+  G_SUPORTE=null;
+  window.close();
+  // Se não fechar (aba principal), recarrega limpo
+  setTimeout(()=>{ location.href=location.origin+'/index.html'; },200);
+}
+
+// Guard de escrita no modo suporte-leitura: bloqueia operações que alteram dados
+function _bloqueadoSuporteLeitura(){
+  if(G_SUPORTE && G_SUPORTE.modo==='leitura'){
+    notify('Modo suporte (leitura): alterações estão bloqueadas nesta empresa.','warn',3500);
+    return true;
+  }
+  return false;
+}
+
 /* ── PWA OFFLINE: IndexedDB + FILA DE VENDAS ──────────── */
 const OFFDB_NAME='emetech_offline';
 const OFFDB_VERSION=1;
@@ -4694,6 +4757,13 @@ document.addEventListener('DOMContentLoaded',()=>{
     try{
       const {data:{session}}=await db.auth.getSession();
       if(session?.user) await loadProfile(session.user);
+      // ── MODO SUPORTE (impersonation vinda do admin) ──
+      // O admin master abriu ?suporte=EMPRESA_ID&modo=leitura|total
+      const _sp=new URLSearchParams(location.search);
+      const _supEmp=_sp.get('suporte');
+      if(_supEmp && session?.user){
+        await ativarModoSuporte(_supEmp, _sp.get('modo')||'leitura');
+      }
     }catch(e){ console.error('Erro ao restaurar sessão:',e); }
     if(typeof iniciarVerificacaoVersao==='function') iniciarVerificacaoVersao();
   })();
@@ -6456,6 +6526,7 @@ function clearProdForm(){
   document.getElementById('prod-ttl').textContent='Novo Produto';
 }
 async function saveProd(){
+  if(_bloqueadoSuporteLeitura())return;
   const nome=document.getElementById('p-nome').value.trim();
   const preco=parseFloat(document.getElementById('p-preco').value);
   if(!nome||!preco){notify('Nome e preço obrigatórios!','error');return;}
@@ -7380,6 +7451,7 @@ function _ehItemUnico(p){
 }
 
 async function finalizeSale(){
+  if(_bloqueadoSuporteLeitura())return;
   if(!G.cart.length)return;
   if(!G.caixaAtual){somErro();notify('Abra o caixa antes de vender!','warn');return;}
   const sub=G.cart.reduce((s,i)=>s+i.preco*i.qty,0);
@@ -9146,6 +9218,7 @@ function renderImeiResult(r){
 }
 
 async function createOS(){
+  if(_bloqueadoSuporteLeitura())return;
   const ap=document.getElementById('os-ap').value.trim();
   const def=document.getElementById('os-def').value.trim();
   if(!ap||!def){notify('Aparelho e defeito obrigatórios!','error');return;}
