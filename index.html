@@ -2320,6 +2320,17 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
             </label>
             <div style="font-size:11px;color:var(--txt3);margin-top:12px"><i class="ti ti-info-circle"></i> A assinatura do cliente pelo portal (link remoto) continua funcionando independente desta opção.</div>
           </div>
+          <div class="card" style="max-width:640px;margin-top:14px">
+            <div class="card-hdr" style="margin-bottom:14px"><div class="card-title"><i class="ti ti-maximize" style="color:var(--pri)"></i> Tela cheia</div></div>
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:12px;background:var(--bg2);border-radius:10px">
+              <input type="checkbox" id="cfg-fullscreen-auto" onchange="salvarCfgFullscreen()" style="width:20px;height:20px;accent-color:var(--pri)">
+              <div>
+                <div style="font-weight:600;font-size:13.5px;color:var(--txt)">Entrar em tela cheia ao abrir</div>
+                <div style="font-size:11.5px;color:var(--txt3)">Expande no primeiro toque na tela (limitação dos navegadores)</div>
+              </div>
+            </label>
+            <button class="btn btn-out btn-sm" style="margin-top:10px" onclick="toggleFullscreen()"><i class="ti ti-maximize"></i> Ativar tela cheia agora</button>
+          </div>
         </div>
       </div>
 
@@ -4687,6 +4698,31 @@ window.addEventListener('offline',()=>{setNetPill('offline');notify('Sem conexã
    ══════════════════════════════════════════════════════════════ */
 let _pwaInstallPrompt=null;
 
+/* Fullscreen: navegadores só permitem a partir de um gesto do usuário.
+   Entramos em tela cheia no PRIMEIRO toque, se a preferência estiver ligada. */
+function ativarFullscreenNoPrimeiroToque(){
+  if(localStorage.getItem('misu_fullscreen_auto')!=='1')return;
+  const entrar=()=>{
+    const el=document.documentElement;
+    const fn=el.requestFullscreen||el.webkitRequestFullscreen||el.mozRequestFullScreen||el.msRequestFullscreen;
+    if(fn && !document.fullscreenElement){ try{ fn.call(el); }catch(e){} }
+    document.removeEventListener('click',entrar);
+    document.removeEventListener('touchstart',entrar);
+  };
+  document.addEventListener('click',entrar,{once:true});
+  document.addEventListener('touchstart',entrar,{once:true});
+}
+function toggleFullscreen(){
+  const el=document.documentElement;
+  if(!document.fullscreenElement){
+    const fn=el.requestFullscreen||el.webkitRequestFullscreen||el.mozRequestFullScreen||el.msRequestFullscreen;
+    if(fn){ try{ fn.call(el); }catch(e){} }
+  } else {
+    const fn=document.exitFullscreen||document.webkitExitFullscreen||document.mozCancelFullScreen||document.msExitFullscreen;
+    if(fn){ try{ fn.call(document); }catch(e){} }
+  }
+}
+
 function registerPWA(){
   try{
     // 1. Service Worker (arquivo real na raiz — habilita instalação + shell offline)
@@ -4765,6 +4801,7 @@ async function instalarApp(){
 // Inicializa PWA e indicador de rede assim que possível
 document.addEventListener('DOMContentLoaded',()=>{
   registerPWA();
+  ativarFullscreenNoPrimeiroToque();
   setNetPill(navigator.onLine?'online':'offline');
   updatePendingBadge();
   if(navigator.onLine) syncOfflineQueue(false);
@@ -9604,6 +9641,8 @@ function detOS(id){
         <button class="menu-acao-item" onclick="_fecharMenuAcoesOS();gerarPdfOS('${id}')"><i class="ti ti-file-download"></i> Gerar PDF</button>
         <button class="menu-acao-item" onclick="_fecharMenuAcoesOS();abrirWppOS('${id}')" style="color:#25D366"><i class="ti ti-brand-whatsapp"></i> WhatsApp</button>
         <button class="menu-acao-item" onclick="_fecharMenuAcoesOS();copiarLinkClienteOS('${id}')"><i class="ti ti-link"></i> Link do Cliente</button>
+        ${(podeEditar && !['Entregue','Cancelada'].includes(o.status))?`<div style="height:1px;background:var(--border);margin:5px 0"></div>
+        <button class="menu-acao-item" onclick="_fecharMenuAcoesOS();cancelarOS('${id}')" style="color:var(--danger)"><i class="ti ti-ban"></i> Cancelar OS</button>`:''}
       </div>
     </div>`;
   openModal('modal-os-det');
@@ -10284,6 +10323,70 @@ async function copiarLinkClienteOS(id){
   }
 }
 
+/* ══════════════════════════════════════════════════════════════
+   CANCELAR OS — quando o cliente desiste do serviço.
+   Registra o motivo na timeline, zera o progresso e devolve ao
+   estoque as peças que tinham sido baixadas para o reparo.
+   ══════════════════════════════════════════════════════════════ */
+async function cancelarOS(id){
+  const o=(G.os||[]).find(x=>x.id===id)||_detOSAtual;
+  if(!o){ notify('OS não encontrada.','warn'); return; }
+  if(['Entregue','Cancelada'].includes(o.status)){ notify('Esta OS não pode ser cancelada.','warn'); return; }
+
+  const html=`<div class="card-title" style="gap:7px;margin-bottom:8px"><i class="ti ti-ban" style="color:var(--danger)"></i> Cancelar OS ${esc(o.numero||'')}</div>
+    <div style="font-size:13px;color:var(--txt2);margin-bottom:12px">Você está cancelando a OS de <b>${esc(o.aparelho||'')}</b> (${esc(o.cliente_nome||'Cliente')}). Esta ação registra o cancelamento no histórico.</div>
+    <div class="fg"><label class="lbl">Motivo do cancelamento *</label>
+      <textarea id="cancel-motivo" rows="3" placeholder="Ex: Cliente desistiu do reparo / orçamento não aprovado / aparelho sem conserto" style="width:100%"></textarea>
+    </div>
+    ${(o.pecas&&o.pecas.length)?`<label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--txt2);cursor:pointer;margin-top:6px">
+      <input type="checkbox" id="cancel-devolve-pecas" checked style="width:auto;accent-color:var(--pri)">
+      Devolver as ${o.pecas.length} peça(s) usada(s) ao estoque
+    </label>`:''}`;
+  const foot=`<button class="btn btn-out" onclick="closeModal('modal-generic')">Voltar</button>
+    <button class="btn" style="background:var(--danger);color:#fff" onclick="confirmarCancelarOS('${id}')"><i class="ti ti-ban"></i> Confirmar cancelamento</button>`;
+  abrirModalGenerico(html,foot);
+}
+
+async function confirmarCancelarOS(id){
+  const o=(G.os||[]).find(x=>x.id===id)||_detOSAtual;
+  if(!o)return;
+  const motivo=document.getElementById('cancel-motivo')?.value?.trim();
+  if(!motivo){ notify('Descreva o motivo do cancelamento.','warn'); return; }
+  const devolvePecas=document.getElementById('cancel-devolve-pecas')?.checked;
+
+  setLoad(true);
+  const tl=[...(o.timeline||[]),{status:'Cancelada',data:new Date().toISOString(),operador:G.profile?.nome||'',nota:motivo}];
+  const pl={status:'Cancelada',progresso:0,timeline:tl,motivo_cancelamento:motivo,cancelada_em:new Date().toISOString(),atualizado_em:new Date().toISOString()};
+  let {error}=await db.from('ordens_servico').update(pl).eq('id',id);
+  // Defensivo: se as colunas de cancelamento não existem, salva sem elas
+  if(error && /motivo_cancelamento|cancelada_em|column|schema/i.test(error.message||'')){
+    delete pl.motivo_cancelamento; delete pl.cancelada_em;
+    ({error}=await db.from('ordens_servico').update(pl).eq('id',id));
+  }
+  if(error){ setLoad(false); notify('Erro ao cancelar: '+error.message,'error'); return; }
+
+  // Devolve peças ao estoque (se marcado)
+  if(devolvePecas && o.pecas && o.pecas.length){
+    for(const pc of o.pecas){
+      if(!pc.produto_id)continue;
+      const prod=G.produtos.find(x=>x.id===pc.produto_id);
+      if(prod && !prod.estoque_infinito){
+        const novo=(prod.estoque||0)+(pc.qty||1);
+        await db.from('produtos').update({estoque:novo}).eq('id',pc.produto_id);
+        await regMov(pc.produto_id,prod.nome,'entrada',pc.qty||1,novo,`Devolução — OS ${o.numero} cancelada`);
+        prod.estoque=novo;
+      }
+    }
+  }
+  setLoad(false);
+  Object.assign(o,pl);
+  G.os=G.os.filter(x=>x.id!==id); // sai da lista de OS ativas
+  closeModal('modal-generic');
+  closeModal('modal-os-det');
+  renderOSList();renderDashboard();renderOSAguardPag();
+  notify(`OS ${o.numero} cancelada.`,'success');
+}
+
 async function advOS(id,next){
   const o=G.os.find(x=>x.id===id);if(!o)return;
   // Bloqueia avanço direto de 'Ag. Pagamento' → 'Entregue' pelo técnico
@@ -10572,7 +10675,7 @@ function cfgTab(aba, btn) {
     const el = document.getElementById('cfg-' + t);
     if (el) el.style.display = t === aba ? '' : 'none';
   });
-  if(aba==='os'){ const chk=document.getElementById('cfg-assin-balcao'); if(chk)chk.checked=(localStorage.getItem('misu_assin_balcao')==='1'); }
+  if(aba==='os'){ const chk=document.getElementById('cfg-assin-balcao'); if(chk)chk.checked=(localStorage.getItem('misu_assin_balcao')==='1'); const fs=document.getElementById('cfg-fullscreen-auto'); if(fs)fs.checked=(localStorage.getItem('misu_fullscreen_auto')==='1'); }
   document.querySelectorAll('#page-configuracoes .fin-tab').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
 }
@@ -21202,6 +21305,12 @@ function salvarCfgOS(){
   const on=document.getElementById('cfg-assin-balcao')?.checked;
   localStorage.setItem('misu_assin_balcao', on?'1':'0');
   notify(on?'Assinatura no balcão ativada.':'Assinatura no balcão desativada.','success',2500);
+}
+function salvarCfgFullscreen(){
+  const on=document.getElementById('cfg-fullscreen-auto')?.checked;
+  localStorage.setItem('misu_fullscreen_auto', on?'1':'0');
+  if(on)notify('Tela cheia ao abrir ativada. Vale a partir da próxima abertura.','success',3500);
+  else notify('Tela cheia automática desativada.','info',2500);
 }
 
 /* Assinatura no balcão — cliente assina na tela ao criar a OS */
