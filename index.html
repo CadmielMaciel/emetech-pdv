@@ -7457,7 +7457,7 @@ function addMistoItem(){}
 function renderMistoItems(){}
 function renderMistoTotal(){}
 
-async // Um produto é ITEM ÚNICO SERIALIZADO quando representa UM aparelho específico
+// Um produto é ITEM ÚNICO SERIALIZADO quando representa UM aparelho específico
 // (aquele IMEI), que só pode ser vendido uma vez. Regra:
 //  - Categoria Celular COM IMEI preenchido, OU
 //  - Seminovo vindo de troca (origem_fiscal='troca' ou subcategoria Seminovo/SKU SEMI-)
@@ -16438,7 +16438,8 @@ delProd = function(id) {
 
 // ── UTILITÁRIOS DE PDF ──────────────────────────────────
 function getMarca() {
-  return MARCA || {};
+  try { return MARCA || {}; }
+  catch(e) { return {}; } // MARCA ainda não inicializado (boot muito cedo)
 }
 
 /* ── MÁSCARA CPF/CNPJ (NOVO) ──────────────────────────── */
