@@ -4699,18 +4699,19 @@ window.addEventListener('offline',()=>{setNetPill('offline');notify('Sem conexã
 let _pwaInstallPrompt=null;
 
 /* Fullscreen: navegadores só permitem a partir de um gesto do usuário.
-   Entramos em tela cheia no PRIMEIRO toque, se a preferência estiver ligada. */
+   Se a preferência estiver ligada, RE-entra em tela cheia a cada clique/toque
+   caso tenha saído (ex.: o usuário apertou Esc sem querer). */
 function ativarFullscreenNoPrimeiroToque(){
   if(localStorage.getItem('misu_fullscreen_auto')!=='1')return;
   const entrar=()=>{
+    if(localStorage.getItem('misu_fullscreen_auto')!=='1')return; // respeita se desligar depois
     const el=document.documentElement;
     const fn=el.requestFullscreen||el.webkitRequestFullscreen||el.mozRequestFullScreen||el.msRequestFullscreen;
     if(fn && !document.fullscreenElement){ try{ fn.call(el); }catch(e){} }
-    document.removeEventListener('click',entrar);
-    document.removeEventListener('touchstart',entrar);
   };
-  document.addEventListener('click',entrar,{once:true});
-  document.addEventListener('touchstart',entrar,{once:true});
+  // Sem {once}: toda vez que clicar/tocar, se não estiver em tela cheia, volta
+  document.addEventListener('click',entrar);
+  document.addEventListener('touchstart',entrar,{passive:true});
 }
 function toggleFullscreen(){
   const el=document.documentElement;
@@ -6330,16 +6331,32 @@ Responda SOMENTE com um JSON válido, sem texto antes ou depois, no formato:
 Se não tiver certeza de nenhum, retorne lista vazia.`;
 
   try{
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:prompt}]})
-    });
-    const data=await resp.json();
-    let txt=(data.content||[]).map(x=>x.text||'').join('').trim();
-    txt=txt.replace(/```json|```/g,'').trim();
-    const json=JSON.parse(txt);
-    const lista=(json.compatíveis||json.compativeis||[]).filter(Boolean);
-    renderSugestoesCompat(lista,json.confianca,json.observacao);
+    let lista=[], confianca='media', obs='';
+    // PRODUÇÃO: chama a Edge Function (chave protegida no servidor).
+    // Fallback: chamada direta (funciona só no ambiente de teste do Claude).
+    let usouEdge=false;
+    try{
+      const {data,error}=await db.functions.invoke('compat-ia',{ body:{ peca:nome, marca } });
+      if(!error && data && !data.error){
+        lista=(data.compativeis||[]).filter(Boolean);
+        confianca=data.confianca||'media'; obs=data.observacao||'';
+        usouEdge=true;
+      }
+    }catch(_){ /* Edge Function não deployada ainda: cai no fallback */ }
+
+    if(!usouEdge){
+      const resp=await fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:prompt}]})
+      });
+      const data=await resp.json();
+      let txt=(data.content||[]).map(x=>x.text||'').join('').trim();
+      txt=txt.replace(/```json|```/g,'').trim();
+      const json=JSON.parse(txt);
+      lista=(json.compatíveis||json.compativeis||[]).filter(Boolean);
+      confianca=json.confianca; obs=json.observacao;
+    }
+    renderSugestoesCompat(lista,confianca,obs);
   }catch(e){
     if(sug)sug.innerHTML=`<div style="padding:9px;font-size:12px;color:var(--danger)">Não foi possível consultar a IA agora. Adicione os modelos manualmente abaixo.</div>`;
   }
