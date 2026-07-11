@@ -6342,9 +6342,16 @@ async function buscarCompatIA(){
   // ── PASSO 2: não achou na base → consulta a IA (uma única vez) ──
   if(sug)sug.innerHTML='<div style="padding:10px;text-align:center;color:var(--txt3);font-size:12.5px"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Consultando a IA…</div>';
 
-  const prompt=`Você é um especialista técnico em peças de celular e assistência técnica.
-Peça: "${marca} ${nome}".
-Liste APENAS os modelos de celular cuja MESMA peça (idêntica de fábrica, 100% compatível física e eletricamente) é usada. Não inclua o próprio modelo da peça. Não inclua "parecidos" ou "adaptáveis" — só compatibilidade real de encaixe direto.
+  const prompt=`Você é um especialista técnico em peças de celular e assistência técnica de reparo.
+Peça informada pelo técnico: "${marca} ${nome}".
+
+IMPORTANTE — respeite a especificação EXATA da peça:
+- Se o nome indicar "C/ARO", "COM ARO" ou "COM FRAME", liste só modelos que usam a MESMA tela COM ARO/frame montado.
+- Se indicar "S/ARO", "SEM ARO" ou "SEM FRAME", só modelos da mesma tela SEM aro.
+- Se for bateria, conector, tampa, etc., respeite o tipo exato.
+- Considere a variação exata (ex: "A10" é diferente de "A10s"; "4G" difere de "5G").
+
+Liste os modelos de celular cuja MESMA peça (idêntica de fábrica, 100% compatível física e eletricamente, encaixe direto sem adaptação) pode ser usada nesta peça. Inclua todos os modelos realmente intercambiáveis. NÃO inclua "parecidos", "adaptáveis" ou que precisem de modificação.
 Responda SOMENTE com um JSON válido, sem texto antes ou depois, no formato:
 {"compatíveis":["Modelo A","Modelo B"],"confianca":"alta|media|baixa","observacao":"curta nota se houver ressalva"}
 Se não tiver certeza de nenhum, retorne lista vazia.`;
@@ -6377,7 +6384,10 @@ Se não tiver certeza de nenhum, retorne lista vazia.`;
     }
     renderSugestoesCompat(lista,confianca,obs);
   }catch(e){
-    if(sug)sug.innerHTML=`<div style="padding:9px;font-size:12px;color:var(--danger)">Não foi possível consultar a IA agora. Adicione os modelos manualmente abaixo.</div>`;
+    if(sug)sug.innerHTML=`<div style="padding:10px;font-size:12px;color:var(--warn);background:rgba(245,158,11,.08);border-radius:8px">
+      <b>IA ainda não ativada.</b> Para ativar a busca automática, faça o deploy da função <code>compat-ia</code> no Supabase (guia DEPLOY_EDGE_FUNCTION_IA).<br>
+      Por enquanto, adicione os modelos compatíveis manualmente no campo abaixo.
+    </div>`;
   }
 }
 
