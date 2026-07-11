@@ -6321,6 +6321,25 @@ async function buscarCompatIA(){
   const marca=document.getElementById('p-marca')?.value?.trim()||'';
   if(!nome){notify('Preencha o nome da peça primeiro (ex: Tela POCO C71).','warn');return;}
   const sug=document.getElementById('p-compat-sugestoes');
+
+  // ── PASSO 1: base local (grátis, instantâneo, sem gastar IA) ──
+  // Se essa peça já foi consultada/confirmada antes, responde da base.
+  const tipoPeca=(nome.split(/\s+/)[0]||'').toLowerCase();
+  const modeloBase=nome.replace(/^\S+\s*/,'').split('/')[0].trim()||nome;
+  if(sug)sug.innerHTML='<div style="padding:10px;text-align:center;color:var(--txt3);font-size:12.5px"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Consultando base…</div>';
+  try{
+    const {data:base}=await db.from('pecas_compatibilidade').select('modelo_compat')
+      .eq('empresa_id',EID()).ilike('modelo_base',`%${modeloBase}%`).limit(30);
+    if(base && base.length){
+      const modelos=[...new Set(base.map(b=>b.modelo_compat).filter(Boolean))];
+      if(modelos.length){
+        renderSugestoesCompat(modelos,'alta','Da sua base de compatibilidade (sem consultar IA).');
+        return; // achou na base: NÃO gasta IA
+      }
+    }
+  }catch(e){}
+
+  // ── PASSO 2: não achou na base → consulta a IA (uma única vez) ──
   if(sug)sug.innerHTML='<div style="padding:10px;text-align:center;color:var(--txt3);font-size:12.5px"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Consultando a IA…</div>';
 
   const prompt=`Você é um especialista técnico em peças de celular e assistência técnica.
