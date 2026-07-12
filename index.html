@@ -4317,7 +4317,7 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
     <div class="g2">
       <div class="fg"><label class="lbl">Nome do Funcionário *</label><input type="text" id="cf-funcionario" placeholder="Nome completo"></div>
       <div class="fg"><label class="lbl">Cargo / Função *</label>
-        <select id="cf-cargo">
+        <select id="cf-cargo" onchange="document.getElementById('cf-cargo-outro').style.display=this.value==='Outro'?'block':'none'">
           <option value="Operador de Caixa">Operador de Caixa</option>
           <option value="Técnico em Celulares">Técnico em Celulares</option>
           <option value="Técnico Autônomo">Técnico Autônomo (prestador)</option>
@@ -4325,6 +4325,7 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
           <option value="Gerente">Gerente</option>
           <option value="Outro">Outro (digitar abaixo)</option>
         </select>
+        <input type="text" id="cf-cargo-outro" placeholder="Digite o cargo" style="width:100%;margin-top:8px;display:none">
       </div>
     </div>
     <div class="g2">
@@ -6912,8 +6913,40 @@ function renderPrdSubcats() {
 })();
 
 // ── CRUD CATEGORIAS ───────────────────────────────────
-function prdCfgAddCat() {
-  const nome = prompt('Nome da nova categoria:');
+function promptModal(opts){
+  return new Promise(resolve=>{
+    const campos=opts.campos||[{label:opts.label||'Valor',valor:opts.valor||'',placeholder:opts.placeholder||''}];
+    const inputsHtml=campos.map((c,i)=>`
+      <div class="fg" style="margin-bottom:${i<campos.length-1?'12px':'0'}">
+        <label class="lbl">${esc(c.label||'')}</label>
+        <input type="text" id="pm-inp-${i}" value="${esc(c.valor||'')}" placeholder="${esc(c.placeholder||'')}" style="width:100%">
+        ${c.dica?`<div style="font-size:11px;color:var(--txt3);margin-top:3px">${esc(c.dica)}</div>`:''}
+      </div>`).join('');
+    const html=`<div class="card-title" style="gap:7px;margin-bottom:12px"><i class="ti ${opts.icone||'ti-pencil'}" style="color:var(--pri)"></i> ${esc(opts.titulo||'Digite')}</div>${inputsHtml}`;
+    const foot=`<button class="btn btn-out" onclick="_promptModalResolve(null)">Cancelar</button>
+      <button class="btn btn-pri" onclick="_promptModalConfirm(${campos.length})"><i class="ti ti-check"></i> ${esc(opts.ok||'Confirmar')}</button>`;
+    _promptModalCb=resolve;
+    abrirModalGenerico(html,foot);
+    setTimeout(()=>{ const el=document.getElementById('pm-inp-0'); if(el){el.focus();el.select();
+      el.addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();_promptModalConfirm(campos.length);} }); } },80);
+  });
+}
+let _promptModalCb=null;
+function _promptModalConfirm(n){
+  const vals=[];
+  for(let i=0;i<n;i++){ vals.push((document.getElementById('pm-inp-'+i)?.value||'').trim()); }
+  closeModal('modal-generic');
+  const cb=_promptModalCb; _promptModalCb=null;
+  if(cb) cb(n===1?vals[0]:vals);
+}
+function _promptModalResolve(v){
+  closeModal('modal-generic');
+  const cb=_promptModalCb; _promptModalCb=null;
+  if(cb) cb(v);
+}
+
+async function prdCfgAddCat() {
+  const nome = await promptModal({titulo:'Nova categoria',icone:'ti-tag',label:'Nome da categoria',placeholder:'Ex: Acessório'});
   if (!nome?.trim()) return;
   const cfg = getPrdCfg();
   if (cfg.categorias.includes(nome.trim())) { notify('Categoria já existe.','warn'); return; }
@@ -6922,8 +6955,8 @@ function prdCfgAddCat() {
   renderPrdConfig(); renderCatChips(); notify(`Categoria "${nome.trim()}" criada!`,'success');
 }
 
-function prdCfgRenameCat(idx, nome) {
-  const novo = prompt('Novo nome para a categoria:', nome);
+async function prdCfgRenameCat(idx, nome) {
+  const novo = await promptModal({titulo:'Renomear categoria',icone:'ti-edit',label:'Novo nome',valor:nome});
   if (!novo?.trim() || novo.trim() === nome) return;
   const cfg = getPrdCfg();
   const antigo = cfg.categorias[idx];
@@ -6935,20 +6968,25 @@ function prdCfgRenameCat(idx, nome) {
 }
 
 function prdCfgDelCat(idx, nome) {
-  if (!confirm(`Excluir a categoria "${nome}"?\nProdutos com esta categoria não serão afetados — apenas o filtro desaparecerá.`)) return;
-  const cfg = getPrdCfg();
-  cfg.categorias.splice(idx, 1);
-  delete cfg.subcategorias[nome];
-  savePrdCfg(cfg);
-  renderPrdConfig(); renderCatChips(); notify('Categoria removida.','info');
+  confirmAct('Excluir categoria',`Excluir a categoria "${nome}"? Produtos com esta categoria não serão afetados — apenas o filtro desaparecerá.`,()=>{
+    const cfg = getPrdCfg();
+    cfg.categorias.splice(idx, 1);
+    delete cfg.subcategorias[nome];
+    savePrdCfg(cfg);
+    renderPrdConfig(); renderCatChips(); notify('Categoria removida.','info');
+  });
 }
 
 // ── CRUD STATUS ───────────────────────────────────────
-function prdCfgAddStatus() {
-  const label = prompt('Nome do status (ex: Reformado):');
-  if (!label?.trim()) return;
-  const valor = prompt('Valor interno (sem espaços, ex: reformado):', label.trim().toLowerCase().replace(/\s+/g,'-'));
-  if (!valor?.trim()) return;
+async function prdCfgAddStatus() {
+  const res = await promptModal({titulo:'Novo status',icone:'ti-circle-dot',campos:[
+    {label:'Nome do status',placeholder:'Ex: Reformado'},
+    {label:'Valor interno',placeholder:'ex: reformado',dica:'Sem espaços nem acentos. Gerado automaticamente se deixar vazio.'}
+  ]});
+  if(!res)return;
+  let [label,valor]=res;
+  if(!label?.trim())return;
+  if(!valor?.trim()) valor=label.trim().toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
   const cfg = getPrdCfg();
   if (cfg.status.find(s => s.valor === valor.trim())) { notify('Já existe um status com este valor.','warn'); return; }
   cfg.status.push({ valor: valor.trim(), label: label.trim() });
@@ -6956,10 +6994,10 @@ function prdCfgAddStatus() {
   renderPrdConfig(); notify(`Status "${label.trim()}" criado!`,'success');
 }
 
-function prdCfgEditStatus(idx) {
+async function prdCfgEditStatus(idx) {
   const cfg = getPrdCfg();
   const s = cfg.status[idx];
-  const label = prompt('Nome do status:', s.label);
+  const label = await promptModal({titulo:'Editar status',icone:'ti-edit',label:'Nome do status',valor:s.label});
   if (!label?.trim()) return;
   cfg.status[idx].label = label.trim();
   savePrdCfg(cfg);
@@ -6969,17 +7007,18 @@ function prdCfgEditStatus(idx) {
 function prdCfgDelStatus(idx) {
   const cfg = getPrdCfg();
   const s = cfg.status[idx];
-  if (!confirm(`Excluir o status "${s.label}"?`)) return;
-  cfg.status.splice(idx, 1);
-  savePrdCfg(cfg);
-  renderPrdConfig(); notify('Status removido.','info');
+  confirmAct('Excluir status',`Excluir o status "${s.label}"?`,()=>{
+    cfg.status.splice(idx, 1);
+    savePrdCfg(cfg);
+    renderPrdConfig(); notify('Status removido.','info');
+  });
 }
 
 // ── CRUD SUBCATEGORIAS ────────────────────────────────
-function prdCfgAddSubcat() {
+async function prdCfgAddSubcat() {
   const pai = document.getElementById('prd-subcat-pai')?.value;
   if (!pai) { notify('Selecione a categoria pai primeiro.','warn'); return; }
-  const nome = prompt(`Nova subcategoria em "${pai}":`);
+  const nome = await promptModal({titulo:'Nova subcategoria',icone:'ti-subtask',label:`Subcategoria em "${pai}"`,placeholder:'Ex: Tela'});
   if (!nome?.trim()) return;
   const cfg = getPrdCfg();
   if (!cfg.subcategorias[pai]) cfg.subcategorias[pai] = [];
@@ -6989,8 +7028,8 @@ function prdCfgAddSubcat() {
   renderPrdSubcats(); notify(`Subcategoria "${nome.trim()}" criada!`,'success');
 }
 
-function prdCfgRenameSubcat(pai, idx, nome) {
-  const novo = prompt('Novo nome:', nome);
+async function prdCfgRenameSubcat(pai, idx, nome) {
+  const novo = await promptModal({titulo:'Renomear subcategoria',icone:'ti-edit',label:'Novo nome',valor:nome});
   if (!novo?.trim() || novo.trim() === nome) return;
   const cfg = getPrdCfg();
   cfg.subcategorias[pai][idx] = novo.trim();
@@ -16211,11 +16250,14 @@ async function renderAdminMasterList() {
   }
 }
 
-function abrirNovoAdminMaster() {
-  const email = prompt('E-mail do novo Admin Master:');
-  if (!email) return;
-  const nome = prompt('Nome do Admin Master:');
-  if (!nome) return;
+async function abrirNovoAdminMaster() {
+  const res = await promptModal({titulo:'Novo Admin Master',icone:'ti-shield-lock',campos:[
+    {label:'E-mail',placeholder:'email@exemplo.com'},
+    {label:'Nome',placeholder:'Nome completo'}
+  ]});
+  if (!res) return;
+  const [email,nome]=res;
+  if (!email?.trim() || !nome?.trim()) return;
   confirmarNovoAdminMaster(email.trim(), nome.trim());
 }
 
@@ -20919,7 +20961,7 @@ function emitirContratoFuncionario() {
   const m = modelos.find(x => x.id === modeloId); if (!m) return;
   const funcionario = document.getElementById('cf-funcionario').value.trim();
   const cargoSel = document.getElementById('cf-cargo').value;
-  const cargo = cargoSel === 'Outro' ? prompt('Digite o cargo:') || cargoSel : cargoSel;
+  const cargo = cargoSel === 'Outro' ? (document.getElementById('cf-cargo-outro')?.value?.trim() || 'Funcionário') : cargoSel;
   const carga = document.getElementById('cf-carga').value.trim() || '44h semanais';
   const salario = document.getElementById('cf-salario').value.trim() || '—';
   const cpf_func = document.getElementById('cf-cpf').value.trim() || '—';
