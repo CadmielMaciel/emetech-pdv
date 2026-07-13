@@ -602,6 +602,23 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
 </div>
 
 <!-- TELA DE BLOQUEIO / ACESSO SUSPENSO (NOVO) -->
+<div class="modal-overlay" id="modal-termos-uso" style="z-index:100000;background:rgba(7,11,26,.85)">
+  <div class="modal" style="max-width:640px;max-height:88vh;display:flex;flex-direction:column">
+    <div class="modal-title" style="gap:8px"><i class="ti ti-file-certificate" style="color:var(--pri)"></i> <span id="termos-titulo">Termos de Uso</span></div>
+    <div style="font-size:12.5px;color:var(--txt2);margin-bottom:10px">Para continuar usando o MISU SYS, leia e aceite os termos abaixo.</div>
+    <div id="termos-conteudo" style="flex:1;overflow-y:auto;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;font-size:13px;line-height:1.7;color:var(--txt);white-space:pre-wrap;margin-bottom:12px">Carregando…</div>
+    <label style="display:flex;align-items:center;gap:9px;cursor:pointer;margin-bottom:12px">
+      <input type="checkbox" id="termos-check" style="width:19px;height:19px;accent-color:var(--pri)">
+      <span style="font-size:13px;color:var(--txt)">Li e aceito os Termos de Uso e a Política de Privacidade.</span>
+    </label>
+    <div class="modal-footer" style="margin-top:0">
+      <a href="/termos.html" target="_blank" class="btn btn-out btn-sm"><i class="ti ti-external-link"></i> Abrir em página</a>
+      <button class="btn btn-out" onclick="doLogout()">Sair</button>
+      <button class="btn btn-pri" id="termos-btn-aceitar" onclick="aceitarTermosUso()"><i class="ti ti-check"></i> Aceitar e continuar</button>
+    </div>
+  </div>
+</div>
+
 <div class="bq-screen" id="bq-screen" style="display:none">
   <div class="bq-box">
     <div class="bq-icon"><i class="ti ti-lock"></i></div>
@@ -5189,6 +5206,9 @@ async function loadProfile(user){
       mostrarTelaBloqueio({...empresa, motivo_bloqueio:'Seu período de teste gratuito de 7 dias terminou. Assine um plano para continuar usando o sistema.'});
       return;
     }
+    // Verifica se a empresa já aceitou a versão vigente dos Termos de Uso.
+    // Se não, mostra o modal de aceite (não bloqueia o boot; roda em paralelo).
+    verificarTermosUso();
 
     // Paraleliza as 3 chamadas de configuração que antes rodavam em série (~1s cada)
     await Promise.all([
@@ -5252,6 +5272,43 @@ async function carregarEmpresaELoginCheck(){
     console.error('Erro ao verificar empresa:',e);
     return true; // não bloqueia o sistema em caso de falha de conexão
   }
+}
+
+// TERMOS DE USO — aceite obrigatório no login
+let _termosVigente = null;
+async function verificarTermosUso(){
+  try{
+    const {data,error}=await db.rpc('termos_vigente');
+    if(error||!data||!data.versao) return;
+    _termosVigente=data;
+    const empId=EID();
+    const {data:aceite}=await db.from('termos_aceites').select('id')
+      .eq('empresa_id',empId).eq('versao',data.versao).maybeSingle();
+    if(aceite) return;
+    document.getElementById('termos-titulo').textContent=data.titulo||'Termos de Uso';
+    document.getElementById('termos-conteudo').textContent=data.conteudo||'';
+    const chk=document.getElementById('termos-check'); if(chk)chk.checked=false;
+    openModal('modal-termos-uso');
+  }catch(e){ /* sem termos: não bloqueia */ }
+}
+async function aceitarTermosUso(){
+  if(!document.getElementById('termos-check')?.checked){
+    notify('Marque a caixa "Li e aceito" para continuar.','warn');
+    return;
+  }
+  if(!_termosVigente) { closeModal('modal-termos-uso'); return; }
+  setLoad(true);
+  const {error}=await db.from('termos_aceites').insert({
+    empresa_id:EID(), usuario_email:G.profile?.email||'', usuario_nome:G.profile?.nome||'',
+    versao:_termosVigente.versao, dispositivo:navigator.userAgent.slice(0,180)
+  });
+  setLoad(false);
+  if(error && !/duplicate|unique/i.test(error.message||'')){
+    notify('Erro ao registrar aceite: '+error.message,'error',5000);
+    return;
+  }
+  closeModal('modal-termos-uso');
+  notify('Termos aceitos. Bom trabalho!','success',3000);
 }
 
 // Exibe a tela de "Acesso suspenso" com o motivo do bloqueio (NOVO)
