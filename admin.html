@@ -1404,6 +1404,34 @@ CREATE POLICY "master_all" ON admin_master FOR ALL USING (true) WITH CHECK (true
           </div>
           <div style="font-size:11px;color:var(--txt3);margin-top:8px"><i class="ti ti-info-circle"></i> Publicar incrementa a versão e exige novo aceite de todas as lojas. Edite com cuidado.</div>
         </div>
+
+        <div class="card" style="max-width:760px;margin-top:18px">
+          <div class="sec-title" style="margin-bottom:10px"><i class="ti ti-file-dollar"></i> Contrato do SaaS (você ↔ lojas)</div>
+          <div style="font-size:12.5px;color:var(--txt2);margin-bottom:12px">
+            Este é o <b>seu contrato de prestação</b> com cada loja-cliente — diferente dos modelos que as lojas usam com os clientes finais delas. Use variáveis que o sistema preenche por empresa:
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+            <code style="background:var(--bg2);padding:2px 7px;border-radius:5px;font-size:11px">{empresa}</code>
+            <code style="background:var(--bg2);padding:2px 7px;border-radius:5px;font-size:11px">{documento}</code>
+            <code style="background:var(--bg2);padding:2px 7px;border-radius:5px;font-size:11px">{plano}</code>
+            <code style="background:var(--bg2);padding:2px 7px;border-radius:5px;font-size:11px">{valor}</code>
+            <code style="background:var(--bg2);padding:2px 7px;border-radius:5px;font-size:11px">{periodicidade}</code>
+          </div>
+          <div class="fg">
+            <label class="lbl">Título</label>
+            <input type="text" id="csaas-titulo" placeholder="Contrato de Prestação de Serviço — MISU SYS">
+          </div>
+          <div class="fg">
+            <label class="lbl">Conteúdo (com variáveis)</label>
+            <textarea id="csaas-conteudo" rows="14" placeholder="Escreva o contrato aqui, usando {plano}, {valor}..." style="font-family:inherit;line-height:1.6"></textarea>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button class="btn btn-pri" onclick="publicarContratoSaas()"><i class="ti ti-cloud-upload"></i> Publicar contrato</button>
+            <span style="font-size:12px;color:var(--txt3)">Versão atual: <b id="csaas-versao" style="color:var(--pri)">—</b></span>
+            <span id="csaas-status" style="font-size:12px;color:var(--txt3)"></span>
+          </div>
+          <div style="font-size:11px;color:var(--txt3);margin-top:8px"><i class="ti ti-info-circle"></i> A loja aceita este contrato no login (com o plano e valor dela preenchidos). Publicar nova versão exige novo aceite.</div>
+        </div>
       </div><!-- /page-suporte -->
 
     </div><!-- /content -->
@@ -4581,6 +4609,34 @@ async function carregarTermosAdm(){
       document.getElementById('termos-versao-atual').textContent='nenhuma';
     }
   }catch(e){ const el=document.getElementById('termos-versao-atual'); if(el)el.textContent='—'; }
+  // Contrato do SaaS (você ↔ lojas)
+  try{
+    const {data}=await db.rpc('contrato_saas_vigente');
+    if(data && data.versao){
+      document.getElementById('csaas-versao').textContent=data.versao;
+      document.getElementById('csaas-titulo').value=data.titulo||'';
+      document.getElementById('csaas-conteudo').value=data.conteudo||'';
+    } else { document.getElementById('csaas-versao').textContent='nenhuma'; }
+  }catch(e){ const el=document.getElementById('csaas-versao'); if(el)el.textContent='—'; }
+}
+async function publicarContratoSaas(){
+  const titulo=document.getElementById('csaas-titulo').value.trim()||'Contrato de Prestação de Serviço';
+  const conteudo=document.getElementById('csaas-conteudo').value.trim();
+  if(conteudo.length<20){ notify('Escreva o conteúdo do contrato.','warn'); return; }
+  if(!confirm('Publicar nova versão do contrato do SaaS? As lojas terão que aceitar de novo no próximo login.')) return;
+  setLoad(true);
+  let prox=1;
+  try{ const {data}=await db.from('contrato_saas').select('versao').order('versao',{ascending:false}).limit(1).maybeSingle(); if(data)prox=(data.versao||0)+1; }catch(e){}
+  const {error}=await db.from('contrato_saas').insert({versao:prox,titulo,conteudo,publicado:true});
+  setLoad(false);
+  if(error){
+    if(/does not exist|relation/i.test(error.message||'')) notify('Rode a migração CS01 no Supabase primeiro.','warn',7000);
+    else notify('Erro: '+error.message,'error',6000);
+    return;
+  }
+  document.getElementById('csaas-versao').textContent=prox;
+  const st=document.getElementById('csaas-status'); if(st){st.textContent='✓ Versão '+prox+' publicada';st.style.color='var(--success)';}
+  notify('Contrato do SaaS publicado (v'+prox+')!','success',6000);
 }
 async function publicarTermos(){
   const titulo=document.getElementById('termos-adm-titulo').value.trim()||'Termos de Uso';
