@@ -4544,11 +4544,12 @@ function mostrarBannerSuporte(){
   const b=document.createElement('div');
   b.id='banner-suporte';
   const leitura=G_SUPORTE.modo==='leitura';
-  b.style.cssText=`position:fixed;top:0;left:0;right:0;z-index:99999;background:linear-gradient(90deg,${leitura?'#F59E0B,#D97706':'#EF4444,#B91C1C'});color:#fff;padding:7px 16px;font-size:12.5px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 2px 12px rgba(0,0,0,.3);font-family:'DM Sans',sans-serif`;
-  b.innerHTML=`<i class="ti ti-headset"></i> MODO SUPORTE — ${esc(G_SUPORTE.nome)} <span style="opacity:.85">(${leitura?'somente leitura':'acesso total'})</span>
-    <button onclick="sairModoSuporte()" style="margin-left:12px;background:rgba(255,255,255,.2);border:none;color:#fff;padding:3px 12px;border-radius:99px;font-size:11.5px;font-weight:700;cursor:pointer">Sair</button>`;
+  // Badge compacto flutuante no canto inferior — sobrepõe o conteúdo, não empurra nada.
+  b.style.cssText=`position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:99999;background:linear-gradient(90deg,${leitura?'#F59E0B,#D97706':'#EF4444,#B91C1C'});color:#fff;padding:8px 14px;border-radius:99px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:9px;box-shadow:0 6px 20px rgba(0,0,0,.35);font-family:'DM Sans',sans-serif;max-width:92vw`;
+  b.innerHTML=`<i class="ti ti-headset"></i> <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">MODO SUPORTE — ${esc(G_SUPORTE.nome)} <span style="opacity:.85">(${leitura?'leitura':'total'})</span></span>
+    <button onclick="sairModoSuporte()" style="background:rgba(255,255,255,.25);border:none;color:#fff;padding:3px 12px;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">Sair</button>`;
   document.body.appendChild(b);
-  document.body.style.paddingTop='34px';
+  // NÃO adiciona padding — o badge flutua sobre o conteúdo sem ocupar espaço
 }
 
 function sairModoSuporte(){
