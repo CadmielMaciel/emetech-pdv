@@ -605,6 +605,10 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
 <div class="modal-overlay" id="modal-termos-uso" style="z-index:100000;background:rgba(7,11,26,.85)">
   <div class="modal" style="max-width:640px;max-height:88vh;display:flex;flex-direction:column">
     <div class="modal-title" style="gap:8px"><i class="ti ti-file-certificate" style="color:var(--pri)"></i> <span id="termos-titulo">Termos de Uso</span></div>
+    <div id="termos-resumo-box" style="display:none;background:rgba(30,94,255,.08);border:1px solid rgba(30,94,255,.25);border-radius:10px;padding:12px 14px;margin-bottom:12px">
+      <div style="font-size:12px;font-weight:700;color:var(--pri);margin-bottom:4px"><i class="ti ti-sparkles"></i> O que mudou nesta versão</div>
+      <div id="termos-resumo-texto" style="font-size:12.5px;color:var(--txt);line-height:1.5;white-space:pre-wrap"></div>
+    </div>
     <div style="font-size:12.5px;color:var(--txt2);margin-bottom:10px">Para continuar usando o MISU SYS, leia e aceite os termos abaixo.</div>
     <div id="termos-conteudo" style="flex:1;overflow-y:auto;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;font-size:13px;line-height:1.7;color:var(--txt);white-space:pre-wrap;margin-bottom:12px">Carregando…</div>
     <label style="display:flex;align-items:center;gap:9px;cursor:pointer;margin-bottom:12px">
@@ -2347,6 +2351,14 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
               </div>
             </label>
             <button class="btn btn-out btn-sm" style="margin-top:10px" onclick="toggleFullscreen()"><i class="ti ti-maximize"></i> Ativar tela cheia agora</button>
+          </div>
+          <div class="card" style="max-width:640px;margin-top:14px">
+            <div class="card-hdr" style="margin-bottom:14px"><div class="card-title"><i class="ti ti-file-certificate" style="color:var(--pri)"></i> Documentos legais</div></div>
+            <div style="font-size:12.5px;color:var(--txt2);margin-bottom:12px">Consulte os termos e o contrato que você aceitou ao usar o sistema.</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-out btn-sm" onclick="verTermosSalvos()"><i class="ti ti-file-text"></i> Ver Termos de Uso</button>
+              <button class="btn btn-out btn-sm" onclick="verContratoSalvo()"><i class="ti ti-file-dollar"></i> Ver Contrato do Serviço</button>
+            </div>
           </div>
         </div>
       </div>
@@ -5288,9 +5300,57 @@ async function verificarTermosUso(){
     if(aceite) return;
     document.getElementById('termos-titulo').textContent=data.titulo||'Termos de Uso';
     document.getElementById('termos-conteudo').textContent=data.conteudo||'';
+    // Se já aceitou ALGUMA versão antes, é uma atualização: mostra o resumo do que mudou.
+    const {data:aceitesAnteriores}=await db.from('termos_aceites').select('id').eq('empresa_id',empId).limit(1);
+    const box=document.getElementById('termos-resumo-box');
+    if(box){
+      if(aceitesAnteriores && aceitesAnteriores.length && data.resumo_mudancas){
+        document.getElementById('termos-resumo-texto').textContent=data.resumo_mudancas;
+        box.style.display='';
+      } else { box.style.display='none'; }
+    }
     const chk=document.getElementById('termos-check'); if(chk)chk.checked=false;
     openModal('modal-termos-uso');
   }catch(e){ /* sem termos: não bloqueia */ }
+}
+// Ver os documentos legais em modo leitura (Configurações), sem exigir aceite
+async function verTermosSalvos(){
+  try{
+    const {data}=await db.rpc('termos_vigente');
+    if(!data||!data.conteudo){ notify('Nenhum termo publicado.','info'); return; }
+    _verDocLeitura(data.titulo||'Termos de Uso', data.conteudo, data.versao);
+  }catch(e){ notify('Não foi possível carregar os termos.','warn'); }
+}
+async function verContratoSalvo(){
+  try{
+    const {data}=await db.rpc('contrato_saas_vigente');
+    if(!data||!data.conteudo){ notify('Nenhum contrato publicado.','info'); return; }
+    const texto=_preencherVariaveisContrato(data.conteudo);
+    _verDocLeitura(data.titulo||'Contrato do Serviço', texto, data.versao);
+  }catch(e){ notify('Não foi possível carregar o contrato.','warn'); }
+}
+function _preencherVariaveisContrato(txt){
+  const e=G.empresa||{};
+  return (txt||'')
+    .replace(/\{empresa\}/g, e.nome||'—')
+    .replace(/\{documento\}/g, e.doc||e.cnpj||e.cpf||'—')
+    .replace(/\{plano\}/g, e.plano||'—')
+    .replace(/\{valor\}/g, e.valor_plano?String(e.valor_plano):'—')
+    .replace(/\{periodicidade\}/g, e.periodicidade||'mensal');
+}
+function _verDocLeitura(titulo, conteudo, versao){
+  document.getElementById('termos-titulo').textContent=titulo+(versao?` (v${versao})`:'');
+  document.getElementById('termos-conteudo').textContent=conteudo;
+  const box=document.getElementById('termos-resumo-box'); if(box)box.style.display='none';
+  const chkLabel=document.querySelector('#modal-termos-uso label'); if(chkLabel)chkLabel.style.display='none';
+  const footer=document.querySelector('#modal-termos-uso .modal-footer');
+  if(footer) footer.innerHTML=`<a href="/termos.html" target="_blank" class="btn btn-out btn-sm"><i class="ti ti-external-link"></i> Abrir em página</a><button class="btn btn-pri" onclick="closeModal('modal-termos-uso');_restaurarModalTermos()">Fechar</button>`;
+  openModal('modal-termos-uso');
+}
+function _restaurarModalTermos(){
+  const chkLabel=document.querySelector('#modal-termos-uso label'); if(chkLabel)chkLabel.style.display='';
+  const footer=document.querySelector('#modal-termos-uso .modal-footer');
+  if(footer) footer.innerHTML=`<a href="/termos.html" target="_blank" class="btn btn-out btn-sm"><i class="ti ti-external-link"></i> Abrir em página</a><button class="btn btn-out" onclick="doLogout()">Sair</button><button class="btn btn-pri" id="termos-btn-aceitar" onclick="aceitarTermosUso()"><i class="ti ti-check"></i> Aceitar e continuar</button>`;
 }
 async function aceitarTermosUso(){
   if(!document.getElementById('termos-check')?.checked){
