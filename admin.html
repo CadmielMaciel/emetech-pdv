@@ -1383,6 +1383,27 @@ CREATE POLICY "master_all" ON admin_master FOR ALL USING (true) WITH CHECK (true
           </div>
           <span id="ver-status" style="font-size:12px;color:var(--txt3)"></span>
         </div>
+
+        <div class="card" style="max-width:760px;margin-top:18px">
+          <div class="sec-title" style="margin-bottom:10px"><i class="ti ti-file-certificate"></i> Termos de Uso (aceite das lojas)</div>
+          <div style="font-size:12.5px;color:var(--txt2);margin-bottom:14px">
+            Este texto aparece para as lojas no login. Elas precisam aceitar para usar o sistema. Ao <b>publicar uma nova versão</b>, todas as lojas terão que aceitar de novo. Versão atual: <b id="termos-versao-atual" style="color:var(--pri)">—</b>
+          </div>
+          <div class="fg">
+            <label class="lbl">Título</label>
+            <input type="text" id="termos-adm-titulo" placeholder="Termos de Uso — MISU SYS">
+          </div>
+          <div class="fg">
+            <label class="lbl">Conteúdo</label>
+            <textarea id="termos-adm-conteudo" rows="12" placeholder="Escreva os termos aqui..." style="font-family:inherit;line-height:1.6"></textarea>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button class="btn btn-pri" onclick="publicarTermos()"><i class="ti ti-cloud-upload"></i> Publicar nova versão</button>
+            <a href="/termos.html" target="_blank" class="btn btn-out btn-sm"><i class="ti ti-external-link"></i> Ver página pública</a>
+            <span id="termos-adm-status" style="font-size:12px;color:var(--txt3)"></span>
+          </div>
+          <div style="font-size:11px;color:var(--txt3);margin-top:8px"><i class="ti ti-info-circle"></i> Publicar incrementa a versão e exige novo aceite de todas as lojas. Edite com cuidado.</div>
+        </div>
       </div><!-- /page-suporte -->
 
     </div><!-- /content -->
@@ -4549,7 +4570,40 @@ async function salvarContaEmpresa(empresaId) {
 }
 
 // ── CONFIG DE SUPORTE (global, exibida no app das empresas) ──
+async function carregarTermosAdm(){
+  try{
+    const {data}=await db.rpc('termos_vigente');
+    if(data && data.versao){
+      document.getElementById('termos-versao-atual').textContent=data.versao;
+      document.getElementById('termos-adm-titulo').value=data.titulo||'';
+      document.getElementById('termos-adm-conteudo').value=data.conteudo||'';
+    } else {
+      document.getElementById('termos-versao-atual').textContent='nenhuma';
+    }
+  }catch(e){ const el=document.getElementById('termos-versao-atual'); if(el)el.textContent='—'; }
+}
+async function publicarTermos(){
+  const titulo=document.getElementById('termos-adm-titulo').value.trim()||'Termos de Uso';
+  const conteudo=document.getElementById('termos-adm-conteudo').value.trim();
+  if(conteudo.length<20){ notify('Escreva o conteúdo dos termos.','warn'); return; }
+  if(!confirm('Publicar uma nova versão dos termos? Todas as lojas terão que aceitar de novo no próximo login.')) return;
+  setLoad(true);
+  let prox=1;
+  try{ const {data}=await db.from('termos_uso').select('versao').order('versao',{ascending:false}).limit(1).maybeSingle(); if(data)prox=(data.versao||0)+1; }catch(e){}
+  const {error}=await db.from('termos_uso').insert({versao:prox,titulo,conteudo,publicado:true});
+  setLoad(false);
+  if(error){
+    if(/does not exist|relation/i.test(error.message||'')) notify('Rode a migração TU01 no Supabase primeiro.','warn',7000);
+    else notify('Erro: '+error.message,'error',6000);
+    return;
+  }
+  document.getElementById('termos-versao-atual').textContent=prox;
+  const st=document.getElementById('termos-adm-status'); if(st){st.textContent='✓ Versão '+prox+' publicada';st.style.color='var(--success)';}
+  notify('Termos publicados (v'+prox+')! As lojas aceitarão no próximo login.','success',6000);
+}
+
 async function carregarSuporteConfig() {
+  carregarTermosAdm();
   const st = document.getElementById('sup-status');
   try {
     const { data, error } = await db.from('app_config').select('*').eq('id', 1).maybeSingle();
