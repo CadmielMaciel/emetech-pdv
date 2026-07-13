@@ -5338,7 +5338,10 @@ async function carregarSuporteConfigApp() {
     if (data?.suporte_msg) SUPORTE_MSG = data.suporte_msg;
     if (typeof data?.app_version === 'number') {
       _serverVersionInicial = data.app_version;
-      if (data.app_version > APP_VERSION) mostrarAvisoAtualizacao();
+      if (data.app_version > APP_VERSION && localStorage.getItem('misu_upd_tentada') !== String(data.app_version)) {
+        localStorage.setItem('misu_upd_tentada', String(data.app_version));
+        mostrarAvisoAtualizacao();
+      }
     }
   } catch (e) { /* mantém fallback */ }
 }
@@ -5347,7 +5350,7 @@ async function carregarSuporteConfigApp() {
    APP_VERSION = versão que ESTE build conhece. O admin incrementa
    app_config.app_version ao publicar; quando o servidor tem versão maior,
    o app avisa (contagem de 5s) e recarrega furando o cache.              */
-const APP_VERSION = 1; // ⬆️ Incremente este número a cada deploy (igual ao do painel)
+const APP_VERSION = 3; // ⬆️ Incremente este número a cada deploy (igual ao do painel)
 let _serverVersionInicial = APP_VERSION;
 let _avisoAtualizacaoAberto = false;
 
@@ -5397,6 +5400,12 @@ function iniciarVerificacaoVersao() {
     try {
       const { data } = await db.from('app_config').select('app_version').eq('id', 1).maybeSingle();
       if (typeof data?.app_version === 'number' && data.app_version > APP_VERSION) {
+        // Proteção anti-loop: se já tentamos recarregar para esta versão do
+        // servidor e o código continua desatualizado (deploy não subiu ainda),
+        // não fica avisando em loop. Só avisa uma vez por versão do servidor.
+        const jaTentou = localStorage.getItem('misu_upd_tentada');
+        if (jaTentou === String(data.app_version)) return;
+        localStorage.setItem('misu_upd_tentada', String(data.app_version));
         mostrarAvisoAtualizacao();
       }
     } catch (e) {}
