@@ -783,6 +783,7 @@ select option { background: var(--bg2); }
             <input type="text" id="empresa-search" placeholder="Buscar empresa..." style="max-width:200px;padding:7px 12px;font-size:13px" oninput="aplicarFiltrosEmpresas()">
             <button class="btn btn-out btn-sm" id="btn-modo-selecao" onclick="toggleModoSelecao()"><i class="ti ti-checkbox"></i> Selecionar</button>
             <button class="btn btn-out btn-sm" onclick="exportarCSV('empresas')"><i class="ti ti-download"></i> CSV</button>
+            <button class="btn btn-out btn-sm" onclick="abrirNovaEmpresaTeste()" style="border-color:var(--warn);color:var(--warn)"><i class="ti ti-gift"></i> Teste 7 dias</button>
             <button class="btn btn-pri btn-sm" onclick="abrirNovaEmpresa()">
               <i class="ti ti-plus"></i> Nova empresa
             </button>
@@ -1288,7 +1289,7 @@ select option { background: var(--bg2); }
             <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:14px;display:flex;align-items:center;gap:8px">
               <i class="ti ti-user-plus" style="color:var(--pri)"></i> Adicionar Administrador Master
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:flex-end">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
               <div class="fg" style="margin-bottom:0">
                 <label class="lbl">Nome *</label>
                 <input type="text" id="adm-novo-nome" placeholder="Nome completo">
@@ -1297,12 +1298,19 @@ select option { background: var(--bg2); }
                 <label class="lbl">E-mail *</label>
                 <input type="email" id="adm-novo-email" placeholder="email@exemplo.com">
               </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:flex-end">
+              <div class="fg" style="margin-bottom:0;position:relative">
+                <label class="lbl">Senha *</label>
+                <input type="password" id="adm-novo-senha" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+                <button type="button" onclick="const i=document.getElementById('adm-novo-senha');i.type=i.type==='password'?'text':'password';this.querySelector('i').className=i.type==='password'?'ti ti-eye':'ti ti-eye-off'" style="position:absolute;right:10px;top:29px;background:none;border:none;cursor:pointer;color:var(--txt3)"><i class="ti ti-eye"></i></button>
+              </div>
               <button class="btn btn-pri" onclick="adicionarAdminMaster()" style="white-space:nowrap">
-                <i class="ti ti-plus"></i> Adicionar
+                <i class="ti ti-plus"></i> Criar acesso
               </button>
             </div>
             <div style="font-size:11px;color:var(--txt3);margin-top:8px">
-              <i class="ti ti-info-circle"></i> Registra o e-mail para controle de acesso. O usuário precisa ter uma conta Supabase Auth com o campo <code>role = 'admin_master'</code> no perfil <code>public.usuarios</code>.
+              <i class="ti ti-info-circle"></i> Cria a conta de login (e-mail + senha) e concede acesso master. O novo admin já pode entrar no painel com esses dados.
             </div>
           </div>
 
@@ -1339,6 +1347,9 @@ CREATE POLICY "master_all" ON admin_master FOR ALL USING (true) WITH CHECK (true
           </div>
         </div><!-- /cfg-sec-admins -->
       </div><!-- /page-config -->
+
+      <!-- ══ PAGE: SUPORTE ══ -->
+      <div class="page" id="page-suporte">
         <div class="sec-hdr"><div class="sec-title">Suporte (exibido no app das empresas)</div></div>
         <div class="card" style="max-width:600px">
           <div style="font-size:12.5px;color:var(--txt2);margin-bottom:16px">
@@ -1372,7 +1383,7 @@ CREATE POLICY "master_all" ON admin_master FOR ALL USING (true) WITH CHECK (true
           </div>
           <span id="ver-status" style="font-size:12px;color:var(--txt3)"></span>
         </div>
-      </div>
+      </div><!-- /page-suporte -->
 
     </div><!-- /content -->
   </div><!-- /main -->
@@ -1926,6 +1937,7 @@ function mapEmpresaToDb(e) {
     bloqueado_em: e.bloqueadoEm || null, bloqueado_por: e.bloqueadoPor || null,
     dias_atraso_bloqueio: e.diasAtrasoNoBloqueio ?? null,
     pago_ate: e.pagoAte ?? null,
+    ...(e.trial_expira_em !== undefined ? { trial_expira_em: e.trial_expira_em } : {}),
   };
 }
 
@@ -2836,7 +2848,7 @@ async function renderFinanceiro(){
   const inicioMes=new Date(); inicioMes.setDate(1); inicioMes.setHours(0,0,0,0);
   let canceladasMes=[],totalInicioMes=ativas.length;
   try{
-    const {data}=await db.from('empresas').select('plano,status,atualizado_em,criado_em').eq('status','cancelada').gte('atualizado_em',inicioMes.toISOString()).limit(500);
+    const {data}=await db.from('empresas').select('plano,status,atualizado_em,created_at').eq('status','cancelada').gte('atualizado_em',inicioMes.toISOString()).limit(500);
     canceladasMes=data||[];
   }catch(e){}
   const mrrPerdido=canceladasMes.reduce((s,e)=>s+precoPlano(e.plano),0);
@@ -3169,7 +3181,7 @@ async function renderDashboard() {
           <div style="font-weight:600;font-size:13px;color:var(--txt)">${e.nome}</div>
           <div style="font-size:11px;color:var(--txt3)">${e.cidade||'—'} · ${e.email||'—'}</div>
         </div>
-        <span class="badge badge-${statusCor}">${e.status}</span>
+        <span class="badge badge-${statusCor}">${e.status==='trial'&&e.trial_expira_em?_trialLabel(e.trial_expira_em):e.status}</span>
       </div>`;
     }).join('');
   }
@@ -3308,6 +3320,14 @@ async function renderCharts(mrrHist, metrics) {
 }
 
 /* ── EMPRESAS ── */
+// Rótulo do trial: mostra dias restantes ou "expirado"
+function _trialLabel(dataExpira){
+  const diff = Math.ceil((new Date(dataExpira) - new Date()) / 86400000);
+  if (diff < 0) return 'trial expirado';
+  if (diff === 0) return 'trial: último dia';
+  return `trial: ${diff}d`;
+}
+
 function renderEmpresas() {
   // popular filtro de planos uma vez
   const filtroPlanoSel = document.getElementById('filtro-plano');
@@ -3524,6 +3544,16 @@ function abrirNovaEmpresa() {
   openModal('modal-empresa');
 }
 
+// Abre o formulário já configurado como TESTE de 7 dias
+function abrirNovaEmpresaTeste() {
+  abrirNovaEmpresa();
+  document.getElementById('emp-status').value = 'trial';
+  document.getElementById('modal-empresa-title').textContent = 'Nova Empresa — Teste 7 dias';
+  // Marca internamente que é trial de 7 dias (lido no salvarEmpresa)
+  window._novaEmpresaTrial = true;
+  notify('Modo teste: a empresa será criada com 7 dias grátis e bloqueada depois.','info',5000);
+}
+
 function editarEmpresa(id) {
   const e = G.empresas.find(x => x.id === id);
   if (!e) return;
@@ -3567,6 +3597,13 @@ async function salvarEmpresa() {
     gatewayId: document.getElementById('emp-gateway-id').value,
     whatsapp: document.getElementById('emp-whatsapp').value,
   };
+  // Trial: se o status é 'trial' e é uma empresa nova (ou marcada como teste),
+  // define a expiração para 7 dias a partir de agora.
+  if (dadosForm.status === 'trial' && (!id || window._novaEmpresaTrial)) {
+    const d = new Date(); d.setDate(d.getDate() + 7);
+    dadosForm.trial_expira_em = d.toISOString();
+  }
+  window._novaEmpresaTrial = false;
 
   setLoad(true);
   try {
@@ -5614,21 +5651,34 @@ async function renderAdminMasterListAdmin() {
 async function adicionarAdminMaster() {
   const nome = document.getElementById('adm-novo-nome').value.trim();
   const email = document.getElementById('adm-novo-email').value.trim();
+  const senha = document.getElementById('adm-novo-senha').value;
   if (!nome) { notify('Informe o nome.', 'error'); return; }
   if (!email || !email.includes('@')) { notify('Informe um e-mail válido.', 'error'); return; }
+  if (!senha || senha.length < 6) { notify('A senha precisa ter ao menos 6 caracteres.', 'error'); return; }
   setLoad(true);
-  const { error } = await db.from('admin_master').insert({ nome, email, ativo: true });
-  setLoad(false);
-  if (error) {
-    if (/unique|duplicate/i.test(error.message)) notify('Este e-mail já está cadastrado como Admin Master.', 'warn');
-    else if (/does not exist/i.test(error.message)) { notify('Rode a migração X01 primeiro.', 'warn'); document.getElementById('adm-sql-hint').style.display = ''; }
-    else notify('Erro: ' + error.message, 'error');
-    return;
+  // Cria a conta de login (Auth) + perfil admin_master via Edge Function
+  // (a service_role fica protegida no servidor, não no navegador).
+  try {
+    const { data, error } = await db.functions.invoke('criar-admin-master', {
+      body: { nome, email, senha }
+    });
+    setLoad(false);
+    if (error || data?.error) {
+      const msg = data?.error || error?.message || 'Erro desconhecido';
+      if (/já existe|already|duplicate|registered/i.test(msg)) notify('Este e-mail já tem conta. Use outro ou redefina a senha.', 'warn');
+      else if (/not found|does not exist|Failed to send|Function not found/i.test(msg)) notify('Rode o deploy da função criar-admin-master (guia DEPLOY_ADMIN_MASTER).', 'warn', 7000);
+      else notify('Erro: ' + msg, 'error', 6000);
+      return;
+    }
+    document.getElementById('adm-novo-nome').value = '';
+    document.getElementById('adm-novo-email').value = '';
+    document.getElementById('adm-novo-senha').value = '';
+    notify(`${nome} criado! Já pode entrar com esse e-mail e senha.`, 'success', 6000);
+    renderAdminMasterListAdmin();
+  } catch (e) {
+    setLoad(false);
+    notify('Falha ao criar admin. Faça o deploy da função criar-admin-master.', 'error', 6000);
   }
-  document.getElementById('adm-novo-nome').value = '';
-  document.getElementById('adm-novo-email').value = '';
-  notify(`${nome} adicionado como Admin Master!`, 'success');
-  renderAdminMasterListAdmin();
 }
 
 async function toggleAdminMasterAtivo(id, ativoAtual) {
