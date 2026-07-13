@@ -1397,6 +1397,11 @@ CREATE POLICY "master_all" ON admin_master FOR ALL USING (true) WITH CHECK (true
             <label class="lbl">Conteúdo</label>
             <textarea id="termos-adm-conteudo" rows="12" placeholder="Escreva os termos aqui..." style="font-family:inherit;line-height:1.6"></textarea>
           </div>
+          <div class="fg">
+            <label class="lbl">O que mudou nesta versão (aviso rápido para as lojas)</label>
+            <textarea id="termos-adm-resumo" rows="3" placeholder="Ex: Atualizamos a cláusula de pagamento e adicionamos a política de cancelamento." style="font-family:inherit;line-height:1.5"></textarea>
+            <div style="font-size:11px;color:var(--txt3);margin-top:3px">Aparece em destaque quando a loja precisar reaceitar. Deixe vazio na 1ª versão.</div>
+          </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <button class="btn btn-pri" onclick="publicarTermos()"><i class="ti ti-cloud-upload"></i> Publicar nova versão</button>
             <a href="/termos.html" target="_blank" class="btn btn-out btn-sm"><i class="ti ti-external-link"></i> Ver página pública</a>
@@ -4605,6 +4610,7 @@ async function carregarTermosAdm(){
       document.getElementById('termos-versao-atual').textContent=data.versao;
       document.getElementById('termos-adm-titulo').value=data.titulo||'';
       document.getElementById('termos-adm-conteudo').value=data.conteudo||'';
+      const r=document.getElementById('termos-adm-resumo'); if(r)r.value='';
     } else {
       document.getElementById('termos-versao-atual').textContent='nenhuma';
     }
@@ -4641,12 +4647,13 @@ async function publicarContratoSaas(){
 async function publicarTermos(){
   const titulo=document.getElementById('termos-adm-titulo').value.trim()||'Termos de Uso';
   const conteudo=document.getElementById('termos-adm-conteudo').value.trim();
+  const resumo=document.getElementById('termos-adm-resumo')?.value?.trim()||null;
   if(conteudo.length<20){ notify('Escreva o conteúdo dos termos.','warn'); return; }
   if(!confirm('Publicar uma nova versão dos termos? Todas as lojas terão que aceitar de novo no próximo login.')) return;
   setLoad(true);
   let prox=1;
   try{ const {data}=await db.from('termos_uso').select('versao').order('versao',{ascending:false}).limit(1).maybeSingle(); if(data)prox=(data.versao||0)+1; }catch(e){}
-  const {error}=await db.from('termos_uso').insert({versao:prox,titulo,conteudo,publicado:true});
+  const {error}=await db.from('termos_uso').insert({versao:prox,titulo,conteudo,resumo_mudancas:resumo,publicado:true});
   setLoad(false);
   if(error){
     if(/does not exist|relation/i.test(error.message||'')) notify('Rode a migração TU01 no Supabase primeiro.','warn',7000);
