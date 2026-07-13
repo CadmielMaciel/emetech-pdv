@@ -5185,6 +5185,10 @@ async function loadProfile(user){
     G.role = null;
 
     if (empresa.status === 'bloqueada') { mostrarTelaBloqueio(empresa); return; }
+    if (empresa.status === 'trial' && empresa.trial_expira_em && new Date(empresa.trial_expira_em) < new Date()) {
+      mostrarTelaBloqueio({...empresa, motivo_bloqueio:'Seu período de teste gratuito de 7 dias terminou. Assine um plano para continuar usando o sistema.'});
+      return;
+    }
 
     // Paraleliza as 3 chamadas de configuração que antes rodavam em série (~1s cada)
     await Promise.all([
@@ -5237,6 +5241,10 @@ async function carregarEmpresaELoginCheck(){
 
     if(emp && emp.status==='bloqueada'){
       mostrarTelaBloqueio(emp);
+      return false;
+    }
+    if(emp && emp.status==='trial' && emp.trial_expira_em && new Date(emp.trial_expira_em) < new Date()){
+      mostrarTelaBloqueio({...emp, motivo_bloqueio:'Seu período de teste gratuito de 7 dias terminou. Assine um plano para continuar usando o sistema.'});
       return false;
     }
     return true;
@@ -5522,6 +5530,12 @@ function iniciarVerificacaoBloqueio(){
       if(emp.status==='bloqueada'){
         clearInterval(_bqCheckInterval);
         mostrarTelaBloqueio(emp);
+      }
+      // Trial expirado: se está em teste e a data passou, bloqueia.
+      // (Se você mudar o status para 'ativa' no admin, a empresa é liberada.)
+      else if(emp.status==='trial' && emp.trial_expira_em && new Date(emp.trial_expira_em) < new Date()){
+        clearInterval(_bqCheckInterval);
+        mostrarTelaBloqueio({...emp, motivo_bloqueio:'Seu período de teste gratuito de 7 dias terminou. Assine um plano para continuar usando o sistema.'});
       }
     }catch(e){ /* silencioso — não interrompe o uso offline */ }
   }, 5*60*1000); // 5 minutos
