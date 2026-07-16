@@ -3907,6 +3907,45 @@ async function abrirDetalhes(id) {
   try { detTab('geral', null); } catch (err) { console.error('Erro ao renderizar detalhes:', err); }
 }
 
+async function carregarAceitesEmpresa(empId){
+  const box=document.getElementById('det-aceites-box');
+  if(!box)return;
+  try{
+    const [termos,contrato]=await Promise.all([
+      db.from('termos_aceites').select('versao,usuario_nome,aceito_em').eq('empresa_id',empId).order('versao',{ascending:false}).limit(1),
+      db.from('contrato_saas_aceites').select('versao,plano,valor,periodicidade,aceito_em').eq('empresa_id',empId).order('versao',{ascending:false}).limit(1)
+    ]);
+    const tA=termos.data&&termos.data[0];
+    const cA=contrato.data&&contrato.data[0];
+    let html='';
+    // Termos
+    if(tA){
+      html+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <i class="ti ti-circle-check" style="color:var(--success)"></i>
+        <span><b>Termos de Uso</b> aceitos — versão ${tA.versao}${tA.usuario_nome?` por ${esc(tA.usuario_nome)}`:''} em ${new Date(tA.aceito_em).toLocaleString('pt-BR')}</span>
+      </div>`;
+    } else {
+      html+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <i class="ti ti-circle-x" style="color:var(--warn)"></i>
+        <span><b>Termos de Uso</b> — ainda não aceitos</span></div>`;
+    }
+    // Contrato
+    if(cA){
+      html+=`<div style="display:flex;align-items:center;gap:8px">
+        <i class="ti ti-circle-check" style="color:var(--success)"></i>
+        <span><b>Contrato do Serviço</b> aceito — v${cA.versao}${cA.plano?` · ${esc(cA.plano)}`:''}${cA.valor?` · R$ ${cA.valor}`:''} em ${new Date(cA.aceito_em).toLocaleString('pt-BR')}</span>
+      </div>`;
+    } else {
+      html+=`<div style="display:flex;align-items:center;gap:8px">
+        <i class="ti ti-circle-dashed" style="color:var(--txt3)"></i>
+        <span><b>Contrato do Serviço</b> — sem aceite registrado</span></div>`;
+    }
+    box.innerHTML=html;
+  }catch(e){
+    box.innerHTML='<span style="color:var(--txt3)">Não foi possível verificar os aceites (rode as migrações TU01/CS01).</span>';
+  }
+}
+
 async function detTab(tab, btn) {
   ['geral','financeiro','acesso','marca','updates','bloqueio'].forEach(t => {
     const el = document.getElementById('det-tab-' + t);
@@ -3937,6 +3976,11 @@ async function detTab(tab, btn) {
       </div>
       ${e.obs ? `<div style="margin-top:14px;padding:12px;background:var(--bg3);border-radius:9px;font-size:13px;color:var(--txt2)"><strong style="color:var(--txt3);font-size:11px;text-transform:uppercase;letter-spacing:.8px">Observações</strong><br>${e.obs}</div>` : ''}
 
+      <div class="ms"><i class="ti ti-file-certificate"></i> Termos e contrato</div>
+      <div id="det-aceites-box" style="padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--bg3);font-size:13px;color:var(--txt2)">
+        <i class="ti ti-loader-2"></i> Verificando aceites...
+      </div>
+
       <div class="ms" style="color:var(--danger)"><i class="ti ti-alert-triangle"></i> Zona de perigo</div>
       <div style="padding:12px 14px;border:1px solid rgba(239,68,68,.35);border-radius:10px;background:rgba(239,68,68,.06)">
         <div style="font-size:12.5px;color:var(--txt2);margin-bottom:10px">
@@ -3945,6 +3989,7 @@ async function detTab(tab, btn) {
         <button class="btn btn-danger btn-sm" onclick="abrirLimparDadosEmpresa('${e.id}')"><i class="ti ti-database-off"></i> Limpar dados desta empresa</button>
       </div>
     `;
+    carregarAceitesEmpresa(e.id);
   } else if (tab === 'financeiro') {
     // Aba Financeiro (NOVO)
     const fin = statusFinanceiro(e);
