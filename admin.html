@@ -3839,6 +3839,22 @@ async function confirmarLimparDadosEmpresa() {
   }
 }
 
+/* ── MARCAR PLANO PAGO (liberar manual) ── */
+async function marcarPlanoPago(id){
+  if(!confirm('Confirmar que esta empresa pagou o plano? Isso libera o acesso imediatamente.')) return;
+  setLoad(true);
+  const {error}=await db.from('empresas').update({
+    pagamento_status:'em_dia', status:'ativa',
+    pagamento_vence_em:null, pagamento_cobranca_url:null, pagamento_pix:null
+  }).eq('id',id);
+  try{ await db.from('cobrancas_plano').update({status:'pago',pago_em:new Date().toISOString()}).eq('empresa_id',id).eq('status','pendente'); }catch(e){}
+  setLoad(false);
+  if(error){ notify('Erro: '+error.message,'error'); return; }
+  notify('Pagamento confirmado. Empresa liberada.','success');
+  if(typeof refreshDados==='function') refreshDados();
+  try{ detTab('financeiro',null); }catch(e){}
+}
+
 /* ── TOGGLE BLOQUEIO ── */
 function toggleBloqueio(id, ativar) {
   const e = G.empresas.find(x => x.id === id);
@@ -4033,8 +4049,20 @@ async function detTab(tab, btn) {
       <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
         <button class="btn btn-pri btn-sm" onclick="abrirRegistrarPagamento('${e.id}')"><i class="ti ti-cash"></i> Registrar pagamento</button>
         <button class="btn btn-out btn-sm" onclick="enviarLembreteWhatsApp('${e.id}')"><i class="ti ti-brand-whatsapp"></i> Enviar lembrete</button>
-        <button class="btn btn-out btn-sm" onclick="gerarBoletoSimulado('${e.id}')"><i class="ti ti-file-invoice"></i> Gerar boleto (simulado)</button>
       </div>
+
+      ${e.pagamento_status && e.pagamento_status!=='em_dia' ? `
+      <div style="background:rgba(245,158,11,.08);border:1px solid var(--warn);border-radius:10px;padding:14px;margin-bottom:16px">
+        <div style="font-weight:700;font-size:13px;color:var(--warn);margin-bottom:6px"><i class="ti ti-alert-triangle"></i> Pagamento do plano ${e.pagamento_status==='pendente'?'PENDENTE':'EM ATRASO'}</div>
+        <div style="font-size:12.5px;color:var(--txt2);margin-bottom:10px">
+          ${e.pagamento_vence_em?`Vence em ${new Date(e.pagamento_vence_em).toLocaleDateString('pt-BR')}. `:''}
+          Quando o cliente paga pelo Asaas, o sistema libera sozinho (webhook). Se precisar liberar manual:
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-pri btn-sm" onclick="marcarPlanoPago('${e.id}')"><i class="ti ti-check"></i> Marcar como pago (liberar)</button>
+          ${e.pagamento_cobranca_url?`<a href="${e.pagamento_cobranca_url}" target="_blank" class="btn btn-out btn-sm"><i class="ti ti-external-link"></i> Ver fatura</a>`:''}
+        </div>
+      </div>` : ''}
 
       <div class="ms" style="margin-top:0">Histórico de pagamentos</div>
       ${pagamentos.length === 0
