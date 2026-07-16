@@ -5222,6 +5222,8 @@ async function loadProfile(user){
     // Verifica se a empresa já aceitou a versão vigente dos Termos de Uso.
     // Se não, mostra o modal de aceite (não bloqueia o boot; roda em paralelo).
     verificarTermosUso();
+    // Aviso/bloqueio de pagamento do plano
+    if(typeof verificarPagamentoPendente==='function') verificarPagamentoPendente();
 
     // Paraleliza as 3 chamadas de configuração que antes rodavam em série (~1s cada)
     await Promise.all([
@@ -5388,6 +5390,45 @@ async function aceitarTermosUso(){
 }
 
 // Exibe a tela de "Acesso suspenso" com o motivo do bloqueio (NOVO)
+// PAGAMENTO DO PLANO — aviso no sistema + bloqueio por inadimplência
+function verificarPagamentoPendente(){
+  const emp = G.empresa;
+  if(!emp) return;
+  const st = emp.pagamento_status;
+  const vence = emp.pagamento_vence_em ? new Date(emp.pagamento_vence_em) : null;
+  // Remove aviso anterior
+  const antigo = document.getElementById('aviso-pagamento'); if(antigo) antigo.remove();
+  if(st!=='pendente' && st!=='atrasado') return;
+  if(!vence) return;
+
+  const agora = new Date();
+  const diasRestantes = Math.ceil((vence - agora)/86400000);
+
+  // Se venceu, bloqueia (mesma tela de bloqueio)
+  if(diasRestantes < 0){
+    mostrarTelaBloqueio({...emp, motivo_bloqueio:`Pagamento do plano em atraso. Regularize para reativar o acesso.`});
+    return;
+  }
+
+  // Senão, mostra um banner de aviso não-bloqueante
+  const b = document.createElement('div');
+  b.id = 'aviso-pagamento';
+  b.style.cssText = `position:fixed;bottom:16px;right:16px;z-index:9998;max-width:340px;background:var(--surface);border:1px solid var(--warn);border-left:4px solid var(--warn);border-radius:12px;padding:14px 16px;box-shadow:0 8px 28px rgba(0,0,0,.2);font-family:'DM Sans',sans-serif`;
+  b.innerHTML = `<div style="display:flex;align-items:flex-start;gap:10px">
+    <i class="ti ti-alert-triangle" style="color:var(--warn);font-size:20px;flex-shrink:0"></i>
+    <div style="flex:1">
+      <div style="font-weight:700;font-size:13.5px;color:var(--txt);margin-bottom:3px">Pagamento pendente</div>
+      <div style="font-size:12px;color:var(--txt2);line-height:1.5">Regularize o plano em ${diasRestantes} dia(s) para não bloquear o acesso.</div>
+      <div style="display:flex;gap:6px;margin-top:9px">
+        ${emp.pagamento_cobranca_url?`<a href="${esc(emp.pagamento_cobranca_url)}" target="_blank" class="btn btn-pri btn-sm"><i class="ti ti-external-link"></i> Pagar agora</a>`:''}
+        ${emp.pagamento_pix?`<button class="btn btn-out btn-sm" onclick="navigator.clipboard.writeText('${esc(emp.pagamento_pix)}');notify('PIX copiado!','success')"><i class="ti ti-copy"></i> PIX</button>`:''}
+      </div>
+    </div>
+    <button onclick="document.getElementById('aviso-pagamento').remove()" style="background:none;border:none;color:var(--txt3);cursor:pointer;font-size:16px"><i class="ti ti-x"></i></button>
+  </div>`;
+  document.body.appendChild(b);
+}
+
 function mostrarTelaBloqueio(emp){
   document.getElementById('ls').classList.add('hidden');
   const bq = document.getElementById('bq-screen');
@@ -20795,19 +20836,89 @@ function mostrarBannerLimite(tipo, container) {
 function selecionarPlano(planoId) {
   if (!PLANOS[planoId]) return;
   const atual = getPlanoAtual();
-  if (atual.id === planoId) return; // já nesse plano
-
+  if (atual.id === planoId) return;
+  const p = PLANOS[planoId];
   confirmAct(
-    `Mudar para plano ${PLANOS[planoId].nome}`,
-    `Deseja mudar para o plano ${PLANOS[planoId].nome} (R$ ${PLANOS[planoId].preco}/mês)?
-
-Em produção, isso seria processado pelo painel de cobrança.`,
-    () => {
-      setPlanoAtual(planoId);
-      renderModalPlanos();
-      notify(`✅ Plano ${PLANOS[planoId].nome} ativado!`, 'success');
-    }
+    `Mudar para plano ${p.nome}`,
+    `Deseja mudar para o plano ${p.nome} (R$ ${p.preco}/mês)? Será gerada uma cobrança para ativar o plano.`,
+    () => processarMudancaPlano(planoId)
   );
+}
+
+async function processarMudancaPlano(planoId){
+  const p = PLANOS[planoId];
+  const empId = EID();
+  setLoad(true);
+  try{
+    let cobranca = null;
+    try{
+      const { data, error } = await db.functions.invoke('gerar-cobranca', {
+        body: {
+          plataforma: true,
+          cliente: { nome: G.empresa?.nome||'Loja', cpfCnpj: G.empresa?.doc||G.empresa?.cnpj||'', telefone: G.empresa?.telefone||'' },
+          valor: parseFloat(p.preco)||0,
+          descricao: `Plano ${p.nome} — MISU SYS`,
+          tipo: 'UNDEFINED'
+        }
+      });
+      if(!error && data && !data.error && data.configured!==false){ cobranca = data; }
+    }catch(e){}
+    const vence = new Date(); vence.setDate(vence.getDate()+7);
+    const upd = {
+      plano: planoId,
+      pagamento_status: 'pendente',
+      pagamento_vence_em: vence.toISOString(),
+      pagamento_cobranca_url: cobranca?.invoiceUrl || null,
+      pagamento_pix: cobranca?.pixCopiaECola || null,
+      pagamento_asaas_id: cobranca?.id || cobranca?.asaasId || null
+    };
+    let {error:upErr} = await db.from('empresas').update(upd).eq('id',empId);
+    if(upErr && /column|does not exist|schema/i.test(upErr.message||'')){
+      await db.from('empresas').update({plano:planoId}).eq('id',empId);
+      notify('Plano alterado. Rode a migração CB01 para ativar o controle de cobrança.','warn',7000);
+    }
+    try{
+      await db.from('cobrancas_plano').insert({
+        empresa_id: empId, plano: planoId, valor: parseFloat(p.preco)||0,
+        status: 'pendente', asaas_id: upd.pagamento_asaas_id,
+        invoice_url: upd.pagamento_cobranca_url, pix: upd.pagamento_pix,
+        vence_em: vence.toISOString()
+      });
+    }catch(e){}
+    if(G.empresa){ Object.assign(G.empresa, upd); }
+    setPlanoAtual(planoId);
+    setLoad(false);
+    renderModalPlanos();
+    if(cobranca && (cobranca.invoiceUrl || cobranca.pixCopiaECola)){
+      mostrarCobrancaPlano(p, cobranca, vence);
+    } else {
+      notify(`Plano ${p.nome} selecionado. Pagamento pendente — regularize em ate 7 dias para nao bloquear.`,'warn',8000);
+    }
+    if(typeof verificarPagamentoPendente==='function') verificarPagamentoPendente();
+  }catch(e){
+    setLoad(false);
+    notify('Erro ao processar mudanca de plano: '+(e.message||''),'error',6000);
+  }
+}
+
+function mostrarCobrancaPlano(plano, cobranca, vence){
+  const venceStr = new Date(vence).toLocaleDateString('pt-BR');
+  const html = `<div class="card-title" style="gap:8px;margin-bottom:8px"><i class="ti ti-receipt" style="color:var(--pri)"></i> Pagamento do plano ${esc(plano.nome)}</div>
+    <div style="font-size:13px;color:var(--txt2);margin-bottom:14px">Valor: <b>R$ ${plano.preco}/mês</b> · Vencimento: <b>${venceStr}</b></div>
+    ${cobranca.pixCopiaECola ? `
+      <div style="text-align:center;margin-bottom:12px"><div id="qr-plano-box" style="display:inline-block"></div></div>
+      <div style="font-size:11px;color:var(--txt3);margin-bottom:4px">PIX copia e cola:</div>
+      <div style="display:flex;gap:6px;margin-bottom:12px">
+        <input type="text" readonly value="${esc(cobranca.pixCopiaECola)}" id="pix-plano-input" style="flex:1;font-size:11px" onclick="this.select()">
+        <button class="btn btn-out btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('pix-plano-input').value);notify('PIX copiado!','success')"><i class="ti ti-copy"></i></button>
+      </div>` : ''}
+    ${cobranca.invoiceUrl ? `<a href="${esc(cobranca.invoiceUrl)}" target="_blank" class="btn btn-pri" style="width:100%;text-align:center;box-sizing:border-box"><i class="ti ti-external-link"></i> Abrir fatura / pagar</a>` : ''}
+    <div style="font-size:11.5px;color:var(--warn);margin-top:12px;padding:10px;background:rgba(245,158,11,.08);border-radius:8px"><i class="ti ti-alert-triangle"></i> Apos o pagamento, a confirmacao pode levar alguns minutos. Se nao pagar ate ${venceStr}, o acesso sera bloqueado.</div>`;
+  const foot = `<button class="btn btn-pri" onclick="closeModal('modal-generic')">Entendi</button>`;
+  abrirModalGenerico(html, foot);
+  if(cobranca.pixCopiaECola){
+    setTimeout(()=>{ const box=document.getElementById('qr-plano-box'); if(box){ try{ new QRCode(box,{text:cobranca.pixCopiaECola,width:200,height:200,correctLevel:QRCode.CorrectLevel.M}); }catch(e){} } },100);
+  }
 }
 
 function renderModalPlanos() {
