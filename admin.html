@@ -1537,9 +1537,7 @@ CREATE POLICY "master_all" ON admin_master FOR ALL USING (true) WITH CHECK (true
       <div class="fg">
         <label class="lbl">Plano</label>
         <select id="emp-plano">
-          <option value="basic">Básico — R$ 89/mês</option>
-          <option value="pro">Pro — R$ 149/mês</option>
-          <option value="enterprise">Enterprise — R$ 299/mês</option>
+          <option value="">Carregando planos...</option>
         </select>
       </div>
       <div class="fg">
@@ -3578,6 +3576,28 @@ function tipoDocCnpjCpf(doc) {
 }
 
 /* ── NOVA/EDITAR EMPRESA ── */
+// Popula o <select id="emp-plano"> com os planos REAIS da tabela (não fixos).
+// Assim, qualquer plano criado na página Planos aparece no cadastro de empresa.
+async function popularSelectPlanos(selecionado){
+  const sel=document.getElementById('emp-plano');
+  if(!sel)return;
+  // Garante que os planos estão carregados
+  if(!G.planos || !G.planos.length){
+    try{ G.planos = await getPlanos(); }catch(e){ G.planos=[]; }
+  }
+  if(!G.planos.length){
+    // Fallback: se não há planos cadastrados, mantém as opções básicas
+    sel.innerHTML='<option value="basic">Básico</option><option value="pro">Pro</option><option value="enterprise">Enterprise</option>';
+  } else {
+    sel.innerHTML=G.planos.map(p=>{
+      const preco=parseFloat(p.preco)||0;
+      const label=`${p.nome}${preco>0?` — R$ ${preco.toFixed(2)}/mês`:' — grátis'}`;
+      return `<option value="${p.id||p.nome}">${label}</option>`;
+    }).join('');
+  }
+  if(selecionado)sel.value=selecionado;
+}
+
 function abrirNovaEmpresa() {
   document.getElementById('emp-id').value = '';
   document.getElementById('emp-nome').value = '';
@@ -3585,7 +3605,7 @@ function abrirNovaEmpresa() {
   document.getElementById('emp-cidade').value = '';
   document.getElementById('emp-estado').value = '';
   document.getElementById('emp-email').value = '';
-  document.getElementById('emp-plano').value = 'basic';
+  popularSelectPlanos(); // planos reais da tabela
   document.getElementById('emp-venc').value = '10';
   document.getElementById('emp-status').value = 'ativa';
   document.getElementById('emp-obs').value = '';
@@ -3620,6 +3640,7 @@ function editarEmpresa(id) {
   document.getElementById('emp-email').value = e.email || '';
   document.getElementById('emp-senha').value = '(manter atual)';
   document.getElementById('emp-plano').value = e.plano || 'basic';
+  popularSelectPlanos(e.plano); // planos reais, já seleciona o da empresa
   document.getElementById('emp-venc').value = e.venc || 10;
   document.getElementById('emp-status').value = e.status || 'ativa';
   document.getElementById('emp-obs').value = e.obs || '';
