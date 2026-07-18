@@ -4037,6 +4037,13 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
   </div>
 </div>
 
+<!-- Modal de confirmação de upgrade (dedicado, sobrepõe o de planos) -->
+<div class="modal-overlay" id="modal-confirma-plano" style="z-index:100000;background:rgba(10,7,25,.55);backdrop-filter:blur(4px)">
+  <div class="modal confirma-plano-card" style="max-width:440px;width:100%">
+    <div id="confirma-plano-content"></div>
+  </div>
+</div>
+
 
 <!-- MODAL SOLUÇÃO (base de conhecimento) -->
 <div class="modal-overlay" id="modal-solucao">
@@ -10438,7 +10445,7 @@ function abrirModalGenerico(html, footerHtml){
   if(mg){
     const outroAberto=[...document.querySelectorAll('.modal-overlay.open')].some(m=>m.id!=='modal-generic');
     if(outroAberto){
-      mg.style.zIndex='1100';
+      mg.style.zIndex='10001';
       mg.style.background='rgba(15,10,30,.45)';
     } else {
       mg.style.zIndex='';
@@ -18328,11 +18335,62 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
   .plano-card { opacity: 1 !important; }
 }
 
+/* ═══ Modal de confirmação de plano (obra de arte) ═══ */
+.confirma-plano-card { border-radius: 24px !important; padding: 0 !important; overflow: hidden; }
+#confirma-plano-content { padding: 26px 24px 22px; }
+.cp-head { display: flex; align-items: center; gap: 13px; margin-bottom: 20px; }
+.cp-icon {
+  width: 46px; height: 46px; border-radius: 14px; flex-shrink: 0;
+  background: linear-gradient(135deg, rgb(var(--cpc)), rgba(var(--cpc),.7));
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 22px; box-shadow: 0 8px 20px rgba(var(--cpc),.35);
+}
+.cp-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 19px; color: var(--txt); letter-spacing: -.3px; }
+.cp-sub { font-size: 12.5px; color: var(--txt3); margin-top: 1px; }
+.cp-flow { display: flex; align-items: stretch; gap: 10px; margin-bottom: 16px; }
+.cp-plan {
+  flex: 1; padding: 14px 12px; border-radius: 14px; text-align: center;
+  border: 1.5px solid var(--border); background: var(--bg2); position: relative;
+}
+.cp-plan-new { border: 2px solid rgb(var(--cpc)); background: rgba(var(--cpc),.05); box-shadow: 0 6px 18px rgba(var(--cpc),.14); }
+.cp-plan-tag { font-size: 9.5px; text-transform: uppercase; letter-spacing: .8px; color: var(--txt3); font-weight: 700; }
+.cp-plan-new .cp-plan-tag { color: rgb(var(--cpc)); }
+.cp-plan-nome { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 15px; color: var(--txt); margin: 4px 0 2px; }
+.cp-plan-preco { font-size: 12.5px; color: var(--txt2); font-weight: 600; }
+.cp-plan-preco small { font-size: 10px; color: var(--txt3); font-weight: 400; }
+.cp-plan-new .cp-plan-preco { color: rgb(var(--cpc)); }
+.cp-arrow { display: flex; align-items: center; color: rgb(var(--cpc)); font-size: 18px; }
+.cp-toggle { background: var(--bg2); border: 1px solid var(--border); border-radius: 99px; padding: 4px; display: inline-flex; margin: 0 auto 16px; width: fit-content; }
+.cp-toggle { display: flex; justify-content: center; }
+.cp-toggle button { border: none; background: transparent; color: var(--txt2); padding: 7px 18px; border-radius: 99px; font-size: 12.5px; font-weight: 600; cursor: pointer; transition: .2s; display: flex; align-items: center; gap: 5px; }
+.cp-toggle button.on { background: var(--pri); color: #fff; box-shadow: 0 3px 10px rgba(30,94,255,.3); }
+.cp-off { background: var(--success); color: #fff; font-size: 9.5px; padding: 1px 6px; border-radius: 99px; }
+.cp-toggle button.on .cp-off { background: rgba(255,255,255,.25); }
+.cp-feats { display: flex; flex-direction: column; gap: 7px; margin-bottom: 16px; padding: 14px; background: var(--bg2); border-radius: 14px; }
+.cp-feat { display: flex; align-items: center; gap: 9px; font-size: 12.5px; color: var(--txt); }
+.cp-feat i { color: rgb(var(--cpc)); font-size: 13px; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; background: rgba(var(--cpc),.12); border-radius: 50%; flex-shrink: 0; }
+.cp-valor {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 15px 16px; border-radius: 14px; margin-bottom: 14px;
+  background: linear-gradient(135deg, rgba(var(--cpc),.1), rgba(var(--cpc),.03));
+  border: 1px solid rgba(var(--cpc),.2);
+}
+.cp-valor-lbl { font-size: 13px; color: var(--txt2); font-weight: 500; }
+.cp-valor-eco { font-size: 11px; color: var(--success); font-weight: 700; margin-top: 2px; }
+.cp-valor-num { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 22px; color: rgb(var(--cpc)); letter-spacing: -.5px; }
+.cp-valor-num small { font-size: 11px; color: var(--txt3); font-weight: 500; margin-left: 3px; }
+.cp-nota { font-size: 11.5px; color: var(--txt3); line-height: 1.5; margin-bottom: 18px; display: flex; gap: 7px; align-items: flex-start; }
+.cp-nota i { color: var(--success); font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+.cp-nota b { color: var(--txt2); }
+.cp-actions { display: flex; gap: 10px; }
+.cp-actions .btn { flex: 1; justify-content: center; }
+.cp-btn-go { background: linear-gradient(135deg, rgb(var(--cpc)), rgba(var(--cpc),.8)) !important; border: none !important; box-shadow: 0 8px 20px rgba(var(--cpc),.35) !important; }
+
 .plano-card {
   --glow: 30,94,255;                 /* cor do glow por plano (RGB) */
   --card-bg1: var(--surface);        /* fundo do plano */
   --card-bg2: var(--surface);
-  border: 2px solid rgba(var(--glow),.28);  /* borda visível como fallback */
+  border: 2.5px solid rgb(var(--glow));  /* borda colorida bem visível */
   border-radius: 20px;
   padding: 26px 22px 24px;
   transition: transform .28s cubic-bezier(.2,.7,.3,1), box-shadow .28s;
@@ -18426,14 +18484,14 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
   border-radius: 6px; font-family: 'DM Sans', sans-serif;
   box-shadow: 0 4px 12px rgba(var(--glow),.4);
 }
-.plano-nome { position: relative; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 19px; margin-bottom: 4px; letter-spacing: -.3px; }
-.plano-preco { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 30px; margin-bottom: 4px; letter-spacing: -1px; }
-.plano-preco span { font-size: 14px; font-weight: 400; color: var(--txt3); }
-.plano-desc { font-size: 12.5px; color: var(--txt2); margin-bottom: 16px; min-height: 32px; }
+.plano-nome { position: relative; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 21px; margin-bottom: 6px; letter-spacing: -.4px; color: rgb(var(--glow)); }
+.plano-preco { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 32px; margin-bottom: 6px; letter-spacing: -1px; color: var(--txt); line-height: 1.1; }
+.plano-preco span { font-size: 13px; font-weight: 500; color: var(--txt3); letter-spacing: 0; }
+.plano-desc { font-size: 13px; color: var(--txt2); margin-bottom: 18px; min-height: 34px; line-height: 1.45; font-weight: 400; }
 .plano-feat { display: flex; flex-direction: column; gap: 8px; }
 .plano-feat-item {
-  display: flex; align-items: center; gap: 9px;
-  font-size: 12.5px; color: var(--txt);
+  display: flex; align-items: center; gap: 10px;
+  font-size: 13px; color: var(--txt); font-weight: 450; line-height: 1.9;
 }
 .plano-feat-item i { font-size: 12px; flex-shrink: 0; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; }
 .plano-feat-item.ok i { color: var(--success); background: rgba(34,197,94,.12); }
@@ -21048,55 +21106,64 @@ function abrirConfirmacaoPlano(atual, planoId){
   const upgrade = (parseFloat(novo.preco)||0) >= (parseFloat(atual.preco)||0);
   const anual = _cicloPlano === 'anual';
   const mensal = parseFloat(novo.preco)||0;
-  // Valor da cobrança conforme o ciclo
   const valorCobranca = anual ? (mensal*(1-DESCONTO_ANUAL)*12) : mensal;
   const cicloLabel = anual ? 'por ano' : 'por mês';
   const economia = anual ? (mensal*12 - valorCobranca) : 0;
-  // Monta a lista do "que muda" a partir dos recursos do novo plano
+  // Cor do plano novo
+  const cores = { basico:'16,185,129', pro:'30,94,255', enterprise:'245,158,11' };
+  const cor = cores[planoId] || '30,94,255';
   const recursos = (novo.recursos || novo.features || []);
   const listaRecursos = Array.isArray(recursos) && recursos.length
-    ? recursos.slice(0,6).map(r=>`<div style="display:flex;gap:8px;align-items:center;font-size:12.5px;color:var(--txt2);margin-bottom:4px"><i class="ti ti-check" style="color:var(--success)"></i> ${esc(typeof r==='string'?r:(r.nome||r.label||''))}</div>`).join('')
+    ? recursos.slice(0,5).map(r=>`<div class="cp-feat"><i class="ti ti-check"></i> ${esc(typeof r==='string'?r:(r.nome||r.label||''))}</div>`).join('')
     : '';
+
   const html = `
-    <div class="card-title" style="gap:8px;margin-bottom:4px"><i class="ti ti-rocket" style="color:var(--pri)"></i> ${upgrade?'Upgrade':'Mudança'} de plano</div>
-    <div style="font-size:12.5px;color:var(--txt3);margin-bottom:16px">Confira os detalhes antes de continuar.</div>
-
-    <div style="display:flex;align-items:stretch;gap:10px;margin-bottom:16px">
-      <div style="flex:1;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--bg2);text-align:center">
-        <div style="font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--txt3);margin-bottom:4px">Plano atual</div>
-        <div style="font-weight:700;font-size:14px;color:var(--txt)">${esc(atual.nome)}</div>
-        <div style="font-size:12px;color:var(--txt2)">R$ ${atual.preco}/mês</div>
-      </div>
-      <div style="display:flex;align-items:center;color:var(--pri);font-size:20px"><i class="ti ti-arrow-right"></i></div>
-      <div style="flex:1;padding:12px;border:2px solid var(--pri);border-radius:10px;background:rgba(30,94,255,.06);text-align:center">
-        <div style="font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--pri);margin-bottom:4px">Novo plano</div>
-        <div style="font-weight:800;font-size:14px;color:var(--txt)">${esc(novo.nome)}</div>
-        <div style="font-size:12px;color:var(--pri);font-weight:600">R$ ${novo.preco}/mês</div>
+    <div class="cp-head" style="--cpc:${cor}">
+      <div class="cp-icon"><i class="ti ti-rocket"></i></div>
+      <div>
+        <div class="cp-title">${upgrade?'Upgrade':'Mudança'} de plano</div>
+        <div class="cp-sub">Confira antes de continuar</div>
       </div>
     </div>
 
-    <div style="display:flex;justify-content:center;margin-bottom:14px">
-      <div style="display:inline-flex;background:var(--bg2);border:1px solid var(--border);border-radius:99px;padding:3px;font-size:12px">
-        <span onclick="_cicloPlano='mensal';closeModal('modal-generic');abrirConfirmacaoPlano(${JSON.stringify(atual).replace(/"/g,'&quot;')},'${planoId}')" style="cursor:pointer;padding:5px 14px;border-radius:99px;font-weight:600;${!anual?'background:var(--pri);color:#fff':'color:var(--txt2)'}">Mensal</span>
-        <span onclick="_cicloPlano='anual';closeModal('modal-generic');abrirConfirmacaoPlano(${JSON.stringify(atual).replace(/"/g,'&quot;')},'${planoId}')" style="cursor:pointer;padding:5px 14px;border-radius:99px;font-weight:600;${anual?'background:var(--pri);color:#fff':'color:var(--txt2)'}">Anual -17%</span>
+    <div class="cp-flow">
+      <div class="cp-plan cp-plan-old">
+        <span class="cp-plan-tag">Atual</span>
+        <div class="cp-plan-nome">${esc(atual.nome)}</div>
+        <div class="cp-plan-preco">R$ ${atual.preco}<small>/mês</small></div>
+      </div>
+      <div class="cp-arrow" style="--cpc:${cor}"><i class="ti ti-arrow-right"></i></div>
+      <div class="cp-plan cp-plan-new" style="--cpc:${cor}">
+        <span class="cp-plan-tag">Novo</span>
+        <div class="cp-plan-nome">${esc(novo.nome)}</div>
+        <div class="cp-plan-preco">R$ ${novo.preco}<small>/mês</small></div>
       </div>
     </div>
 
-    ${listaRecursos ? `<div style="margin-bottom:14px"><div style="font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--txt3);margin-bottom:8px">O que você passa a ter</div>${listaRecursos}</div>` : ''}
-
-    <div style="background:rgba(30,94,255,.06);border-radius:10px;padding:12px 14px;margin-bottom:8px">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <span style="font-size:13px;color:var(--txt2)">Valor da cobrança agora</span>
-        <span style="font-size:18px;font-weight:800;color:var(--pri)">R$ ${valorCobranca.toFixed(2)} <span style="font-size:11px;font-weight:600;color:var(--txt3)">${cicloLabel}</span></span>
-      </div>
-      ${economia>0?`<div style="text-align:right;font-size:11px;color:var(--success);font-weight:600;margin-top:3px">Você economiza R$ ${economia.toFixed(2)} no ano</div>`:''}
+    <div class="cp-toggle">
+      <button class="${!anual?'on':''}" onclick="_cicloPlano='mensal';abrirConfirmacaoPlano(${JSON.stringify(atual).replace(/"/g,'&quot;')},'${planoId}')">Mensal</button>
+      <button class="${anual?'on':''}" onclick="_cicloPlano='anual';abrirConfirmacaoPlano(${JSON.stringify(atual).replace(/"/g,'&quot;')},'${planoId}')">Anual <span class="cp-off">-17%</span></button>
     </div>
-    <div style="font-size:11.5px;color:var(--txt3);line-height:1.5"><i class="ti ti-info-circle"></i> O novo plano é ativado <b>somente após a confirmação do pagamento</b>. Até lá, você continua no plano ${esc(atual.nome)}.</div>
+
+    ${listaRecursos?`<div class="cp-feats" style="--cpc:${cor}">${listaRecursos}</div>`:''}
+
+    <div class="cp-valor" style="--cpc:${cor}">
+      <div>
+        <div class="cp-valor-lbl">Cobrança agora</div>
+        ${economia>0?`<div class="cp-valor-eco">economize R$ ${economia.toFixed(2)}/ano</div>`:''}
+      </div>
+      <div class="cp-valor-num">R$ ${valorCobranca.toFixed(2)}<small>${cicloLabel}</small></div>
+    </div>
+
+    <div class="cp-nota"><i class="ti ti-shield-check"></i> Ativado <b>após a confirmação do pagamento</b>. Até lá você continua no ${esc(atual.nome)}.</div>
+
+    <div class="cp-actions">
+      <button class="btn btn-out" onclick="closeModal('modal-confirma-plano')">Cancelar</button>
+      <button class="btn btn-pri cp-btn-go" style="--cpc:${cor}" onclick="closeModal('modal-confirma-plano');closeModal('modal-planos');processarMudancaPlano('${planoId}','${_cicloPlano}')">Continuar <i class="ti ti-arrow-right"></i></button>
+    </div>
   `;
-  const foot = `
-    <button class="btn btn-out" onclick="closeModal('modal-generic')">Cancelar</button>
-    <button class="btn btn-pri" onclick="closeModal('modal-generic');closeModal('modal-planos');processarMudancaPlano('${planoId}','${_cicloPlano}')"><i class="ti ti-arrow-right"></i> Continuar para pagamento</button>`;
-  abrirModalGenerico(html, foot);
+  document.getElementById('confirma-plano-content').innerHTML = html;
+  openModal('modal-confirma-plano');
 }
 
 // Passo 2 — Gera a cobrança SEM trocar o plano (só troca quando pagar)
