@@ -3946,7 +3946,7 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
 
 <!-- MODAL PLANOS -->
 <div class="modal-overlay" id="modal-planos">
-  <div class="modal" style="max-width:760px">
+  <div class="modal modal-planos-anim" style="max-width:760px">
     <div class="modal-title"><i class="ti ti-crown" style="color:var(--gold,#f59e0b)"></i> Planos MISU SYS PDV</div>
     <div style="font-size:13px;color:var(--txt2);margin-bottom:16px">
       Escolha o plano ideal para sua assistência técnica. O plano atual é salvo localmente e sincronizado pelo painel master.
@@ -5564,15 +5564,26 @@ const DESCONTO_ANUAL = 0.17; // 17% off no anual (~2 meses grátis). Ajuste se q
 // Glow que segue o mouse sobre os cards de plano
 function _ativarGlowPlanos(){
   document.querySelectorAll('.plano-card').forEach(card=>{
+    // Injeta a camada de brilho que corre pela borda em loop
+    if(!card.querySelector('.plano-borda-loop')){
+      const bl=document.createElement('div'); bl.className='plano-borda-loop';
+      card.insertBefore(bl, card.firstChild);
+    }
     if(card._glowOn) return; card._glowOn = true;
     card.addEventListener('mousemove', e=>{
       const r = card.getBoundingClientRect();
-      card.style.setProperty('--mx', (e.clientX - r.left)+'px');
-      card.style.setProperty('--my', (e.clientY - r.top)+'px');
+      const px = e.clientX - r.left, py = e.clientY - r.top;
+      card.style.setProperty('--mx', px+'px');
+      card.style.setProperty('--my', py+'px');
+      // Tilt 3D suave: inclina o card levemente na direção do mouse
+      const rx = ((py/r.height)-.5)*-5;   // até 5° (sutil)
+      const ry = ((px/r.width)-.5)*5;
+      card.style.transform = `translateY(-8px) scale(1.035) perspective(700px) rotateX(${rx}deg) rotateY(${ry}deg)`;
     });
     card.addEventListener('mouseleave', ()=>{
       card.style.setProperty('--mx', '50%');
       card.style.setProperty('--my', '50%');
+      card.style.transform = '';  // volta ao normal (retoma a flutuação)
     });
   });
 }
@@ -18278,6 +18289,50 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
 
 /* Modal de planos */
 #modal-planos .modal { max-width: 760px; }
+/* ── Animações sutis dos planos (respeitando o clean da MISU) ── */
+@keyframes planoFlutua {
+  0%,100% { transform: translateY(0); }
+  50%     { transform: translateY(-5px); }
+}
+@keyframes planoBordaGlow {
+  0%   { --bx: 0%;   --by: 0%; }
+  25%  { --bx: 100%; --by: 0%; }
+  50%  { --bx: 100%; --by: 100%; }
+  75%  { --bx: 0%;   --by: 100%; }
+  100% { --bx: 0%;   --by: 0%; }
+}
+@keyframes planoEntra {
+  from { opacity: 0; transform: translateY(18px) scale(.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes modalGradientePulsa {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+/* Registra a variável de posição da borda animada (para o @property funcionar em navegadores compatíveis) */
+@property --bx { syntax: '<percentage>'; inherits: false; initial-value: 50%; }
+@property --by { syntax: '<percentage>'; inherits: false; initial-value: 0%; }
+
+/* Fundo do modal de planos com gradiente que pulsa lentamente (sutil) */
+.modal-planos-anim { position: relative; overflow: hidden; }
+.modal-planos-anim::before {
+  content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background: linear-gradient(120deg,
+    rgba(30,94,255,.06), rgba(16,185,129,.05), rgba(245,158,11,.05), rgba(30,94,255,.06));
+  background-size: 300% 300%;
+  animation: modalGradientePulsa 14s ease infinite;
+  border-radius: inherit;
+}
+.modal-planos-anim > * { position: relative; z-index: 1; }
+
+/* Acessibilidade: desliga animações para quem prefere menos movimento */
+@media (prefers-reduced-motion: reduce) {
+  .plano-card, .plano-card .plano-borda-loop, .modal-planos-anim::before {
+    animation: none !important;
+  }
+}
+
 .plano-card {
   --glow: 30,94,255;                 /* cor do glow por plano (RGB) */
   --card-bg1: var(--surface);        /* fundo do plano */
@@ -18289,7 +18344,31 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
   background:
     linear-gradient(160deg, var(--card-bg1), var(--card-bg2)) padding-box,
     linear-gradient(160deg, rgba(var(--glow),.35), rgba(var(--glow),.08)) border-box;
+  /* Entrada suave ao abrir + flutuação contínua e discreta */
+  animation: planoEntra .5s cubic-bezier(.2,.7,.3,1) both, planoFlutua 5s ease-in-out infinite;
 }
+/* Escalona o início da flutuação para os 3 cards não subirem juntos */
+#plano-card-basico     { animation-delay: 0s, 0s; }
+#plano-card-pro        { animation-delay: .08s, -1.6s; }
+#plano-card-enterprise { animation-delay: .16s, -3.2s; }
+/* Ao passar o mouse, pausa a flutuação (o hover assume o transform) */
+.plano-card:hover { animation-play-state: paused; }
+
+/* Camada de brilho correndo pela BORDA em loop (sem mouse) */
+.plano-card .plano-borda-loop {
+  content: ''; position: absolute; inset: 0; border-radius: 20px; padding: 2px;
+  background: radial-gradient(90px circle at var(--bx,50%) var(--by,0%),
+              rgba(var(--glow),.9), rgba(var(--glow),0) 60%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  pointer-events: none; z-index: 2; opacity: .55;
+  animation: planoBordaGlow 6s linear infinite;
+}
+#plano-card-pro .plano-borda-loop        { animation-delay: -2s; }
+#plano-card-enterprise .plano-borda-loop { animation-delay: -4s; }
+/* Ao passar o mouse, a borda-loop some (dá lugar ao glow que segue o mouse) */
+.plano-card:hover .plano-borda-loop { opacity: 0; transition: opacity .3s; }
+
 /* Borda-glow que SEGUE o mouse: gradiente radial recortado só na borda */
 .plano-card::before {
   content: ''; position: absolute; inset: 0; border-radius: 20px; padding: 2px;
