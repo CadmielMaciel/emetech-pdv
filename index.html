@@ -3948,8 +3948,16 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
 <div class="modal-overlay" id="modal-planos">
   <div class="modal" style="max-width:760px">
     <div class="modal-title"><i class="ti ti-crown" style="color:var(--gold,#f59e0b)"></i> Planos MISU SYS PDV</div>
-    <div style="font-size:13px;color:var(--txt2);margin-bottom:20px">
+    <div style="font-size:13px;color:var(--txt2);margin-bottom:16px">
       Escolha o plano ideal para sua assistência técnica. O plano atual é salvo localmente e sincronizado pelo painel master.
+    </div>
+
+    <!-- Toggle mensal/anual -->
+    <div style="display:flex;justify-content:center;margin-bottom:20px">
+      <div style="display:inline-flex;background:var(--bg2);border:1px solid var(--border);border-radius:99px;padding:4px;position:relative">
+        <button id="ciclo-mensal" onclick="setCicloPlano('mensal')" style="border:none;background:var(--pri);color:#fff;padding:7px 18px;border-radius:99px;font-size:12.5px;font-weight:600;cursor:pointer;transition:.2s">Mensal</button>
+        <button id="ciclo-anual" onclick="setCicloPlano('anual')" style="border:none;background:transparent;color:var(--txt2);padding:7px 18px;border-radius:99px;font-size:12.5px;font-weight:600;cursor:pointer;transition:.2s">Anual <span style="background:var(--success);color:#fff;font-size:9.5px;padding:1px 6px;border-radius:99px;margin-left:3px">-17%</span></button>
+      </div>
     </div>
 
     <!-- Cards dos 3 planos -->
@@ -3958,7 +3966,7 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
       <!-- BÁSICO -->
       <div class="plano-card" id="plano-card-basico" onclick="selecionarPlano('basico')">
         <div class="plano-nome" style="color:var(--txt3)">Básico</div>
-        <div class="plano-preco">R$89<span>/mês</span></div>
+        <div class="plano-preco" id="preco-basico">R$89<span id="ciclo-lbl-basico">/mês</span></div>
         <div class="plano-desc">Ideal para quem está começando</div>
         <div class="plano-feat">
           <div class="plano-feat-item ok"><i class="ti ti-check"></i> PDV completo</div>
@@ -3978,7 +3986,7 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
       <div class="plano-card" id="plano-card-pro" onclick="selecionarPlano('pro')" style="border-color:rgba(30,94,255,.4)">
         <div style="position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:linear-gradient(90deg,var(--pri2),var(--pri));color:#fff;font-size:10px;font-weight:700;padding:3px 12px;border-radius:0 0 8px 8px;font-family:'DM Sans',sans-serif;white-space:nowrap">MAIS POPULAR</div>
         <div class="plano-nome" style="color:var(--pri);margin-top:12px">Pro</div>
-        <div class="plano-preco" style="color:var(--pri)">R$149<span>/mês</span></div>
+        <div class="plano-preco" id="preco-pro" style="color:var(--pri)">R$149<span id="ciclo-lbl-pro">/mês</span></div>
         <div class="plano-desc">Para assistências em crescimento</div>
         <div class="plano-feat">
           <div class="plano-feat-item ok"><i class="ti ti-check"></i> Tudo do Básico</div>
@@ -3996,7 +4004,7 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
       <!-- ENTERPRISE -->
       <div class="plano-card enterprise" id="plano-card-enterprise" onclick="selecionarPlano('enterprise')">
         <div class="plano-nome" style="color:#b45309">Enterprise</div>
-        <div class="plano-preco" style="color:#b45309">R$299<span>/mês</span></div>
+        <div class="plano-preco" id="preco-enterprise" style="color:#b45309">R$299<span id="ciclo-lbl-enterprise">/mês</span></div>
         <div class="plano-desc">Para redes e múltiplas unidades</div>
         <div class="plano-feat">
           <div class="plano-feat-item ok"><i class="ti ti-check"></i> Tudo do Pro</div>
@@ -5538,6 +5546,46 @@ function abrirWhatsAppSuporte(){
 // Abre o modal de planos (upgrade)
 function abrirUpgrade(){
   if (typeof openModal === 'function') openModal('modal-planos');
+  if (typeof setCicloPlano === 'function') setCicloPlano(_cicloPlano||'mensal');
+}
+
+// Ciclo de cobrança escolhido no modal (mensal/anual)
+let _cicloPlano = 'mensal';
+const DESCONTO_ANUAL = 0.17; // 17% off no anual (~2 meses grátis). Ajuste se quiser.
+
+function setCicloPlano(ciclo){
+  _cicloPlano = ciclo;
+  const anual = ciclo === 'anual';
+  // Botões do toggle
+  const bm=document.getElementById('ciclo-mensal'), ba=document.getElementById('ciclo-anual');
+  if(bm&&ba){
+    bm.style.background = anual?'transparent':'var(--pri)';
+    bm.style.color = anual?'var(--txt2)':'#fff';
+    ba.style.background = anual?'var(--pri)':'transparent';
+    ba.style.color = anual?'#fff':'var(--txt2)';
+  }
+  // Recalcula cada preço
+  ['basico','pro','enterprise'].forEach(id=>{
+    const plano = PLANOS[id]; if(!plano) return;
+    const mensal = parseFloat(plano.preco)||0;
+    const el=document.getElementById('preco-'+id);
+    const lbl=document.getElementById('ciclo-lbl-'+id);
+    if(!el) return;
+    if(anual){
+      // Preço mensal equivalente no plano anual (com desconto)
+      const mensalComDesc = mensal*(1-DESCONTO_ANUAL);
+      const totalAno = mensalComDesc*12;
+      el.innerHTML = `R$${mensalComDesc.toFixed(0)}<span id="ciclo-lbl-${id}">/mês</span>`;
+      el.insertAdjacentHTML('afterend', '');
+      // Mostra o total anual embaixo (cria/atualiza)
+      let tot=document.getElementById('total-ano-'+id);
+      if(!tot){ tot=document.createElement('div'); tot.id='total-ano-'+id; tot.style.cssText='font-size:11px;color:var(--success);font-weight:600;margin-top:-6px;margin-bottom:6px'; el.after(tot); }
+      tot.textContent = `R$${totalAno.toFixed(0)}/ano · economize R$${(mensal*12-totalAno).toFixed(0)}`;
+    } else {
+      el.innerHTML = `R$${mensal.toFixed(0)}<span id="ciclo-lbl-${id}">/mês</span>`;
+      const tot=document.getElementById('total-ano-'+id); if(tot) tot.remove();
+    }
+  });
 }
 
 // Dentro do modal de planos: falar no WhatsApp para fazer upgrade
@@ -20844,6 +20892,12 @@ function selecionarPlano(planoId) {
 function abrirConfirmacaoPlano(atual, planoId){
   const novo = PLANOS[planoId];
   const upgrade = (parseFloat(novo.preco)||0) >= (parseFloat(atual.preco)||0);
+  const anual = _cicloPlano === 'anual';
+  const mensal = parseFloat(novo.preco)||0;
+  // Valor da cobrança conforme o ciclo
+  const valorCobranca = anual ? (mensal*(1-DESCONTO_ANUAL)*12) : mensal;
+  const cicloLabel = anual ? 'por ano' : 'por mês';
+  const economia = anual ? (mensal*12 - valorCobranca) : 0;
   // Monta a lista do "que muda" a partir dos recursos do novo plano
   const recursos = (novo.recursos || novo.features || []);
   const listaRecursos = Array.isArray(recursos) && recursos.length
@@ -20867,24 +20921,38 @@ function abrirConfirmacaoPlano(atual, planoId){
       </div>
     </div>
 
+    <div style="display:flex;justify-content:center;margin-bottom:14px">
+      <div style="display:inline-flex;background:var(--bg2);border:1px solid var(--border);border-radius:99px;padding:3px;font-size:12px">
+        <span onclick="_cicloPlano='mensal';closeModal('modal-generic');abrirConfirmacaoPlano(${JSON.stringify(atual).replace(/"/g,'&quot;')},'${planoId}')" style="cursor:pointer;padding:5px 14px;border-radius:99px;font-weight:600;${!anual?'background:var(--pri);color:#fff':'color:var(--txt2)'}">Mensal</span>
+        <span onclick="_cicloPlano='anual';closeModal('modal-generic');abrirConfirmacaoPlano(${JSON.stringify(atual).replace(/"/g,'&quot;')},'${planoId}')" style="cursor:pointer;padding:5px 14px;border-radius:99px;font-weight:600;${anual?'background:var(--pri);color:#fff':'color:var(--txt2)'}">Anual -17%</span>
+      </div>
+    </div>
+
     ${listaRecursos ? `<div style="margin-bottom:14px"><div style="font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--txt3);margin-bottom:8px">O que você passa a ter</div>${listaRecursos}</div>` : ''}
 
-    <div style="background:rgba(30,94,255,.06);border-radius:10px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <span style="font-size:13px;color:var(--txt2)">Valor da cobrança agora</span>
-      <span style="font-size:18px;font-weight:800;color:var(--pri)">R$ ${novo.preco}</span>
+    <div style="background:rgba(30,94,255,.06);border-radius:10px;padding:12px 14px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:13px;color:var(--txt2)">Valor da cobrança agora</span>
+        <span style="font-size:18px;font-weight:800;color:var(--pri)">R$ ${valorCobranca.toFixed(2)} <span style="font-size:11px;font-weight:600;color:var(--txt3)">${cicloLabel}</span></span>
+      </div>
+      ${economia>0?`<div style="text-align:right;font-size:11px;color:var(--success);font-weight:600;margin-top:3px">Você economiza R$ ${economia.toFixed(2)} no ano</div>`:''}
     </div>
     <div style="font-size:11.5px;color:var(--txt3);line-height:1.5"><i class="ti ti-info-circle"></i> O novo plano é ativado <b>somente após a confirmação do pagamento</b>. Até lá, você continua no plano ${esc(atual.nome)}.</div>
   `;
   const foot = `
     <button class="btn btn-out" onclick="closeModal('modal-generic')">Cancelar</button>
-    <button class="btn btn-pri" onclick="closeModal('modal-generic');processarMudancaPlano('${planoId}')"><i class="ti ti-arrow-right"></i> Continuar para pagamento</button>`;
+    <button class="btn btn-pri" onclick="closeModal('modal-generic');processarMudancaPlano('${planoId}','${_cicloPlano}')"><i class="ti ti-arrow-right"></i> Continuar para pagamento</button>`;
   abrirModalGenerico(html, foot);
 }
 
 // Passo 2 — Gera a cobrança SEM trocar o plano (só troca quando pagar)
-async function processarMudancaPlano(planoId){
+async function processarMudancaPlano(planoId, ciclo){
   const p = PLANOS[planoId];
   const empId = EID();
+  const anual = ciclo === 'anual';
+  const mensal = parseFloat(p.preco)||0;
+  const valorCobranca = anual ? +(mensal*(1-DESCONTO_ANUAL)*12).toFixed(2) : mensal;
+  const cicloTxt = anual ? 'anual' : 'mensal';
   setLoad(true);
   try{
     let cobranca = null;
@@ -20893,8 +20961,8 @@ async function processarMudancaPlano(planoId){
         body: {
           plataforma: true,
           cliente: { nome: G.empresa?.nome||'Loja', cpfCnpj: G.empresa?.doc||G.empresa?.cnpj||'', telefone: G.empresa?.telefone||'' },
-          valor: parseFloat(p.preco)||0,
-          descricao: `Plano ${p.nome} — MISU SYS`,
+          valor: valorCobranca,
+          descricao: `Plano ${p.nome} (${cicloTxt}) — MISU SYS`,
           tipo: 'UNDEFINED'
         }
       });
@@ -20919,7 +20987,7 @@ async function processarMudancaPlano(planoId){
     }
     try{
       await db.from('cobrancas_plano').insert({
-        empresa_id: empId, plano: planoId, valor: parseFloat(p.preco)||0,
+        empresa_id: empId, plano: planoId, valor: valorCobranca,
         status: 'pendente', asaas_id: upd.pagamento_asaas_id,
         invoice_url: upd.pagamento_cobranca_url, pix: upd.pagamento_pix,
         vence_em: vence.toISOString()
@@ -20929,7 +20997,7 @@ async function processarMudancaPlano(planoId){
     setLoad(false);
 
     if(cobranca && (cobranca.invoiceUrl || cobranca.pixCopiaECola)){
-      mostrarCobrancaPlano(p, cobranca, vence);
+      mostrarCobrancaPlano(p, cobranca, vence, valorCobranca, cicloTxt);
     } else {
       notify(`Cobrança do plano ${p.nome} registrada. O plano será ativado assim que o pagamento for confirmado.`,'info',8000);
     }
@@ -20941,13 +21009,15 @@ async function processarMudancaPlano(planoId){
 }
 
 // Passo 3 — Modal de pagamento melhorado (PIX/fatura)
-function mostrarCobrancaPlano(plano, cobranca, vence){
+function mostrarCobrancaPlano(plano, cobranca, vence, valorCobranca, cicloTxt){
   const venceStr = new Date(vence).toLocaleDateString('pt-BR');
+  const valor = valorCobranca!=null ? valorCobranca : (parseFloat(plano.preco)||0);
+  const cicloLbl = cicloTxt==='anual' ? '/ano' : '/mês';
   const html = `
     <div style="text-align:center;margin-bottom:14px">
       <div style="width:52px;height:52px;border-radius:50%;background:rgba(30,94,255,.1);display:inline-flex;align-items:center;justify-content:center;margin-bottom:8px"><i class="ti ti-receipt-2" style="font-size:26px;color:var(--pri)"></i></div>
       <div style="font-weight:800;font-size:16px;color:var(--txt)">Pague para ativar o ${esc(plano.nome)}</div>
-      <div style="font-size:12.5px;color:var(--txt3);margin-top:2px">R$ ${plano.preco}/mês · vence em ${venceStr}</div>
+      <div style="font-size:12.5px;color:var(--txt3);margin-top:2px">R$ ${valor.toFixed(2)}${cicloLbl} · vence em ${venceStr}</div>
     </div>
 
     ${cobranca.pixCopiaECola ? `
