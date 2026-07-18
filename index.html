@@ -3980,10 +3980,11 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
           <div class="plano-feat-item no"><i class="ti ti-x"></i> WhatsApp automático</div>
           <div class="plano-feat-item no"><i class="ti ti-x"></i> Múltiplos caixas</div>
         </div>
+        <div class="plano-cta"><i class="ti ti-hand-click"></i> Escolher Básico</div>
       </div>
 
       <!-- PRO -->
-      <div class="plano-card" id="plano-card-pro" onclick="selecionarPlano('pro')" style="border-color:rgba(30,94,255,.4)">
+      <div class="plano-card" id="plano-card-pro" onclick="selecionarPlano('pro')">
         <div style="position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:linear-gradient(90deg,var(--pri2),var(--pri));color:#fff;font-size:10px;font-weight:700;padding:3px 12px;border-radius:0 0 8px 8px;font-family:'DM Sans',sans-serif;white-space:nowrap">MAIS POPULAR</div>
         <div class="plano-nome" style="color:var(--pri);margin-top:12px">Pro</div>
         <div class="plano-preco" id="preco-pro" style="color:var(--pri)">R$149<span id="ciclo-lbl-pro">/mês</span></div>
@@ -3999,6 +4000,7 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
           <div class="plano-feat-item no"><i class="ti ti-x"></i> WhatsApp automático</div>
           <div class="plano-feat-item no"><i class="ti ti-x"></i> API + Integrações</div>
         </div>
+        <div class="plano-cta"><i class="ti ti-hand-click"></i> Escolher Pro</div>
       </div>
 
       <!-- ENTERPRISE -->
@@ -4016,6 +4018,7 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
           <div class="plano-feat-item ok"><i class="ti ti-check"></i> Suporte prioritário</div>
           <div class="plano-feat-item ok"><i class="ti ti-check"></i> Multi-unidade</div>
         </div>
+        <div class="plano-cta"><i class="ti ti-hand-click"></i> Escolher Enterprise</div>
       </div>
     </div>
 
@@ -5040,9 +5043,13 @@ function notify(msg, type='success', dur=3200) {
 function openModal(id){document.getElementById(id)?.classList.add('open')}
 function closeModal(id){
   document.getElementById(id)?.classList.remove('open');
+  if(id==='modal-generic'){
+    const mg=document.getElementById('modal-generic');
+    if(mg){ mg.style.zIndex=''; mg.style.background=''; }
+  }
   if(id==='modal-venda-ok'){clearCart();renderPDVGrid();}
 }
-document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open')}));
+document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m){m.classList.remove('open');if(m.id==='modal-generic'){m.style.zIndex='';m.style.background='';}}}));
 
 function confirmAct(title,msg,cb){
   document.getElementById('conf-title').textContent=title;
@@ -5547,11 +5554,28 @@ function abrirWhatsAppSuporte(){
 function abrirUpgrade(){
   if (typeof openModal === 'function') openModal('modal-planos');
   if (typeof setCicloPlano === 'function') setCicloPlano(_cicloPlano||'mensal');
+  if (typeof _ativarGlowPlanos === 'function') setTimeout(_ativarGlowPlanos, 50);
 }
 
 // Ciclo de cobrança escolhido no modal (mensal/anual)
 let _cicloPlano = 'mensal';
 const DESCONTO_ANUAL = 0.17; // 17% off no anual (~2 meses grátis). Ajuste se quiser.
+
+// Glow que segue o mouse sobre os cards de plano
+function _ativarGlowPlanos(){
+  document.querySelectorAll('.plano-card').forEach(card=>{
+    if(card._glowOn) return; card._glowOn = true;
+    card.addEventListener('mousemove', e=>{
+      const r = card.getBoundingClientRect();
+      card.style.setProperty('--mx', (e.clientX - r.left)+'px');
+      card.style.setProperty('--my', (e.clientY - r.top)+'px');
+    });
+    card.addEventListener('mouseleave', ()=>{
+      card.style.setProperty('--mx', '50%');
+      card.style.setProperty('--my', '50%');
+    });
+  });
+}
 
 function setCicloPlano(ciclo){
   _cicloPlano = ciclo;
@@ -10398,6 +10422,18 @@ function abrirModalGenerico(html, footerHtml){
   const f=document.getElementById('modal-generic-footer');
   if(c)c.innerHTML=html;
   if(f)f.innerHTML=footerHtml||'';
+  // Se já houver outro modal aberto, sobrepõe (z-index maior + overlay mais suave)
+  const mg=document.getElementById('modal-generic');
+  if(mg){
+    const outroAberto=[...document.querySelectorAll('.modal-overlay.open')].some(m=>m.id!=='modal-generic');
+    if(outroAberto){
+      mg.style.zIndex='1100';
+      mg.style.background='rgba(15,10,30,.45)';
+    } else {
+      mg.style.zIndex='';
+      mg.style.background='';
+    }
+  }
   openModal('modal-generic');
 }
 
@@ -18243,36 +18279,81 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
 /* Modal de planos */
 #modal-planos .modal { max-width: 760px; }
 .plano-card {
-  border: 2px solid var(--border); border-radius: 18px;
-  padding: 24px 20px 22px; transition: transform .22s cubic-bezier(.2,.7,.3,1), box-shadow .22s, border-color .22s; cursor: pointer;
-  position: relative; overflow: hidden; background: var(--surface);
+  --glow: 30,94,255;                 /* cor do glow por plano (RGB) */
+  --card-bg1: var(--surface);        /* fundo do plano */
+  --card-bg2: var(--surface);
+  border: 2px solid transparent; border-radius: 20px;
+  padding: 26px 22px 24px;
+  transition: transform .28s cubic-bezier(.2,.7,.3,1), box-shadow .28s;
+  cursor: pointer; position: relative; overflow: hidden;
+  background:
+    linear-gradient(160deg, var(--card-bg1), var(--card-bg2)) padding-box,
+    linear-gradient(160deg, rgba(var(--glow),.35), rgba(var(--glow),.08)) border-box;
 }
+/* Borda-glow que SEGUE o mouse: gradiente radial recortado só na borda */
+.plano-card::before {
+  content: ''; position: absolute; inset: 0; border-radius: 20px; padding: 2px;
+  background: radial-gradient(160px circle at var(--mx,50%) var(--my,50%),
+              rgba(var(--glow),.95), rgba(var(--glow),0) 60%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 3;
+}
+.plano-card:hover::before { opacity: 1; }
+/* Brilho suave interno acompanhando o mouse */
 .plano-card::after {
-  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
-  background: linear-gradient(90deg, var(--border2), var(--border2)); opacity: .6; transition: opacity .22s;
+  content: ''; position: absolute; inset: 0; border-radius: 20px;
+  background: radial-gradient(240px circle at var(--mx,50%) var(--my,0%),
+              rgba(var(--glow),.14), transparent 60%);
+  opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 0;
 }
-.plano-card:hover { border-color: var(--pri); transform: translateY(-6px) scale(1.01); box-shadow: 0 18px 40px rgba(0,0,0,.16); }
 .plano-card:hover::after { opacity: 1; }
-#plano-card-pro { border-color: rgba(30,94,255,.45); box-shadow: 0 8px 28px rgba(30,94,255,.12); }
-#plano-card-pro::after { background: linear-gradient(90deg, var(--pri2), var(--pri)); opacity: 1; }
-#plano-card-pro:hover { box-shadow: 0 22px 48px rgba(30,94,255,.28); }
-.plano-card.enterprise::after { background: linear-gradient(90deg, #f59e0b, #d97706); opacity: 1; }
+.plano-card > * { position: relative; z-index: 1; }
+.plano-card:hover {
+  transform: translateY(-8px) scale(1.035);
+  box-shadow: 0 26px 55px rgba(var(--glow),.30), 0 0 0 1px rgba(var(--glow),.18);
+}
+
+/* Cores próprias de cada plano */
+#plano-card-basico {
+  --glow: 16,185,129;
+  --card-bg1: rgba(16,185,129,.06); --card-bg2: rgba(16,185,129,.01);
+}
+#plano-card-pro {
+  --glow: 30,94,255;
+  --card-bg1: rgba(30,94,255,.08); --card-bg2: rgba(30,94,255,.015);
+}
+#plano-card-enterprise {
+  --glow: 245,158,11;
+  --card-bg1: rgba(245,158,11,.07); --card-bg2: rgba(245,158,11,.015);
+}
+
+/* Dica "clique para escolher" que surge no hover */
+.plano-card .plano-cta {
+  margin-top: 16px; text-align: center; font-size: 12px; font-weight: 700;
+  color: #fff; background: linear-gradient(90deg, rgba(var(--glow),.85), rgb(var(--glow)));
+  padding: 10px; border-radius: 10px; letter-spacing: .2px;
+  opacity: 0; transform: translateY(6px); transition: opacity .25s, transform .25s;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  box-shadow: 0 6px 18px rgba(var(--glow),.35);
+}
+.plano-card:hover .plano-cta { opacity: 1; transform: translateY(0); }
+.plano-card.ativo .plano-cta { display: none; }
+
 .plano-card.ativo {
-  border-color: var(--pri);
-  box-shadow: 0 0 0 3px rgba(30,94,255,.18), 0 10px 30px rgba(30,94,255,.14);
+  box-shadow: 0 0 0 3px rgba(var(--glow),.25), 0 10px 30px rgba(var(--glow),.16);
 }
-.plano-card.ativo::before {
-  content: '✓ Plano Atual';
-  position: absolute; top: 12px; right: 12px;
-  background: linear-gradient(90deg,var(--pri2),var(--pri)); color: #fff;
-  font-size: 10px; font-weight: 700; padding: 4px 9px;
-  border-radius: 6px; font-family: 'DM Sans', sans-serif; z-index: 2;
-  box-shadow: 0 4px 12px rgba(30,94,255,.35);
+.plano-card.ativo::before { opacity: 0 !important; }
+/* Badge "Plano Atual" */
+.plano-card.ativo > .plano-nome::after {
+  content: '✓ Atual';
+  position: absolute; top: -4px; right: 0;
+  background: linear-gradient(90deg, rgba(var(--glow),.85), rgb(var(--glow))); color: #fff;
+  font-size: 10px; font-weight: 700; padding: 3px 8px;
+  border-radius: 6px; font-family: 'DM Sans', sans-serif;
+  box-shadow: 0 4px 12px rgba(var(--glow),.4);
 }
-.plano-card.enterprise { border-color: rgba(245,158,11,.4); }
-.plano-card.enterprise:hover { border-color: #d97706; }
-.plano-card.enterprise.ativo { border-color: #d97706; box-shadow: 0 0 0 3px rgba(245,158,11,.18), 0 10px 30px rgba(245,158,11,.16); }
-.plano-nome { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 19px; margin-bottom: 4px; letter-spacing: -.3px; }
+.plano-nome { position: relative; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 19px; margin-bottom: 4px; letter-spacing: -.3px; }
 .plano-preco { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 30px; margin-bottom: 4px; letter-spacing: -1px; }
 .plano-preco span { font-size: 14px; font-weight: 400; color: var(--txt3); }
 .plano-desc { font-size: 12.5px; color: var(--txt2); margin-bottom: 16px; min-height: 32px; }
@@ -20941,7 +21022,7 @@ function abrirConfirmacaoPlano(atual, planoId){
   `;
   const foot = `
     <button class="btn btn-out" onclick="closeModal('modal-generic')">Cancelar</button>
-    <button class="btn btn-pri" onclick="closeModal('modal-generic');processarMudancaPlano('${planoId}','${_cicloPlano}')"><i class="ti ti-arrow-right"></i> Continuar para pagamento</button>`;
+    <button class="btn btn-pri" onclick="closeModal('modal-generic');closeModal('modal-planos');processarMudancaPlano('${planoId}','${_cicloPlano}')"><i class="ti ti-arrow-right"></i> Continuar para pagamento</button>`;
   abrirModalGenerico(html, foot);
 }
 
