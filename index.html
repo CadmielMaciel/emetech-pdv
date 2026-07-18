@@ -5558,10 +5558,54 @@ function abrirWhatsAppSuporte(){
 }
 
 // Abre o modal de planos (upgrade)
-function abrirUpgrade(){
+async function abrirUpgrade(){
   if (typeof openModal === 'function') openModal('modal-planos');
+  // Sincroniza preço/nome dos planos com o que o admin configurou no banco
+  await sincronizarPlanosDoBanco();
   if (typeof setCicloPlano === 'function') setCicloPlano(_cicloPlano||'mensal');
   if (typeof _ativarGlowPlanos === 'function') setTimeout(_ativarGlowPlanos, 50);
+  // Atualiza nomes/descrições visíveis nos cards
+  if (typeof _aplicarPlanosNosCards === 'function') _aplicarPlanosNosCards();
+}
+
+// Busca os planos do banco (mesma tabela que o admin edita) e sobrescreve
+// preço e nome no objeto PLANOS local. Mantém features/limites do código.
+async function sincronizarPlanosDoBanco(){
+  try{
+    const { data, error } = await db.from('planos').select('id,nome,preco').order('preco');
+    if(error || !data || !data.length) return; // sem dados: mantém os do código
+    // Mapeia por id (basico/pro/enterprise) OU por ordem de preço
+    data.forEach(row=>{
+      const id = (row.id||'').toLowerCase();
+      // Casa pelo id direto, ou por nome aproximado
+      let alvo = PLANOS[id];
+      if(!alvo){
+        const nomeLc = (row.nome||'').toLowerCase();
+        if(nomeLc.includes('bás')||nomeLc.includes('bas')) alvo=PLANOS.basico;
+        else if(nomeLc.includes('pro')) alvo=PLANOS.pro;
+        else if(nomeLc.includes('enter')) alvo=PLANOS.enterprise;
+      }
+      if(alvo){
+        if(row.preco!=null) alvo.preco = parseFloat(row.preco)||alvo.preco;
+        if(row.nome) alvo.nome = row.nome;
+      }
+    });
+  }catch(e){ /* silencioso: mantém os planos do código */ }
+}
+
+// Atualiza os nomes visíveis nos 3 cards (preços são feitos pelo setCicloPlano)
+function _aplicarPlanosNosCards(){
+  const map = { basico:'basico', pro:'pro', enterprise:'enterprise' };
+  Object.keys(map).forEach(id=>{
+    const card = document.getElementById('plano-card-'+id);
+    if(!card) return;
+    const nomeEl = card.querySelector('.plano-nome');
+    if(nomeEl && PLANOS[id]?.nome){
+      // Preserva o badge "Atual" (::after) — só troca o texto
+      nomeEl.childNodes[0] && (nomeEl.childNodes[0].nodeValue = PLANOS[id].nome);
+      if(!nomeEl.childNodes.length) nomeEl.textContent = PLANOS[id].nome;
+    }
+  });
 }
 
 // Ciclo de cobrança escolhido no modal (mensal/anual)
