@@ -20837,14 +20837,51 @@ function selecionarPlano(planoId) {
   if (!PLANOS[planoId]) return;
   const atual = getPlanoAtual();
   if (atual.id === planoId) return;
-  const p = PLANOS[planoId];
-  confirmAct(
-    `Mudar para plano ${p.nome}`,
-    `Deseja mudar para o plano ${p.nome} (R$ ${p.preco}/mês)? Será gerada uma cobrança para ativar o plano.`,
-    () => processarMudancaPlano(planoId)
-  );
+  abrirConfirmacaoPlano(atual, planoId);
 }
 
+// Passo 1 — Confirmação com resumo (plano atual -> novo, valor, o que muda)
+function abrirConfirmacaoPlano(atual, planoId){
+  const novo = PLANOS[planoId];
+  const upgrade = (parseFloat(novo.preco)||0) >= (parseFloat(atual.preco)||0);
+  // Monta a lista do "que muda" a partir dos recursos do novo plano
+  const recursos = (novo.recursos || novo.features || []);
+  const listaRecursos = Array.isArray(recursos) && recursos.length
+    ? recursos.slice(0,6).map(r=>`<div style="display:flex;gap:8px;align-items:center;font-size:12.5px;color:var(--txt2);margin-bottom:4px"><i class="ti ti-check" style="color:var(--success)"></i> ${esc(typeof r==='string'?r:(r.nome||r.label||''))}</div>`).join('')
+    : '';
+  const html = `
+    <div class="card-title" style="gap:8px;margin-bottom:4px"><i class="ti ti-rocket" style="color:var(--pri)"></i> ${upgrade?'Upgrade':'Mudança'} de plano</div>
+    <div style="font-size:12.5px;color:var(--txt3);margin-bottom:16px">Confira os detalhes antes de continuar.</div>
+
+    <div style="display:flex;align-items:stretch;gap:10px;margin-bottom:16px">
+      <div style="flex:1;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--bg2);text-align:center">
+        <div style="font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--txt3);margin-bottom:4px">Plano atual</div>
+        <div style="font-weight:700;font-size:14px;color:var(--txt)">${esc(atual.nome)}</div>
+        <div style="font-size:12px;color:var(--txt2)">R$ ${atual.preco}/mês</div>
+      </div>
+      <div style="display:flex;align-items:center;color:var(--pri);font-size:20px"><i class="ti ti-arrow-right"></i></div>
+      <div style="flex:1;padding:12px;border:2px solid var(--pri);border-radius:10px;background:rgba(30,94,255,.06);text-align:center">
+        <div style="font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--pri);margin-bottom:4px">Novo plano</div>
+        <div style="font-weight:800;font-size:14px;color:var(--txt)">${esc(novo.nome)}</div>
+        <div style="font-size:12px;color:var(--pri);font-weight:600">R$ ${novo.preco}/mês</div>
+      </div>
+    </div>
+
+    ${listaRecursos ? `<div style="margin-bottom:14px"><div style="font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--txt3);margin-bottom:8px">O que você passa a ter</div>${listaRecursos}</div>` : ''}
+
+    <div style="background:rgba(30,94,255,.06);border-radius:10px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <span style="font-size:13px;color:var(--txt2)">Valor da cobrança agora</span>
+      <span style="font-size:18px;font-weight:800;color:var(--pri)">R$ ${novo.preco}</span>
+    </div>
+    <div style="font-size:11.5px;color:var(--txt3);line-height:1.5"><i class="ti ti-info-circle"></i> O novo plano é ativado <b>somente após a confirmação do pagamento</b>. Até lá, você continua no plano ${esc(atual.nome)}.</div>
+  `;
+  const foot = `
+    <button class="btn btn-out" onclick="closeModal('modal-generic')">Cancelar</button>
+    <button class="btn btn-pri" onclick="closeModal('modal-generic');processarMudancaPlano('${planoId}')"><i class="ti ti-arrow-right"></i> Continuar para pagamento</button>`;
+  abrirModalGenerico(html, foot);
+}
+
+// Passo 2 — Gera a cobrança SEM trocar o plano (só troca quando pagar)
 async function processarMudancaPlano(planoId){
   const p = PLANOS[planoId];
   const empId = EID();
@@ -20863,9 +20900,13 @@ async function processarMudancaPlano(planoId){
       });
       if(!error && data && !data.error && data.configured!==false){ cobranca = data; }
     }catch(e){}
+
     const vence = new Date(); vence.setDate(vence.getDate()+7);
+    // IMPORTANTE: NÃO troca o plano agora. Guarda o plano solicitado
+    // em pagamento_plano_novo. O plano só efetiva quando o pagamento
+    // for confirmado (webhook) ou liberado manualmente no admin.
     const upd = {
-      plano: planoId,
+      pagamento_plano_novo: planoId,
       pagamento_status: 'pendente',
       pagamento_vence_em: vence.toISOString(),
       pagamento_cobranca_url: cobranca?.invoiceUrl || null,
@@ -20874,8 +20915,7 @@ async function processarMudancaPlano(planoId){
     };
     let {error:upErr} = await db.from('empresas').update(upd).eq('id',empId);
     if(upErr && /column|does not exist|schema/i.test(upErr.message||'')){
-      await db.from('empresas').update({plano:planoId}).eq('id',empId);
-      notify('Plano alterado. Rode a migração CB01 para ativar o controle de cobrança.','warn',7000);
+      notify('Rode as migrações CB01 e CB02 para ativar o controle de cobrança de plano.','warn',7000);
     }
     try{
       await db.from('cobrancas_plano').insert({
@@ -20886,38 +20926,47 @@ async function processarMudancaPlano(planoId){
       });
     }catch(e){}
     if(G.empresa){ Object.assign(G.empresa, upd); }
-    setPlanoAtual(planoId);
     setLoad(false);
-    renderModalPlanos();
+
     if(cobranca && (cobranca.invoiceUrl || cobranca.pixCopiaECola)){
       mostrarCobrancaPlano(p, cobranca, vence);
     } else {
-      notify(`Plano ${p.nome} selecionado. Pagamento pendente — regularize em ate 7 dias para nao bloquear.`,'warn',8000);
+      notify(`Cobrança do plano ${p.nome} registrada. O plano será ativado assim que o pagamento for confirmado.`,'info',8000);
     }
     if(typeof verificarPagamentoPendente==='function') verificarPagamentoPendente();
   }catch(e){
     setLoad(false);
-    notify('Erro ao processar mudanca de plano: '+(e.message||''),'error',6000);
+    notify('Erro ao processar mudança de plano: '+(e.message||''),'error',6000);
   }
 }
 
+// Passo 3 — Modal de pagamento melhorado (PIX/fatura)
 function mostrarCobrancaPlano(plano, cobranca, vence){
   const venceStr = new Date(vence).toLocaleDateString('pt-BR');
-  const html = `<div class="card-title" style="gap:8px;margin-bottom:8px"><i class="ti ti-receipt" style="color:var(--pri)"></i> Pagamento do plano ${esc(plano.nome)}</div>
-    <div style="font-size:13px;color:var(--txt2);margin-bottom:14px">Valor: <b>R$ ${plano.preco}/mês</b> · Vencimento: <b>${venceStr}</b></div>
+  const html = `
+    <div style="text-align:center;margin-bottom:14px">
+      <div style="width:52px;height:52px;border-radius:50%;background:rgba(30,94,255,.1);display:inline-flex;align-items:center;justify-content:center;margin-bottom:8px"><i class="ti ti-receipt-2" style="font-size:26px;color:var(--pri)"></i></div>
+      <div style="font-weight:800;font-size:16px;color:var(--txt)">Pague para ativar o ${esc(plano.nome)}</div>
+      <div style="font-size:12.5px;color:var(--txt3);margin-top:2px">R$ ${plano.preco}/mês · vence em ${venceStr}</div>
+    </div>
+
     ${cobranca.pixCopiaECola ? `
-      <div style="text-align:center;margin-bottom:12px"><div id="qr-plano-box" style="display:inline-block"></div></div>
-      <div style="font-size:11px;color:var(--txt3);margin-bottom:4px">PIX copia e cola:</div>
-      <div style="display:flex;gap:6px;margin-bottom:12px">
-        <input type="text" readonly value="${esc(cobranca.pixCopiaECola)}" id="pix-plano-input" style="flex:1;font-size:11px" onclick="this.select()">
-        <button class="btn btn-out btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('pix-plano-input').value);notify('PIX copiado!','success')"><i class="ti ti-copy"></i></button>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px">
+        <div style="text-align:center;margin-bottom:10px"><div id="qr-plano-box" style="display:inline-block;background:#fff;padding:8px;border-radius:8px"></div></div>
+        <div style="font-size:11px;color:var(--txt3);margin-bottom:5px;text-align:center">Escaneie o QR ou copie o código PIX</div>
+        <div style="display:flex;gap:6px">
+          <input type="text" readonly value="${esc(cobranca.pixCopiaECola)}" id="pix-plano-input" style="flex:1;font-size:11px;font-family:monospace" onclick="this.select()">
+          <button class="btn btn-pri btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('pix-plano-input').value);notify('PIX copiado!','success')"><i class="ti ti-copy"></i> Copiar</button>
+        </div>
       </div>` : ''}
-    ${cobranca.invoiceUrl ? `<a href="${esc(cobranca.invoiceUrl)}" target="_blank" class="btn btn-pri" style="width:100%;text-align:center;box-sizing:border-box"><i class="ti ti-external-link"></i> Abrir fatura / pagar</a>` : ''}
-    <div style="font-size:11.5px;color:var(--warn);margin-top:12px;padding:10px;background:rgba(245,158,11,.08);border-radius:8px"><i class="ti ti-alert-triangle"></i> Apos o pagamento, a confirmacao pode levar alguns minutos. Se nao pagar ate ${venceStr}, o acesso sera bloqueado.</div>`;
-  const foot = `<button class="btn btn-pri" onclick="closeModal('modal-generic')">Entendi</button>`;
+
+    ${cobranca.invoiceUrl ? `<a href="${esc(cobranca.invoiceUrl)}" target="_blank" class="btn btn-out" style="width:100%;text-align:center;box-sizing:border-box;margin-bottom:10px"><i class="ti ti-external-link"></i> Abrir fatura (cartão/boleto)</a>` : ''}
+
+    <div style="font-size:11.5px;color:var(--txt2);padding:11px;background:rgba(16,185,129,.08);border-radius:8px;line-height:1.5"><i class="ti ti-shield-check" style="color:var(--success)"></i> Assim que o pagamento for confirmado, seu plano sobe para <b>${esc(plano.nome)}</b> automaticamente — você não precisa fazer mais nada.</div>`;
+  const foot = `<button class="btn btn-pri" onclick="closeModal('modal-generic')">Já paguei / Fechar</button>`;
   abrirModalGenerico(html, foot);
   if(cobranca.pixCopiaECola){
-    setTimeout(()=>{ const box=document.getElementById('qr-plano-box'); if(box){ try{ new QRCode(box,{text:cobranca.pixCopiaECola,width:200,height:200,correctLevel:QRCode.CorrectLevel.M}); }catch(e){} } },100);
+    setTimeout(()=>{ const box=document.getElementById('qr-plano-box'); if(box){ try{ new QRCode(box,{text:cobranca.pixCopiaECola,width:190,height:190,correctLevel:QRCode.CorrectLevel.M}); }catch(e){} } },100);
   }
 }
 
