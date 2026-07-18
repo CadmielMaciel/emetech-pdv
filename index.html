@@ -18310,40 +18310,34 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
   50%  { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 }
-/* Registra a variável de posição da borda animada (para o @property funcionar em navegadores compatíveis) */
-@property --bx { syntax: '<percentage>'; inherits: false; initial-value: 50%; }
-@property --by { syntax: '<percentage>'; inherits: false; initial-value: 0%; }
 
 /* Fundo do modal de planos com gradiente que pulsa lentamente (sutil) */
-.modal-planos-anim { position: relative; overflow: hidden; }
-.modal-planos-anim::before {
-  content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none;
-  background: linear-gradient(120deg,
-    rgba(30,94,255,.06), rgba(16,185,129,.05), rgba(245,158,11,.05), rgba(30,94,255,.06));
-  background-size: 300% 300%;
+.modal-planos-anim {
+  background:
+    linear-gradient(120deg, rgba(30,94,255,.05), rgba(16,185,129,.04), rgba(245,158,11,.04), rgba(30,94,255,.05)),
+    var(--surface);
+  background-size: 300% 300%, auto;
   animation: modalGradientePulsa 14s ease infinite;
-  border-radius: inherit;
 }
-.modal-planos-anim > * { position: relative; z-index: 1; }
 
 /* Acessibilidade: desliga animações para quem prefere menos movimento */
 @media (prefers-reduced-motion: reduce) {
-  .plano-card, .plano-card .plano-borda-loop, .modal-planos-anim::before {
+  .plano-card, .plano-card .plano-borda-loop, .modal-planos-anim {
     animation: none !important;
   }
+  .plano-card { opacity: 1 !important; }
 }
 
 .plano-card {
   --glow: 30,94,255;                 /* cor do glow por plano (RGB) */
   --card-bg1: var(--surface);        /* fundo do plano */
   --card-bg2: var(--surface);
-  border: 2px solid transparent; border-radius: 20px;
+  border: 2px solid rgba(var(--glow),.28);  /* borda visível como fallback */
+  border-radius: 20px;
   padding: 26px 22px 24px;
   transition: transform .28s cubic-bezier(.2,.7,.3,1), box-shadow .28s;
   cursor: pointer; position: relative; overflow: hidden;
-  background:
-    linear-gradient(160deg, var(--card-bg1), var(--card-bg2)) padding-box,
-    linear-gradient(160deg, rgba(var(--glow),.35), rgba(var(--glow),.08)) border-box;
+  background: linear-gradient(160deg, var(--card-bg1), var(--card-bg2));
   /* Entrada suave ao abrir + flutuação contínua e discreta */
   animation: planoEntra .5s cubic-bezier(.2,.7,.3,1) both, planoFlutua 5s ease-in-out infinite;
 }
