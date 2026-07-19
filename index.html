@@ -5618,34 +5618,52 @@ async function aceitarTermosUso(){
 
 // Exibe a tela de "Acesso suspenso" com o motivo do bloqueio (NOVO)
 // PAGAMENTO DO PLANO — aviso no sistema + bloqueio por inadimplência
-function verificarPagamentoPendente(){
+async function verificarPagamentoPendente(){
   const emp = G.empresa;
   if(!emp) return;
+  // Remove avisos anteriores
+  ['aviso-pagamento','aviso-troca-plano'].forEach(id=>{ const el=document.getElementById(id); if(el) el.remove(); });
+
+  // ── 1) INADIMPLÊNCIA REAL: mensalidade do PLANO ATUAL vencida ──
+  // (isto sim pode bloquear — é dívida do plano que a loja já usa)
   const st = emp.pagamento_status;
   const vence = emp.pagamento_vence_em ? new Date(emp.pagamento_vence_em) : null;
-  // Remove aviso anterior
-  const antigo = document.getElementById('aviso-pagamento'); if(antigo) antigo.remove();
-  if(st!=='pendente' && st!=='atrasado') return;
-  if(!vence) return;
-
-  const agora = new Date();
-  const diasRestantes = Math.ceil((vence - agora)/86400000);
-
-  // Se venceu, bloqueia (mesma tela de bloqueio)
-  if(diasRestantes < 0){
-    mostrarTelaBloqueio({...emp, motivo_bloqueio:`Pagamento do plano em atraso. Regularize para reativar o acesso.`});
-    return;
+  if((st==='pendente' || st==='atrasado') && vence){
+    const dias = Math.ceil((vence - new Date())/86400000);
+    if(dias < 0){
+      mostrarTelaBloqueio({...emp, motivo_bloqueio:`Mensalidade do plano em atraso. Regularize para reativar o acesso.`});
+      return;
+    }
+    _bannerInadimplencia(emp, dias);
   }
 
-  // Senão, mostra um banner de aviso não-bloqueante
+  // ── 2) TROCA DE PLANO AGUARDANDO PAGAMENTO: NÃO bloqueia, NÃO é inadimplência ──
+  try{
+    // Expira solicitações vencidas primeiro (server-side)
+    await db.rpc('expirar_trocas_plano_vencidas').catch(()=>{});
+    const { data } = await db.from('plan_change_requests')
+      .select('*').eq('empresa_id',EID()).eq('status','pending_payment')
+      .order('criado_em',{ascending:false}).limit(1);
+    const troca = data && data[0];
+    if(troca){
+      G.trocaPendente = troca;
+      _bannerTrocaPlano(troca);
+    } else {
+      G.trocaPendente = null;
+    }
+  }catch(e){ /* tabela pode não existir ainda */ }
+}
+
+// Banner de INADIMPLÊNCIA (mensalidade do plano atual) — alerta sério
+function _bannerInadimplencia(emp, dias){
   const b = document.createElement('div');
   b.id = 'aviso-pagamento';
-  b.style.cssText = `position:fixed;bottom:16px;right:16px;z-index:9998;max-width:340px;background:var(--surface);border:1px solid var(--warn);border-left:4px solid var(--warn);border-radius:12px;padding:14px 16px;box-shadow:0 8px 28px rgba(0,0,0,.2);font-family:'DM Sans',sans-serif`;
+  b.style.cssText = `position:fixed;bottom:16px;right:16px;z-index:9998;max-width:340px;background:var(--surface);border:1px solid var(--danger,#ef4444);border-left:4px solid var(--danger,#ef4444);border-radius:12px;padding:14px 16px;box-shadow:0 8px 28px rgba(0,0,0,.2);font-family:'DM Sans',sans-serif`;
   b.innerHTML = `<div style="display:flex;align-items:flex-start;gap:10px">
-    <i class="ti ti-alert-triangle" style="color:var(--warn);font-size:20px;flex-shrink:0"></i>
+    <i class="ti ti-alert-triangle" style="color:var(--danger,#ef4444);font-size:20px;flex-shrink:0"></i>
     <div style="flex:1">
-      <div style="font-weight:700;font-size:13.5px;color:var(--txt);margin-bottom:3px">Pagamento pendente</div>
-      <div style="font-size:12px;color:var(--txt2);line-height:1.5">Regularize o plano em ${diasRestantes} dia(s) para não bloquear o acesso.</div>
+      <div style="font-weight:700;font-size:13.5px;color:var(--txt);margin-bottom:3px">Mensalidade em atraso</div>
+      <div style="font-size:12px;color:var(--txt2);line-height:1.5">Regularize a mensalidade do seu plano em ${dias} dia(s) para não bloquear o acesso.</div>
       <div style="display:flex;gap:6px;margin-top:9px">
         ${emp.pagamento_cobranca_url?`<a href="${esc(emp.pagamento_cobranca_url)}" target="_blank" class="btn btn-pri btn-sm"><i class="ti ti-external-link"></i> Pagar agora</a>`:''}
         ${emp.pagamento_pix?`<button class="btn btn-out btn-sm" onclick="navigator.clipboard.writeText('${esc(emp.pagamento_pix)}');notify('PIX copiado!','success')"><i class="ti ti-copy"></i> PIX</button>`:''}
@@ -5654,6 +5672,129 @@ function verificarPagamentoPendente(){
     <button onclick="document.getElementById('aviso-pagamento').remove()" style="background:none;border:none;color:var(--txt3);cursor:pointer;font-size:16px"><i class="ti ti-x"></i></button>
   </div>`;
   document.body.appendChild(b);
+}
+
+// Banner de TROCA DE PLANO aguardando pagamento — informativo, NÃO ameaça bloqueio
+function _bannerTrocaPlano(troca){
+  const nomePlano = (PLANOS[troca.plano_novo]?.nome) || troca.plano_novo;
+  const nomeAtual = (PLANOS[troca.plano_atual]?.nome) || troca.plano_atual || 'atual';
+  const vence = troca.vence_em ? new Date(troca.vence_em) : null;
+  const dias = vence ? Math.max(0, Math.ceil((vence - new Date())/86400000)) : null;
+  const b = document.createElement('div');
+  b.id = 'aviso-troca-plano';
+  b.style.cssText = `position:fixed;bottom:16px;right:16px;z-index:9998;max-width:350px;background:var(--surface);border:1px solid var(--pri);border-left:4px solid var(--pri);border-radius:12px;padding:14px 16px;box-shadow:0 8px 28px rgba(0,0,0,.2);font-family:'DM Sans',sans-serif`;
+  b.innerHTML = `<div style="display:flex;align-items:flex-start;gap:10px">
+    <i class="ti ti-clock-dollar" style="color:var(--pri);font-size:20px;flex-shrink:0"></i>
+    <div style="flex:1">
+      <div style="font-weight:700;font-size:13.5px;color:var(--txt);margin-bottom:3px">Troca de plano aguardando pagamento</div>
+      <div style="font-size:11.5px;color:var(--txt2);line-height:1.5">
+        Mudança para <b>${esc(nomePlano)}</b> ainda não confirmada. Seu plano <b>${esc(nomeAtual)}</b> continua ativo normalmente.
+        ${dias!=null?`Se não for pago em <b>${dias} dia(s)</b>, a solicitação é cancelada e você permanece no plano atual.`:''}
+      </div>
+      <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+        <button class="btn btn-pri btn-sm" onclick="verPagamentoTroca()"><i class="ti ti-eye"></i> Ver pagamento</button>
+        <button class="btn btn-out btn-sm" onclick="jaPagueiTroca()"><i class="ti ti-refresh"></i> Já paguei</button>
+        <button class="btn btn-out btn-sm" onclick="confirmarCancelarTroca()" style="color:var(--txt2)"><i class="ti ti-x"></i> Cancelar troca</button>
+      </div>
+    </div>
+    <button onclick="document.getElementById('aviso-troca-plano').remove()" style="background:none;border:none;color:var(--txt3);cursor:pointer;font-size:16px"><i class="ti ti-x"></i></button>
+  </div>`;
+  document.body.appendChild(b);
+}
+
+// ── Ações do banner de troca de plano ──
+
+// "Ver pagamento": reabre o modal de cobrança com PIX/fatura
+function verPagamentoTroca(){
+  const t = G.trocaPendente;
+  if(!t){ notify('Nenhuma troca pendente.','info'); return; }
+  const plano = PLANOS[t.plano_novo] || { nome: t.plano_novo, preco: t.valor };
+  const cobranca = { invoiceUrl: t.cobranca_url, pixCopiaECola: t.cobranca_pix, id: t.cobranca_id };
+  const vence = t.vence_em ? new Date(t.vence_em) : new Date();
+  if(!cobranca.invoiceUrl && !cobranca.pixCopiaECola){
+    notify('Esta solicitação não tem dados de pagamento salvos. Cancele e refaça a troca.','warn',6000);
+    return;
+  }
+  mostrarCobrancaPlano(plano, cobranca, vence, t.valor, t.ciclo_novo);
+}
+
+// "Já paguei": consulta o status real no gateway (NUNCA ativa só pelo clique)
+async function jaPagueiTroca(){
+  const t = G.trocaPendente;
+  if(!t){ return; }
+  setLoad(true);
+  try{
+    // Pede ao backend para verificar o status real da cobrança no Asaas
+    let confirmado = false;
+    try{
+      const { data } = await db.functions.invoke('verificar-pagamento', { body:{ cobranca_id: t.cobranca_id, empresa_id: EID() } });
+      confirmado = !!(data && (data.pago || data.status==='CONFIRMED' || data.status==='RECEIVED' || data.confirmado));
+    }catch(e){ /* função pode não existir: cai no aviso abaixo */ }
+
+    setLoad(false);
+    if(confirmado){
+      notify('Pagamento confirmado! Ativando seu novo plano...','success',5000);
+      // O webhook normalmente já efetiva; recarrega para refletir
+      setTimeout(()=>location.reload(), 1500);
+    } else {
+      notify('Ainda não identificamos o pagamento. Se você acabou de pagar, aguarde alguns minutos — a confirmação é automática.','info',7000);
+    }
+  }catch(e){
+    setLoad(false);
+    notify('Não foi possível verificar agora. Tente em instantes.','warn',5000);
+  }
+}
+
+// "Cancelar troca": abre o modal de confirmação
+function confirmarCancelarTroca(){
+  const t = G.trocaPendente;
+  if(!t){ return; }
+  const nomeNovo = (PLANOS[t.plano_novo]?.nome) || t.plano_novo;
+  const nomeAtual = (PLANOS[t.plano_atual]?.nome) || t.plano_atual || 'atual';
+  const html = `
+    <div class="card-title" style="gap:8px;margin-bottom:6px"><i class="ti ti-alert-circle" style="color:var(--warn)"></i> Cancelar troca de plano?</div>
+    <div style="font-size:13px;color:var(--txt2);line-height:1.6;margin-bottom:12px">
+      A solicitação de mudança para o plano <b>${esc(nomeNovo)}</b> será cancelada.
+      Você continuará utilizando o plano <b>${esc(nomeAtual)}</b> normalmente.
+    </div>
+    <div style="font-size:12px;color:var(--txt3);line-height:1.5;background:var(--bg2);border-radius:10px;padding:11px 13px">
+      <i class="ti ti-info-circle"></i> Caso exista um boleto ou cobrança PIX vinculada a essa solicitação, ela será cancelada ou desconsiderada.
+    </div>`;
+  const foot = `
+    <button class="btn btn-out" onclick="closeModal('modal-generic')">Manter solicitação</button>
+    <button class="btn btn-pri" onclick="closeModal('modal-generic');cancelarTrocaPlano('${t.id}')"><i class="ti ti-x"></i> Cancelar troca</button>`;
+  abrirModalGenerico(html, foot);
+}
+
+// Executa o cancelamento: marca a solicitação e cancela a cobrança no Asaas
+async function cancelarTrocaPlano(trocaId, silencioso){
+  if(!trocaId){ return; }
+  if(!silencioso) setLoad(true);
+  try{
+    // Cancela a cobrança no gateway (se a função existir e houver id)
+    const t = G.trocaPendente;
+    if(t && t.cobranca_id){
+      try{ await db.functions.invoke('cancelar-cobranca', { body:{ cobranca_id: t.cobranca_id, empresa_id: EID() } }); }catch(e){}
+    }
+    // Marca a solicitação como cancelada (o plano atual NÃO muda)
+    await db.from('plan_change_requests').update({
+      status: 'plan_change_cancelled',
+      cobranca_status: 'cancelado',
+      cancelado_em: new Date().toISOString(),
+      motivo_cancelamento: 'Cancelado pelo usuário'
+    }).eq('id', trocaId);
+
+    G.trocaPendente = null;
+    const el = document.getElementById('aviso-troca-plano'); if(el) el.remove();
+    if(!silencioso){
+      setLoad(false);
+      const nomeAtual = (PLANOS[G.empresa?.plano]?.nome) || G.empresa?.plano || 'atual';
+      notify(`Troca de plano cancelada. Você continua no plano ${nomeAtual}.`, 'success', 6000);
+    }
+  }catch(e){
+    if(!silencioso) setLoad(false);
+    notify('Erro ao cancelar a troca: '+(e.message||''),'error',5000);
+  }
 }
 
 function mostrarTelaBloqueio(emp){
@@ -6905,12 +7046,15 @@ Se não tiver certeza de nenhum, retorne lista vazia.`;
         confianca=data.confianca||'media'; obs=data.observacao||'';
         usouEdge=true;
       } else {
-        // Captura a mensagem real retornada pela função (cota, chave, etc.)
-        erroIA = (data && data.error) ? data.error : (error?.message || '');
-        // O invoke às vezes esconde o corpo do erro; tenta extrair do contexto
-        if(!erroIA && error && error.context){
-          try{ const j=await error.context.json(); erroIA=j.error||''; }catch(_){}
+        // Extrai a mensagem REAL do corpo da resposta (prioridade máxima)
+        if(data && data.error){ erroIA = data.error; }
+        if(!erroIA && error && error.context && typeof error.context.json==='function'){
+          try{ const j=await error.context.json(); erroIA=j?.error||''; }catch(_){}
         }
+        if(!erroIA && error && error.context && typeof error.context.text==='function'){
+          try{ const t=await error.context.text(); if(t){ try{ erroIA=JSON.parse(t)?.error||t; }catch(_){ erroIA=t; } } }catch(_){}
+        }
+        if(!erroIA) erroIA = error?.message || '';
       }
     }catch(err){
       // Tenta extrair a mensagem real do corpo da resposta da Edge Function
@@ -6922,7 +7066,8 @@ Se não tiver certeza de nenhum, retorne lista vazia.`;
       renderSugestoesCompat(lista,confianca,obs);
     } else {
       // Mostra a mensagem REAL do problema (cota, chave, modelo...), com fallback genérico
-      const msg = erroIA && !/Failed to send|fetch/i.test(erroIA)
+      const generica = /Failed to send|fetch|non-2xx|FunctionsHttpError|FunctionsFetchError/i.test(erroIA||'');
+      const msg = erroIA && !generica
         ? esc(erroIA)
         : 'Não foi possível consultar a IA agora. Verifique a função <code>compat-ia</code> e o secret <code>GEMINI_API_KEY</code> no Supabase, ou tente novamente em instantes.';
       if(sug)sug.innerHTML=`<div style="padding:10px;font-size:12px;color:var(--warn);background:rgba(245,158,11,.08);border-radius:8px">
@@ -21225,7 +21370,9 @@ function abrirConfirmacaoPlano(atual, planoId){
   openModal('modal-confirma-plano');
 }
 
-// Passo 2 — Gera a cobrança SEM trocar o plano (só troca quando pagar)
+// Passo 2 — Gera a cobrança SEM trocar o plano (só troca quando pagar).
+// A solicitação vai para plan_change_requests, NÃO marca o plano atual como
+// inadimplente (pagamento_status continua 'em_dia').
 async function processarMudancaPlano(planoId, ciclo){
   const p = PLANOS[planoId];
   const empId = EID();
@@ -21235,6 +21382,19 @@ async function processarMudancaPlano(planoId, ciclo){
   const cicloTxt = anual ? 'anual' : 'mensal';
   setLoad(true);
   try{
+    // Se já existe uma troca pendente, avisa e não cria outra
+    try{
+      const { data: existentes } = await db.from('plan_change_requests')
+        .select('id,plano_novo').eq('empresa_id',empId).eq('status','pending_payment').limit(1);
+      if(existentes && existentes.length){
+        setLoad(false);
+        confirmAct('Você já tem uma troca pendente',
+          `Existe uma solicitação de troca ainda não paga. Deseja cancelá-la e criar esta nova para o plano ${p.nome}?`,
+          async ()=>{ await cancelarTrocaPlano(existentes[0].id, true); processarMudancaPlano(planoId, ciclo); });
+        return;
+      }
+    }catch(e){ /* tabela pode não existir ainda: segue */ }
+
     let cobranca = null;
     try{
       const { data, error } = await db.functions.invoke('gerar-cobranca', {
@@ -21250,36 +21410,42 @@ async function processarMudancaPlano(planoId, ciclo){
     }catch(e){}
 
     const vence = new Date(); vence.setDate(vence.getDate()+7);
-    // IMPORTANTE: NÃO troca o plano agora. Guarda o plano solicitado
-    // em pagamento_plano_novo. O plano só efetiva quando o pagamento
-    // for confirmado (webhook) ou liberado manualmente no admin.
-    const upd = {
-      pagamento_plano_novo: planoId,
-      pagamento_status: 'pendente',
-      pagamento_vence_em: vence.toISOString(),
-      pagamento_cobranca_url: cobranca?.invoiceUrl || null,
-      pagamento_pix: cobranca?.pixCopiaECola || null,
-      pagamento_asaas_id: cobranca?.id || cobranca?.asaasId || null
+
+    // Grava a SOLICITAÇÃO de troca (tabela separada). O plano atual NÃO muda.
+    const req = {
+      empresa_id: empId,
+      plano_atual: G.empresa?.plano || null,
+      plano_novo: planoId,
+      ciclo_atual: G.empresa?.pagamento_ciclo || null,
+      ciclo_novo: cicloTxt,
+      valor: valorCobranca,
+      gateway: 'asaas',
+      cobranca_id: cobranca?.id || cobranca?.asaasId || null,
+      cobranca_url: cobranca?.invoiceUrl || null,
+      cobranca_pix: cobranca?.pixCopiaECola || null,
+      cobranca_status: 'pendente',
+      status: 'pending_payment',
+      vence_em: vence.toISOString(),
+      solicitado_por: G.profile?.email || G.profile?.nome || null
     };
-    let {error:upErr} = await db.from('empresas').update(upd).eq('id',empId);
-    if(upErr && /column|does not exist|schema/i.test(upErr.message||'')){
-      notify('Rode as migrações CB01 e CB02 para ativar o controle de cobrança de plano.','warn',7000);
-    }
+    let trocaId = null;
     try{
-      await db.from('cobrancas_plano').insert({
-        empresa_id: empId, plano: planoId, valor: valorCobranca,
-        status: 'pendente', asaas_id: upd.pagamento_asaas_id,
-        invoice_url: upd.pagamento_cobranca_url, pix: upd.pagamento_pix,
-        vence_em: vence.toISOString()
-      });
+      const { data: ins, error: insErr } = await db.from('plan_change_requests').insert(req).select('id').single();
+      if(insErr){
+        if(/relation|does not exist|schema/i.test(insErr.message||'')){
+          notify('Rode a migração PC01 para ativar o controle de troca de plano.','warn',7000);
+        }
+      } else { trocaId = ins?.id; }
     }catch(e){}
-    if(G.empresa){ Object.assign(G.empresa, upd); }
+
+    // Atualiza G.empresa em memória com a troca pendente (para o banner)
+    G.trocaPendente = { ...req, id: trocaId, planoNovoNome: p.nome };
     setLoad(false);
 
     if(cobranca && (cobranca.invoiceUrl || cobranca.pixCopiaECola)){
       mostrarCobrancaPlano(p, cobranca, vence, valorCobranca, cicloTxt);
     } else {
-      notify(`Cobrança do plano ${p.nome} registrada. O plano será ativado assim que o pagamento for confirmado.`,'info',8000);
+      notify(`Solicitação de troca para ${p.nome} registrada. O plano será ativado assim que o pagamento for confirmado.`,'info',8000);
     }
     if(typeof verificarPagamentoPendente==='function') verificarPagamentoPendente();
   }catch(e){
