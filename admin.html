@@ -3841,20 +3841,37 @@ async function confirmarLimparDadosEmpresa() {
 
 /* ── MARCAR PLANO PAGO (liberar manual) ── */
 async function marcarPlanoPago(id){
-  if(!confirm('Confirmar que esta empresa pagou o plano? Isso libera o acesso e efetiva o plano solicitado.')) return;
+  if(!confirm('Confirmar que esta empresa pagou? Isso efetiva a troca de plano pendente (se houver) e libera o acesso.')) return;
   setLoad(true);
-  // Descobre se há um plano solicitado aguardando pagamento
-  let planoEfetivar = null;
+  let planoEfetivar = null, cicloEfetivar = null, trocaId = null;
+  // 1) Procura uma solicitação de troca pendente na tabela nova
   try{
-    const {data:emp}=await db.from('empresas').select('pagamento_plano_novo').eq('id',id).maybeSingle();
-    if(emp?.pagamento_plano_novo) planoEfetivar = emp.pagamento_plano_novo;
+    const {data:troca}=await db.from('plan_change_requests')
+      .select('id,plano_novo,ciclo_novo').eq('empresa_id',id).eq('status','pending_payment')
+      .order('criado_em',{ascending:false}).limit(1).maybeSingle();
+    if(troca){ planoEfetivar = troca.plano_novo; cicloEfetivar = troca.ciclo_novo; trocaId = troca.id; }
   }catch(e){}
+  // fallback: modelo antigo
+  if(!planoEfetivar){
+    try{
+      const {data:emp}=await db.from('empresas').select('pagamento_plano_novo').eq('id',id).maybeSingle();
+      if(emp?.pagamento_plano_novo) planoEfetivar = emp.pagamento_plano_novo;
+    }catch(e){}
+  }
+  // 2) Marca a solicitação de troca como confirmada
+  if(trocaId){
+    try{ await db.from('plan_change_requests').update({
+      status:'payment_confirmed', cobranca_status:'confirmado', confirmado_em:new Date().toISOString()
+    }).eq('id',trocaId); }catch(e){}
+  }
+  // 3) Regulariza a empresa e efetiva o plano (se houver troca)
   const upd = {
     pagamento_status:'em_dia', status:'ativa',
     pagamento_vence_em:null, pagamento_cobranca_url:null, pagamento_pix:null,
     pagamento_plano_novo:null
   };
   if(planoEfetivar) upd.plano = planoEfetivar;
+  if(cicloEfetivar) upd.pagamento_ciclo = cicloEfetivar;
   const {error}=await db.from('empresas').update(upd).eq('id',id);
   try{ await db.from('cobrancas_plano').update({status:'pago',pago_em:new Date().toISOString()}).eq('empresa_id',id).eq('status','pendente'); }catch(e){}
   setLoad(false);
