@@ -6897,33 +6897,43 @@ Se não tiver certeza de nenhum, retorne lista vazia.`;
     let lista=[], confianca='media', obs='';
     // PRODUÇÃO: chama a Edge Function (chave protegida no servidor).
     // Fallback: chamada direta (funciona só no ambiente de teste do Claude).
-    let usouEdge=false;
+    let usouEdge=false, erroIA='';
     try{
       const {data,error}=await db.functions.invoke('compat-ia',{ body:{ peca:nome, marca } });
       if(!error && data && !data.error){
         lista=(data.compativeis||[]).filter(Boolean);
         confianca=data.confianca||'media'; obs=data.observacao||'';
         usouEdge=true;
+      } else {
+        // Captura a mensagem real retornada pela função (cota, chave, etc.)
+        erroIA = (data && data.error) ? data.error : (error?.message || '');
+        // O invoke às vezes esconde o corpo do erro; tenta extrair do contexto
+        if(!erroIA && error && error.context){
+          try{ const j=await error.context.json(); erroIA=j.error||''; }catch(_){}
+        }
       }
-    }catch(_){ /* Edge Function não deployada ainda: cai no fallback */ }
-
-    if(!usouEdge){
-      const resp=await fetch('https://api.anthropic.com/v1/messages',{
-        method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:prompt}]})
-      });
-      const data=await resp.json();
-      let txt=(data.content||[]).map(x=>x.text||'').join('').trim();
-      txt=txt.replace(/```json|```/g,'').trim();
-      const json=JSON.parse(txt);
-      lista=(json.compatíveis||json.compativeis||[]).filter(Boolean);
-      confianca=json.confianca; obs=json.observacao;
+    }catch(err){
+      // Tenta extrair a mensagem real do corpo da resposta da Edge Function
+      try{ const j=await err.context?.json(); erroIA=j?.error||''; }catch(_){}
+      if(!erroIA) erroIA = err?.message || '';
     }
-    renderSugestoesCompat(lista,confianca,obs);
+
+    if(usouEdge){
+      renderSugestoesCompat(lista,confianca,obs);
+    } else {
+      // Mostra a mensagem REAL do problema (cota, chave, modelo...), com fallback genérico
+      const msg = erroIA && !/Failed to send|fetch/i.test(erroIA)
+        ? esc(erroIA)
+        : 'Não foi possível consultar a IA agora. Verifique a função <code>compat-ia</code> e o secret <code>GEMINI_API_KEY</code> no Supabase, ou tente novamente em instantes.';
+      if(sug)sug.innerHTML=`<div style="padding:10px;font-size:12px;color:var(--warn);background:rgba(245,158,11,.08);border-radius:8px">
+        <b>Busca com IA indisponível.</b> ${msg}<br>
+        Você pode adicionar os modelos compatíveis manualmente no campo abaixo.
+      </div>`;
+    }
   }catch(e){
     if(sug)sug.innerHTML=`<div style="padding:10px;font-size:12px;color:var(--warn);background:rgba(245,158,11,.08);border-radius:8px">
-      <b>IA ainda não ativada.</b> Para ativar a busca automática, faça o deploy da função <code>compat-ia</code> no Supabase (guia DEPLOY_EDGE_FUNCTION_IA).<br>
-      Por enquanto, adicione os modelos compatíveis manualmente no campo abaixo.
+      <b>Busca com IA indisponível.</b> ${esc(e?.message||'Erro inesperado.')}<br>
+      Você pode adicionar os modelos compatíveis manualmente no campo abaixo.
     </div>`;
   }
 }
