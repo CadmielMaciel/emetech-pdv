@@ -5900,11 +5900,24 @@ async function adicionarAdminMaster() {
       body: { nome, email, senha }
     });
     setLoad(false);
-    if (error || data?.error) {
-      const msg = data?.error || error?.message || 'Erro desconhecido';
-      if (/já existe|already|duplicate|registered/i.test(msg)) notify('Este e-mail já tem conta. Use outro ou redefina a senha.', 'warn');
+    // Extrai a mensagem REAL do corpo (o invoke esconde em error.context quando é non-2xx)
+    let msg = '';
+    if (data?.error) msg = data.error;
+    if (!msg && error) {
+      if (error.context && typeof error.context.json === 'function') {
+        try { const j = await error.context.json(); msg = j?.error || ''; } catch(_) {}
+      }
+      if (!msg && error.context && typeof error.context.text === 'function') {
+        try { const t = await error.context.text(); if(t){ try{ msg = JSON.parse(t)?.error || t; }catch(_){ msg = t; } } } catch(_) {}
+      }
+      if (!msg) msg = error.message || '';
+    }
+    if (msg) {
+      if (/já existe|already|duplicate|registered|been registered/i.test(msg)) notify('Este e-mail já tem conta no sistema. Use outro e-mail.', 'warn', 7000);
+      else if (/Apenas um Admin Master/i.test(msg)) notify('Só um Admin Master logado pode criar outro. Confirme que você está logado como Admin Master.', 'warn', 8000);
       else if (/not found|does not exist|Failed to send|Function not found/i.test(msg)) notify('Rode o deploy da função criar-admin-master (guia DEPLOY_ADMIN_MASTER).', 'warn', 7000);
-      else notify('Erro: ' + msg, 'error', 6000);
+      else if (/column|schema|relation|violates/i.test(msg)) notify('Erro no banco: ' + msg + ' — verifique a tabela usuarios.', 'error', 9000);
+      else notify('Erro: ' + msg, 'error', 8000);
       return;
     }
     document.getElementById('adm-novo-nome').value = '';
@@ -5914,7 +5927,7 @@ async function adicionarAdminMaster() {
     renderAdminMasterListAdmin();
   } catch (e) {
     setLoad(false);
-    notify('Falha ao criar admin. Faça o deploy da função criar-admin-master.', 'error', 6000);
+    notify('Falha ao criar admin: ' + (e?.message || 'erro inesperado'), 'error', 6000);
   }
 }
 
