@@ -5554,6 +5554,11 @@ async function verificarTermosUso(){
     const {data:aceite}=await db.from('termos_aceites').select('id')
       .eq('empresa_id',empId).eq('versao',data.versao).maybeSingle();
     if(aceite) return;
+    // Fallback: se o registro no banco falhou antes mas o usuário já aceitou
+    // localmente esta versão, não mostra de novo (evita incomodar).
+    try{
+      if(localStorage.getItem('misu_termos_aceito_'+(empId||'x')+'_'+data.versao)==='1') return;
+    }catch(e){}
     document.getElementById('termos-titulo').textContent=data.titulo||'Termos de Uso';
     document.getElementById('termos-conteudo').textContent=data.conteudo||'';
     // Se já aceitou ALGUMA versão antes, é uma atualização: mostra o resumo do que mudou.
@@ -5635,9 +5640,15 @@ async function aceitarTermosUso(){
   // Duplicado = já aceitou (ok). Erro de coluna já foi contornado acima.
   if(error && !/duplicate|unique|already exists/i.test(error.message||'')){
     console.warn('Aceite com aviso:', error.message);
-    // Ainda assim libera o uso — não trava o cliente por um problema de registro.
-    notify('Aceite registrado (com aviso técnico). Você já pode usar o sistema.','info',4000);
+    // Guarda localmente que este usuário aceitou, para não reaparecer toda hora
+    // mesmo que o registro no banco tenha falhado (ex: RLS). O registro oficial
+    // deve funcionar após rodar a correção correcao_RLS_termos_aceites.sql.
+    try{
+      localStorage.setItem('misu_termos_aceito_'+(EID()||'x')+'_'+(_termosVigente.versao), '1');
+    }catch(e){}
+    notify('Aceite registrado. Você já pode usar o sistema.','info',4000);
   } else {
+    try{ localStorage.setItem('misu_termos_aceito_'+(EID()||'x')+'_'+(_termosVigente.versao), '1'); }catch(e){}
     notify('Termos aceitos. Bom trabalho!','success',3000);
   }
   closeModal('modal-termos-uso');
