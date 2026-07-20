@@ -3400,11 +3400,38 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
 </div></div>
 
 <!-- Financeiro: Lançar Pagar -->
-<div class="modal-overlay" id="modal-lanc-pag"><div class="modal">
+<div class="modal-overlay" id="modal-lanc-pag"><div class="modal" style="max-width:560px">
   <div class="modal-title"><i class="ti ti-arrow-up-right"></i>Lançar Conta a Pagar</div>
+  <input type="hidden" id="lp-id">
   <div class="fg"><label class="lbl">Descrição *</label><input type="text" id="lp-desc" placeholder="Ex: Aluguel, fornecedor..."></div>
   <div class="g2"><div class="fg"><label class="lbl">Fornecedor/Destino</label><input type="text" id="lp-forn"></div><div class="fg"><label class="lbl">Valor R$ *</label><input type="number" id="lp-val" step="0.01" min="0.01"></div></div>
-  <div class="g2"><div class="fg"><label class="lbl">Vencimento *</label><input type="date" id="lp-venc"></div><div class="fg"><label class="lbl">Categoria</label><select id="lp-cat"><option value="fornecedor">Fornecedor</option><option value="aluguel">Aluguel</option><option value="salario">Salário</option><option value="servico">Serviço</option><option value="outros">Outros</option></select></div></div>
+  <div class="g2"><div class="fg"><label class="lbl">Vencimento *</label><input type="date" id="lp-venc"></div><div class="fg"><label class="lbl">Categoria</label><select id="lp-cat"><option value="fornecedor">Fornecedor</option><option value="aluguel">Aluguel</option><option value="salario">Salário</option><option value="servico">Serviço</option><option value="imposto">Imposto/Taxa</option><option value="energia">Energia/Água/Internet</option><option value="outros">Outros</option></select></div></div>
+  <div class="g2"><div class="fg"><label class="lbl">Forma de pagamento</label><select id="lp-forma"><option value="">—</option><option value="boleto">Boleto</option><option value="pix">PIX</option><option value="dinheiro">Dinheiro</option><option value="cartao">Cartão</option><option value="transferencia">Transferência</option></select></div><div class="fg"><label class="lbl">Competência (mês ref.)</label><input type="date" id="lp-comp"></div></div>
+
+  <!-- Boleto -->
+  <div class="fg"><label class="lbl">Linha digitável do boleto (opcional)</label><input type="text" id="lp-linha" placeholder="Cole o código de barras aqui" style="font-family:monospace;font-size:12px"></div>
+  <div class="fg">
+    <label class="lbl">Anexar boleto/comprovante (opcional)</label>
+    <input type="file" id="lp-anexo" accept="image/*,application/pdf" style="font-size:12.5px">
+    <div id="lp-anexo-atual" style="font-size:11.5px;color:var(--txt3);margin-top:4px"></div>
+  </div>
+
+  <!-- Recorrência -->
+  <div class="fg" style="background:var(--bg2);border-radius:10px;padding:11px 13px">
+    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--txt)">
+      <input type="checkbox" id="lp-recorrente" onchange="toggleRecorrencia()"> Conta recorrente (repetir automaticamente)
+    </label>
+    <div id="lp-recorrencia-box" style="display:none;margin-top:10px">
+      <div class="g2">
+        <div class="fg" style="margin:0"><label class="lbl">Frequência</label><select id="lp-rec-tipo"><option value="mensal">Mensal</option><option value="semanal">Semanal</option><option value="anual">Anual</option></select></div>
+        <div class="fg" style="margin:0"><label class="lbl">Repetir por quantas vezes</label><input type="number" id="lp-rec-qtd" min="2" max="60" value="12"></div>
+      </div>
+      <div style="font-size:11px;color:var(--txt3);margin-top:6px"><i class="ti ti-info-circle"></i> Serão criadas várias contas, uma para cada período, a partir do vencimento informado.</div>
+    </div>
+  </div>
+
+  <div class="fg"><label class="lbl">Observações</label><textarea id="lp-obs" rows="2" placeholder="Anotações internas..." style="resize:vertical"></textarea></div>
+
   <div class="modal-footer">
     <button class="btn btn-out" onclick="closeModal('modal-lanc-pag')">Cancelar</button>
     <button class="btn btn-pri" onclick="saveLancPag()"><i class="ti ti-check"></i>Lançar</button>
@@ -9377,18 +9404,94 @@ async function saveLancRec(){
   closeModal('modal-lanc-rec');notify('Conta a receber lançada!');renderReceber();renderFinanceiro();
 }
 
+function copiarLinhaBoleto(linha){
+  navigator.clipboard.writeText(linha).then(()=>{
+    notify('Linha digitável copiada! Cole no app do seu banco para pagar.','success',5000);
+  }).catch(()=>{ notify('Não foi possível copiar.','warn'); });
+}
+
+function toggleRecorrencia(){
+  const box=document.getElementById('lp-recorrencia-box');
+  const on=document.getElementById('lp-recorrente')?.checked;
+  if(box) box.style.display = on ? '' : 'none';
+}
+
 async function saveLancPag(){
   const desc=document.getElementById('lp-desc').value.trim();
   const val=parseFloat(document.getElementById('lp-val').value)||0;
   const venc=document.getElementById('lp-venc').value;
   if(!desc||!val||!venc){notify('Preencha descrição, valor e vencimento!','error');return;}
-  const payload={empresa_id:EID(),descricao:desc,fornecedor_nome:document.getElementById('lp-forn').value,valor_original:val,data_vencimento:venc,categoria_despesa:document.getElementById('lp-cat').value,status:'aberto'};
   setLoad(true);
-  const {data,error}=await db.from('contas_pagar').insert(payload).select().single();
+
+  // Upload do anexo (se houver) para o Storage
+  let anexoUrl=null, anexoNome=null;
+  const fileInput=document.getElementById('lp-anexo');
+  const file=fileInput?.files?.[0];
+  if(file){
+    try{
+      if(file.size > 5*1024*1024){ setLoad(false); notify('Anexo muito grande (máx 5MB).','warn'); return; }
+      const ext=(file.name.split('.').pop()||'bin').toLowerCase();
+      const path=`${EID()}/contas/${Date.now()}.${ext}`;
+      const { error:upErr } = await db.storage.from('anexos').upload(path, file, { upsert:true });
+      if(!upErr){
+        const { data:pub } = db.storage.from('anexos').getPublicUrl(path);
+        anexoUrl = pub?.publicUrl || null; anexoNome = file.name;
+      } else if(/bucket|not found/i.test(upErr.message||'')){
+        notify('Crie o bucket "anexos" no Supabase Storage para anexar arquivos.','warn',7000);
+      }
+    }catch(e){ /* segue sem anexo */ }
+  }
+
+  const base={
+    empresa_id:EID(),
+    descricao:desc,
+    fornecedor_nome:document.getElementById('lp-forn').value,
+    valor_original:val,
+    categoria_despesa:document.getElementById('lp-cat').value,
+    forma_pagamento:document.getElementById('lp-forma').value||null,
+    data_competencia:document.getElementById('lp-comp').value||null,
+    linha_digitavel:document.getElementById('lp-linha').value.trim()||null,
+    anexo_url:anexoUrl, anexo_nome:anexoNome,
+    observacoes:document.getElementById('lp-obs').value.trim()||null,
+    status:'aberto'
+  };
+
+  const recorrente=document.getElementById('lp-recorrente')?.checked;
+  let linhas=[];
+  if(recorrente){
+    const tipo=document.getElementById('lp-rec-tipo').value;
+    const qtd=Math.min(60, Math.max(2, parseInt(document.getElementById('lp-rec-qtd').value)||12));
+    const grupo=(crypto?.randomUUID?crypto.randomUUID():('g'+Date.now()));
+    for(let i=0;i<qtd;i++){
+      const d=new Date(venc+'T12:00');
+      if(tipo==='mensal') d.setMonth(d.getMonth()+i);
+      else if(tipo==='semanal') d.setDate(d.getDate()+i*7);
+      else if(tipo==='anual') d.setFullYear(d.getFullYear()+i);
+      linhas.push({...base,
+        data_vencimento:d.toISOString().split('T')[0],
+        recorrente:true, recorrencia_tipo:tipo, recorrencia_grupo:grupo,
+        parcela_num:i+1, parcela_total:qtd
+      });
+    }
+  } else {
+    linhas=[{...base, data_vencimento:venc}];
+  }
+
+  const {data,error}=await db.from('contas_pagar').insert(linhas).select();
   setLoad(false);
-  if(error){notify('Erro: '+error.message,'error');return;}
-  if(data)G.pagar.push(data);
-  closeModal('modal-lanc-pag');notify('Conta a pagar lançada!');renderPagar();renderFinanceiro();
+  if(error){
+    if(/column|does not exist|schema/i.test(error.message||'')) notify('Rode a migração CP01 para os novos campos de contas a pagar.','warn',7000);
+    else notify('Erro: '+error.message,'error');
+    return;
+  }
+  if(data) data.forEach(d=>G.pagar.push(d));
+  closeModal('modal-lanc-pag');
+  notify(recorrente?`${linhas.length} contas recorrentes lançadas!`:'Conta a pagar lançada!','success');
+  // Limpa o formulário
+  ['lp-desc','lp-forn','lp-val','lp-venc','lp-linha','lp-obs','lp-comp'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const rec=document.getElementById('lp-recorrente'); if(rec){rec.checked=false; toggleRecorrencia();}
+  const fi=document.getElementById('lp-anexo'); if(fi) fi.value='';
+  renderPagar();renderFinanceiro();
 }
 
 async function baixarRec(id){
@@ -9435,9 +9538,13 @@ function renderPagar(q=''){
   document.getElementById('pag-table').innerHTML=list.length===0?'<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--txt3)">Nenhum lançamento</td></tr>':list.map(p=>{
     const [cls,lbl]=vencStatus(p.data_vencimento,p.status);
     return`<tr>
-      <td style="font-weight:600;font-size:13px">${p.descricao}</td>
-      <td style="color:var(--txt2)">${p.fornecedor_nome||'—'}</td>
-      <td><span class="tag tag-gry" style="font-size:10.5px">${p.categoria_despesa||'outros'}</span></td>
+      <td style="font-weight:600;font-size:13px">${esc(p.descricao)}
+        ${p.recorrente?`<span class="tag tag-gry" style="font-size:9px;margin-left:4px" title="Recorrente ${p.parcela_num||''}/${p.parcela_total||''}"><i class="ti ti-repeat"></i> ${p.parcela_num||''}/${p.parcela_total||''}</span>`:''}
+        ${p.anexo_url?`<a href="${esc(p.anexo_url)}" target="_blank" title="Ver anexo" style="margin-left:4px;color:var(--pri)"><i class="ti ti-paperclip"></i></a>`:''}
+        ${p.linha_digitavel?`<button onclick="copiarLinhaBoleto('${esc(p.linha_digitavel).replace(/'/g,"\\'")}')" title="Copiar linha digitável" style="margin-left:4px;background:none;border:none;color:var(--pri);cursor:pointer;padding:0"><i class="ti ti-barcode"></i></button>`:''}
+      </td>
+      <td style="color:var(--txt2)">${esc(p.fornecedor_nome)||'—'}</td>
+      <td><span class="tag tag-gry" style="font-size:10.5px">${esc(p.categoria_despesa)||'outros'}</span></td>
       <td style="font-weight:700;color:var(--danger)">${fmt(p.valor_original)}</td>
       <td style="font-size:12px">${fmtD(p.data_vencimento+'T12:00')}</td>
       <td><span class="venc-badge ${cls}">${lbl}</span></td>
