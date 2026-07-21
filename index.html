@@ -1944,6 +1944,8 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
           </div>
           <div id="crm-tarefas-lista" style="display:flex;flex-direction:column;gap:8px"></div>
         </div>
+
+        <div id="crm-aniversario" style="display:none">
           <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
             <select id="crm-aniv-per" onchange="renderCrmAniversario()" style="padding:7px 10px;font-size:12.5px;border-radius:8px;width:auto">
               <option value="hoje">Hoje</option>
@@ -5986,8 +5988,102 @@ function iniciarVerificacaoVersao() {
 
 // Abre o WhatsApp de suporte
 function abrirWhatsAppSuporte(){
+  // Oferece as duas formas: WhatsApp (rápido) ou chamado rastreável
+  const html=`
+    <div class="card-title" style="gap:8px;margin-bottom:6px"><i class="ti ti-headset" style="color:var(--pri)"></i> Como podemos ajudar?</div>
+    <div style="font-size:12.5px;color:var(--txt2);margin-bottom:14px">Escolha como falar com o suporte do MISU SYS.</div>
+    <div style="display:flex;flex-direction:column;gap:9px">
+      <button class="btn btn-out" style="justify-content:flex-start;gap:10px;padding:13px" onclick="_suporteWhats()">
+        <i class="ti ti-brand-whatsapp" style="color:#25d366;font-size:20px"></i>
+        <div style="text-align:left"><div style="font-weight:600">Falar no WhatsApp</div><div style="font-size:11px;color:var(--txt3)">Resposta rápida por mensagem</div></div>
+      </button>
+      <button class="btn btn-out" style="justify-content:flex-start;gap:10px;padding:13px" onclick="abrirNovoTicket()">
+        <i class="ti ti-ticket" style="color:var(--pri);font-size:20px"></i>
+        <div style="text-align:left"><div style="font-weight:600">Abrir um chamado</div><div style="font-size:11px;color:var(--txt3)">Registrado e com histórico</div></div>
+      </button>
+      <button class="btn btn-out" style="justify-content:flex-start;gap:10px;padding:13px" onclick="verMeusTickets()">
+        <i class="ti ti-list-check" style="color:var(--txt2);font-size:20px"></i>
+        <div style="text-align:left"><div style="font-weight:600">Meus chamados</div><div style="font-size:11px;color:var(--txt3)">Acompanhar chamados abertos</div></div>
+      </button>
+    </div>`;
+  abrirModalGenerico(html, `<button class="btn btn-out" onclick="closeModal('modal-generic')">Fechar</button>`);
+}
+function _suporteWhats(){
+  closeModal('modal-generic');
   const msg = `${SUPORTE_MSG} (Empresa: "${G.empresa?.nome||'—'}")`;
   window.open(`https://wa.me/${WHATSAPP_SUPORTE}?text=${encodeURIComponent(msg)}`, '_blank');
+}
+function abrirNovoTicket(){
+  const html=`
+    <div class="card-title" style="gap:8px;margin-bottom:10px"><i class="ti ti-ticket" style="color:var(--pri)"></i> Abrir chamado</div>
+    <div class="fg"><label class="lbl">Assunto *</label><input type="text" id="tk-assunto" placeholder="Ex: Erro ao finalizar venda"></div>
+    <div class="g2">
+      <div class="fg"><label class="lbl">Categoria</label><select id="tk-categoria"><option value="duvida">Dúvida</option><option value="erro">Erro/Bug</option><option value="financeiro">Financeiro</option><option value="sugestao">Sugestão</option><option value="outro">Outro</option></select></div>
+      <div class="fg"><label class="lbl">Prioridade</label><select id="tk-prioridade"><option value="baixa">Baixa</option><option value="media" selected>Média</option><option value="alta">Alta</option></select></div>
+    </div>
+    <div class="fg"><label class="lbl">Descreva o problema *</label><textarea id="tk-msg" rows="4" placeholder="Conte o que está acontecendo..."></textarea></div>`;
+  abrirModalGenerico(html, `<button class="btn btn-out" onclick="abrirWhatsAppSuporte()">Voltar</button><button class="btn btn-pri" onclick="enviarTicket()"><i class="ti ti-send"></i> Abrir chamado</button>`);
+}
+async function enviarTicket(){
+  const assunto=(document.getElementById('tk-assunto')?.value||'').trim();
+  const msg=(document.getElementById('tk-msg')?.value||'').trim();
+  if(!assunto||!msg){ notify('Preencha o assunto e a descrição.','warn'); return; }
+  setLoad(true);
+  const {data:tk,error}=await db.from('suporte_tickets').insert({
+    empresa_id:EID(), empresa_nome:G.empresa?.nome||'', assunto,
+    categoria:document.getElementById('tk-categoria').value,
+    prioridade:document.getElementById('tk-prioridade').value,
+    status:'aberto', aberto_por:G.profile?.nome||G.profile?.email||''
+  }).select().single();
+  if(!error && tk){
+    await db.from('suporte_mensagens').insert({ticket_id:tk.id,empresa_id:EID(),autor_tipo:'loja',autor_nome:G.profile?.nome||'',mensagem:msg});
+  }
+  setLoad(false);
+  if(error){
+    if(/relation|does not exist/i.test(error.message||'')) notify('O suporte por chamados ainda não foi ativado. Use o WhatsApp por enquanto.','warn',7000);
+    else notify('Erro: '+error.message,'error');
+    return;
+  }
+  notify('Chamado aberto! Nossa equipe vai responder em breve.','success',6000);
+  verMeusTickets();
+}
+async function verMeusTickets(){
+  let list=[];
+  try{ const {data}=await db.from('suporte_tickets').select('*').eq('empresa_id',EID()).order('atualizado_em',{ascending:false}); list=data||[]; }catch(e){}
+  const STAT={aberto:['Aberto','#dc2626'],em_andamento:['Em andamento','#d97706'],aguardando_loja:['Sua vez de responder','#0891b2'],resolvido:['Resolvido','#16a34a'],fechado:['Fechado','#64748b']};
+  const html=`
+    <div class="card-title" style="gap:8px;margin-bottom:10px"><i class="ti ti-list-check" style="color:var(--pri)"></i> Meus chamados</div>
+    ${!list.length?'<div style="text-align:center;color:var(--txt3);padding:20px">Nenhum chamado ainda.</div>':
+      list.map(t=>{const [l,c]=STAT[t.status]||STAT.aberto;return `<div class="card" style="padding:10px 13px;cursor:pointer;margin-bottom:7px;border-left:3px solid ${c}" onclick="abrirTicketLoja('${t.id}')">
+        <div style="display:flex;justify-content:space-between;gap:8px"><span style="font-weight:600;font-size:13px">${esc(t.assunto)}</span><span style="font-size:10px;font-weight:700;color:${c};white-space:nowrap">${l}</span></div>
+        <div style="font-size:11px;color:var(--txt3);margin-top:2px">${new Date(t.criado_em).toLocaleDateString('pt-BR')} · ${esc(t.categoria||'')}</div>
+      </div>`;}).join('')}`;
+  abrirModalGenerico(html, `<button class="btn btn-out" onclick="abrirWhatsAppSuporte()">Voltar</button><button class="btn btn-pri" onclick="abrirNovoTicket()"><i class="ti ti-plus"></i> Novo chamado</button>`);
+}
+async function abrirTicketLoja(id){
+  let msgs=[]; let ticket=null;
+  try{
+    const {data:t}=await db.from('suporte_tickets').select('*').eq('id',id).single(); ticket=t;
+    const {data:m}=await db.from('suporte_mensagens').select('*').eq('ticket_id',id).order('criado_em'); msgs=m||[];
+  }catch(e){}
+  if(!ticket)return;
+  const fechado=['resolvido','fechado'].includes(ticket.status);
+  const html=`
+    <div class="card-title" style="gap:8px;margin-bottom:4px"><i class="ti ti-ticket" style="color:var(--pri)"></i> ${esc(ticket.assunto)}</div>
+    <div style="font-size:11.5px;color:var(--txt3);margin-bottom:10px">${esc(ticket.categoria||'')} · ${new Date(ticket.criado_em).toLocaleString('pt-BR')}</div>
+    <div style="max-height:280px;overflow:auto;background:var(--bg2,rgba(0,0,0,.03));border-radius:10px;padding:10px;margin-bottom:10px">
+      ${msgs.map(m=>{const loja=m.autor_tipo==='loja';return `<div style="display:flex;justify-content:${loja?'flex-end':'flex-start'};margin-bottom:7px"><div style="max-width:80%;background:${loja?'var(--pri)':'var(--card,#fff)'};color:${loja?'#fff':'var(--txt)'};border:1px solid ${loja?'transparent':'var(--border)'};border-radius:10px;padding:7px 11px"><div style="font-size:12.5px;white-space:pre-wrap">${esc(m.mensagem)}</div><div style="font-size:9.5px;opacity:.7;margin-top:3px">${esc(m.autor_nome||(loja?'Você':'Suporte'))} · ${new Date(m.criado_em).toLocaleString('pt-BR')}</div></div></div>`;}).join('')||'<div style="color:var(--txt3);font-size:12px;text-align:center">Sem mensagens.</div>'}
+    </div>
+    ${fechado?'<div style="text-align:center;font-size:12px;color:var(--txt3);padding:6px">Este chamado está encerrado.</div>':
+      `<div style="display:flex;gap:6px"><input type="text" id="tkl-resp" placeholder="Responder..." style="flex:1"><button class="btn btn-pri" onclick="responderTicketLoja('${id}')"><i class="ti ti-send"></i></button></div>`}`;
+  abrirModalGenerico(html, `<button class="btn btn-out" onclick="verMeusTickets()">Voltar</button>`);
+}
+async function responderTicketLoja(id){
+  const msg=(document.getElementById('tkl-resp')?.value||'').trim(); if(!msg)return;
+  const {error}=await db.from('suporte_mensagens').insert({ticket_id:id,empresa_id:EID(),autor_tipo:'loja',autor_nome:G.profile?.nome||'',mensagem:msg});
+  if(error){ notify('Erro: '+error.message,'error'); return; }
+  await db.from('suporte_tickets').update({status:'aberto',atualizado_em:new Date().toISOString()}).eq('id',id);
+  abrirTicketLoja(id);
 }
 
 // Abre o modal de planos (upgrade)
