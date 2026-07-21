@@ -969,6 +969,8 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
         </div>
         <!-- Lucro líquido do mês + Metas (integrado do misu-stock) -->
         <div id="dash-metas-wrap" style="margin-bottom:14px"></div>
+        <!-- Tarefas do dia (CRM) -->
+        <div id="dash-tarefas-wrap" style="margin-bottom:14px"></div>
         <!-- KPI cards estilo misu-store: ícone circular no canto -->
         <div class="sg">
           <div class="sc" style="cursor:pointer" onclick="go('pdv')">
@@ -1857,20 +1859,30 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
           <div style="font-size:12.5px;color:var(--txt2)">Aniversariantes, clientes para reativar e pós-venda — com aviso por WhatsApp.</div>
         </div>
         <div class="fin-tabs" style="margin:12px 0">
-          <button class="fin-tab active" onclick="crmTab('funil',this)"><i class="ti ti-layout-kanban" style="font-size:13px"></i> Funil de Leads</button>
+          <button class="fin-tab active" onclick="crmTab('visao',this)"><i class="ti ti-chart-pie" style="font-size:13px"></i> Visão Geral</button>
+          <button class="fin-tab" onclick="crmTab('funil',this)"><i class="ti ti-layout-kanban" style="font-size:13px"></i> Funil de Leads</button>
           <button class="fin-tab" onclick="crmTab('aniversario',this)"><i class="ti ti-cake" style="font-size:13px"></i> Aniversariantes</button>
           <button class="fin-tab" onclick="crmTab('inativos',this)"><i class="ti ti-user-off" style="font-size:13px"></i> Reativar</button>
           <button class="fin-tab" onclick="crmTab('posvenda',this)"><i class="ti ti-thumb-up" style="font-size:13px"></i> Pós-venda</button>
           <button class="fin-tab" onclick="crmTab('campanhas',this)"><i class="ti ti-speakerphone" style="font-size:13px"></i> Campanhas</button>
           <button class="fin-tab" onclick="crmTab('modelos',this)"><i class="ti ti-message-2-bolt" style="font-size:13px"></i> Modelos WhatsApp</button>
+          <button class="fin-tab" onclick="crmTab('etiquetas',this)"><i class="ti ti-tags" style="font-size:13px"></i> Etiquetas</button>
+          <button class="fin-tab" onclick="crmTab('tarefas',this)"><i class="ti ti-checklist" style="font-size:13px"></i> Tarefas</button>
         </div>
 
         <!-- FUNIL DE LEADS (kanban) -->
-        <div id="crm-funil">
+        <div id="crm-visao">
+          <div id="crm-visao-conteudo"></div>
+        </div>
+
+        <div id="crm-funil" style="display:none">
           <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
             <button class="btn btn-pri" onclick="abrirLead()"><i class="ti ti-plus"></i> Novo Lead</button>
             <div class="ig" style="flex:1;min-width:160px"><i class="ti ti-search"></i><input type="text" id="lead-busca" placeholder="Buscar lead..." oninput="renderFunil()"></div>
+            <select id="lead-filtro-etiqueta" onchange="renderFunil()" style="padding:7px 10px;font-size:12.5px;border-radius:8px;width:auto"><option value="">Todas as etiquetas</option></select>
+            <button class="btn btn-out btn-sm" onclick="abrirConfigEtapas()" title="Personalizar etapas do funil"><i class="ti ti-adjustments"></i> Etapas</button>
             <span id="lead-followup-alerta" style="font-size:12px;color:#d97706;display:none"></span>
+            <span style="font-size:11px;color:var(--txt3);display:flex;align-items:center;gap:4px"><i class="ti ti-hand-move"></i> Arraste os cards entre as colunas</span>
           </div>
           <div id="funil-board" style="display:grid;grid-template-columns:repeat(5,minmax(180px,1fr));gap:10px;overflow-x:auto;padding-bottom:8px"></div>
         </div>
@@ -1911,7 +1923,27 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
           <div id="wts-lista"></div>
         </div>
 
-        <div id="crm-aniversario" style="display:none">
+        <div id="crm-etiquetas" style="display:none">
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+            <button class="btn btn-pri" onclick="abrirEtiquetaCrm()"><i class="ti ti-plus"></i> Nova etiqueta</button>
+            <div style="font-size:12px;color:var(--txt3)">Etiquetas coloridas para organizar seus leads (ex: Urgente, VIP, Garantia).</div>
+          </div>
+          <div id="crm-etiquetas-lista" style="display:flex;flex-direction:column;gap:8px"></div>
+        </div>
+
+        <div id="crm-tarefas" style="display:none">
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+            <button class="btn btn-pri" onclick="abrirTarefa()"><i class="ti ti-plus"></i> Nova tarefa</button>
+            <select id="tar-filtro" onchange="renderTarefas()" style="padding:7px 10px;font-size:12.5px;border-radius:8px;width:auto">
+              <option value="abertas">Abertas</option>
+              <option value="hoje">De hoje</option>
+              <option value="vencidas">Vencidas</option>
+              <option value="concluidas">Concluídas</option>
+              <option value="todas">Todas</option>
+            </select>
+          </div>
+          <div id="crm-tarefas-lista" style="display:flex;flex-direction:column;gap:8px"></div>
+        </div>
           <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
             <select id="crm-aniv-per" onchange="renderCrmAniversario()" style="padding:7px 10px;font-size:12.5px;border-radius:8px;width:auto">
               <option value="hoje">Hoje</option>
@@ -4327,12 +4359,21 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
       </div>
     </div>
     <div class="fg"><label class="lbl">Mensagem *</label>
-      <textarea id="wts-msg" rows="5" placeholder="Olá {nome}! Aqui é da {loja}..."></textarea>
-      <div style="font-size:11px;color:var(--txt3);margin-top:5px">Variáveis: <b>{nome}</b> (cliente), <b>{loja}</b> (sua loja). Toque para inserir:
-        <span style="display:inline-flex;gap:5px;margin-left:4px">
-          <button type="button" class="btn btn-out btn-xs" onclick="wtsInserirVar('{nome}')">{nome}</button>
-          <button type="button" class="btn btn-out btn-xs" onclick="wtsInserirVar('{loja}')">{loja}</button>
-        </span>
+      <textarea id="wts-msg" rows="5" placeholder="Olá {{primeiro_nome}}! Aqui é da {{nome_empresa}}..."></textarea>
+      <div style="font-size:11px;color:var(--txt3);margin-top:5px">Toque para inserir uma variável (ela é preenchida automaticamente ao enviar):
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px">
+          <button type="button" class="btn btn-out btn-xs" onclick="wtsInserirVar('{{primeiro_nome}}')" title="Primeiro nome do cliente">primeiro_nome</button>
+          <button type="button" class="btn btn-out btn-xs" onclick="wtsInserirVar('{{nome_cliente}}')" title="Nome completo do cliente">nome_cliente</button>
+          <button type="button" class="btn btn-out btn-xs" onclick="wtsInserirVar('{{nome_empresa}}')" title="Nome da sua loja">nome_empresa</button>
+          <button type="button" class="btn btn-out btn-xs" onclick="wtsInserirVar('{{nome_atendente}}')" title="Seu nome">nome_atendente</button>
+          <button type="button" class="btn btn-out btn-xs" onclick="wtsInserirVar('{{produto}}')">produto</button>
+          <button type="button" class="btn btn-out btn-xs" onclick="wtsInserirVar('{{valor}}')">valor</button>
+          <button type="button" class="btn btn-out btn-xs" onclick="wtsInserirVar('{{numero_os}}')">numero_os</button>
+          <button type="button" class="btn btn-out btn-xs" onclick="wtsInserirVar('{{numero_pedido}}')">numero_pedido</button>
+          <button type="button" class="btn btn-out btn-xs" onclick="wtsInserirVar('{{forma_pagamento}}')">forma_pagamento</button>
+          <button type="button" class="btn btn-out btn-xs" onclick="wtsInserirVar('{{prazo_entrega}}')">prazo_entrega</button>
+          <button type="button" class="btn btn-out btn-xs" onclick="wtsInserirVar('{{link_pagamento}}')">link_pagamento</button>
+        </div>
       </div>
     </div>
     <div class="modal-foot">
@@ -4353,6 +4394,7 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
     </div>
     <div class="fg"><label class="lbl">Prévia</label>
       <div id="wts-env-preview" style="background:var(--bg3);border-radius:9px;padding:12px;font-size:13px;white-space:pre-wrap;min-height:60px"></div>
+      <div id="wts-env-aviso" style="display:none;font-size:11.5px;color:var(--warn,#d97706);margin-top:6px"></div>
     </div>
     <div class="modal-foot">
       <button class="btn btn-out" onclick="closeModal('modal-enviar-wts')">Fechar</button>
@@ -4383,6 +4425,7 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
       <div class="fg"><label class="lbl">Próximo follow-up</label><input type="date" id="lead-followup"></div>
     </div>
     <div class="fg"><label class="lbl">Observações</label><textarea id="lead-obs" rows="2"></textarea></div>
+    <div class="fg"><label class="lbl">Etiquetas</label><div id="lead-etiquetas-sel" style="display:flex;flex-wrap:wrap;gap:6px"></div></div>
     <div class="modal-foot">
       <button class="btn btn-out" onclick="closeModal('modal-lead')">Cancelar</button>
       <button class="btn btn-pri" onclick="salvarLead()"><i class="ti ti-check"></i> Salvar</button>
@@ -4404,6 +4447,12 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
         <select id="int-canal" style="width:auto"><option value="whatsapp">WhatsApp</option><option value="telefone">Telefone</option><option value="presencial">Presencial</option><option value="instagram">Instagram</option></select>
         <input type="text" id="int-msg" placeholder="O que foi conversado..." style="flex:1">
         <button class="btn btn-pri btn-sm" onclick="salvarInteracao()"><i class="ti ti-plus"></i></button>
+      </div>
+    </div>
+    <div class="fg"><label class="lbl" style="color:#a16207"><i class="ti ti-note"></i> Nota interna <span style="font-weight:400;color:var(--txt3);text-transform:none;letter-spacing:0">(só sua equipe vê)</span></label>
+      <div style="display:flex;gap:6px">
+        <input type="text" id="nota-msg" placeholder="Anotação rápida sobre este lead..." style="flex:1" onkeydown="if(event.key==='Enter')salvarNotaInterna()">
+        <button class="btn btn-sm" style="background:#fde047;color:#713f12;border:none" onclick="salvarNotaInterna()"><i class="ti ti-note"></i> Anotar</button>
       </div>
     </div>
     <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--txt3);margin:14px 0 6px">Histórico</div>
@@ -5327,7 +5376,7 @@ const PAGINAS_CONFIG = {
 // Padrões embutidos (usados quando a empresa não configurou nada)
 const ROLE_PERMS_DEFAULT = {
   gerente:['dashboard','pdv','caixas','crediario','orcamentos','simulador','os-hist','devolucoes','os','agenda','comissoes','produtos','estoque','fornecedores','reposicao','financeiro','clientes','relatorios','inteligencia','garantias','troca','crm','diagnostico','catalogo','contratos','configuracoes','usuarios','permissoes'],
-  operador:['pdv','crediario','orcamentos','simulador','agenda','clientes'],
+  operador:['pdv','crediario','orcamentos','simulador','agenda','clientes','crm'],
   tecnico:['os-hist','os','agenda','clientes','garantias','diagnostico']
 };
 
@@ -12300,16 +12349,39 @@ function removerTrocaPDV(){
 function crmTab(tab,btn){
   document.querySelectorAll('#page-crm .fin-tab').forEach(b=>b.classList.remove('active'));
   if(btn)btn.classList.add('active');
-  ['funil','campanhas','modelos','aniversario','inativos','posvenda'].forEach(t=>{const el=document.getElementById('crm-'+t);if(el)el.style.display=t===tab?'':'none';});
-  if(tab==='funil')renderFunil();
+  ['visao','funil','campanhas','modelos','aniversario','inativos','posvenda','etiquetas','tarefas'].forEach(t=>{const el=document.getElementById('crm-'+t);if(el)el.style.display=t===tab?'':'none';});
+  if(tab==='visao')renderCrmVisao();
+  else if(tab==='funil')renderFunil();
   else if(tab==='campanhas')renderCampanhaPreview();
   else if(tab==='modelos')renderModelosWts();
   else if(tab==='aniversario')renderCrmAniversario();
   else if(tab==='inativos')renderCrmInativos();
   else if(tab==='posvenda')renderCrmPosVenda();
+  else if(tab==='etiquetas')renderEtiquetasCrm();
+  else if(tab==='tarefas')renderTarefas();
 }
 
-function renderCrm(){ renderFunil(); }
+function renderCrm(){
+  // Ajusta abas visíveis conforme o papel: operador foca em Funil e Tarefas,
+  // sem as abas gerenciais (Visão Geral com valores, Etiquetas, Campanhas).
+  const role=G.profile?.role;
+  const restrito = role==='operador' || role==='tecnico';
+  const abasGerenciais={ visao:true, etiquetas:true, campanhas:true };
+  document.querySelectorAll('#page-crm .fin-tab').forEach(b=>{
+    const onclick=b.getAttribute('onclick')||'';
+    const m=onclick.match(/crmTab\('([a-z]+)'/);
+    const tab=m?m[1]:null;
+    if(tab && restrito && abasGerenciais[tab]) b.style.display='none';
+    else b.style.display='';
+  });
+  // Escolhe a aba inicial permitida
+  if(restrito){
+    const btnFunil=[...document.querySelectorAll('#page-crm .fin-tab')].find(x=>(x.getAttribute('onclick')||'').includes("'funil'"));
+    crmTab('funil', btnFunil);
+  } else {
+    renderCrmVisao();
+  }
+}
 
 function _crmTel(cli){ return (cli?.telefone||cli?.whatsapp||'').replace(/\D/g,''); }
 function _crmWhats(cli,msg){
@@ -12320,20 +12392,464 @@ function _crmWhats(cli,msg){
   if(!numero)notify('Cliente sem telefone — abri o WhatsApp para escolher o contato.','info',4000);
 }
 
+/* ── ETIQUETAS DO CRM ──────────────────────────────────────── */
+let G_ETIQUETAS=[];
+const CORES_ETIQUETA=['#3b5eff','#16a34a','#d97706','#dc2626','#7c3aed','#0891b2','#db2777','#65a30d','#64748b','#0d9488'];
+
+async function carregarEtiquetas(){
+  try{ const {data}=await db.from('crm_etiquetas').select('*').eq('ativo',true).order('nome'); G_ETIQUETAS=data||[]; }
+  catch(e){ G_ETIQUETAS=[]; }
+}
+function etiquetaById(id){ return G_ETIQUETAS.find(e=>e.id===id); }
+
+async function renderEtiquetasCrm(){
+  await carregarEtiquetas();
+  const cont=document.getElementById('crm-etiquetas-lista');
+  if(!cont)return;
+  if(!G_ETIQUETAS.length){
+    cont.innerHTML='<div class="card" style="text-align:center;padding:24px;color:var(--txt3)"><i class="ti ti-tags" style="font-size:28px;opacity:.4"></i><div style="margin-top:8px;font-size:13px">Nenhuma etiqueta ainda. Crie a primeira!</div></div>';
+    return;
+  }
+  cont.innerHTML=G_ETIQUETAS.map(e=>{
+    const usos=G_LEADS.filter(l=>Array.isArray(l.etiquetas)&&l.etiquetas.includes(e.id)).length;
+    return `<div class="card" style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="display:inline-flex;align-items:center;gap:6px;background:${e.cor}18;color:${e.cor};font-weight:600;font-size:12.5px;border-radius:99px;padding:4px 12px;border:1px solid ${e.cor}44">
+          <span style="width:9px;height:9px;border-radius:50%;background:${e.cor}"></span>${esc(e.nome)}
+        </span>
+        ${e.descricao?`<span style="font-size:11.5px;color:var(--txt3)">${esc(e.descricao)}</span>`:''}
+        <span style="font-size:11px;color:var(--txt4)">${usos} lead(s)</span>
+      </div>
+      <div style="display:flex;gap:4px">
+        <button class="btn btn-out btn-xs" onclick="abrirEtiquetaCrm('${e.id}')"><i class="ti ti-pencil"></i></button>
+        <button class="btn btn-out btn-xs" onclick="excluirEtiquetaCrm('${e.id}')" style="color:var(--danger,#dc2626)"><i class="ti ti-trash"></i></button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function abrirEtiquetaCrm(id){
+  const et=id?etiquetaById(id):null;
+  const corInicial=et?.cor||CORES_ETIQUETA[0];
+  const html=`
+    <div class="card-title" style="gap:8px;margin-bottom:10px"><i class="ti ti-tag" style="color:var(--pri)"></i> ${et?'Editar':'Nova'} etiqueta</div>
+    <input type="hidden" id="et-id" value="${et?et.id:''}">
+    <div class="fg"><label class="lbl">Nome *</label><input type="text" id="et-nome" value="${et?esc(et.nome):''}" placeholder="Ex: Urgente, VIP, Garantia"></div>
+    <div class="fg"><label class="lbl">Cor</label>
+      <div id="et-cores" style="display:flex;flex-wrap:wrap;gap:7px">
+        ${CORES_ETIQUETA.map(c=>`<button type="button" onclick="_selEtiqCor('${c}')" data-cor="${c}" style="width:28px;height:28px;border-radius:50%;background:${c};border:3px solid ${c===corInicial?'var(--txt)':'transparent'};cursor:pointer"></button>`).join('')}
+      </div>
+      <input type="hidden" id="et-cor" value="${corInicial}">
+    </div>
+    <div class="fg"><label class="lbl">Descrição (opcional)</label><input type="text" id="et-desc" value="${et?esc(et.descricao||''):''}" placeholder="Para que serve esta etiqueta"></div>`;
+  const foot=`
+    <button class="btn btn-out" onclick="closeModal('modal-generic')">Cancelar</button>
+    <button class="btn btn-pri" onclick="salvarEtiquetaCrm()"><i class="ti ti-check"></i> Salvar</button>`;
+  abrirModalGenerico(html, foot);
+}
+function _selEtiqCor(cor){
+  document.getElementById('et-cor').value=cor;
+  document.querySelectorAll('#et-cores button').forEach(b=>{ b.style.borderColor = b.dataset.cor===cor?'var(--txt)':'transparent'; });
+}
+async function salvarEtiquetaCrm(){
+  const nome=(document.getElementById('et-nome')?.value||'').trim();
+  if(!nome){ notify('Informe o nome da etiqueta.','warn'); return; }
+  const id=document.getElementById('et-id').value;
+  const payload={ empresa_id:EID(), nome, cor:document.getElementById('et-cor').value, descricao:(document.getElementById('et-desc').value||'').trim()||null, ativo:true };
+  setLoad(true);
+  let error;
+  if(id){ ({error}=await db.from('crm_etiquetas').update(payload).eq('id',id)); }
+  else { ({error}=await db.from('crm_etiquetas').insert(payload)); }
+  setLoad(false);
+  if(error){
+    if(/relation|does not exist|schema/i.test(error.message||'')) notify('Rode a migração CRM03 para ativar as etiquetas.','warn',7000);
+    else notify('Erro: '+error.message,'error');
+    return;
+  }
+  closeModal('modal-generic');
+  notify('Etiqueta salva!','success');
+  renderEtiquetasCrm();
+}
+async function excluirEtiquetaCrm(id){
+  const role=G.profile?.role;
+  if(role==='operador'||role==='tecnico'){ notify('Apenas gerente ou administrador pode excluir etiquetas.','warn',5000); return; }
+  const et=etiquetaById(id); if(!et)return;
+  confirmAct('Excluir etiqueta?', `A etiqueta "${esc(et.nome)}" será removida dos leads que a usam.`, async ()=>{
+    setLoad(true);
+    // Remove a etiqueta dos leads que a têm
+    try{
+      const usam=G_LEADS.filter(l=>Array.isArray(l.etiquetas)&&l.etiquetas.includes(id));
+      for(const l of usam){
+        const novas=l.etiquetas.filter(x=>x!==id);
+        await db.from('crm_leads').update({etiquetas:novas}).eq('id',l.id);
+        l.etiquetas=novas;
+      }
+    }catch(e){}
+    const {error}=await db.from('crm_etiquetas').delete().eq('id',id);
+    setLoad(false);
+    if(error){ notify('Erro: '+error.message,'error'); return; }
+    notify('Etiqueta excluída.','success');
+    renderEtiquetasCrm();
+  });
+}
+
+/* ── TAREFAS DO CRM ──────────────────────────────────────── */
+let G_TAREFAS=[];
+const PRIO_TAREFA={alta:['Alta','#dc2626'],media:['Média','#d97706'],baixa:['Baixa','#16a34a']};
+
+async function carregarTarefas(){
+  try{ const {data}=await db.from('crm_tarefas').select('*').order('data_prazo',{ascending:true,nullsFirst:false}); G_TAREFAS=data||[]; }
+  catch(e){ G_TAREFAS=[]; }
+}
+function _hoje(){ return new Date().toISOString().split('T')[0]; }
+function _tarefaVencida(t){ return t.status==='aberta' && t.data_prazo && t.data_prazo < _hoje(); }
+function _tarefaHoje(t){ return t.status==='aberta' && t.data_prazo === _hoje(); }
+
+async function renderTarefas(){
+  await carregarTarefas();
+  const cont=document.getElementById('crm-tarefas-lista');
+  if(!cont)return;
+  const filtro=document.getElementById('tar-filtro')?.value||'abertas';
+  let list=G_TAREFAS.slice();
+  if(filtro==='abertas') list=list.filter(t=>t.status==='aberta');
+  else if(filtro==='hoje') list=list.filter(_tarefaHoje);
+  else if(filtro==='vencidas') list=list.filter(_tarefaVencida);
+  else if(filtro==='concluidas') list=list.filter(t=>t.status==='concluida');
+  if(!list.length){
+    cont.innerHTML='<div class="card" style="text-align:center;padding:24px;color:var(--txt3)"><i class="ti ti-checklist" style="font-size:28px;opacity:.4"></i><div style="margin-top:8px;font-size:13px">Nenhuma tarefa aqui.</div></div>';
+    return;
+  }
+  cont.innerHTML=list.map(t=>{
+    const [plabel,pcor]=PRIO_TAREFA[t.prioridade]||PRIO_TAREFA.media;
+    const venc=_tarefaVencida(t), hoje=_tarefaHoje(t);
+    const done=t.status==='concluida';
+    const prazoTxt=t.data_prazo?fmtD(t.data_prazo+'T12:00')+(t.hora_prazo?' '+t.hora_prazo.slice(0,5):''):'sem prazo';
+    return `<div class="card" style="display:flex;align-items:flex-start;gap:11px;padding:12px 14px;${venc?'border-left:3px solid #dc2626':(hoje?'border-left:3px solid #d97706':'')};${done?'opacity:.6':''}">
+      <button onclick="toggleTarefa('${t.id}')" title="${done?'Reabrir':'Concluir'}" style="background:none;border:2px solid ${done?'var(--success,#16a34a)':'var(--border2)'};border-radius:50%;width:22px;height:22px;flex-shrink:0;cursor:pointer;margin-top:1px;display:flex;align-items:center;justify-content:center;color:var(--success,#16a34a)">
+        ${done?'<i class="ti ti-check" style="font-size:13px"></i>':''}
+      </button>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:13px;${done?'text-decoration:line-through':''}">${esc(t.titulo)}</div>
+        ${t.descricao?`<div style="font-size:11.5px;color:var(--txt3);margin-top:2px">${esc(t.descricao)}</div>`:''}
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:6px;font-size:11px;color:var(--txt3)">
+          <span style="color:${pcor};font-weight:600"><i class="ti ti-flag"></i> ${plabel}</span>
+          <span style="${venc?'color:#dc2626;font-weight:600':''}"><i class="ti ti-calendar"></i> ${prazoTxt}${venc?' (vencida)':''}</span>
+          ${t.responsavel?`<span><i class="ti ti-user"></i> ${esc(t.responsavel)}</span>`:''}
+          ${t.vinculo_nome?`<span><i class="ti ti-link"></i> ${esc(t.vinculo_nome)}</span>`:''}
+        </div>
+      </div>
+      <div style="display:flex;gap:4px">
+        <button class="btn btn-out btn-xs" onclick="abrirTarefa('${t.id}')"><i class="ti ti-pencil"></i></button>
+        <button class="btn btn-out btn-xs" onclick="excluirTarefa('${t.id}')" style="color:var(--danger,#dc2626)"><i class="ti ti-trash"></i></button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function abrirTarefa(id, vinculo){
+  const t=id?G_TAREFAS.find(x=>x.id===id):null;
+  // vinculo opcional: {tipo, id, nome} para pré-vincular (ex: criar a partir de um lead)
+  const v = t ? {tipo:t.vinculo_tipo,id:t.vinculo_id,nome:t.vinculo_nome} : (vinculo||{});
+  const html=`
+    <div class="card-title" style="gap:8px;margin-bottom:10px"><i class="ti ti-checklist" style="color:var(--pri)"></i> ${t?'Editar':'Nova'} tarefa</div>
+    <input type="hidden" id="tar-id" value="${t?t.id:''}">
+    <input type="hidden" id="tar-vinc-tipo" value="${v.tipo||''}">
+    <input type="hidden" id="tar-vinc-id" value="${v.id||''}">
+    <input type="hidden" id="tar-vinc-nome" value="${v.nome?esc(v.nome):''}">
+    <div class="fg"><label class="lbl">Título *</label><input type="text" id="tar-titulo" value="${t?esc(t.titulo):''}" placeholder="Ex: Ligar para o cliente"></div>
+    <div class="fg"><label class="lbl">Descrição</label><textarea id="tar-desc" rows="2">${t?esc(t.descricao||''):''}</textarea></div>
+    <div class="g2">
+      <div class="fg"><label class="lbl">Data</label><input type="date" id="tar-data" value="${t?.data_prazo||''}"></div>
+      <div class="fg"><label class="lbl">Hora</label><input type="time" id="tar-hora" value="${t?.hora_prazo?t.hora_prazo.slice(0,5):''}"></div>
+    </div>
+    <div class="g2">
+      <div class="fg"><label class="lbl">Prioridade</label><select id="tar-prio"><option value="baixa" ${t?.prioridade==='baixa'?'selected':''}>Baixa</option><option value="media" ${!t||t.prioridade==='media'?'selected':''}>Média</option><option value="alta" ${t?.prioridade==='alta'?'selected':''}>Alta</option></select></div>
+      <div class="fg"><label class="lbl">Responsável</label><input type="text" id="tar-resp" value="${t?esc(t.responsavel||''):esc(G.profile?.nome||'')}" placeholder="Quem vai fazer"></div>
+    </div>
+    ${v.nome?`<div style="font-size:11.5px;color:var(--txt3);background:var(--bg2);border-radius:8px;padding:8px 11px"><i class="ti ti-link"></i> Vinculada a: <b>${esc(v.nome)}</b></div>`:''}`;
+  const foot=`
+    <button class="btn btn-out" onclick="closeModal('modal-generic')">Cancelar</button>
+    <button class="btn btn-pri" onclick="salvarTarefa()"><i class="ti ti-check"></i> Salvar</button>`;
+  abrirModalGenerico(html, foot);
+}
+async function salvarTarefa(){
+  const titulo=(document.getElementById('tar-titulo')?.value||'').trim();
+  if(!titulo){ notify('Informe o título da tarefa.','warn'); return; }
+  const id=document.getElementById('tar-id').value;
+  const payload={
+    empresa_id:EID(), titulo,
+    descricao:(document.getElementById('tar-desc').value||'').trim()||null,
+    data_prazo:document.getElementById('tar-data').value||null,
+    hora_prazo:document.getElementById('tar-hora').value||null,
+    prioridade:document.getElementById('tar-prio').value,
+    responsavel:(document.getElementById('tar-resp').value||'').trim()||null,
+    vinculo_tipo:document.getElementById('tar-vinc-tipo').value||null,
+    vinculo_id:document.getElementById('tar-vinc-id').value||null,
+    vinculo_nome:document.getElementById('tar-vinc-nome').value||null,
+    criado_por:G.profile?.nome||G.profile?.email||null
+  };
+  setLoad(true);
+  let error;
+  if(id){ ({error}=await db.from('crm_tarefas').update(payload).eq('id',id)); }
+  else { ({error}=await db.from('crm_tarefas').insert(payload)); }
+  setLoad(false);
+  if(error){
+    if(/relation|does not exist|schema/i.test(error.message||'')) notify('Rode a migração CRM04 para ativar as tarefas.','warn',7000);
+    else notify('Erro: '+error.message,'error');
+    return;
+  }
+  closeModal('modal-generic');
+  notify('Tarefa salva!','success');
+  renderTarefas();
+  if(typeof renderDashTarefas==='function') renderDashTarefas();
+}
+async function toggleTarefa(id){
+  const t=G_TAREFAS.find(x=>x.id===id); if(!t)return;
+  const novo = t.status==='concluida' ? 'aberta' : 'concluida';
+  const upd={ status:novo, concluido_em: novo==='concluida'?new Date().toISOString():null };
+  const {error}=await db.from('crm_tarefas').update(upd).eq('id',id);
+  if(error){ notify('Erro: '+error.message,'error'); return; }
+  Object.assign(t,upd);
+  renderTarefas();
+  if(typeof renderDashTarefas==='function') renderDashTarefas();
+}
+async function excluirTarefa(id){
+  confirmAct('Excluir tarefa?','Esta tarefa será removida.',async ()=>{
+    const {error}=await db.from('crm_tarefas').delete().eq('id',id);
+    if(error){ notify('Erro: '+error.message,'error'); return; }
+    notify('Tarefa excluída.','success');
+    renderTarefas();
+    if(typeof renderDashTarefas==='function') renderDashTarefas();
+  });
+}
+
+async function renderDashTarefas(){
+  const wrap=document.getElementById('dash-tarefas-wrap');
+  if(!wrap)return;
+  if(!G_TAREFAS.length) await carregarTarefas();
+  const vencidas=G_TAREFAS.filter(_tarefaVencida);
+  const hoje=G_TAREFAS.filter(_tarefaHoje);
+  if(!vencidas.length && !hoje.length){ wrap.innerHTML=''; return; }
+  const item=(t,cor)=>`<div style="display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--border)">
+    <button onclick="toggleTarefa('${t.id}').then(()=>renderDashboard())" style="background:none;border:2px solid ${cor};border-radius:50%;width:19px;height:19px;flex-shrink:0;cursor:pointer"></button>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:12.5px;font-weight:600">${esc(t.titulo)}</div>
+      ${t.vinculo_nome?`<div style="font-size:10.5px;color:var(--txt3)">${esc(t.vinculo_nome)}</div>`:''}
+    </div>
+    <span style="font-size:10.5px;color:${cor};font-weight:600">${t.data_prazo?fmtD(t.data_prazo+'T12:00'):''}</span>
+  </div>`;
+  wrap.innerHTML=`<div class="card" style="padding:14px 16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <span style="font-weight:700;font-size:13.5px"><i class="ti ti-checklist" style="color:var(--pri)"></i> Tarefas</span>
+      <button class="btn btn-out btn-xs" onclick="go('crm');setTimeout(()=>{var b=[...document.querySelectorAll('#page-crm .fin-tab')].find(x=>x.textContent.includes('Tarefas'));if(b)b.click();},150)">Ver todas</button>
+    </div>
+    ${vencidas.length?`<div style="font-size:11px;font-weight:700;color:#dc2626;margin:4px 0"><i class="ti ti-alert-triangle"></i> Vencidas (${vencidas.length})</div>${vencidas.slice(0,4).map(t=>item(t,'#dc2626')).join('')}`:''}
+    ${hoje.length?`<div style="font-size:11px;font-weight:700;color:#d97706;margin:8px 0 4px"><i class="ti ti-calendar"></i> Para hoje (${hoje.length})</div>${hoje.slice(0,4).map(t=>item(t,'#d97706')).join('')}`:''}
+  </div>`;
+}
+
+/* ── VISÃO GERAL DO CRM (relatórios com dados reais) ─────────── */
+async function renderCrmVisao(){
+  const cont=document.getElementById('crm-visao-conteudo');
+  if(!cont)return;
+  cont.innerHTML='<div style="text-align:center;padding:30px;color:var(--txt3)"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite;font-size:24px"></i></div>';
+  if(!G_LEADS.length) await carregarLeads();
+  if(!G_ETIQUETAS.length) await carregarEtiquetas();
+  if(!G_TAREFAS.length) await carregarTarefas();
+
+  const total=G_LEADS.length;
+  const porEtapa={};
+  ETAPAS_FUNIL.forEach(([k])=>porEtapa[k]=G_LEADS.filter(l=>l.etapa===k));
+  const ganhos=porEtapa['ganho']||[], perdidos=porEtapa['perdido']||[];
+  const emAberto=G_LEADS.filter(l=>!['ganho','perdido'].includes(l.etapa));
+  const fechados=ganhos.length+perdidos.length;
+  const taxaConv=fechados>0?Math.round(ganhos.length/fechados*100):0;
+  const valorGanho=ganhos.reduce((s,l)=>s+(l.valor_estimado||0),0);
+  const valorAberto=emAberto.reduce((s,l)=>s+(l.valor_estimado||0),0);
+
+  // Motivos de perda (agrupa)
+  const motivos={};
+  perdidos.forEach(l=>{ const m=(l.motivo_perda||'Não informado').trim()||'Não informado'; motivos[m]=(motivos[m]||0)+1; });
+  const motivosOrd=Object.entries(motivos).sort((a,b)=>b[1]-a[1]);
+
+  // Leads dos últimos 30 dias
+  const mes=new Date(); mes.setDate(mes.getDate()-30);
+  const novos30=G_LEADS.filter(l=>l.criado_em && new Date(l.criado_em)>=mes).length;
+
+  const tarefasAbertas=G_TAREFAS.filter(t=>t.status==='aberta').length;
+  const tarefasVencidas=G_TAREFAS.filter(_tarefaVencida).length;
+
+  const card=(cor,icone,valor,label,sub)=>`<div class="card" style="padding:14px 16px">
+    <div style="display:flex;align-items:center;gap:9px">
+      <div style="width:38px;height:38px;border-radius:10px;background:${cor}18;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ${icone}" style="font-size:19px;color:${cor}"></i></div>
+      <div><div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;line-height:1">${valor}</div><div style="font-size:11px;color:var(--txt3)">${label}</div></div>
+    </div>
+    ${sub?`<div style="font-size:11px;color:var(--txt3);margin-top:7px">${sub}</div>`:''}
+  </div>`;
+
+  const maxEtapa=Math.max(1,...ETAPAS_FUNIL.map(([k])=>porEtapa[k].length));
+
+  cont.innerHTML=`
+    <div class="sg" style="margin-bottom:14px">
+      ${card('#3b5eff','ti-users',total,'Leads no total',`${novos30} novos nos últimos 30 dias`)}
+      ${card('#16a34a','ti-trophy',ganhos.length,'Ganhos',fmt(valorGanho)+' fechados')}
+      ${card('#d97706','ti-progress',emAberto.length,'Em aberto',fmt(valorAberto)+' em negociação')}
+      ${card('#7c3aed','ti-percentage',taxaConv+'%','Taxa de conversão',`${ganhos.length} de ${fechados} fechados`)}
+    </div>
+
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-title" style="margin-bottom:12px"><i class="ti ti-chart-bar"></i> Leads por etapa</div>
+      <div style="display:flex;flex-direction:column;gap:9px">
+        ${ETAPAS_FUNIL.map(([k,label,cor])=>{
+          const n=porEtapa[k].length, pct=Math.round(n/maxEtapa*100);
+          const val=porEtapa[k].reduce((s,l)=>s+(l.valor_estimado||0),0);
+          return `<div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
+              <span style="font-weight:600;color:${cor}">${label}</span>
+              <span style="color:var(--txt3)">${n} lead(s)${val>0?' · '+fmt(val):''}</span>
+            </div>
+            <div style="background:var(--bg2);border-radius:6px;height:10px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${cor};border-radius:6px;transition:width .4s"></div></div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <div class="sg2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="card">
+        <div class="card-title" style="margin-bottom:10px"><i class="ti ti-mood-sad" style="color:var(--danger,#dc2626)"></i> Motivos de perda</div>
+        ${motivosOrd.length?motivosOrd.map(([m,n])=>`<div style="display:flex;justify-content:space-between;font-size:12.5px;padding:5px 0;border-bottom:1px solid var(--border)"><span>${esc(m)}</span><span style="font-weight:700;color:var(--danger,#dc2626)">${n}</span></div>`).join(''):'<div style="font-size:12px;color:var(--txt3);padding:8px 0">Nenhum lead perdido ainda. 👍</div>'}
+      </div>
+      <div class="card">
+        <div class="card-title" style="margin-bottom:10px"><i class="ti ti-checklist" style="color:var(--pri)"></i> Tarefas</div>
+        <div style="display:flex;justify-content:space-between;font-size:12.5px;padding:5px 0;border-bottom:1px solid var(--border)"><span>Abertas</span><span style="font-weight:700">${tarefasAbertas}</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12.5px;padding:5px 0;border-bottom:1px solid var(--border)"><span>Vencidas</span><span style="font-weight:700;color:${tarefasVencidas?'var(--danger,#dc2626)':'inherit'}">${tarefasVencidas}</span></div>
+        <div style="margin-top:8px"><button class="btn btn-out btn-xs" onclick="crmTab('tarefas',[...document.querySelectorAll('#page-crm .fin-tab')].find(x=>x.textContent.includes('Tarefas')))">Ver tarefas</button></div>
+      </div>
+    </div>`;
+}
+
+/* ── CONFIGURAR ETAPAS DO FUNIL ─────────────────────────────── */
+const CORES_ETAPA=['#64748b','#0891b2','#3b5eff','#7c3aed','#d97706','#db2777','#16a34a','#dc2626','#0d9488','#65a30d'];
+
+async function abrirConfigEtapas(){
+  const role=G.profile?.role;
+  if(role==='operador'||role==='tecnico'){ notify('Apenas gerente ou administrador pode configurar as etapas.','warn',5000); return; }
+  await carregarEtapasFunil();
+  _etapasEdit = ETAPAS_FUNIL.map(([chave,nome,cor])=>({chave,nome,cor,especial:(chave==='ganho'?'ganho':(chave==='perdido'?'perdido':null))}));
+  renderConfigEtapas();
+}
+let _etapasEdit=[];
+function renderConfigEtapas(){
+  const html=`
+    <div class="card-title" style="gap:8px;margin-bottom:6px"><i class="ti ti-adjustments" style="color:var(--pri)"></i> Etapas do funil</div>
+    <div style="font-size:12px;color:var(--txt3);margin-bottom:12px">Personalize as etapas. "Ganho" e "Perdido" são fixas (o sistema usa elas para conversão e motivo de perda).</div>
+    <div id="config-etapas-lista" style="display:flex;flex-direction:column;gap:7px">
+      ${_etapasEdit.map((e,i)=>_linhaEtapaEdit(e,i)).join('')}
+    </div>
+    <button class="btn btn-out btn-sm" style="margin-top:10px" onclick="addEtapaEdit()"><i class="ti ti-plus"></i> Adicionar etapa</button>`;
+  const foot=`
+    <button class="btn btn-out" onclick="closeModal('modal-generic')">Cancelar</button>
+    <button class="btn btn-pri" onclick="salvarEtapasFunil()"><i class="ti ti-check"></i> Salvar etapas</button>`;
+  abrirModalGenerico(html, foot);
+}
+function _linhaEtapaEdit(e,i){
+  const fixa=e.especial==='ganho'||e.especial==='perdido';
+  return `<div style="display:flex;align-items:center;gap:7px" data-idx="${i}">
+    <input type="color" value="${e.cor}" onchange="_etapasEdit[${i}].cor=this.value" style="width:34px;height:34px;border:none;border-radius:8px;cursor:pointer;background:none">
+    <input type="text" value="${esc(e.nome)}" oninput="_etapasEdit[${i}].nome=this.value" ${fixa?'':''} style="flex:1" placeholder="Nome da etapa">
+    ${fixa?`<span style="font-size:10px;color:var(--txt3);white-space:nowrap;padding:0 6px"><i class="ti ti-lock"></i> fixa</span>`
+          :`<button class="btn btn-out btn-xs" onclick="moverEtapaEdit(${i},-1)" title="Subir"><i class="ti ti-arrow-up"></i></button>
+            <button class="btn btn-out btn-xs" onclick="moverEtapaEdit(${i},1)" title="Descer"><i class="ti ti-arrow-down"></i></button>
+            <button class="btn btn-out btn-xs" onclick="removeEtapaEdit(${i})" style="color:var(--danger,#dc2626)"><i class="ti ti-trash"></i></button>`}
+  </div>`;
+}
+function addEtapaEdit(){
+  // Insere antes de ganho/perdido
+  const idxGanho=_etapasEdit.findIndex(e=>e.especial==='ganho');
+  const nova={chave:'etapa_'+Date.now(),nome:'Nova etapa',cor:CORES_ETAPA[_etapasEdit.length%CORES_ETAPA.length],especial:null};
+  if(idxGanho>=0) _etapasEdit.splice(idxGanho,0,nova); else _etapasEdit.push(nova);
+  renderConfigEtapas();
+}
+function removeEtapaEdit(i){
+  const e=_etapasEdit[i];
+  const emUso=G_LEADS.filter(l=>l.etapa===e.chave).length;
+  if(emUso>0){ notify(`Essa etapa tem ${emUso} lead(s). Mova-os antes de remover.`,'warn',5000); return; }
+  _etapasEdit.splice(i,1); renderConfigEtapas();
+}
+function moverEtapaEdit(i,dir){
+  const j=i+dir;
+  if(j<0||j>=_etapasEdit.length) return;
+  if(_etapasEdit[j].especial) return; // não passa de ganho/perdido
+  [_etapasEdit[i],_etapasEdit[j]]=[_etapasEdit[j],_etapasEdit[i]];
+  renderConfigEtapas();
+}
+async function salvarEtapasFunil(){
+  // Valida nomes
+  for(const e of _etapasEdit){ if(!(e.nome||'').trim()){ notify('Todas as etapas precisam de nome.','warn'); return; } }
+  setLoad(true);
+  try{
+    // Estratégia simples: apaga as da empresa e regrava (poucas linhas)
+    await db.from('crm_etapas').delete().eq('empresa_id',EID());
+    const linhas=_etapasEdit.map((e,idx)=>({
+      empresa_id:EID(), chave:e.chave, nome:e.nome.trim(), cor:e.cor,
+      ordem:idx, especial:e.especial||null, ativo:true
+    }));
+    const {error}=await db.from('crm_etapas').insert(linhas);
+    setLoad(false);
+    if(error){
+      if(/relation|does not exist/i.test(error.message||'')) notify('Rode a migração CRM05 para salvar etapas personalizadas.','warn',7000);
+      else notify('Erro: '+error.message,'error');
+      return;
+    }
+    window._etapasCarregadas=false;
+    await carregarEtapasFunil(); window._etapasCarregadas=true;
+    closeModal('modal-generic');
+    notify('Etapas do funil atualizadas!','success');
+    renderFunil();
+  }catch(e){ setLoad(false); notify('Erro: '+(e.message||''),'error'); }
+}
+
 /* ── FUNIL DE LEADS (kanban) ──────────────────────────────────────── */
 let G_LEADS=[];
 let _leadDetId=null;
-const ETAPAS_FUNIL=[['novo','Novo','#64748b'],['contatado','Contatado','#0891b2'],['negociando','Negociando','#d97706'],['ganho','Ganho','#16a34a'],['perdido','Perdido','#dc2626']];
+// Etapas padrão (fallback). 'ganho' e 'perdido' são especiais e sempre existem.
+const ETAPAS_FUNIL_PADRAO=[['novo','Novo','#64748b',null],['contatado','Contatado','#0891b2',null],['negociando','Negociando','#d97706',null],['ganho','Ganho','#16a34a','ganho'],['perdido','Perdido','#dc2626','perdido']];
+// ETAPAS_FUNIL: [chave, nome, cor] — carregada do banco ou padrão
+var ETAPAS_FUNIL=ETAPAS_FUNIL_PADRAO.map(e=>[e[0],e[1],e[2]]);
+
+async function carregarEtapasFunil(){
+  try{
+    const {data}=await db.from('crm_etapas').select('*').eq('ativo',true).order('ordem');
+    if(data && data.length){
+      ETAPAS_FUNIL=data.map(e=>[e.chave,e.nome,e.cor]);
+      // Garante que ganho e perdido existam (são especiais)
+      if(!ETAPAS_FUNIL.find(e=>e[0]==='ganho')) ETAPAS_FUNIL.push(['ganho','Ganho','#16a34a']);
+      if(!ETAPAS_FUNIL.find(e=>e[0]==='perdido')) ETAPAS_FUNIL.push(['perdido','Perdido','#dc2626']);
+    } else {
+      ETAPAS_FUNIL=ETAPAS_FUNIL_PADRAO.map(e=>[e[0],e[1],e[2]]);
+    }
+  }catch(e){ ETAPAS_FUNIL=ETAPAS_FUNIL_PADRAO.map(e=>[e[0],e[1],e[2]]); }
+}
 
 async function carregarLeads(){
   try{ const {data}=await db.from('crm_leads').select('*').order('atualizado_em',{ascending:false}); G_LEADS=data||[]; }catch(e){G_LEADS=[];}
 }
 
 async function renderFunil(){
+  if(ETAPAS_FUNIL.length===0 || !window._etapasCarregadas){ await carregarEtapasFunil(); window._etapasCarregadas=true; }
   if(!G_LEADS.length) await carregarLeads();
+  if(!G_ETIQUETAS.length) await carregarEtiquetas();
   const busca=(document.getElementById('lead-busca')?.value||'').toLowerCase();
   let list=G_LEADS.slice();
   if(busca)list=list.filter(l=>(l.nome+' '+(l.interesse||'')+' '+(l.telefone||'')).toLowerCase().includes(busca));
+  // Filtro por etiqueta
+  const filtEtiq=document.getElementById('lead-filtro-etiqueta');
+  if(filtEtiq){
+    // Popula o select (mantém a seleção atual)
+    const sel=filtEtiq.value;
+    filtEtiq.innerHTML='<option value="">Todas as etiquetas</option>'+G_ETIQUETAS.map(e=>`<option value="${e.id}" ${sel===e.id?'selected':''}>${esc(e.nome)}</option>`).join('');
+    if(sel) list=list.filter(l=>Array.isArray(l.etiquetas)&&l.etiquetas.includes(sel));
+  }
 
   const hojeISO=new Date().toISOString().split('T')[0];
   const follows=G_LEADS.filter(l=>l.proximo_followup&&l.proximo_followup<=hojeISO&&!['ganho','perdido'].includes(l.etapa));
@@ -12345,7 +12861,9 @@ async function renderFunil(){
   board.innerHTML=ETAPAS_FUNIL.map(([ek,elabel,ecor])=>{
     const leads=list.filter(l=>l.etapa===ek);
     const total=leads.reduce((s,l)=>s+(l.valor_estimado||0),0);
-    return `<div style="background:var(--bg2,rgba(0,0,0,.02));border-radius:12px;padding:8px;min-height:120px">
+    return `<div class="funil-col" data-etapa="${ek}"
+        ondragover="funilDragOver(event,this)" ondragleave="funilDragLeave(this)" ondrop="funilDrop(event,'${ek}',this)"
+        style="background:var(--bg2,rgba(0,0,0,.02));border-radius:12px;padding:8px;min-height:120px;transition:background .15s">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 6px 8px;border-bottom:2px solid ${ecor}">
         <span style="font-weight:700;font-size:12.5px;color:${ecor}">${elabel}</span>
         <span style="font-size:11px;color:var(--txt3);background:#fff;border-radius:10px;padding:1px 7px">${leads.length}</span>
@@ -12360,14 +12878,64 @@ async function renderFunil(){
 
 function leadCard(l){
   const venc=l.proximo_followup&&l.proximo_followup<=new Date().toISOString().split('T')[0];
-  return `<div onclick="abrirLeadDet('${l.id}')" style="background:#fff;border:1px solid var(--border);border-radius:9px;padding:9px 10px;cursor:pointer;${venc?'border-left:3px solid #d97706':''}">
-    <div style="font-weight:600;font-size:12.5px">${l.nome}</div>
-    ${l.interesse?`<div style="font-size:11px;color:var(--txt3);margin-top:2px">${l.interesse}</div>`:''}
+  return `<div draggable="true" ondragstart="funilDragStart(event,'${l.id}')" ondragend="funilDragEnd(this)"
+      onclick="abrirLeadDet('${l.id}')" data-lead="${l.id}"
+      style="background:#fff;border:1px solid var(--border);border-radius:9px;padding:9px 10px;cursor:grab;${venc?'border-left:3px solid #d97706':''}">
+    <div style="font-weight:600;font-size:12.5px">${esc(l.nome)}</div>
+    ${(Array.isArray(l.etiquetas)&&l.etiquetas.length)?`<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">${l.etiquetas.map(eid=>{const e=etiquetaById(eid);return e?`<span style="font-size:9px;font-weight:600;color:${e.cor};background:${e.cor}18;border-radius:99px;padding:1px 7px">${esc(e.nome)}</span>`:'';}).join('')}</div>`:''}
+    ${l.interesse?`<div style="font-size:11px;color:var(--txt3);margin-top:2px">${esc(l.interesse)}</div>`:''}
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:5px">
       ${l.valor_estimado?`<span style="font-size:11px;font-weight:700;color:var(--pri)">${fmt(l.valor_estimado)}</span>`:'<span></span>'}
       ${venc?'<span style="font-size:9.5px;color:#d97706"><i class="ti ti-bell"></i> follow-up</span>':''}
     </div>
+    ${l.etapa==='perdido'&&l.motivo_perda?`<div style="font-size:10px;color:var(--danger,#dc2626);margin-top:4px;font-style:italic" title="${esc(l.motivo_perda)}"><i class="ti ti-info-circle"></i> ${esc(l.motivo_perda.slice(0,40))}</div>`:''}
   </div>`;
+}
+
+// ── Drag and drop do funil ──
+var _funilArrastando = null;
+function funilDragStart(ev, id){
+  _funilArrastando = id;
+  ev.dataTransfer.effectAllowed = 'move';
+  try{ ev.dataTransfer.setData('text/plain', id); }catch(e){}
+  // leve feedback visual
+  const card = ev.target; setTimeout(()=>{ if(card&&card.style) card.style.opacity='0.4'; },0);
+}
+function funilDragEnd(card){ if(card&&card.style) card.style.opacity=''; _funilArrastando=null; }
+function funilDragOver(ev, col){ ev.preventDefault(); ev.dataTransfer.dropEffect='move'; if(col) col.style.background='rgba(59,130,246,.10)'; }
+function funilDragLeave(col){ if(col) col.style.background=''; }
+async function funilDrop(ev, novaEtapa, col){
+  ev.preventDefault();
+  if(col) col.style.background='';
+  const id = _funilArrastando || (ev.dataTransfer && ev.dataTransfer.getData('text/plain'));
+  _funilArrastando = null;
+  if(!id) return;
+  const lead = G_LEADS.find(l=>l.id===id);
+  if(!lead || lead.etapa===novaEtapa) return;
+  // Se moveu para "Perdido", pede o motivo antes
+  if(novaEtapa==='perdido'){ pedirMotivoPerda(id); return; }
+  await moverEtapaLead(id, novaEtapa);
+}
+
+// Modal para registrar o motivo da perda do lead
+function pedirMotivoPerda(id){
+  const motivosComuns=['Preço alto','Comprou em outro lugar','Desistiu da compra','Sem retorno do cliente','Fora de estoque','Apenas pesquisando'];
+  const html=`
+    <div class="card-title" style="gap:8px;margin-bottom:8px"><i class="ti ti-mood-sad" style="color:var(--danger,#dc2626)"></i> Por que perdeu este lead?</div>
+    <div style="font-size:12.5px;color:var(--txt2);margin-bottom:12px">Registrar o motivo ajuda a entender onde melhorar as vendas.</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
+      ${motivosComuns.map(m=>`<button type="button" class="btn btn-out btn-sm" onclick="document.getElementById('mp-texto').value='${m.replace(/'/g,"\\'")}'">${m}</button>`).join('')}
+    </div>
+    <div class="fg"><label class="lbl">Motivo</label><input type="text" id="mp-texto" placeholder="Descreva o motivo da perda"></div>`;
+  const foot=`
+    <button class="btn btn-out" onclick="closeModal('modal-generic')">Cancelar</button>
+    <button class="btn btn-pri" onclick="confirmarMotivoPerda('${id}')"><i class="ti ti-check"></i> Marcar como perdido</button>`;
+  abrirModalGenerico(html, foot);
+}
+async function confirmarMotivoPerda(id){
+  const motivo=(document.getElementById('mp-texto')?.value||'').trim();
+  closeModal('modal-generic');
+  await moverEtapaLead(id, 'perdido', motivo);
 }
 
 function abrirLead(id){
@@ -12385,8 +12953,32 @@ function abrirLead(id){
   document.getElementById('lead-etapa').value=lead?.etapa||'novo';
   document.getElementById('lead-followup').value=lead?.proximo_followup||'';
   document.getElementById('lead-obs').value=lead?.observacoes||'';
+  // Etiquetas selecionáveis
+  _leadEtiquetasSel = Array.isArray(lead?.etiquetas) ? [...lead.etiquetas] : [];
+  renderLeadEtiquetasSel();
   if(document.getElementById('modal-lead-det').classList.contains('open')) closeModal('modal-lead-det');
   openModal('modal-lead');
+}
+let _leadEtiquetasSel=[];
+async function renderLeadEtiquetasSel(){
+  if(!G_ETIQUETAS.length) await carregarEtiquetas();
+  const cont=document.getElementById('lead-etiquetas-sel');
+  if(!cont)return;
+  if(!G_ETIQUETAS.length){
+    cont.innerHTML='<span style="font-size:11.5px;color:var(--txt3)">Nenhuma etiqueta criada. Crie em CRM → Etiquetas.</span>';
+    return;
+  }
+  cont.innerHTML=G_ETIQUETAS.map(e=>{
+    const on=_leadEtiquetasSel.includes(e.id);
+    return `<button type="button" onclick="_toggleLeadEtiqueta('${e.id}')" style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;border-radius:99px;padding:4px 11px;cursor:pointer;border:1.5px solid ${e.cor};${on?`background:${e.cor};color:#fff`:`background:transparent;color:${e.cor}`}">
+      <i class="ti ti-${on?'check':'plus'}" style="font-size:11px"></i>${esc(e.nome)}
+    </button>`;
+  }).join('');
+}
+function _toggleLeadEtiqueta(id){
+  const i=_leadEtiquetasSel.indexOf(id);
+  if(i>=0) _leadEtiquetasSel.splice(i,1); else _leadEtiquetasSel.push(id);
+  renderLeadEtiquetasSel();
 }
 function leadPreencherCliente(){
   const cid=document.getElementById('lead-cliente').value;
@@ -12403,6 +12995,7 @@ async function salvarLead(){
     origem:document.getElementById('lead-origem').value, valor_estimado:parseFloat(document.getElementById('lead-valor').value)||0,
     interesse:document.getElementById('lead-interesse').value||null, etapa:document.getElementById('lead-etapa').value,
     proximo_followup:document.getElementById('lead-followup').value||null, observacoes:document.getElementById('lead-obs').value||null,
+    etiquetas:_leadEtiquetasSel||[],
     atualizado_em:new Date().toISOString()
   };
   setLoad(true);
@@ -12431,16 +13024,47 @@ async function abrirLeadDet(id){
     <div>📊 Etapa: <b>${etapaLbl}</b> · Origem: ${l.origem||'—'}</div>
     ${l.proximo_followup?`<div>📅 Follow-up: ${new Date(l.proximo_followup+'T12:00').toLocaleDateString('pt-BR')}</div>`:''}
     ${l.observacoes?`<div style="margin-top:6px;color:var(--txt3)">${l.observacoes}</div>`:''}
-    <div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap">${ETAPAS_FUNIL.map(([ek,el])=>`<button class="btn btn-xs ${l.etapa===ek?'btn-pri':'btn-out'}" onclick="moverEtapaLead('${l.id}','${ek}')">${el}</button>`).join('')}</div>`;
+    <div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap">${ETAPAS_FUNIL.map(([ek,el])=>`<button class="btn btn-xs ${l.etapa===ek?'btn-pri':'btn-out'}" onclick="${ek==='perdido'?`pedirMotivoPerda('${l.id}')`:`moverEtapaLead('${l.id}','${ek}')`}">${el}</button>`).join('')}</div>
+    <div style="margin-top:8px"><button class="btn btn-out btn-xs" onclick="abrirTarefa(null,{tipo:'lead',id:'${l.id}',nome:'${esc(l.nome).replace(/'/g,"\\'")}'})"><i class="ti ti-checklist"></i> Criar tarefa para este lead</button></div>
+    <div style="margin-top:6px;display:flex;gap:5px;flex-wrap:wrap">
+      <button class="btn btn-success btn-xs" onclick="converterLeadEm('venda')"><i class="ti ti-shopping-cart"></i> Gerar venda</button>
+      <button class="btn btn-pri btn-xs" onclick="converterLeadEm('os')"><i class="ti ti-tools"></i> Gerar OS</button>
+    </div>`;
   openModal('modal-lead-det');
   carregarInteracoes(id);
 }
-async function moverEtapaLead(id,etapa){
+async function moverEtapaLead(id,etapa,motivoPerda){
   const l=G_LEADS.find(x=>x.id===id); if(!l)return;
-  const {error}=await db.from('crm_leads').update({etapa,atualizado_em:new Date().toISOString()}).eq('id',id);
-  if(error){notify('Erro: '+error.message,'error');return;}
-  l.etapa=etapa; abrirLeadDet(id); renderFunil();
+  const etapaAnterior=l.etapa;
+  const upd={etapa,atualizado_em:new Date().toISOString()};
+  if(etapa==='perdido' && motivoPerda) upd.motivo_perda=motivoPerda;
+  const {error}=await db.from('crm_leads').update(upd).eq('id',id);
+  if(error){
+    if(/motivo_perda|column/i.test(error.message||'')){
+      // Coluna ainda não existe: salva sem ela e avisa
+      const {error:e2}=await db.from('crm_leads').update({etapa,atualizado_em:new Date().toISOString()}).eq('id',id);
+      if(e2){notify('Erro: '+e2.message,'error');return;}
+      notify('Rode a migração CRM02 para guardar o motivo da perda.','warn',6000);
+    } else { notify('Erro: '+error.message,'error');return; }
+  }
+  l.etapa=etapa;
+  if(etapa==='perdido' && motivoPerda) l.motivo_perda=motivoPerda;
+  // Registra a mudança no histórico (crm_interacoes), sem travar se falhar
+  const labelDe=(ETAPAS_FUNIL.find(e=>e[0]===etapaAnterior)||[])[1]||etapaAnterior;
+  const labelPara=(ETAPAS_FUNIL.find(e=>e[0]===etapa)||[])[1]||etapa;
+  let descr=`Etapa alterada: ${labelDe} → ${labelPara}`;
+  if(etapa==='perdido' && motivoPerda) descr+=` · Motivo: ${motivoPerda}`;
+  try{
+    await db.from('crm_interacoes').insert({
+      empresa_id:EID(), lead_id:id, tipo:'etapa',
+      descricao:descr,
+      criado_por:G.profile?.nome||G.profile?.email||null, criado_em:new Date().toISOString()
+    });
+  }catch(e){}
+  if(document.getElementById('modal-lead-det')?.classList.contains('open')) abrirLeadDet(id);
+  renderFunil();
   if(etapa==='ganho')notify('🎉 Lead ganho! Parabéns!','success');
+  else if(etapa==='perdido')notify('Lead marcado como perdido.','info');
 }
 function leadWhats(){
   const l=G_LEADS.find(x=>x.id===_leadDetId); if(!l)return;
@@ -12457,11 +13081,111 @@ async function carregarInteracoes(leadId){
   try{ const {data}=await db.from('crm_interacoes').select('*').eq('lead_id',leadId).order('criado_em',{ascending:false}); list=data||[]; }catch(e){}
   cont.innerHTML=list.length===0
     ?'<div style="font-size:12px;color:var(--txt3);text-align:center;padding:10px">Nenhuma interação ainda.</div>'
-    :list.map(it=>`<div style="border-left:2px solid var(--pri);padding:4px 10px;margin-bottom:8px">
-      <div style="font-size:12.5px">${it.mensagem||''}</div>
-      <div style="font-size:10.5px;color:var(--txt3)">${it.canal||''} · ${new Date(it.criado_em).toLocaleString('pt-BR')} · ${it.criado_por_nome||''}</div>
-    </div>`).join('');
+    :list.map(it=>{
+      const texto=it.mensagem||it.descricao||'';
+      const quem=it.criado_por_nome||it.criado_por||'';
+      const quando=new Date(it.criado_em).toLocaleString('pt-BR');
+      // Nota interna: destaque tipo post-it
+      if(it.tipo==='nota'){
+        return `<div style="background:#fef9c3;border:1px solid #fde047;border-radius:8px;padding:8px 11px;margin-bottom:8px">
+          <div style="font-size:9.5px;font-weight:700;color:#a16207;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px"><i class="ti ti-note"></i> Nota interna</div>
+          <div style="font-size:12.5px;color:#713f12;white-space:pre-wrap">${esc(texto)}</div>
+          <div style="font-size:10px;color:#a16207;margin-top:3px">${quando} · ${esc(quem)}</div>
+        </div>`;
+      }
+      // Mudança de etapa: linha sutil
+      if(it.tipo==='etapa'){
+        return `<div style="border-left:2px solid var(--txt3);padding:3px 10px;margin-bottom:8px;opacity:.85">
+          <div style="font-size:11.5px;color:var(--txt2)"><i class="ti ti-arrows-exchange" style="font-size:11px"></i> ${esc(texto)}</div>
+          <div style="font-size:10px;color:var(--txt3)">${quando} · ${esc(quem)}</div>
+        </div>`;
+      }
+      // Interação normal (contato)
+      return `<div style="border-left:2px solid var(--pri);padding:4px 10px;margin-bottom:8px">
+        <div style="font-size:12.5px">${esc(texto)}</div>
+        <div style="font-size:10.5px;color:var(--txt3)">${esc(it.canal||'')} · ${quando} · ${esc(quem)}</div>
+      </div>`;
+    }).join('');
 }
+/* ── CONVERTER LEAD → CLIENTE / OS / VENDA ────────────────────── */
+// Garante que o lead tenha um cliente vinculado (cria a partir dos dados dele se preciso)
+async function garantirClienteDoLead(lead){
+  if(lead.cliente_id){
+    const existe=(G.clientes||[]).find(c=>c.id===lead.cliente_id);
+    if(existe) return existe;
+  }
+  // Tenta achar por telefone
+  const tel=(lead.telefone||'').replace(/\D/g,'');
+  if(tel){
+    const porTel=(G.clientes||[]).find(c=>(c.telefone||'').replace(/\D/g,'')===tel);
+    if(porTel){
+      await db.from('crm_leads').update({cliente_id:porTel.id}).eq('id',lead.id);
+      lead.cliente_id=porTel.id;
+      return porTel;
+    }
+  }
+  // Cria um novo cliente com os dados do lead
+  const payload={nome:lead.nome,telefone:lead.telefone||'',empresa_id:EID()};
+  const {data,error}=await db.from('clientes').insert(payload).select().single();
+  if(error){ notify('Não foi possível criar o cliente: '+error.message,'error'); return null; }
+  G.clientes.push(data);
+  if(typeof popSelects==='function') popSelects();
+  await db.from('crm_leads').update({cliente_id:data.id}).eq('id',lead.id);
+  lead.cliente_id=data.id;
+  return data;
+}
+
+async function converterLeadEm(tipo){
+  const lead=G_LEADS.find(l=>l.id===_leadDetId);
+  if(!lead){ return; }
+  setLoad(true);
+  const cliente=await garantirClienteDoLead(lead);
+  setLoad(false);
+  if(!cliente) return;
+  closeModal('modal-lead-det');
+  if(tipo==='os'){
+    go('os');
+    setTimeout(()=>{
+      const rev=document.getElementById('os-nova-card'); if(rev) rev.scrollIntoView({behavior:'smooth'});
+      const sel=document.getElementById('os-cli'); if(sel){ sel.value=cliente.id; }
+      notify(`Cliente ${cliente.nome} selecionado. Preencha a OS.`,'info',5000);
+    },350);
+  } else if(tipo==='venda'){
+    go('pdv');
+    setTimeout(()=>{
+      // Seleciona o cliente no PDV, se houver seletor
+      const selPdv=document.getElementById('pdv-cli')||document.getElementById('venda-cliente');
+      if(selPdv){ selPdv.value=cliente.id; selPdv.dispatchEvent(new Event('change')); }
+      notify(`Cliente ${cliente.nome} pronto para a venda.`,'info',5000);
+    },350);
+  }
+  // Registra no histórico do lead
+  try{
+    await db.from('crm_interacoes').insert({
+      empresa_id:EID(), lead_id:lead.id, tipo:'etapa',
+      descricao:`Convertido em ${tipo==='os'?'Ordem de Serviço':'Venda'}`,
+      criado_por:G.profile?.nome||G.profile?.email||null, criado_em:new Date().toISOString()
+    });
+  }catch(e){}
+}
+
+async function salvarNotaInterna(){
+  const msg=(document.getElementById('nota-msg')?.value||'').trim();
+  if(!msg||!_leadDetId)return;
+  const payload={
+    empresa_id:EID(), lead_id:_leadDetId, tipo:'nota',
+    mensagem:msg, descricao:msg,
+    criado_por:G.profile?.nome||G.profile?.email||null,
+    criado_por_nome:G.profile?.nome||'',
+    criado_em:new Date().toISOString()
+  };
+  const {error}=await db.from('crm_interacoes').insert(payload);
+  if(error){ notify('Erro ao salvar nota: '+error.message,'error'); return; }
+  document.getElementById('nota-msg').value='';
+  carregarInteracoes(_leadDetId);
+  notify('Nota interna adicionada.','success');
+}
+
 async function salvarInteracao(){
   const msg=document.getElementById('int-msg').value.trim();
   if(!msg||!_leadDetId)return;
@@ -12557,11 +13281,36 @@ const WTS_CAT={geral:'Geral',pos_venda:'Pós-venda',cobranca:'Cobrança',garanti
 async function carregarModelosWts(){
   try{ const {data}=await db.from('whatsapp_templates').select('*').order('criado_em',{ascending:false}); G_WTS=data||[]; }catch(e){G_WTS=[];}
 }
+async function criarModelosExemplo(){
+  const exemplos=[
+    ['Boas-vindas','geral','Olá, {{primeiro_nome}}! Seja bem-vindo(a) à {{nome_empresa}}. Meu nome é {{nome_atendente}}. Como posso ajudar?'],
+    ['Finalizar compra','venda','Perfeito, {{primeiro_nome}}! Posso finalizar seu pedido agora e confirmar os dados?'],
+    ['Tirar dúvidas','geral','Ficou com alguma dúvida sobre o produto, pagamento, entrega ou garantia?'],
+    ['Formas de pagamento','venda','Trabalhamos com Pix, cartão e dinheiro. Qual forma de pagamento você prefere?'],
+    ['Entrega','venda','O prazo estimado para entrega é de {{prazo_entrega}}. Posso confirmar seu endereço?'],
+    ['Orçamento','os','Preparei o orçamento do seu atendimento. Posso enviar os detalhes para você?'],
+    ['OS pronta','os','Olá {{primeiro_nome}}! A sua OS {{numero_os}} está pronta para retirada na {{nome_empresa}}.'],
+    ['Pós-venda','geral','Olá, {{primeiro_nome}}! Passando para saber se deu tudo certo com sua compra.'],
+    ['Encerramento','geral','Obrigado pelo contato, {{primeiro_nome}}! Quando precisar, estaremos à disposição.']
+  ];
+  setLoad(true);
+  const linhas=exemplos.map(([nome,categoria,mensagem])=>({empresa_id:EID(),nome,categoria,mensagem}));
+  const {error}=await db.from('whatsapp_templates').insert(linhas);
+  setLoad(false);
+  if(error){
+    if(/relation|does not exist/i.test(error.message||'')) notify('Tabela de modelos não encontrada. Verifique a migração do CRM.','warn',6000);
+    else notify('Erro: '+error.message,'error');
+    return;
+  }
+  notify(`${exemplos.length} modelos de exemplo criados!`,'success');
+  renderModelosWts();
+}
+
 async function renderModelosWts(){
   await carregarModelosWts();
   const cont=document.getElementById('wts-lista');
   if(!cont)return;
-  if(!G_WTS.length){ cont.innerHTML='<div class="card" style="text-align:center;padding:30px;color:var(--txt3)"><i class="ti ti-message-2-off" style="font-size:34px;opacity:.4"></i><p style="margin-top:8px">Nenhum modelo ainda. Crie o primeiro!</p></div>'; return; }
+  if(!G_WTS.length){ cont.innerHTML='<div class="card" style="text-align:center;padding:30px;color:var(--txt3)"><i class="ti ti-message-2-off" style="font-size:34px;opacity:.4"></i><p style="margin-top:8px">Nenhum modelo ainda.</p><button class="btn btn-pri btn-sm" style="margin-top:6px" onclick="criarModelosExemplo()"><i class="ti ti-sparkles"></i> Criar modelos de exemplo</button></div>'; return; }
   cont.innerHTML=G_WTS.map(t=>`<div class="card" style="margin-bottom:10px">
     <div style="display:flex;justify-content:space-between;align-items:start;gap:10px">
       <div style="flex:1;min-width:0">
@@ -12615,11 +13364,32 @@ async function excluirModeloWts(){
   });
 }
 
-// Substitui variáveis na mensagem
-function _wtsAplicar(msg,cli){
+// Substitui variáveis na mensagem. Suporta {{var}} (novo) e {var} (legado).
+function _wtsAplicar(msg,cli,extra){
   const emp=getEmpDados();
-  const nome=cli?(cli.nome||'').split(' ')[0]:'';
-  return (msg||'').replace(/{nome}/g,nome).replace(/{loja}/g,emp.nome||'nossa loja');
+  extra=extra||{};
+  const nomeCompleto=cli?(cli.nome||''):'';
+  const primeiro=nomeCompleto.split(' ')[0]||'';
+  const mapa={
+    'nome_cliente':nomeCompleto,
+    'primeiro_nome':primeiro,
+    'nome':primeiro,
+    'nome_atendente':G.profile?.nome||'',
+    'nome_empresa':emp.nome||'nossa loja',
+    'loja':emp.nome||'nossa loja',
+    'telefone_empresa':emp.telefone||emp.whatsapp||'',
+    'produto':extra.produto||'',
+    'valor':extra.valor||'',
+    'numero_pedido':extra.numero_pedido||'',
+    'numero_os':extra.numero_os||'',
+    'forma_pagamento':extra.forma_pagamento||'',
+    'prazo_entrega':extra.prazo_entrega||'',
+    'link_pagamento':extra.link_pagamento||''
+  };
+  let out=msg||'';
+  out=out.replace(/\{\{\s*([a-z_]+)\s*\}\}/gi,(m,k)=>{ const v=mapa[k.toLowerCase()]; return v!==undefined?v:m; });
+  out=out.replace(/\{\s*([a-z_]+)\s*\}/gi,(m,k)=>{ const v=mapa[k.toLowerCase()]; return v!==undefined?v:m; });
+  return out;
 }
 function abrirEnviarWts(id){
   const t=G_WTS.find(x=>x.id===id); if(!t)return;
@@ -12633,7 +13403,18 @@ function abrirEnviarWts(id){
 function wtsPreview(){
   const t=G_WTS.find(x=>x.id===document.getElementById('wts-env-id').value); if(!t)return;
   const cli=(G.clientes||[]).find(c=>c.id===document.getElementById('wts-env-cliente').value);
-  document.getElementById('wts-env-preview').textContent=_wtsAplicar(t.mensagem,cli);
+  const txt=_wtsAplicar(t.mensagem,cli);
+  const prev=document.getElementById('wts-env-preview');
+  prev.textContent=txt;
+  // Avisa se sobraram variáveis não preenchidas
+  const pend=(txt.match(/\{\{?\s*[a-z_]+\s*\}?\}/gi)||[]);
+  const aviso=document.getElementById('wts-env-aviso');
+  if(aviso){
+    if(pend.length){
+      aviso.style.display='';
+      aviso.innerHTML=`<i class="ti ti-alert-triangle"></i> Ainda há campos sem preencher: ${pend.join(', ')}. Edite o texto antes de enviar.`;
+    } else { aviso.style.display='none'; }
+  }
 }
 function wtsEnviar(){
   const t=G_WTS.find(x=>x.id===document.getElementById('wts-env-id').value); if(!t)return;
@@ -13678,6 +14459,7 @@ function renderRelEstoque(){
 
 /* ── DASHBOARD ───────────────────────────────────────── */
 function renderDashboard(){
+  if(typeof renderDashTarefas==='function') renderDashTarefas();
   const hoje=G.vendas.filter(v=>new Date(v.criado_em).toDateString()===new Date().toDateString()&&v.status!=='cancelada');
   const fat=hoje.reduce((s,v)=>s+v.total,0);
   const lucro=hoje.reduce((s,v)=>s+(v.lucro||0),0);
