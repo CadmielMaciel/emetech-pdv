@@ -661,6 +661,7 @@ select option { background: var(--bg2); }
       <div class="sb-item active" onclick="go('dashboard')"><i class="ti ti-layout-dashboard"></i> Dashboard</div>
       <div class="sb-item" onclick="go('empresas')"><i class="ti ti-building-store"></i> Empresas</div>
       <div class="sb-item" onclick="go('saude')"><i class="ti ti-heart-rate-monitor"></i> Saúde dos Clientes</div>
+      <div class="sb-item" onclick="go('crm_vendas')"><i class="ti ti-target-arrow"></i> CRM de Vendas</div>
       <div class="sb-item" onclick="go('uso')"><i class="ti ti-chart-bar"></i> Uso & Relatórios</div>
       <div class="sb-item" onclick="go('financeiro')"><i class="ti ti-currency-dollar"></i> Financeiro SaaS</div>
       <div class="sb-item" onclick="go('onboarding')"><i class="ti ti-rocket"></i> Onboarding</div>
@@ -1088,6 +1089,23 @@ select option { background: var(--bg2); }
         <div id="ctm-lista" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px"></div>
       </div>
 
+      <!-- ══ PAGE: CRM DE VENDAS (novas lojas) ══ -->
+      <div class="page" id="page-crm_vendas">
+        <div class="sec-hdr">
+          <div class="sec-title"><i class="ti ti-target-arrow" style="color:var(--pri)"></i> CRM de Vendas — Novas Lojas</div>
+          <div style="font-size:12.5px;color:var(--txt2);margin-top:4px">Acompanhe as lojas interessadas no MISU SYS, do primeiro contato até virar cliente.</div>
+        </div>
+
+        <div id="crmv-kpis" class="sg" style="margin-bottom:16px"></div>
+
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
+          <button class="btn btn-pri" onclick="abrirSaasLead()"><i class="ti ti-plus"></i> Nova loja/lead</button>
+          <div style="font-size:12px;color:var(--txt3)"><i class="ti ti-hand-move"></i> Arraste os cards entre as colunas</div>
+        </div>
+
+        <div id="crmv-board" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;align-items:start"></div>
+      </div>
+
       <!-- ══ PAGE: UPDATES ══ -->
       <div class="page" id="page-updates">
         <div class="sec-hdr">
@@ -1350,7 +1368,27 @@ CREATE POLICY "master_all" ON admin_master FOR ALL USING (true) WITH CHECK (true
 
       <!-- ══ PAGE: SUPORTE ══ -->
       <div class="page" id="page-suporte">
-        <div class="sec-hdr"><div class="sec-title">Suporte (exibido no app das empresas)</div></div>
+        <div class="sec-hdr"><div class="sec-title"><i class="ti ti-headset" style="color:var(--pri)"></i> Central de Atendimento às Lojas</div></div>
+
+        <!-- Tickets/chamados das lojas -->
+        <div class="card" style="margin-bottom:18px">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+            <div class="sec-title" style="margin:0"><i class="ti ti-ticket"></i> Chamados das lojas</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <select id="tk-filtro" onchange="renderTicketsAdmin()" style="padding:6px 10px;font-size:12.5px;border-radius:8px;width:auto">
+                <option value="abertos">Abertos</option>
+                <option value="em_andamento">Em andamento</option>
+                <option value="aguardando_loja">Aguardando loja</option>
+                <option value="resolvido">Resolvidos</option>
+                <option value="todos">Todos</option>
+              </select>
+              <button class="btn btn-out btn-sm" onclick="renderTicketsAdmin()"><i class="ti ti-refresh"></i></button>
+            </div>
+          </div>
+          <div id="tk-lista-admin" style="display:flex;flex-direction:column;gap:8px"></div>
+        </div>
+
+        <div class="sec-hdr"><div class="sec-title" style="font-size:15px">Configurações de Suporte</div></div>
         <div class="card" style="max-width:600px">
           <div style="font-size:12.5px;color:var(--txt2);margin-bottom:16px">
             Estas informações alimentam o botão <b>Suporte</b> e o <b>"Falar no WhatsApp"</b> que aparecem no app de todas as empresas. Alterar aqui reflete para todos.
@@ -2512,6 +2550,7 @@ const PAGE_TITLES = {
   logs:      { title:'Logs',         icon:'ti-activity'         },
   config:    { title:'Configurações',icon:'ti-settings'         },
   suporte:   { title:'Suporte',      icon:'ti-headset'          },
+  crm_vendas:{ title:'CRM de Vendas — Novas Lojas', icon:'ti-target-arrow' },
 };
 
 function go(page) {
@@ -2535,8 +2574,9 @@ function go(page) {
   if (page === 'onboarding') renderOnboarding();
   if (page === 'cobrancas') renderCobrancas();
   if (page === 'whatsapp') renderWhatsapp();
-  if (page === 'suporte') carregarSuporteConfig();
+  if (page === 'suporte'){ carregarSuporteConfig(); renderTicketsAdmin(); }
   if (page === 'contratos_master') renderContratosMaster();
+  if (page === 'crm_vendas') renderCrmVendas();
 }
 
 /* ── HEALTH SCORE (Saúde dos Clientes) — item 11.3 ───────────────────
@@ -3703,6 +3743,15 @@ async function salvarEmpresa() {
                `Crie o acesso manualmente depois.`, 'warn', 6000);
       } else {
         notify(`✅ Empresa "${nome}" criada! Login: ${email} / Senha: ${dadosForm.senha}`, 'success', 8000);
+      }
+
+      // Se veio de um lead do CRM de vendas, marca como convertido
+      if (window._leadVinculadoEmpresa) {
+        try {
+          await db.from('saas_leads').update({ empresa_id_conv: newId, atualizado_em: new Date().toISOString() }).eq('id', window._leadVinculadoEmpresa);
+          await db.from('saas_lead_interacoes').insert({ lead_id: window._leadVinculadoEmpresa, tipo: 'etapa', descricao: 'Empresa criada no sistema (virou cliente)', criado_por: _adminNome() });
+        } catch(e) {}
+        window._leadVinculadoEmpresa = null;
       }
     }
 
@@ -5700,6 +5749,311 @@ const CT_TEMPLATES_ADMIN = {
 
 let _ctmFiltro = '';
 let _ctmModelos = [];
+
+/* ═══ CENTRAL DE SUPORTE (admin atende os tickets das lojas) ═══════ */
+const TK_STATUS={aberto:['Aberto','#dc2626'],em_andamento:['Em andamento','#d97706'],aguardando_loja:['Aguardando loja','#0891b2'],resolvido:['Resolvido','#16a34a'],fechado:['Fechado','#64748b']};
+const TK_PRIO={alta:['Alta','#dc2626'],media:['Média','#d97706'],baixa:['Baixa','#16a34a']};
+let TICKETS_ADMIN=[];
+
+async function renderTicketsAdmin(){
+  const cont=document.getElementById('tk-lista-admin'); if(!cont)return;
+  cont.innerHTML='<div style="color:var(--txt3);font-size:12px;padding:10px">Carregando...</div>';
+  try{ const {data}=await db.from('suporte_tickets').select('*').order('atualizado_em',{ascending:false}); TICKETS_ADMIN=data||[]; }
+  catch(e){ TICKETS_ADMIN=[]; }
+  const f=document.getElementById('tk-filtro')?.value||'abertos';
+  let list=TICKETS_ADMIN.slice();
+  if(f==='abertos') list=list.filter(t=>t.status==='aberto');
+  else if(f!=='todos') list=list.filter(t=>t.status===f);
+  if(!list.length){ cont.innerHTML='<div style="text-align:center;color:var(--txt3);padding:20px;font-size:13px"><i class="ti ti-inbox" style="font-size:26px;opacity:.4"></i><div style="margin-top:6px">Nenhum chamado aqui.</div></div>'; return; }
+  cont.innerHTML=list.map(t=>{
+    const [slabel,scor]=TK_STATUS[t.status]||TK_STATUS.aberto;
+    const [plabel,pcor]=TK_PRIO[t.prioridade]||TK_PRIO.media;
+    return `<div class="card" style="padding:11px 14px;cursor:pointer;border-left:3px solid ${scor}" onclick="abrirTicketAdmin('${t.id}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:13px">${esc(t.assunto)}</div>
+          <div style="font-size:11.5px;color:var(--txt3);margin-top:2px"><i class="ti ti-building-store"></i> ${esc(t.empresa_nome||t.empresa_id)} · ${esc(t.categoria||'')}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <span style="font-size:10px;font-weight:700;color:${scor};background:${scor}18;border-radius:99px;padding:2px 9px">${slabel}</span>
+          <div style="font-size:10px;color:${pcor};margin-top:3px"><i class="ti ti-flag"></i> ${plabel}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+async function abrirTicketAdmin(id){
+  const t=TICKETS_ADMIN.find(x=>x.id===id); if(!t)return;
+  const [slabel]=TK_STATUS[t.status]||TK_STATUS.aberto;
+  const html=`
+    <div class="modal-title"><i class="ti ti-ticket"></i> ${esc(t.assunto)}</div>
+    <div style="font-size:12px;color:var(--txt3);margin-bottom:10px">${esc(t.empresa_nome||t.empresa_id)} · aberto por ${esc(t.aberto_por||'—')} · ${new Date(t.criado_em).toLocaleString('pt-BR')}</div>
+    <div style="display:flex;gap:6px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+      <label class="lbl" style="margin:0">Status:</label>
+      <select id="tk-status" class="inp" style="width:auto" onchange="mudarStatusTicket('${t.id}',this.value)">
+        ${Object.entries(TK_STATUS).map(([k,[l]])=>`<option value="${k}" ${t.status===k?'selected':''}>${l}</option>`).join('')}
+      </select>
+    </div>
+    <div id="tk-conversa" style="max-height:300px;overflow:auto;background:var(--bg2,rgba(0,0,0,.03));border-radius:10px;padding:10px;margin-bottom:10px"></div>
+    <div style="display:flex;gap:6px">
+      <textarea id="tk-resposta" class="inp" rows="2" placeholder="Responder à loja..." style="flex:1;resize:vertical"></textarea>
+      <button class="btn btn-pri" onclick="responderTicket('${t.id}')"><i class="ti ti-send"></i></button>
+    </div>
+    <div class="modal-foot" style="margin-top:12px"><button class="btn btn-out" onclick="fecharModalAdmin()">Fechar</button></div>`;
+  abrirModalAdmin(html);
+  carregarConversaTicket(t.id);
+}
+async function carregarConversaTicket(id){
+  const cont=document.getElementById('tk-conversa'); if(!cont)return;
+  let list=[];
+  try{ const {data}=await db.from('suporte_mensagens').select('*').eq('ticket_id',id).order('criado_em'); list=data||[]; }catch(e){}
+  if(!list.length){ cont.innerHTML='<div style="color:var(--txt3);font-size:12px;text-align:center;padding:10px">Sem mensagens ainda.</div>'; return; }
+  cont.innerHTML=list.map(m=>{
+    const admin=m.autor_tipo==='admin';
+    return `<div style="display:flex;justify-content:${admin?'flex-end':'flex-start'};margin-bottom:7px">
+      <div style="max-width:80%;background:${admin?'var(--pri)':'var(--card,#fff)'};color:${admin?'#fff':'var(--txt)'};border:1px solid ${admin?'transparent':'var(--border)'};border-radius:10px;padding:7px 11px">
+        <div style="font-size:12.5px;white-space:pre-wrap">${esc(m.mensagem)}</div>
+        <div style="font-size:9.5px;opacity:.7;margin-top:3px">${esc(m.autor_nome||(admin?'Suporte':'Loja'))} · ${new Date(m.criado_em).toLocaleString('pt-BR')}</div>
+      </div>
+    </div>`;
+  }).join('');
+  cont.scrollTop=cont.scrollHeight;
+}
+async function responderTicket(id){
+  const t=TICKETS_ADMIN.find(x=>x.id===id); if(!t)return;
+  const msg=(document.getElementById('tk-resposta')?.value||'').trim(); if(!msg)return;
+  const {error}=await db.from('suporte_mensagens').insert({ticket_id:id,empresa_id:t.empresa_id,autor_tipo:'admin',autor_nome:_adminNome(),mensagem:msg});
+  if(error){ notify('Erro: '+error.message,'error'); return; }
+  // Ao responder, muda status para aguardando loja se estava aberto
+  if(t.status==='aberto'){ await db.from('suporte_tickets').update({status:'aguardando_loja',atualizado_em:new Date().toISOString()}).eq('id',id); t.status='aguardando_loja'; const sel=document.getElementById('tk-status'); if(sel)sel.value='aguardando_loja'; }
+  else { await db.from('suporte_tickets').update({atualizado_em:new Date().toISOString()}).eq('id',id); }
+  document.getElementById('tk-resposta').value='';
+  carregarConversaTicket(id);
+  renderTicketsAdmin();
+}
+async function mudarStatusTicket(id,status){
+  const upd={status,atualizado_em:new Date().toISOString()};
+  if(status==='resolvido'||status==='fechado') upd.fechado_em=new Date().toISOString();
+  const {error}=await db.from('suporte_tickets').update(upd).eq('id',id);
+  if(error){ notify('Erro: '+error.message,'error'); return; }
+  const t=TICKETS_ADMIN.find(x=>x.id===id); if(t)t.status=status;
+  notify('Status atualizado.','success');
+  renderTicketsAdmin();
+}
+
+/* ═══ CRM DE VENDAS DO SAAS (novas lojas) ═══════════════════════ */
+const SAAS_ETAPAS=[['novo','Novo','#64748b'],['contato','Em contato','#0891b2'],['demonstracao','Demonstração','#3b5eff'],['proposta','Proposta','#d97706'],['ganho','Virou cliente','#16a34a'],['perdido','Perdido','#dc2626']];
+let SAAS_LEADS=[];
+
+async function carregarSaasLeads(){
+  try{ const {data}=await db.from('saas_leads').select('*').order('atualizado_em',{ascending:false}); SAAS_LEADS=data||[]; }
+  catch(e){ SAAS_LEADS=[]; }
+}
+async function renderCrmVendas(){
+  await carregarSaasLeads();
+  // KPIs
+  const total=SAAS_LEADS.length;
+  const ganhos=SAAS_LEADS.filter(l=>l.etapa==='ganho');
+  const perdidos=SAAS_LEADS.filter(l=>l.etapa==='perdido');
+  const aberto=SAAS_LEADS.filter(l=>!['ganho','perdido'].includes(l.etapa));
+  const fechados=ganhos.length+perdidos.length;
+  const conv=fechados?Math.round(ganhos.length/fechados*100):0;
+  const mrr=ganhos.reduce((s,l)=>s+(l.valor_mensal||0),0);
+  const kpi=(cor,ic,val,lbl)=>`<div class="card" style="padding:13px 15px"><div style="display:flex;align-items:center;gap:9px"><div style="width:36px;height:36px;border-radius:9px;background:${cor}18;display:flex;align-items:center;justify-content:center"><i class="ti ${ic}" style="color:${cor};font-size:18px"></i></div><div><div style="font-weight:800;font-size:19px;line-height:1">${val}</div><div style="font-size:11px;color:var(--txt2)">${lbl}</div></div></div></div>`;
+  const kwrap=document.getElementById('crmv-kpis');
+  if(kwrap) kwrap.innerHTML=kpi('#3b5eff','ti-users',total,'Leads totais')+kpi('#d97706','ti-progress',aberto.length,'Em andamento')+kpi('#16a34a','ti-trophy',ganhos.length,'Viraram clientes')+kpi('#7c3aed','ti-percentage',conv+'%','Conversão')+kpi('#0d9488','ti-cash',fmt(mrr).replace('R$','R$ '),'MRR fechado');
+
+  const board=document.getElementById('crmv-board');
+  if(!board)return;
+  board.innerHTML=SAAS_ETAPAS.map(([ek,elabel,ecor])=>{
+    const leads=SAAS_LEADS.filter(l=>l.etapa===ek);
+    return `<div data-etapa="${ek}" ondragover="saasDragOver(event,this)" ondragleave="saasDragLeave(this)" ondrop="saasDrop(event,'${ek}',this)" style="background:rgba(0,0,0,.03);border-radius:12px;padding:8px;min-height:120px;transition:background .15s">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 6px 8px;border-bottom:2px solid ${ecor}">
+        <span style="font-weight:700;font-size:12px;color:${ecor}">${elabel}</span>
+        <span style="font-size:10.5px;color:var(--txt3);background:var(--card,#fff);border-radius:10px;padding:1px 7px">${leads.length}</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:6px">
+        ${leads.map(l=>saasCard(l)).join('')||'<div style="font-size:11px;color:var(--txt3);text-align:center;padding:8px">—</div>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+function saasCard(l){
+  return `<div draggable="true" ondragstart="saasDragStart(event,'${l.id}')" ondragend="saasDragEnd(this)" onclick="abrirSaasLead('${l.id}')" style="background:var(--card,#fff);border:1px solid var(--border);border-radius:9px;padding:9px 10px;cursor:grab">
+    <div style="font-weight:600;font-size:12.5px">${esc(l.nome_loja)}</div>
+    ${l.responsavel?`<div style="font-size:11px;color:var(--txt3);margin-top:2px"><i class="ti ti-user" style="font-size:10px"></i> ${esc(l.responsavel)}</div>`:''}
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:5px">
+      ${l.valor_mensal?`<span style="font-size:11px;font-weight:700;color:var(--pri)">${fmt(l.valor_mensal)}/mês</span>`:'<span></span>'}
+      ${l.plano_interesse?`<span style="font-size:9.5px;color:var(--txt3)">${esc(l.plano_interesse)}</span>`:''}
+    </div>
+    ${l.etapa==='perdido'&&l.motivo_perda?`<div style="font-size:10px;color:var(--danger,#dc2626);margin-top:4px;font-style:italic">${esc(l.motivo_perda.slice(0,38))}</div>`:''}
+    ${l.empresa_id_conv?`<div style="font-size:10px;color:var(--success,#16a34a);margin-top:4px;font-weight:600"><i class="ti ti-circle-check"></i> Empresa criada</div>`:''}
+  </div>`;
+}
+// drag & drop
+let _saasArrasta=null;
+function saasDragStart(ev,id){ _saasArrasta=id; ev.dataTransfer.effectAllowed='move'; try{ev.dataTransfer.setData('text/plain',id);}catch(e){} const c=ev.target; setTimeout(()=>{if(c&&c.style)c.style.opacity='0.4';},0); }
+function saasDragEnd(c){ if(c&&c.style)c.style.opacity=''; _saasArrasta=null; }
+function saasDragOver(ev,col){ ev.preventDefault(); if(col)col.style.background='rgba(59,130,246,.10)'; }
+function saasDragLeave(col){ if(col)col.style.background=''; }
+async function saasDrop(ev,etapa,col){
+  ev.preventDefault(); if(col)col.style.background='';
+  const id=_saasArrasta||(ev.dataTransfer&&ev.dataTransfer.getData('text/plain')); _saasArrasta=null;
+  if(!id)return;
+  const l=SAAS_LEADS.find(x=>x.id===id);
+  if(!l||l.etapa===etapa)return;
+  if(etapa==='perdido'){ pedirMotivoPerdaSaas(id); return; }
+  await moverSaasLead(id,etapa);
+}
+async function moverSaasLead(id,etapa,motivo){
+  const l=SAAS_LEADS.find(x=>x.id===id); if(!l)return;
+  const de=(SAAS_ETAPAS.find(e=>e[0]===l.etapa)||[])[1]||l.etapa;
+  const para=(SAAS_ETAPAS.find(e=>e[0]===etapa)||[])[1]||etapa;
+  const upd={etapa,atualizado_em:new Date().toISOString()};
+  if(etapa==='perdido'&&motivo)upd.motivo_perda=motivo;
+  const {error}=await db.from('saas_leads').update(upd).eq('id',id);
+  if(error){ notify('Erro: '+error.message,'error'); return; }
+  Object.assign(l,upd);
+  try{ await db.from('saas_lead_interacoes').insert({lead_id:id,tipo:'etapa',descricao:`${de} → ${para}`+(motivo?` · ${motivo}`:''),criado_por:_adminNome()}); }catch(e){}
+  renderCrmVendas();
+  if(etapa==='ganho'){
+    notify('🎉 Nova loja fechada!','success',4000);
+    setTimeout(()=>oferecerCriarEmpresa(l),600);
+  }
+}
+
+// Quando um lead vira cliente, oferece criar a empresa já com os dados dele
+function oferecerCriarEmpresa(lead){
+  // Se já foi convertido, não repete
+  if(lead.empresa_id_conv){ notify('Esta loja já tem empresa criada.','info'); return; }
+  const html=`
+    <div class="modal-title"><i class="ti ti-building-plus" style="color:var(--pri)"></i> Criar empresa desta loja?</div>
+    <div style="font-size:13px;color:var(--txt2);margin-bottom:14px;line-height:1.6">
+      A loja <b>${esc(lead.nome_loja)}</b> foi marcada como cliente. Deseja criar a empresa dela no sistema agora, já com os dados preenchidos?
+    </div>
+    <div style="font-size:12px;color:var(--txt3);background:var(--bg2,rgba(0,0,0,.03));border-radius:8px;padding:10px 13px">
+      ${lead.responsavel?`Responsável: ${esc(lead.responsavel)}<br>`:''}
+      ${lead.cidade?`Cidade: ${esc(lead.cidade)}<br>`:''}
+      ${lead.plano_interesse?`Plano de interesse: ${esc(lead.plano_interesse)}`:''}
+    </div>
+    <div class="modal-foot" style="margin-top:16px">
+      <button class="btn btn-out" onclick="fecharModalAdmin()">Agora não</button>
+      <button class="btn btn-pri" onclick="criarEmpresaDoLead('${lead.id}')"><i class="ti ti-check"></i> Criar empresa</button>
+    </div>`;
+  abrirModalAdmin(html);
+}
+function criarEmpresaDoLead(leadId){
+  const lead=SAAS_LEADS.find(l=>l.id===leadId); if(!lead)return;
+  fecharModalAdmin();
+  // Abre o modal padrão de nova empresa
+  if(typeof abrirNovaEmpresa==='function') abrirNovaEmpresa();
+  // Preenche com os dados do lead
+  setTimeout(()=>{
+    const set=(id,v)=>{ const el=document.getElementById(id); if(el&&v) el.value=v; };
+    set('emp-nome', lead.nome_loja);
+    set('emp-cidade', lead.cidade);
+    // Plano: tenta casar o nome do plano de interesse
+    if(lead.plano_interesse){
+      const sel=document.getElementById('emp-plano');
+      if(sel){ const opt=[...sel.options].find(o=>o.textContent.toLowerCase().includes(lead.plano_interesse.toLowerCase())); if(opt) sel.value=opt.value; }
+    }
+    document.getElementById('modal-empresa-title').textContent='Nova Empresa — '+lead.nome_loja;
+    // Guarda o vínculo para marcar o lead depois de salvar
+    window._leadVinculadoEmpresa = leadId;
+    notify('Confira os dados e complete o cadastro (e-mail, senha, etc.).','info',6000);
+  },200);
+}
+function pedirMotivoPerdaSaas(id){
+  const motivos=['Preço alto','Escolheu concorrente','Sem orçamento','Não respondeu','Não era o perfil'];
+  const html=`<div class="modal-title"><i class="ti ti-mood-sad"></i> Por que perdeu esta loja?</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin:10px 0">${motivos.map(m=>`<button class="btn btn-out btn-xs" onclick="document.getElementById('smp-txt').value='${m}'">${m}</button>`).join('')}</div>
+    <input type="text" id="smp-txt" class="inp" placeholder="Motivo" style="width:100%">
+    <div class="modal-foot" style="margin-top:14px"><button class="btn btn-out" onclick="fecharModalAdmin()">Cancelar</button><button class="btn btn-pri" onclick="confirmarPerdaSaas('${id}')">Marcar perdido</button></div>`;
+  abrirModalAdmin(html);
+}
+async function confirmarPerdaSaas(id){
+  const m=(document.getElementById('smp-txt')?.value||'').trim();
+  fecharModalAdmin();
+  await moverSaasLead(id,'perdido',m);
+}
+function _adminNome(){ return (window.G&&G.profile&&(G.profile.nome||G.profile.email))||'admin'; }
+
+function abrirSaasLead(id){
+  const l=id?SAAS_LEADS.find(x=>x.id===id):null;
+  const html=`<div class="modal-title"><i class="ti ti-building-store"></i> ${l?'Editar':'Nova'} loja/lead</div>
+    <input type="hidden" id="sl-id" value="${l?l.id:''}">
+    <div class="fg"><label class="lbl">Nome da loja *</label><input type="text" id="sl-nome" class="inp" value="${l?esc(l.nome_loja):''}"></div>
+    <div style="display:flex;gap:8px"><div class="fg" style="flex:1"><label class="lbl">Responsável</label><input type="text" id="sl-resp" class="inp" value="${l?esc(l.responsavel||''):''}"></div>
+    <div class="fg" style="flex:1"><label class="lbl">Telefone</label><input type="text" id="sl-tel" class="inp" value="${l?esc(l.telefone||''):''}"></div></div>
+    <div style="display:flex;gap:8px"><div class="fg" style="flex:1"><label class="lbl">Cidade</label><input type="text" id="sl-cidade" class="inp" value="${l?esc(l.cidade||''):''}"></div>
+    <div class="fg" style="flex:1"><label class="lbl">Origem</label><input type="text" id="sl-origem" class="inp" placeholder="Indicação, Instagram..." value="${l?esc(l.origem||''):''}"></div></div>
+    <div style="display:flex;gap:8px"><div class="fg" style="flex:1"><label class="lbl">Plano de interesse</label><select id="sl-plano" class="inp"><option value="">—</option><option ${l?.plano_interesse==='básico'?'selected':''}>básico</option><option ${l?.plano_interesse==='pro'?'selected':''}>pro</option><option ${l?.plano_interesse==='enterprise'?'selected':''}>enterprise</option></select></div>
+    <div class="fg" style="flex:1"><label class="lbl">Valor mensal (R$)</label><input type="number" id="sl-valor" class="inp" step="0.01" value="${l?.valor_mensal||''}"></div></div>
+    <div class="fg"><label class="lbl">Observações</label><textarea id="sl-obs" class="inp" rows="2">${l?esc(l.observacoes||''):''}</textarea></div>
+    ${l?`<div class="fg"><label class="lbl">Histórico</label><div id="sl-hist" style="max-height:120px;overflow:auto;font-size:12px"></div>
+      <div style="display:flex;gap:6px;margin-top:6px"><input type="text" id="sl-nota" class="inp" placeholder="Adicionar nota..." style="flex:1"><button class="btn btn-out btn-sm" onclick="addNotaSaas('${l.id}')">Anotar</button></div></div>`:''}
+    <div class="modal-foot" style="margin-top:14px"><button class="btn btn-out" onclick="fecharModalAdmin()">Cancelar</button>
+      ${l&&l.etapa==='ganho'&&!l.empresa_id_conv?`<button class="btn btn-out" style="color:var(--success,#16a34a)" onclick="fecharModalAdmin();criarEmpresaDoLead('${l.id}')"><i class="ti ti-building-plus"></i> Criar empresa</button>`:''}
+      ${l?`<button class="btn btn-out" style="color:var(--danger,#dc2626)" onclick="excluirSaasLead('${l.id}')">Excluir</button>`:''}
+      <button class="btn btn-pri" onclick="salvarSaasLead()">Salvar</button></div>`;
+  abrirModalAdmin(html);
+  if(l) carregarHistSaas(l.id);
+}
+async function salvarSaasLead(){
+  const nome=(document.getElementById('sl-nome')?.value||'').trim();
+  if(!nome){ notify('Informe o nome da loja.','warn'); return; }
+  const id=document.getElementById('sl-id').value;
+  const payload={
+    nome_loja:nome, responsavel:v('sl-resp'), telefone:v('sl-tel'), cidade:v('sl-cidade'),
+    origem:v('sl-origem'), plano_interesse:v('sl-plano')||null, valor_mensal:parseFloat(v('sl-valor'))||null,
+    observacoes:v('sl-obs')||null, atualizado_em:new Date().toISOString()
+  };
+  function v(x){ return (document.getElementById(x)?.value||'').trim(); }
+  setLoad&&setLoad(true);
+  let error;
+  if(id){ ({error}=await db.from('saas_leads').update(payload).eq('id',id)); }
+  else { payload.criado_por=_adminNome(); ({error}=await db.from('saas_leads').insert(payload)); }
+  setLoad&&setLoad(false);
+  if(error){
+    if(/relation|does not exist/i.test(error.message||'')) notify('Rode a migração ADMCRM01 para ativar o CRM de vendas.','warn',7000);
+    else notify('Erro: '+error.message,'error');
+    return;
+  }
+  fecharModalAdmin(); notify('Lead salvo!','success'); renderCrmVendas();
+}
+async function excluirSaasLead(id){
+  if(!confirm('Excluir este lead?'))return;
+  const {error}=await db.from('saas_leads').delete().eq('id',id);
+  if(error){ notify('Erro: '+error.message,'error'); return; }
+  fecharModalAdmin(); notify('Lead excluído.','success'); renderCrmVendas();
+}
+async function carregarHistSaas(id){
+  const cont=document.getElementById('sl-hist'); if(!cont)return;
+  let list=[];
+  try{ const {data}=await db.from('saas_lead_interacoes').select('*').eq('lead_id',id).order('criado_em',{ascending:false}); list=data||[]; }catch(e){}
+  cont.innerHTML=list.length?list.map(it=>`<div style="border-left:2px solid var(--pri);padding:3px 8px;margin-bottom:5px"><div>${esc(it.descricao||'')}</div><div style="font-size:10px;color:var(--txt3)">${new Date(it.criado_em).toLocaleString('pt-BR')} · ${esc(it.criado_por||'')}</div></div>`).join(''):'<div style="color:var(--txt3);font-size:11px">Sem histórico.</div>';
+}
+async function addNotaSaas(id){
+  const msg=(document.getElementById('sl-nota')?.value||'').trim(); if(!msg)return;
+  const {error}=await db.from('saas_lead_interacoes').insert({lead_id:id,tipo:'nota',descricao:msg,criado_por:_adminNome()});
+  if(error){ notify('Erro: '+error.message,'error'); return; }
+  document.getElementById('sl-nota').value=''; carregarHistSaas(id);
+}
+
+// Modal genérico do admin (usa o padrão existente se houver, senão cria)
+function abrirModalAdmin(html){
+  let m=document.getElementById('modal-admin-generic');
+  if(!m){
+    m=document.createElement('div'); m.id='modal-admin-generic';
+    m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+    m.innerHTML='<div id="modal-admin-inner" style="background:var(--card,#fff);border-radius:14px;padding:20px;max-width:520px;width:100%;max-height:88vh;overflow:auto"></div>';
+    m.onclick=(e)=>{ if(e.target===m) fecharModalAdmin(); };
+    document.body.appendChild(m);
+  }
+  document.getElementById('modal-admin-inner').innerHTML=html;
+  m.style.display='flex';
+}
+function fecharModalAdmin(){ const m=document.getElementById('modal-admin-generic'); if(m)m.style.display='none'; }
 
 async function renderContratosMaster() {
   const lista = document.getElementById('ctm-lista'); if (!lista) return;
