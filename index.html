@@ -2599,6 +2599,15 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
               <button class="btn btn-out btn-sm" onclick="verContratoSalvo()"><i class="ti ti-file-dollar"></i> Ver Contrato do Serviço</button>
             </div>
           </div>
+
+          <div class="card" style="max-width:640px;margin-top:14px">
+            <div class="card-hdr" style="margin-bottom:14px"><div class="card-title"><i class="ti ti-receipt" style="color:var(--pri)"></i> Assinatura</div></div>
+            <div id="cfg-assinatura-info" style="font-size:12.5px;color:var(--txt2);margin-bottom:14px">Carregando informações do seu plano...</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-pri btn-sm" onclick="go('planos')"><i class="ti ti-arrow-up"></i> Ver planos</button>
+              <button class="btn btn-out btn-sm" onclick="abrirCancelamento()" style="color:var(--danger,#dc2626);border-color:var(--danger,#dc2626)"><i class="ti ti-x"></i> Cancelar assinatura</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -5625,6 +5634,89 @@ async function verificarTermosUso(){
     openModal('modal-termos-uso');
   }catch(e){ /* sem termos: não bloqueia */ }
 }
+// Preenche as informações da assinatura nas Configurações
+function renderInfoAssinatura(){
+  const cont=document.getElementById('cfg-assinatura-info');
+  if(!cont)return;
+  const emp=G.empresa||{};
+  const planoNome=(typeof PLANOS!=='undefined'&&PLANOS[emp.plano])?PLANOS[emp.plano].nome:(emp.plano||'—');
+  const status=emp.status==='ativa'?'<span style="color:var(--success,#16a34a);font-weight:600">Ativa</span>':
+    (emp.status==='trial'?'<span style="color:var(--warn,#d97706);font-weight:600">Período de teste</span>':`<span style="color:var(--txt2)">${esc(emp.status||'—')}</span>`);
+  cont.innerHTML=`
+    <div style="display:flex;flex-direction:column;gap:5px">
+      <div>Plano atual: <b>${esc(planoNome)}</b></div>
+      <div>Situação: ${status}</div>
+      ${emp.pagamento_status==='pendente'||emp.pagamento_status==='atrasado'?'<div style="color:var(--danger,#dc2626)">Há uma mensalidade pendente.</div>':''}
+    </div>`;
+}
+
+// Cancelamento de assinatura — ação séria, com confirmação em duas etapas
+function abrirCancelamento(){
+  const emp=G.empresa||{};
+  const planoNome=(typeof PLANOS!=='undefined'&&PLANOS[emp.plano])?PLANOS[emp.plano].nome:(emp.plano||'seu plano');
+  const html=`
+    <div class="card-title" style="gap:8px;margin-bottom:8px"><i class="ti ti-alert-triangle" style="color:var(--danger,#dc2626)"></i> Cancelar assinatura</div>
+    <div style="font-size:13px;color:var(--txt2);line-height:1.6;margin-bottom:12px">
+      Você está prestes a solicitar o cancelamento do <b>${esc(planoNome)}</b>. Antes de continuar, é importante saber:
+    </div>
+    <div style="font-size:12.5px;color:var(--txt2);background:var(--bg2);border-radius:10px;padding:12px 14px;line-height:1.7;margin-bottom:14px">
+      • Você continua com acesso até o fim do período já pago.<br>
+      • Seus dados (vendas, clientes, OS) <b>não são apagados</b> imediatamente.<br>
+      • Você pode reativar a qualquer momento falando com o suporte.<br>
+      • Nenhuma nova cobrança será feita após o cancelamento.
+    </div>
+    <div class="fg"><label class="lbl">Por que está cancelando? (opcional, nos ajuda a melhorar)</label>
+      <textarea id="cancel-motivo" rows="2" placeholder="Conte o motivo..."></textarea>
+    </div>`;
+  const foot=`
+    <button class="btn btn-out" onclick="closeModal('modal-generic')">Voltar</button>
+    <button class="btn" style="background:var(--danger,#dc2626);color:#fff" onclick="confirmarCancelamento()"><i class="ti ti-arrow-right"></i> Continuar cancelamento</button>`;
+  abrirModalGenerico(html, foot);
+}
+function confirmarCancelamento(){
+  const motivo=(document.getElementById('cancel-motivo')?.value||'').trim();
+  window._cancelMotivo=motivo;
+  const html=`
+    <div class="card-title" style="gap:8px;margin-bottom:10px"><i class="ti ti-alert-hexagon" style="color:var(--danger,#dc2626)"></i> Tem certeza?</div>
+    <div style="font-size:13.5px;color:var(--txt);line-height:1.6;margin-bottom:8px">Esta é a confirmação final.</div>
+    <div style="font-size:12.5px;color:var(--txt2);margin-bottom:14px">Para confirmar, digite <b>CANCELAR</b> abaixo:</div>
+    <input type="text" id="cancel-confirma" placeholder="Digite CANCELAR" style="text-transform:uppercase">`;
+  const foot=`
+    <button class="btn btn-out" onclick="closeModal('modal-generic')">Desistir</button>
+    <button class="btn" style="background:var(--danger,#dc2626);color:#fff" onclick="executarCancelamento()">Confirmar cancelamento</button>`;
+  abrirModalGenerico(html, foot);
+}
+async function executarCancelamento(){
+  const txt=(document.getElementById('cancel-confirma')?.value||'').trim().toUpperCase();
+  if(txt!=='CANCELAR'){ notify('Digite CANCELAR para confirmar.','warn'); return; }
+  setLoad(true);
+  try{
+    // Registra a solicitação de cancelamento (não desliga na hora — o admin processa)
+    const payload={
+      empresa_id:EID(), empresa_nome:G.empresa?.nome||'',
+      assunto:'Solicitação de cancelamento de assinatura',
+      categoria:'financeiro', prioridade:'alta', status:'aberto',
+      aberto_por:G.profile?.nome||G.profile?.email||''
+    };
+    let ticketId=null;
+    try{
+      const {data:tk}=await db.from('suporte_tickets').insert(payload).select().single();
+      ticketId=tk?.id;
+      if(ticketId){
+        await db.from('suporte_mensagens').insert({ticket_id:ticketId,empresa_id:EID(),autor_tipo:'loja',autor_nome:G.profile?.nome||'',mensagem:'Solicitação de cancelamento da assinatura.'+(window._cancelMotivo?(' Motivo: '+window._cancelMotivo):'')});
+      }
+    }catch(e){}
+    // Marca a intenção na empresa (campo simples, não bloqueia o uso)
+    try{ await db.from('empresas').update({cancelamento_solicitado:new Date().toISOString()}).eq('id',EID()); }catch(e){}
+    setLoad(false);
+    closeModal('modal-generic');
+    notify('Solicitação de cancelamento registrada. Nossa equipe entrará em contato para confirmar. Você continua com acesso até o fim do período pago.','success',9000);
+  }catch(e){
+    setLoad(false);
+    notify('Não foi possível registrar agora. Fale com o suporte pelo WhatsApp.','warn',6000);
+  }
+}
+
 // Ver os documentos legais em modo leitura (Configurações), sem exigir aceite
 async function verTermosSalvos(){
   try{
@@ -11727,6 +11819,7 @@ function cfgTab(aba, btn) {
 }
 function renderConfiguracoes() {
   cfgTab('gateway', document.querySelector('#page-configuracoes .fin-tab'));
+  if(typeof renderInfoAssinatura==='function') renderInfoAssinatura();
   const s = localStorage.getItem('emetech_cupom_config');
   if (s) {
     try {
@@ -22166,11 +22259,17 @@ const PAGE_FEATURE = {
   'os-hist':    'technical.service_orders',
   agenda:       'technical.delivery_schedule',
   comissoes:    'technical.technicians',
+  garantias:    'technical.warranties',
   orcamentos:   'store.orcamentos',
+  crediario:    'store.orcamentos',
   devolucoes:   'store.devolucoes',
   fornecedores: 'store.suppliers',
+  troca:        'store.troca',
+  contratos:    'store.contratos',
+  catalogo:     'store.catalogo',
   relatorios:   'reports.advanced',
   inteligencia: 'ai.insights',
+  crm:          'crm.funil',
 };
 
 async function carregarEntitlements() {
