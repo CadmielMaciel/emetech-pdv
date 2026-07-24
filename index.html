@@ -11502,6 +11502,8 @@ async function verHistoricoPreco(id){
 
 /* ── OS ──────────────────────────────────────────────── */
 const ON={'Aguardando':'Em Análise','Em Análise':'Em Reparo','Em Reparo':'Aguardando Peça','Aguardando Peça':'Pronto',Pronto:'Ag. Pagamento'};
+// Etapa ANTERIOR (voltar). Ex: chegou a peça → volta de "Aguardando Peça" para "Em Reparo".
+const OV={'Em Análise':'Aguardando','Em Reparo':'Em Análise','Aguardando Peça':'Em Reparo','Pronto':'Em Reparo','Ag. Pagamento':'Pronto'};
 // Nota: 'Ag. Pagamento' → 'Entregue' só acontece pelo caixa (receberPagamentoOS), não pelo botão Avançar
 const OP={Aguardando:8,'Em Análise':25,'Em Reparo':55,'Aguardando Peça':45,Pronto:90,'Ag. Pagamento':95,Entregue:100,Cancelada:0};
 const OC={Aguardando:'tag-amb','Em Análise':'tag-blu','Em Reparo':'tag-pur','Aguardando Peça':'tag-red',Pronto:'tag-grn','Ag. Pagamento':'tag-amb',Entregue:'tag-gry',Cancelada:'tag-red'};
@@ -11795,11 +11797,17 @@ function detOS(id){
   const o=G.os.find(x=>x.id===id)||(G._osHistDev||[]).find(x=>x.id===id);if(!o)return;
   _detOSAtual = o;
   const next=ON[o.status];
-  const steps=['Aguardando','Em Análise','Em Reparo','Pronto'];
+  // Inclui "Aguardando Peça" na linha do tempo só quando a OS passou (ou está) nela
+  const _temPeca = o.status==='Aguardando Peça' || (o.timeline||[]).some(t=>t.status==='Aguardando Peça');
+  const _steps = _temPeca
+    ? ['Aguardando','Em Análise','Em Reparo','Aguardando Peça','Pronto']
+    : ['Aguardando','Em Análise','Em Reparo','Pronto'];
+  const steps=_steps;
   const ci=steps.indexOf(o.status);
   const tl=steps.map((s,i)=>{
     const done=i<ci,cur=s===o.status;
-    const ent=(o.timeline||[]).find(t=>t.status===s);
+    // pega o registro mais recente daquele status (importante quando a OS voltou de etapa)
+    const ent=[...(o.timeline||[])].reverse().find(t=>t.status===s);
     return`<div class="tl-step ${done?'done':''} ${cur?'cur':''}">
       <div class="tl-dot"><i class="ti ti-${done?'check':cur?'loader':'circle'}" style="font-size:11px"></i></div>
       <div class="tl-content"><div class="tl-lbl">${s}</div>${ent?`<div class="tl-time">${fmtDT(ent.data)}</div>`:''}</div>
@@ -11810,7 +11818,7 @@ function detOS(id){
 
   if (isMobile) {
     // Layout mobile — header sticky + body scroll + footer sticky
-    const steps=['Aguardando','Em Análise','Em Reparo','Pronto'];
+    const steps=_steps;
     const ci=steps.indexOf(o.status);
     const tlH = steps.map((s,i)=>{
       const done=i<ci, cur=s===o.status;
@@ -12034,10 +12042,14 @@ function detOS(id){
 
   const footer=document.getElementById('os-det-footer');
   const podeEditar=['admin','gerente','tecnico'].includes(G.role);
+  const prev=OV[o.status];
+  const voltarBtn=(prev&&podeEditar)
+    ? `<button class="btn btn-out btn-sm" onclick="voltarOS('${id}','${prev.replace(/'/g,"\\'")}')" title="Voltar para a etapa anterior"><i class="ti ti-arrow-left"></i> Voltar: ${prev}</button>` : '';
   const avancarBtn=(next&&podeEditar)
     ? `<button class="btn btn-pri btn-sm" onclick="advOS('${id}','${next}')"><i class="ti ti-arrow-right"></i> Avançar: ${next}</button>` : '';
   footer.innerHTML=`
     <button class="btn btn-out btn-sm" onclick="closeModal('modal-os-det')">Fechar</button>
+    ${voltarBtn}
     ${avancarBtn}
     <div style="position:relative;display:inline-block">
       <button class="btn btn-out btn-sm" onclick="toggleMenuAcoesOS(event)"><i class="ti ti-dots"></i> Ações</button>
@@ -12802,6 +12814,47 @@ async function confirmarCancelarOS(id){
   closeModal('modal-os-det');
   renderOSList();renderDashboard();renderOSAguardPag();
   notify(`OS ${o.numero} cancelada.`,'success');
+}
+
+// Volta a OS para a etapa anterior (ex: chegou a peça → volta para "Em Reparo").
+// Pede um motivo curto, que fica registrado na timeline para auditoria.
+function voltarOS(id, prev){
+  const o=G.os.find(x=>x.id===id); if(!o)return;
+  const html=`
+    <div class="card-title" style="gap:8px;margin-bottom:8px"><i class="ti ti-arrow-back-up" style="color:var(--pri)"></i> Voltar etapa</div>
+    <div style="font-size:13px;color:var(--txt2);line-height:1.6;margin-bottom:12px">
+      A OS <b>${esc(o.numero||'')}</b> vai voltar de <b>${esc(o.status)}</b> para <b>${esc(prev)}</b>.
+    </div>
+    <div class="fg"><label class="lbl">Motivo (opcional)</label>
+      <input type="text" id="volta-motivo" placeholder="Ex: peça chegou, retomando o reparo">
+    </div>
+    <div style="font-size:11.5px;color:var(--txt3)">O retorno fica registrado no histórico da OS.</div>`;
+  const foot=`
+    <button class="btn btn-out" onclick="closeModal('modal-generic')">Cancelar</button>
+    <button class="btn btn-pri" onclick="confirmarVoltarOS('${id}','${prev.replace(/'/g,"\\'")}')"><i class="ti ti-arrow-left"></i> Voltar para ${esc(prev)}</button>`;
+  abrirModalGenerico(html, foot);
+}
+
+async function confirmarVoltarOS(id, prev){
+  const o=G.os.find(x=>x.id===id); if(!o)return;
+  const motivo=(document.getElementById('volta-motivo')?.value||'').trim();
+  closeModal('modal-generic');
+  const de=o.status;
+  const tl=[...(o.timeline||[]),{
+    status:prev, data:new Date().toISOString(), operador:G.profile?.nome||'',
+    retorno:true, de:de, motivo:motivo||null
+  }];
+  const pl={status:prev, progresso:OP[prev]||o.progresso, timeline:tl, atualizado_em:new Date().toISOString()};
+  // Se estava concluída/aguardando pagamento, limpa as marcas dessas etapas
+  if(de==='Ag. Pagamento') pl.data_pronto=null;
+  setLoad(true);
+  const {error}=await db.from('ordens_servico').update(pl).eq('id',id);
+  setLoad(false);
+  if(error){ notify('Erro ao voltar etapa: '+error.message,'error'); return; }
+  Object.assign(o,pl);
+  closeModal('modal-os-det'); renderOSList(); renderDashboard();
+  if(typeof renderOSAguardPag==='function') renderOSAguardPag();
+  notify(`${o.numero} voltou para ${prev}.`,'info',4000);
 }
 
 async function advOS(id,next){
@@ -16529,9 +16582,11 @@ function atualizarLogoLoginReal(b64) {
 }
 
 function atualizarLogoSidebarReal(b64) {
-  // Atualiza o ícone real da sidebar
+  // Mostra a logo enviada com as cores originais (igual à prévia).
+  // Obs: NÃO aplicar filter:brightness(0) invert(1) aqui — esse filtro serve
+  // só para o ícone padrão monocromático e apagava as cores das logos enviadas.
   const el = document.querySelector('.logo-icon');
-  if (el) el.innerHTML = `<img src="${b64}" style="width:100%;height:100%;object-fit:contain;filter:brightness(0) invert(1)">`;
+  if (el) el.innerHTML = `<img src="${b64}" alt="Logo" style="width:100%;height:100%;object-fit:contain">`;
 }
 
 function updateWMOpacity(tipo, val) {
