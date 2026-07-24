@@ -2088,15 +2088,19 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
       <div id="termos-resumo-texto" style="font-size:12.5px;color:var(--txt);line-height:1.5;white-space:pre-wrap"></div>
     </div>
     <div style="font-size:12.5px;color:var(--txt2);margin-bottom:10px">Para continuar usando o MISU SYS, leia e aceite os termos abaixo.</div>
-    <div id="termos-conteudo" style="flex:1;overflow-y:auto;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;font-size:13px;line-height:1.7;color:var(--txt);white-space:pre-wrap;margin-bottom:12px">Carregando…</div>
-    <label style="display:flex;align-items:center;gap:9px;cursor:pointer;margin-bottom:12px">
-      <input type="checkbox" id="termos-check" style="width:19px;height:19px;accent-color:var(--pri)">
+    <div id="termos-conteudo" style="flex:1;overflow-y:auto;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;font-size:13px;line-height:1.7;color:var(--txt);white-space:pre-wrap;margin-bottom:8px" onscroll="_checarRolagemTermos()">Carregando…</div>
+    <div id="termos-aviso-rolagem" style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:rgba(217,119,6,.10);border:1px solid rgba(217,119,6,.3);border-radius:9px;padding:9px 12px;margin-bottom:10px">
+      <span style="font-size:12.5px;color:#d97706;font-weight:600"><i class="ti ti-arrow-down"></i> Role até o final para poder aceitar</span>
+      <button class="btn btn-out btn-xs" onclick="_irAoFimTermos()" style="white-space:nowrap">Ir ao final</button>
+    </div>
+    <label id="termos-check-label" style="display:flex;align-items:center;gap:9px;cursor:not-allowed;margin-bottom:12px;opacity:.45">
+      <input type="checkbox" id="termos-check" disabled style="width:19px;height:19px;accent-color:var(--pri)" onchange="_checarAceiteTermos()">
       <span style="font-size:13px;color:var(--txt)">Li e aceito os Termos de Uso e a Política de Privacidade.</span>
     </label>
     <div class="modal-footer" style="margin-top:0">
       <a href="/termos.html" target="_blank" class="btn btn-out btn-sm"><i class="ti ti-external-link"></i> Abrir em página</a>
       <button class="btn btn-out" onclick="doLogout()">Sair</button>
-      <button class="btn btn-pri" id="termos-btn-aceitar" onclick="aceitarTermosUso()"><i class="ti ti-check"></i> Aceitar e continuar</button>
+      <button class="btn btn-pri" id="termos-btn-aceitar" disabled style="opacity:.5;cursor:not-allowed" onclick="aceitarTermosUso()"><i class="ti ti-check"></i> Aceitar e continuar</button>
     </div>
   </div>
 </div>
@@ -6884,6 +6888,68 @@ async function carregarEmpresaELoginCheck(){
 
 // TERMOS DE USO — aceite obrigatório no login
 let _termosVigente = null;
+/* ── TERMOS: exige rolar até o fim antes de aceitar ───────────── */
+let _termosRolouAteFim = false;
+
+function _checarRolagemTermos(){
+  const box = document.getElementById('termos-conteudo');
+  if(!box) return;
+  // Chegou ao fim? (margem de 24px para não exigir precisão milimétrica)
+  const noFim = box.scrollTop + box.clientHeight >= box.scrollHeight - 24;
+  if(noFim && !_termosRolouAteFim){
+    _termosRolouAteFim = true;
+    const aviso = document.getElementById('termos-aviso-rolagem');
+    if(aviso){
+      aviso.style.background = 'rgba(22,163,74,.10)';
+      aviso.style.borderColor = 'rgba(22,163,74,.3)';
+      aviso.innerHTML = '<span style="font-size:12.5px;color:#16a34a;font-weight:600"><i class="ti ti-circle-check"></i> Você leu até o final. Agora pode aceitar.</span>';
+    }
+    const chk = document.getElementById('termos-check');
+    const lbl = document.getElementById('termos-check-label');
+    if(chk) chk.disabled = false;
+    if(lbl){ lbl.style.opacity = '1'; lbl.style.cursor = 'pointer'; }
+  }
+}
+
+function _irAoFimTermos(){
+  const box = document.getElementById('termos-conteudo');
+  if(box) box.scrollTo({ top: box.scrollHeight, behavior: 'smooth' });
+}
+
+// Libera o botão só quando rolou até o fim E marcou o checkbox
+function _checarAceiteTermos(){
+  const chk = document.getElementById('termos-check');
+  const btn = document.getElementById('termos-btn-aceitar');
+  if(!btn) return;
+  const liberado = _termosRolouAteFim && chk && chk.checked;
+  btn.disabled = !liberado;
+  btn.style.opacity = liberado ? '1' : '.5';
+  btn.style.cursor = liberado ? 'pointer' : 'not-allowed';
+}
+
+// Reinicia o estado toda vez que os termos abrem
+function _resetarEstadoTermos(){
+  _termosRolouAteFim = false;
+  const chk = document.getElementById('termos-check');
+  const lbl = document.getElementById('termos-check-label');
+  const btn = document.getElementById('termos-btn-aceitar');
+  const aviso = document.getElementById('termos-aviso-rolagem');
+  if(chk){ chk.checked = false; chk.disabled = true; }
+  if(lbl){ lbl.style.opacity = '.45'; lbl.style.cursor = 'not-allowed'; }
+  if(btn){ btn.disabled = true; btn.style.opacity = '.5'; btn.style.cursor = 'not-allowed'; }
+  if(aviso){
+    aviso.style.display = 'flex';
+    aviso.style.background = 'rgba(217,119,6,.10)';
+    aviso.style.borderColor = 'rgba(217,119,6,.3)';
+    aviso.innerHTML = '<span style="font-size:12.5px;color:#d97706;font-weight:600"><i class="ti ti-arrow-down"></i> Role até o final para poder aceitar</span><button class="btn btn-out btn-xs" onclick="_irAoFimTermos()" style="white-space:nowrap">Ir ao final</button>';
+  }
+  // Se o texto for curto e não tiver rolagem, libera na hora
+  setTimeout(()=>{
+    const box = document.getElementById('termos-conteudo');
+    if(box && box.scrollHeight <= box.clientHeight + 24) _checarRolagemTermos();
+  }, 300);
+}
+
 async function verificarTermosUso(){
   try{
     const {data,error}=await db.rpc('termos_vigente');
@@ -6910,6 +6976,7 @@ async function verificarTermosUso(){
       } else { box.style.display='none'; }
     }
     const chk=document.getElementById('termos-check'); if(chk)chk.checked=false;
+    _resetarEstadoTermos();
     openModal('modal-termos-uso');
   }catch(e){ /* sem termos: não bloqueia */ }
 }
@@ -7026,6 +7093,7 @@ function _verDocLeitura(titulo, conteudo, versao){
   document.getElementById('termos-conteudo').textContent=conteudo;
   const box=document.getElementById('termos-resumo-box'); if(box)box.style.display='none';
   const chkLabel=document.querySelector('#modal-termos-uso label'); if(chkLabel)chkLabel.style.display='none';
+  const avisoRol=document.getElementById('termos-aviso-rolagem'); if(avisoRol)avisoRol.style.display='none';
   const footer=document.querySelector('#modal-termos-uso .modal-footer');
   if(footer) footer.innerHTML=`<a href="/termos.html" target="_blank" class="btn btn-out btn-sm"><i class="ti ti-external-link"></i> Abrir em página</a><button class="btn btn-pri" onclick="closeModal('modal-termos-uso');_restaurarModalTermos()">Fechar</button>`;
   openModal('modal-termos-uso');
@@ -7033,7 +7101,7 @@ function _verDocLeitura(titulo, conteudo, versao){
 function _restaurarModalTermos(){
   const chkLabel=document.querySelector('#modal-termos-uso label'); if(chkLabel)chkLabel.style.display='';
   const footer=document.querySelector('#modal-termos-uso .modal-footer');
-  if(footer) footer.innerHTML=`<a href="/termos.html" target="_blank" class="btn btn-out btn-sm"><i class="ti ti-external-link"></i> Abrir em página</a><button class="btn btn-out" onclick="doLogout()">Sair</button><button class="btn btn-pri" id="termos-btn-aceitar" onclick="aceitarTermosUso()"><i class="ti ti-check"></i> Aceitar e continuar</button>`;
+  if(footer) footer.innerHTML=`<a href="/termos.html" target="_blank" class="btn btn-out btn-sm"><i class="ti ti-external-link"></i> Abrir em página</a><button class="btn btn-out" onclick="doLogout()">Sair</button><button class="btn btn-pri" id="termos-btn-aceitar" disabled style="opacity:.5;cursor:not-allowed" onclick="aceitarTermosUso()"><i class="ti ti-check"></i> Aceitar e continuar</button>`;
 }
 async function aceitarTermosUso(){
   if(!document.getElementById('termos-check')?.checked){
