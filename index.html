@@ -5884,6 +5884,9 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
           <span class="ct-var" onclick="insVarContrato('{numero}')">{numero}</span>
           <span class="ct-var" onclick="insVarContrato('{garantia}')">{garantia}</span>
           <span class="ct-var" onclick="insVarContrato('{tecnico}')">{tecnico}</span>
+          <span class="ct-var" onclick="insVarContrato('{telefone_loja}')">{telefone_loja}</span>
+          <span class="ct-var" onclick="insVarContrato('{endereco_loja}')">{endereco_loja}</span>
+          <span class="ct-var" onclick="insVarContrato('{cidade_loja}')">{cidade_loja}</span>
         </div>
         <div id="ct-vars-func" style="display:none;flex-wrap:wrap;gap:5px;width:100%;margin-top:4px;padding-top:6px;border-top:1px solid var(--border)">
           <span style="font-size:10px;color:var(--txt3);width:100%;margin-bottom:2px">Específicas de funcionário:</span>
@@ -8753,8 +8756,12 @@ async function buscarCompatIA(){
       </div>`;
     }
   }catch(e){
+    console.error('[compat-ia] falha:', e);
+    const detalhe = (e && (e.message || e.error?.message)) || 'erro desconhecido';
     if(sug)sug.innerHTML=`<div style="padding:10px;font-size:12px;color:var(--warn);background:rgba(245,158,11,.08);border-radius:8px">
-      <b>Busca com IA indisponível.</b> Não foi possível concluir a busca. Tente novamente.<br>
+      <b>Busca com IA indisponível.</b> Não foi possível concluir a busca.<br>
+      <span style="font-size:11px;color:var(--txt3);display:block;margin-top:4px">Detalhe: ${esc(String(detalhe))}</span>
+      <span style="font-size:11px;color:var(--txt3);display:block;margin-top:2px">Se isso persistir, a função <code>compat-ia</code> pode precisar ser publicada (deploy) de novo.</span>
       Você pode adicionar os modelos compatíveis manualmente no campo abaixo.
     </div>`;
   } finally {
@@ -12414,7 +12421,7 @@ function verTermoGarantia(osId) {
   if (!termo) { notify('Termo não encontrado no cadastro.', 'warn'); return; }
   document.getElementById('os-det-content').innerHTML = `
     <div class="card-title"><i class="ti ti-file-certificate" style="color:var(--pri)"></i> Termo de Garantia — ${termo.nome}</div>
-    <div style="margin-top:12px;font-size:13px;line-height:1.7;color:var(--txt);white-space:pre-wrap;background:var(--surface);border-radius:10px;padding:16px">${(termo.conteudo||'').replace(/</g,'&lt;').replace(/{aparelho}/gi, o.aparelho||'').replace(/{cliente}/gi, o.cliente_nome||'').replace(/{garantia}/gi, (o.garantia_dias||0)+' dias').replace(/{valor}/gi, fmt(o.total||0)).replace(/{data}/gi, new Date().toLocaleDateString('pt-BR'))}</div>`;
+    <div style="margin-top:12px;font-size:13px;line-height:1.7;color:var(--txt);white-space:pre-wrap;background:var(--surface);border-radius:10px;padding:16px">${_preencheContrato((termo.conteudo||'').replace(/</g,'&lt;'), {cliente:o.cliente_nome||'', produto:o.aparelho||'', valor:o.total||0, numero:o.numero||'', garantia:(o.garantia_dias||0)+' dias', tecnico:o.tecnico_nome||'', cpf:(G.clientes||[]).find(x=>x.id===o.cliente_id)?.cpf||''})}</div>`;
   document.getElementById('os-det-footer').innerHTML = `<button class="btn btn-out btn-sm" onclick="detOS('${osId}')">Voltar</button><button class="btn btn-pri btn-sm" onclick="gerarPdfOS('${osId}')"><i class="ti ti-printer"></i> Imprimir OS</button>`;
 }
 
@@ -15642,6 +15649,130 @@ const DIAG_PROB={alta:['Mais provável','#dc2626'],media:['Possível','#d97706']
 const DIAG_DIFI={facil:['Fácil','#16a34a'],media:['Média','#d97706'],dificil:['Difícil','#dc2626']};
 const DIAG_CUSTO={baixo:['Custo baixo','#16a34a'],medio:['Custo médio','#d97706'],alto:['Custo alto','#dc2626']};
 
+/* ── MINHAS SOLUÇÕES (base de conhecimento da loja) ─────────────── */
+let _solucoesEncontradas=[];
+
+// Procura soluções já salvas antes de gastar a IA
+async function buscarMinhasSolucoes(aparelho, sintoma){
+  try{
+    const termos=(aparelho+' '+sintoma).toLowerCase().split(/\s+/).filter(t=>t.length>3).slice(0,6);
+    if(!termos.length) return [];
+    const {data}=await db.from('solucoes').select('*').eq('empresa_id',EID()).order('vezes_usada',{ascending:false}).limit(50);
+    if(!data||!data.length) return [];
+    // Pontua por quantas palavras batem
+    const pont=data.map(s=>{
+      const texto=((s.aparelho||'')+' '+(s.sintoma||'')+' '+(s.solucao||'')).toLowerCase();
+      const acertos=termos.filter(t=>texto.includes(t)).length;
+      return {s, acertos};
+    }).filter(x=>x.acertos>=2).sort((a,b)=>b.acertos-a.acertos);
+    return pont.slice(0,4).map(x=>x.s);
+  }catch(e){ return []; }
+}
+
+// Salva uma causa sugerida pela IA como solução que funcionou
+function salvarSolucaoDaIA(idx){
+  if(!_diagUltimo || !_diagUltimo.causas || !_diagUltimo.causas[idx]) return;
+  const c=_diagUltimo.causas[idx];
+  const aparelho=(document.getElementById('diag-aparelho')?.value||'').trim();
+  const sintoma=(document.getElementById('diag-sintoma')?.value||'').trim();
+  const html=`
+    <div class="card-title" style="gap:8px;margin-bottom:6px"><i class="ti ti-bookmark" style="color:#16a34a"></i> Salvar em Minhas Soluções</div>
+    <div style="font-size:12px;color:var(--txt3);margin-bottom:12px">Isso vira conhecimento da sua loja. Na próxima vez que esse sintoma aparecer, o sistema mostra essa solução na hora.</div>
+    <div class="g2">
+      <div class="fg"><label class="lbl">Aparelho</label><input type="text" id="sol-aparelho" value="${esc(aparelho)}"></div>
+      <div class="fg"><label class="lbl">Peça usada (opcional)</label><input type="text" id="sol-peca" placeholder="Ex: conector de carga"></div>
+    </div>
+    <div class="fg"><label class="lbl">Sintoma</label><input type="text" id="sol-sintoma" value="${esc(sintoma)}"></div>
+    <div class="fg"><label class="lbl">Causa</label><input type="text" id="sol-causa" value="${esc(c.causa||'')}"></div>
+    <div class="fg"><label class="lbl">O que resolveu *</label><textarea id="sol-solucao" rows="3">${esc(c.solucao||'')}</textarea></div>
+    <div class="g2">
+      <div class="fg"><label class="lbl">Custo da peça (R$)</label><input type="number" id="sol-custo" step="0.01" placeholder="0,00"></div>
+      <div class="fg"><label class="lbl">Tempo gasto (min)</label><input type="number" id="sol-tempo" placeholder="30"></div>
+    </div>`;
+  const foot=`
+    <button class="btn btn-out" onclick="renderResultadoDiagnostico(_diagUltimo,false)">Voltar</button>
+    <button class="btn btn-pri" onclick="confirmarSalvarSolucao('${esc(c.como_verificar||'').replace(/'/g,"\\'")}')"><i class="ti ti-check"></i> Salvar solução</button>`;
+  abrirModalGenerico(html, foot);
+}
+
+async function confirmarSalvarSolucao(comoVerificar){
+  const g=id=>(document.getElementById(id)?.value||'').trim();
+  const solucao=g('sol-solucao');
+  if(!solucao){ notify('Descreva o que resolveu.','warn'); return; }
+  const payload={
+    empresa_id:EID(),
+    aparelho:g('sol-aparelho')||'—',
+    sintoma:g('sol-sintoma')||'—',
+    causa:g('sol-causa')||null,
+    solucao,
+    como_verificar:comoVerificar||null,
+    peca_usada:g('sol-peca')||null,
+    custo:parseFloat(g('sol-custo'))||null,
+    tempo_min:parseInt(g('sol-tempo'))||null,
+    origem:'ia',
+    criado_por:G.profile?.nome||G.profile?.email||null
+  };
+  setLoad(true);
+  const {error}=await db.from('solucoes').insert(payload);
+  setLoad(false);
+  if(error){
+    if(/relation|does not exist/i.test(error.message||'')) notify('Rode a migração SOL01 para ativar Minhas Soluções.','warn',7000);
+    else notify('Erro: '+error.message,'error');
+    return;
+  }
+  closeModal('modal-generic');
+  notify('✅ Solução salva! Ela vai aparecer na próxima vez que esse sintoma surgir.','success',6000);
+}
+
+// Lista/pesquisa as soluções da loja
+async function abrirMinhasSolucoes(){
+  const html=`
+    <div class="card-title" style="gap:8px;margin-bottom:8px"><i class="ti ti-bulb" style="color:var(--pri)"></i> Minhas Soluções</div>
+    <div style="font-size:12px;color:var(--txt3);margin-bottom:10px">Reparos que já deram certo na sua loja.</div>
+    <div class="ig" style="margin-bottom:12px"><i class="ti ti-search"></i><input type="text" id="sol-busca" placeholder="Buscar por aparelho ou sintoma..." oninput="renderListaSolucoes()"></div>
+    <div id="sol-lista" style="max-height:50vh;overflow:auto"></div>`;
+  abrirModalGenerico(html, `<button class="btn btn-out" onclick="closeModal('modal-generic')">Fechar</button><button class="btn btn-pri" onclick="abrirDiagnosticoIA()"><i class="ti ti-sparkles"></i> Consultar IA</button>`);
+  await carregarTodasSolucoes();
+  renderListaSolucoes();
+}
+let _todasSolucoes=[];
+async function carregarTodasSolucoes(){
+  try{ const {data}=await db.from('solucoes').select('*').eq('empresa_id',EID()).order('criado_em',{ascending:false}); _todasSolucoes=data||[]; }
+  catch(e){ _todasSolucoes=[]; }
+}
+function renderListaSolucoes(){
+  const cont=document.getElementById('sol-lista'); if(!cont)return;
+  const f=(document.getElementById('sol-busca')?.value||'').toLowerCase();
+  let list=_todasSolucoes;
+  if(f) list=list.filter(s=>((s.aparelho||'')+' '+(s.sintoma||'')+' '+(s.solucao||'')+' '+(s.causa||'')).toLowerCase().includes(f));
+  if(!list.length){
+    cont.innerHTML='<div style="text-align:center;color:var(--txt3);padding:24px;font-size:13px"><i class="ti ti-bulb-off" style="font-size:26px;opacity:.4"></i><div style="margin-top:6px">'+(f?'Nada encontrado.':'Nenhuma solução salva ainda. Use o assistente de IA e salve o que funcionar.')+'</div></div>';
+    return;
+  }
+  cont.innerHTML=list.map(s=>`
+    <div class="card" style="padding:11px 13px;margin-bottom:8px;border-left:3px solid #16a34a">
+      <div style="font-weight:700;font-size:12.5px">${esc(s.aparelho)}</div>
+      <div style="font-size:12px;color:var(--txt2);margin-top:2px">${esc(s.sintoma)}</div>
+      ${s.causa?`<div style="font-size:11.5px;color:var(--txt3);margin-top:4px"><b>Causa:</b> ${esc(s.causa)}</div>`:''}
+      <div style="background:rgba(22,163,74,.08);border-radius:7px;padding:7px 10px;margin-top:6px;font-size:12px"><b style="color:#16a34a">Resolveu:</b> ${esc(s.solucao)}</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:10.5px;color:var(--txt3);margin-top:6px">
+        ${s.peca_usada?`<span><i class="ti ti-package"></i> ${esc(s.peca_usada)}</span>`:''}
+        ${s.custo?`<span><i class="ti ti-cash"></i> ${fmt(s.custo)}</span>`:''}
+        ${s.tempo_min?`<span><i class="ti ti-clock"></i> ${s.tempo_min} min</span>`:''}
+        ${s.vezes_usada>1?`<span><i class="ti ti-repeat"></i> usada ${s.vezes_usada}x</span>`:''}
+        <span style="margin-left:auto"><button class="btn btn-out btn-xs" onclick="excluirSolucao('${s.id}')" style="color:var(--danger,#dc2626)"><i class="ti ti-trash"></i></button></span>
+      </div>
+    </div>`).join('');
+}
+async function excluirSolucao(id){
+  confirmAct('Excluir solução?','Ela sai da sua base de conhecimento.',async()=>{
+    const {error}=await db.from('solucoes').delete().eq('id',id);
+    if(error){ notify('Erro: '+error.message,'error'); return; }
+    notify('Solução excluída.','success');
+    await carregarTodasSolucoes(); renderListaSolucoes();
+  });
+}
+
 // Abre o assistente. Se vier da OS, já preenche aparelho e defeito.
 function abrirDiagnosticoIA(aparelhoPre, sintomaPre){
   const ap = aparelhoPre !== undefined ? aparelhoPre : (document.getElementById('os-ap')?.value||'');
@@ -15655,6 +15786,7 @@ function abrirDiagnosticoIA(aparelhoPre, sintomaPre){
     <div id="diag-resultado" style="margin-top:6px"></div>`;
   const foot=`
     <button class="btn btn-out" onclick="closeModal('modal-generic')">Fechar</button>
+    <button class="btn btn-out" onclick="abrirMinhasSolucoes()"><i class="ti ti-bulb"></i> Minhas Soluções</button>
     <button class="btn btn-pri" id="diag-btn" onclick="consultarDiagnosticoIA()"><i class="ti ti-search"></i> Analisar</button>`;
   abrirModalGenerico(html, foot);
 }
@@ -15669,6 +15801,33 @@ async function consultarDiagnosticoIA(forcar){
   const res=document.getElementById('diag-resultado');
   const btn=document.getElementById('diag-btn');
   if(btn){ btn.disabled=true; btn.innerHTML='<i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Analisando...'; }
+
+  // PASSO 1: procura primeiro nas soluções que a própria loja já registrou
+  if(forcar!==true){
+    if(res) res.innerHTML='<div style="text-align:center;padding:14px;color:var(--txt3);font-size:12.5px"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Procurando em Minhas Soluções…</div>';
+    const achadas=await buscarMinhasSolucoes(aparelho,sintoma);
+    if(achadas.length){
+      if(res) res.innerHTML=`
+        <div style="border-top:1px solid var(--border);margin:14px 0 12px"></div>
+        <div class="card" style="padding:11px 14px;margin-bottom:10px;background:rgba(22,163,74,.08);border-left:3px solid #16a34a">
+          <div style="font-size:10px;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:.4px"><i class="ti ti-bulb"></i> Sua loja já resolveu isso</div>
+          <div style="font-size:11.5px;color:var(--txt2);margin-top:3px">Soluções que já funcionaram aqui — mais confiáveis que a IA.</div>
+        </div>
+        ${achadas.map(s=>`<div class="card" style="padding:11px 13px;margin-bottom:8px;border-left:3px solid #16a34a">
+          <div style="font-weight:700;font-size:12.5px">${esc(s.aparelho)} · ${esc(s.sintoma)}</div>
+          ${s.causa?`<div style="font-size:11.5px;color:var(--txt3);margin-top:3px"><b>Causa:</b> ${esc(s.causa)}</div>`:''}
+          <div style="background:rgba(22,163,74,.08);border-radius:7px;padding:7px 10px;margin-top:6px;font-size:12px"><b style="color:#16a34a">Resolveu:</b> ${esc(s.solucao)}</div>
+          ${s.peca_usada?`<div style="font-size:10.5px;color:var(--txt3);margin-top:5px"><i class="ti ti-package"></i> ${esc(s.peca_usada)}${s.custo?' · '+fmt(s.custo):''}</div>`:''}
+        </div>`).join('')}
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
+          <button class="btn btn-out btn-sm" onclick="consultarDiagnosticoIA(true)"><i class="ti ti-sparkles"></i> Consultar a IA mesmo assim</button>
+        </div>`;
+      if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-search"></i> Analisar'; }
+      return;
+    }
+  }
+
+  // PASSO 2: não achou na base da loja → consulta a IA
   if(res) res.innerHTML='<div style="text-align:center;padding:20px;color:var(--txt3);font-size:12.5px"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite;font-size:20px"></i><div style="margin-top:6px">Consultando a IA e pesquisando na web…</div><div style="font-size:10.5px;color:var(--txt4)">Pode levar alguns segundos</div></div>';
 
   try{
@@ -15723,6 +15882,11 @@ function renderResultadoDiagnostico(d, cached){
       ${c.solucao?`<div style="margin-top:6px;background:rgba(22,163,74,.08);border-radius:8px;padding:8px 11px">
         <div style="font-size:10px;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:.4px"><i class="ti ti-tool"></i> Solução</div>
         <div style="font-size:12px;margin-top:2px">${esc(c.solucao)}</div></div>`:''}
+      <div style="margin-top:8px;text-align:right">
+        <button class="btn btn-out btn-xs" onclick="salvarSolucaoDaIA(${i})" style="color:#16a34a;border-color:#16a34a" title="Guardar em Minhas Soluções">
+          <i class="ti ti-bookmark"></i> Resolveu! Salvar
+        </button>
+      </div>
     </div>`;
   }).join('');
 
@@ -23159,7 +23323,8 @@ function gerarContratoOS(osId){
   abrirGerarContrato({
     tipo:'os', cliente:o.cliente_nome, cpf:(G.clientes||[]).find(x=>x.id===o.cliente_id)?.cpf||'',
     produto:o.aparelho||'', valor:o.total||o.valor_servico||0, numero:o.numero||'',
-    garantia:(o.garantia_dias?o.garantia_dias+' dias':''), marca:o.aparelho||''
+    garantia:(o.garantia_dias?o.garantia_dias+' dias':''), marca:o.aparelho||'',
+    tecnico:o.tecnico_nome||''
   });
 }
 
@@ -23527,18 +23692,35 @@ function cgSetFmt(f,btn){ _cgFmt=f; document.querySelectorAll('.cg-fmt').forEach
 
 function _preencheContrato(corpo, c){
   const m=getMarca?getMarca():{};
-  const loja=(m.nomeFantasia||m.razaoSocial||(G.profile&&G.profile.empresa_nome)||'A loja');
+  const emp=(typeof getEmpDados==='function')?getEmpDados():{};
+  // Nome da loja: tenta todas as origens possíveis antes de desistir
+  const loja = emp.nome || m.empresa?.nome || m.nomeFantasia || m.razaoSocial
+             || (G.empresa && G.empresa.nome) || (G.profile && G.profile.empresa_nome) || 'A loja';
+  const cnpjLoja = emp.cnpj || m.empresa?.cnpj || m.cnpj || (G.empresa && G.empresa.cnpj) || '—';
+  const tecnico  = c.tecnico || (G.profile && G.profile.nome) || '—';
   const map={
     '{cliente}': c.cliente||'—',
     '{cpf}': c.cpf||'—',
     '{produto}': c.produto||'—',
+    '{aparelho}': c.produto||c.aparelho||'—',  // sinônimo usado nos termos de garantia
     '{valor}': c.valor!=null?fmt(c.valor):'—',
     '{data}': new Date().toLocaleDateString('pt-BR'),
     '{loja}': loja,
+    '{cnpj_loja}': cnpjLoja,
     '{numero}': c.numero||'—',
-    '{garantia}': c.garantia||'—'
+    '{garantia}': c.garantia||'—',
+    '{tecnico}': tecnico,
+    // extras úteis (funcionam mesmo sem aparecer na lista de botões)
+    '{telefone_loja}': emp.tel || '—',
+    '{endereco_loja}': emp.end || '—',
+    '{cidade_loja}': emp.cid || '—',
+    '{email_loja}': emp.email || '—'
   };
-  return String(corpo||'').replace(/\{cliente\}|\{cpf\}|\{produto\}|\{valor\}|\{data\}|\{loja\}|\{numero\}|\{garantia\}/g, k=>map[k]||k);
+  // Substitui qualquer variável do mapa, ignorando maiúsculas/minúsculas
+  return String(corpo||'').replace(/\{[a-z_]+\}/gi, k=>{
+    const achado = map[k.toLowerCase()];
+    return achado !== undefined ? achado : k;  // variável desconhecida fica como está
+  });
 }
 function emitirContrato(){
   if(!_cgContexto) return;
