@@ -1526,7 +1526,13 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
                   </div>
                 </div>
               </div>
-              <div class="fg"><label class="lbl">Defeito *</label><textarea id="os-def" rows="2" placeholder="Defeito relatado..."></textarea></div>
+              <div class="fg">
+                <label class="lbl" style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                  <span>Defeito *</span>
+                  <button type="button" class="btn btn-out btn-xs" onclick="abrirDiagnosticoIA()" title="Perguntar à IA possíveis causas e soluções" style="text-transform:none;letter-spacing:0"><i class="ti ti-sparkles" style="color:var(--pri)"></i> Consultar IA</button>
+                </label>
+                <textarea id="os-def" rows="2" placeholder="Defeito relatado..."></textarea>
+              </div>
               <div class="fg"><label class="lbl">Diagnóstico</label><textarea id="os-diag" rows="2" placeholder="Laudo técnico..."></textarea></div>
 
               <!-- Checklist de entrada -->
@@ -14092,6 +14098,137 @@ function diagTab(tab,btn){
   if(tab==='historico')renderDiagHistorico();
   else if(tab==='solucoes')renderSolucoes();
   else popDiagOS();
+}
+
+/* ── ASSISTENTE TÉCNICO POR IA (diagnóstico de defeitos) ─────────── */
+const DIAG_PROB={alta:['Mais provável','#dc2626'],media:['Possível','#d97706'],baixa:['Menos provável','#64748b']};
+const DIAG_DIFI={facil:['Fácil','#16a34a'],media:['Média','#d97706'],dificil:['Difícil','#dc2626']};
+const DIAG_CUSTO={baixo:['Custo baixo','#16a34a'],medio:['Custo médio','#d97706'],alto:['Custo alto','#dc2626']};
+
+// Abre o assistente. Se vier da OS, já preenche aparelho e defeito.
+function abrirDiagnosticoIA(aparelhoPre, sintomaPre){
+  const ap = aparelhoPre !== undefined ? aparelhoPre : (document.getElementById('os-ap')?.value||'');
+  const si = sintomaPre  !== undefined ? sintomaPre  : (document.getElementById('os-def')?.value||'');
+  const html=`
+    <div class="card-title" style="gap:8px;margin-bottom:4px"><i class="ti ti-sparkles" style="color:var(--pri)"></i> Assistente Técnico</div>
+    <div style="font-size:12px;color:var(--txt3);margin-bottom:14px">Descreva o aparelho e o sintoma. A IA sugere as causas mais prováveis e como testar cada uma.</div>
+    <div class="fg"><label class="lbl">Aparelho *</label><input type="text" id="diag-aparelho" value="${esc(ap)}" placeholder="Ex: iPhone 11, Notebook Dell Inspiron 15"></div>
+    <div class="fg"><label class="lbl">Qual o sintoma? *</label><textarea id="diag-sintoma" rows="3" placeholder="Ex: só carrega desligado, quando liga a bateria não sobe">${esc(si)}</textarea></div>
+    <div class="fg"><label class="lbl">Observações (opcional)</label><input type="text" id="diag-obs" placeholder="Ex: já trocou o conector, caiu na água"></div>
+    <div id="diag-resultado" style="margin-top:6px"></div>`;
+  const foot=`
+    <button class="btn btn-out" onclick="closeModal('modal-generic')">Fechar</button>
+    <button class="btn btn-pri" id="diag-btn" onclick="consultarDiagnosticoIA()"><i class="ti ti-search"></i> Analisar</button>`;
+  abrirModalGenerico(html, foot);
+}
+
+async function consultarDiagnosticoIA(forcar){
+  const aparelho=(document.getElementById('diag-aparelho')?.value||'').trim();
+  const sintoma=(document.getElementById('diag-sintoma')?.value||'').trim();
+  const obs=(document.getElementById('diag-obs')?.value||'').trim();
+  if(!aparelho){ notify('Informe o aparelho.','warn'); return; }
+  if(sintoma.length<5){ notify('Descreva o sintoma com mais detalhe.','warn'); return; }
+
+  const res=document.getElementById('diag-resultado');
+  const btn=document.getElementById('diag-btn');
+  if(btn){ btn.disabled=true; btn.innerHTML='<i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Analisando...'; }
+  if(res) res.innerHTML='<div style="text-align:center;padding:20px;color:var(--txt3);font-size:12.5px"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite;font-size:20px"></i><div style="margin-top:6px">Consultando a IA e pesquisando na web…</div><div style="font-size:10.5px;color:var(--txt4)">Pode levar alguns segundos</div></div>';
+
+  try{
+    const { data, error } = await db.functions.invoke('diagnostico-ia', {
+      body:{ aparelho, sintoma, observacoes:obs, forcar:forcar===true }
+    });
+    if(error) throw new Error(error.message||'falha na chamada');
+
+    if(!data || !data.success){
+      const code=data?.error?.code||'';
+      const msg=data?.error?.message||'Não foi possível analisar agora.';
+      if(res) res.innerHTML=`<div class="card" style="border-left:3px solid var(--danger,#dc2626);padding:12px 14px;font-size:12.5px"><b>Não deu certo.</b><div style="color:var(--txt2);margin-top:4px">${esc(msg)}</div>${code==='AI_AUTH_ERROR'?'<div style="font-size:11px;color:var(--txt3);margin-top:6px">O administrador precisa revisar a chave da IA.</div>':''}</div>`;
+      return;
+    }
+
+    _diagUltimo = data.data;
+    renderResultadoDiagnostico(data.data, data.cached);
+    // Salva no histórico da loja (best-effort)
+    try{
+      await db.from('diagnostico_consultas').insert({
+        empresa_id:EID(), aparelho, sintoma, resposta:data.data,
+        consultado_por:G.profile?.nome||G.profile?.email||null
+      });
+    }catch(e){}
+  }catch(e){
+    if(res) res.innerHTML=`<div class="card" style="border-left:3px solid var(--danger,#dc2626);padding:12px 14px;font-size:12.5px">Erro ao consultar: ${esc(e.message||'')}</div>`;
+  }finally{
+    if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-search"></i> Analisar'; }
+  }
+}
+
+let _diagUltimo=null;
+
+function renderResultadoDiagnostico(d, cached){
+  const res=document.getElementById('diag-resultado');
+  if(!res)return;
+  const tag=(txt,cor)=>`<span style="font-size:9.5px;font-weight:700;color:${cor};background:${cor}18;border-radius:99px;padding:2px 8px;white-space:nowrap">${txt}</span>`;
+
+  const causas=(d.causas||[]).map((c,i)=>{
+    const [plabel,pcor]=DIAG_PROB[c.probabilidade]||DIAG_PROB.media;
+    const [dlabel,dcor]=DIAG_DIFI[c.dificuldade]||DIAG_DIFI.media;
+    const [clabel,ccor]=DIAG_CUSTO[c.custo]||DIAG_CUSTO.medio;
+    return `<div class="card" style="padding:12px 14px;margin-bottom:8px;border-left:3px solid ${pcor}">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap">
+        <div style="font-weight:700;font-size:13px;flex:1;min-width:140px">${i+1}. ${esc(c.causa)}</div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap">${tag(plabel,pcor)}${tag(dlabel,dcor)}${tag(clabel,ccor)}</div>
+      </div>
+      ${c.explicacao?`<div style="font-size:12px;color:var(--txt2);margin-top:6px">${esc(c.explicacao)}</div>`:''}
+      ${c.como_verificar?`<div style="margin-top:8px;background:var(--bg2);border-radius:8px;padding:8px 11px">
+        <div style="font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.4px"><i class="ti ti-test-pipe"></i> Como verificar</div>
+        <div style="font-size:12px;margin-top:2px">${esc(c.como_verificar)}</div></div>`:''}
+      ${c.solucao?`<div style="margin-top:6px;background:rgba(22,163,74,.08);border-radius:8px;padding:8px 11px">
+        <div style="font-size:10px;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:.4px"><i class="ti ti-tool"></i> Solução</div>
+        <div style="font-size:12px;margin-top:2px">${esc(c.solucao)}</div></div>`:''}
+    </div>`;
+  }).join('');
+
+  res.innerHTML=`
+    <div style="border-top:1px solid var(--border);margin:14px 0 12px"></div>
+    ${d.resumo?`<div class="card" style="padding:12px 14px;margin-bottom:10px;background:rgba(59,94,255,.06)">
+      <div style="font-size:10px;font-weight:700;color:var(--pri);text-transform:uppercase;letter-spacing:.4px">Diagnóstico provável</div>
+      <div style="font-size:13px;margin-top:3px">${esc(d.resumo)}</div>
+      ${d.aparelho_identificado?`<div style="font-size:11px;color:var(--txt3);margin-top:4px">Aparelho: ${esc(d.aparelho_identificado)}</div>`:''}
+    </div>`:''}
+    ${causas||'<div style="color:var(--txt3);font-size:12.5px;padding:10px">A IA não encontrou causas específicas. Tente descrever o sintoma com mais detalhe.</div>'}
+    ${(d.perguntas_ao_cliente||[]).length?`<div class="card" style="padding:11px 14px;margin-bottom:8px">
+      <div style="font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.4px"><i class="ti ti-help-circle"></i> Perguntar ao cliente</div>
+      <ul style="margin:6px 0 0;padding-left:18px;font-size:12px;color:var(--txt2)">${d.perguntas_ao_cliente.map(p=>`<li style="margin-bottom:3px">${esc(p)}</li>`).join('')}</ul>
+    </div>`:''}
+    ${(d.alertas||[]).length?`<div class="card" style="padding:11px 14px;margin-bottom:8px;border-left:3px solid var(--warn,#d97706)">
+      <div style="font-size:10px;font-weight:700;color:var(--warn,#d97706);text-transform:uppercase;letter-spacing:.4px"><i class="ti ti-alert-triangle"></i> Atenção</div>
+      <ul style="margin:6px 0 0;padding-left:18px;font-size:12px;color:var(--txt2)">${d.alertas.map(a=>`<li style="margin-bottom:3px">${esc(a)}</li>`).join('')}</ul>
+    </div>`:''}
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center">
+      ${document.getElementById('os-diag')?`<button class="btn btn-pri btn-sm" onclick="usarDiagnosticoNaOS()"><i class="ti ti-arrow-down"></i> Usar na OS</button>`:''}
+      <button class="btn btn-out btn-sm" onclick="consultarDiagnosticoIA(true)"><i class="ti ti-refresh"></i> Nova análise</button>
+      ${cached?'<span style="font-size:10.5px;color:var(--txt3)"><i class="ti ti-database"></i> resultado do histórico</span>':''}
+    </div>
+    <div style="font-size:10.5px;color:var(--txt3);margin-top:10px;line-height:1.5;border-top:1px solid var(--border);padding-top:8px">
+      <i class="ti ti-info-circle"></i> Sugestões geradas por IA. Sempre confirme com testes na bancada antes de trocar peças ou dar o orçamento ao cliente.
+    </div>`;
+}
+
+// Joga o resumo do diagnóstico no campo "Diagnóstico" da OS
+function usarDiagnosticoNaOS(){
+  const campo=document.getElementById('os-diag');
+  if(!campo||!_diagUltimo){ return; }
+  const d=_diagUltimo;
+  let txt = d.resumo ? ('Diagnóstico provável: '+d.resumo+'\n') : '';
+  (d.causas||[]).slice(0,3).forEach((c,i)=>{
+    txt += `\n${i+1}. ${c.causa}`;
+    if(c.solucao) txt += ` → ${c.solucao}`;
+  });
+  campo.value = (campo.value ? campo.value.trim()+'\n\n' : '') + txt.trim();
+  closeModal('modal-generic');
+  notify('Diagnóstico copiado para a OS. Revise antes de salvar.','success',5000);
+  campo.focus();
 }
 
 function renderDiagnostico(){ popDiagOS(); }
