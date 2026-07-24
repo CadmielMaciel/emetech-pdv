@@ -6640,10 +6640,73 @@ function confirmAct(title,msg,cb){
   openModal('modal-confirm');
 }
 
+/* ── FUNDO ESCURO DERIVADO DA MARCA ──────────────────────────────
+   No modo noturno, o fundo usa o tom mais forte (escuro) da paleta
+   escolhida em Aparência, em vez de um azul fixo. */
+function _hexParaHsl(hex){
+  hex=(hex||'').replace('#','');
+  if(hex.length===3) hex=hex.split('').map(c=>c+c).join('');
+  const r=parseInt(hex.slice(0,2),16)/255, g=parseInt(hex.slice(2,4),16)/255, b=parseInt(hex.slice(4,6),16)/255;
+  if([r,g,b].some(isNaN)) return null;
+  const mx=Math.max(r,g,b), mn=Math.min(r,g,b), l=(mx+mn)/2;
+  let h=0,s=0;
+  if(mx!==mn){
+    const d=mx-mn;
+    s = l>0.5 ? d/(2-mx-mn) : d/(mx+mn);
+    if(mx===r) h=((g-b)/d+(g<b?6:0));
+    else if(mx===g) h=((b-r)/d+2);
+    else h=((r-g)/d+4);
+    h*=60;
+  }
+  return {h, s:s*100, l:l*100};
+}
+function _hsl(h,s,l){ return `hsl(${Math.round(h)}deg ${Math.round(s)}% ${Math.round(l)}%)`; }
+
+// Retorna a cor "mais forte" (mais escura) entre as duas da paleta
+function _corMaisForte(c1,c2){
+  const a=_hexParaHsl(c1), b=_hexParaHsl(c2);
+  if(!a) return b?c2:null;
+  if(!b) return c1;
+  return a.l <= b.l ? c1 : c2;
+}
+
+function aplicarFundoEscuroDaMarca(){
+  const root=document.documentElement;
+  const escuro = root.getAttribute('data-theme')==='dark';
+  const vars=['--bg','--bg2','--surface','--surface2','--border','--border2','--pri-light','--txt2','--txt3','--txt4'];
+
+  if(!escuro){ vars.forEach(v=>root.style.removeProperty(v)); return; }
+
+  // MARCA é declarada com let; se ainda não inicializou, typeof também lança.
+  let p = null;
+  try { p = (MARCA && MARCA.paleta) ? MARCA.paleta : null; } catch(e) { p = null; }
+  const c1 = p?.c1, c2 = p?.c2 || p?.c1;
+  const base = _corMaisForte(c1, c2);
+  const hsl = base ? _hexParaHsl(base) : null;
+  if(!hsl){ vars.forEach(v=>root.style.removeProperty(v)); return; }
+
+  // Satura com moderação para não virar neon, mas mantém o tom da marca
+  const s = Math.min(Math.max(hsl.s*0.55, 18), 48);
+  const h = hsl.h;
+
+  root.style.setProperty('--bg',        _hsl(h, s,        6));
+  root.style.setProperty('--bg2',       _hsl(h, s*0.95,   9));
+  root.style.setProperty('--surface',   _hsl(h, s*0.9,   13));
+  root.style.setProperty('--surface2',  _hsl(h, s*0.85,  18));
+  root.style.setProperty('--border',    _hsl(h, s*0.8,   23));
+  root.style.setProperty('--border2',   _hsl(h, s*0.75,  30));
+  root.style.setProperty('--pri-light', _hsl(h, s,       20));
+  // Textos com leve tom da marca, mantendo boa legibilidade
+  root.style.setProperty('--txt2',      _hsl(h, Math.min(s,30), 74));
+  root.style.setProperty('--txt3',      _hsl(h, Math.min(s,28), 56));
+  root.style.setProperty('--txt4',      _hsl(h, Math.min(s,26), 38));
+}
+
 function toggleDark(){
   const d=document.documentElement.getAttribute('data-theme')==='dark';
   document.documentElement.setAttribute('data-theme',d?'light':'dark');
   document.getElementById('dark-btn').innerHTML=d?'<i class="ti ti-moon"></i>':'<i class="ti ti-sun"></i>';
+  aplicarFundoEscuroDaMarca();
   // rebuild charts on theme change
   if(G.charts.v7)renderDashboard();
 }
@@ -16845,6 +16908,7 @@ async function aplicarMarcasSalvas() {
       MARCA = { ...MARCA, ...m };
       if (m.logoLogin) atualizarLogoLoginReal(m.logoLogin);
       if (m.logoSidebar) atualizarLogoSidebarReal(m.logoSidebar);
+      if (typeof aplicarFundoEscuroDaMarca === 'function') aplicarFundoEscuroDaMarca();
     }
   } catch(e) {}
 }
@@ -19489,6 +19553,7 @@ function aplicarPaleta() {
   updateSidebarGradient(c1, c2, dir, modo);
   // Salva na paleta (Supabase)
   MARCA.paleta = paletaAtual;
+  aplicarFundoEscuroDaMarca();
   salvarMarcaSupabase(MARCA);
   // Favicon dinâmico
   atualizarFavicon(c1, c2);
