@@ -116,6 +116,7 @@ async function carregar(primeira){
       return;
     }
     render(data);
+    carregarGarantia(token);
   }catch(e){
     if(primeira) document.getElementById('conteudo').innerHTML =
       `<div class="center"><i class="ti ti-wifi-off"></i><p>Não foi possível carregar agora.<br>Tente novamente em instantes.</p></div>`;
@@ -123,6 +124,87 @@ async function carregar(primeira){
 }
 
 let _osData = null;
+
+// ── GARANTIA (o cliente vê até quando vale e quanto falta) ─────────
+async function carregarGarantia(token){
+  const box = document.getElementById('card-garantia');
+  if(!box) return;
+  let g = null;
+  try{
+    const { data, error } = await db.rpc('os_publica_garantia', { tok: token });
+    if(error) throw error;
+    g = data;
+  }catch(e){ box.innerHTML=''; return; }
+
+  if(!g || !g.tem_garantia){ box.innerHTML=''; return; }
+
+  // Ainda não começou (serviço não concluído)
+  if(!g.iniciada){
+    box.innerHTML = `
+      <div class="card">
+        <div class="sec-lbl"><i class="ti ti-shield"></i> Garantia</div>
+        <div class="info-row"><span style="color:var(--txt2)">Cobertura</span><b>${g.dias} dias</b></div>
+        <div style="font-size:12px;color:var(--txt2);margin-top:8px;line-height:1.5">
+          <i class="ti ti-info-circle"></i> ${g.aviso}
+        </div>
+      </div>`;
+    return;
+  }
+
+  const rest = g.dias_restantes;
+  const vencida = g.vencida;
+  // Cores: verde (tranquilo), laranja (acabando), vermelho (vencida)
+  const cor = vencida ? '#dc2626' : (rest <= 15 ? '#d97706' : '#16a34a');
+  const pct = vencida ? 0 : Math.max(0, Math.min(100, Math.round(rest / g.dias * 100)));
+  const txtRestante = vencida
+    ? `Garantia encerrada há ${Math.abs(rest)} dia(s)`
+    : (rest === 0 ? 'Último dia de garantia!' : `Faltam ${rest} dia(s)`);
+
+  box.innerHTML = `
+    <div class="card">
+      <div class="sec-lbl"><i class="ti ti-shield"></i> Garantia</div>
+      <div class="info-row"><span style="color:var(--txt2)">Cobertura</span><b>${g.dias} dias</b></div>
+      <div class="info-row"><span style="color:var(--txt2)">Início</span><b>${g.inicio}</b></div>
+      <div class="info-row"><span style="color:var(--txt2)">Válida até</span><b style="color:${cor}">${g.validade}</b></div>
+
+      <div style="margin-top:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-size:13px;font-weight:700;color:${cor}">
+            <i class="ti ti-${vencida?'shield-off':'clock'}"></i> ${txtRestante}
+          </span>
+          ${!vencida?`<span style="font-size:11px;color:var(--txt2)">${pct}%</span>`:''}
+        </div>
+        <div style="background:rgba(128,128,128,.18);border-radius:99px;height:8px;overflow:hidden">
+          <div style="width:${pct}%;height:100%;background:${cor};border-radius:99px;transition:width .5s"></div>
+        </div>
+      </div>
+
+      ${g.termo?`
+      <button onclick="verTermoGarantiaCliente()" style="margin-top:14px;width:100%;padding:10px;border-radius:9px;border:1px solid var(--pri2,#3b5eff);background:transparent;color:var(--pri2,#3b5eff);font-weight:600;font-size:13px;cursor:pointer;font-family:inherit">
+        <i class="ti ti-file-certificate"></i> Ver termo de garantia
+      </button>`:''}
+    </div>
+
+    ${g.termo?`
+    <div id="modal-termo-gar" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:999;align-items:flex-end;justify-content:center;padding:0">
+      <div style="background:var(--bg,#fff);border-radius:18px 18px 0 0;width:100%;max-width:520px;max-height:85vh;display:flex;flex-direction:column">
+        <div style="padding:16px 18px 10px;border-bottom:1px solid rgba(128,128,128,.2);display:flex;align-items:center;justify-content:space-between">
+          <b style="font-size:15px"><i class="ti ti-file-certificate"></i> Termo de Garantia</b>
+          <button onclick="fecharTermoGarantiaCliente()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--txt2);line-height:1">&times;</button>
+        </div>
+        <div style="padding:16px 18px;overflow:auto;font-size:13px;line-height:1.7;white-space:pre-wrap">${(g.termo||'').replace(/</g,'&lt;')}</div>
+      </div>
+    </div>`:''}`;
+}
+
+function verTermoGarantiaCliente(){
+  const m=document.getElementById('modal-termo-gar');
+  if(m) m.style.display='flex';
+}
+function fecharTermoGarantiaCliente(){
+  const m=document.getElementById('modal-termo-gar');
+  if(m) m.style.display='none';
+}
 let _sigCtx = null, _sigDraw = false, _sigHasInk = false, _sigAutId = null;
 
 function render(o){
@@ -173,8 +255,9 @@ function render(o){
       ${o.diagnostico?`<div class="info-row"><span style="color:var(--txt2)">Diagnóstico</span><span style="max-width:60%;text-align:right;font-size:12.5px">${esc(o.diagnostico)}</span></div>`:''}
       ${prazo?`<div class="info-row"><span style="color:var(--txt2)">Previsão de entrega</span><b>${prazo}</b></div>`:''}
       <div class="info-row"><span style="color:var(--txt2)">Valor do serviço</span><b style="color:var(--pri2)">${fmt(o.total)}</b></div>
-      ${o.garantia_dias?`<div class="info-row"><span style="color:var(--txt2)">Garantia</span><b style="color:var(--success)"><i class="ti ti-shield"></i> ${o.garantia_dias} dias</b></div>`:''}
     </div>
+
+    <div id="card-garantia"></div>
 
     ${(o.midias&&o.midias.length)?`
     <div class="card">
