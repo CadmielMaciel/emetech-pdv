@@ -2,6 +2,15 @@
 <html lang="pt-BR" data-theme="light">
 <head>
 <meta charset="UTF-8">
+<script>
+/* Aplica o tema salvo ANTES de qualquer coisa renderizar.
+   Fica aqui no <head> de proposito: evita a "piscada" de tela clara e
+   nao depende de nenhum outro script ter carregado com sucesso. */
+try{
+  var _temaSalvo = localStorage.getItem('misu_tema');
+  if(_temaSalvo === 'dark' || _temaSalvo === 'light') document.documentElement.setAttribute('data-theme', _temaSalvo);
+}catch(e){}
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>MISU SYS — ERP & PDV</title>
 <!-- ═══ PWA — App instalável (mobile + desktop) ═══ -->
@@ -6428,6 +6437,8 @@ async function instalarApp(){
 
 // Inicializa PWA e indicador de rede assim que possível
 document.addEventListener('DOMContentLoaded',()=>{
+  // Tema primeiro: se registerPWA falhar, o tema já foi aplicado
+  if(typeof restaurarTemaSalvo==='function') restaurarTemaSalvo();
   registerPWA();
   ativarFullscreenNoPrimeiroToque();
   setNetPill(navigator.onLine?'online':'offline');
@@ -6707,12 +6718,31 @@ function aplicarFundoEscuroDaMarca(){
 
 function toggleDark(){
   const d=document.documentElement.getAttribute('data-theme')==='dark';
-  document.documentElement.setAttribute('data-theme',d?'light':'dark');
+  const novo = d?'light':'dark';
+  document.documentElement.setAttribute('data-theme',novo);
   document.getElementById('dark-btn').innerHTML=d?'<i class="ti ti-moon"></i>':'<i class="ti ti-sun"></i>';
+  // Guarda a escolha para o próximo acesso
+  try{ localStorage.setItem('misu_tema', novo); }catch(e){}
   aplicarFundoEscuroDaMarca();
   // rebuild charts on theme change
   if(G.charts.v7)renderDashboard();
 }
+
+// Restaura o tema salvo (chamado no início e após o login)
+function restaurarTemaSalvo(){
+  let salvo=null;
+  try{ salvo=localStorage.getItem('misu_tema'); }catch(e){}
+  if(salvo!=='dark' && salvo!=='light') return;
+  document.documentElement.setAttribute('data-theme', salvo);
+  const btn=document.getElementById('dark-btn');
+  if(btn) btn.innerHTML = salvo==='dark' ? '<i class="ti ti-sun"></i>' : '<i class="ti ti-moon"></i>';
+  aplicarFundoEscuroDaMarca();
+}
+// Aplica o quanto antes, para não haver "piscada" de tela clara
+try{
+  const _t=localStorage.getItem('misu_tema');
+  if(_t==='dark'||_t==='light') document.documentElement.setAttribute('data-theme',_t);
+}catch(e){}
 
 /* ── AUTH ────────────────────────────────────────────── */
 const RL = {admin:'Administrador',gerente:'Gerente',operador:'Operador de Caixa',tecnico:'Técnico'};
@@ -7749,7 +7779,9 @@ async function loadAll(){
     // Maquininhas disponíveis globalmente desde o primeiro carregamento
     G_MAQUINAS=mq.data||[];
     G._osHistDev=null; // limpa cache do histórico de OS para devoluções
-    G.caixaAtual=G.caixas.find(c=>c.status==='aberto'&&c.operador_id===G.profile?.id)||null;
+    G.caixaAtual=G.caixas.find(c=>c.status==='aberto'&&c.operador_id===G.profile?.id)
+                 || G.caixas.find(c=>c.status==='aberto')   // caixa da loja aberto por outro perfil
+                 || null;
     carregarContratosModelos();
     const _maxOS=(G.os||[]).reduce((m,o)=>{ const n=parseInt(String(o.numero||'').replace(/\D/g,''),10)||0; return n>m?n:m; }, 0);
     G.osCounter=_maxOS+1;
@@ -7801,7 +7833,9 @@ const _RT_TABELAS=[
     if(_pgAtiva('hist-vendas'))renderHistoricoVendas();
   }},
   {t:'caixas',arr:'caixas',render:()=>{
-    G.caixaAtual=G.caixas.find(c=>c.status==='aberto'&&c.operador_id===G.profile?.id)||null;
+    G.caixaAtual=G.caixas.find(c=>c.status==='aberto'&&c.operador_id===G.profile?.id)
+                 || G.caixas.find(c=>c.status==='aberto')   // caixa da loja aberto por outro perfil
+                 || null;
     updateCaixaPill();
     if(_pgAtiva('pdv'))checkCaixaStatus();
     if(_pgAtiva('caixas')&&typeof renderCaixas==='function')renderCaixas();
@@ -13105,17 +13139,35 @@ async function advOS(id,next){
    FILA DE OS AGUARDANDO PAGAMENTO NO CAIXA
    Aparece na tela do PDV quando há OS com status 'Ag. Pagamento'
    ══════════════════════════════════════════════════════════════ */
+let _osPagMostrarTodas=false;
 function renderOSAguardPag(){
-  const lista=G.os.filter(o=>o.status==='Ag. Pagamento');
+  const todas=G.os.filter(o=>o.status==='Ag. Pagamento');
   const sec=document.getElementById('os-aguard-pag-section');
   const listEl=document.getElementById('os-pag-lista');
   const badge=document.getElementById('os-pag-badge');
   if(!sec||!listEl)return;
-  if(badge)badge.textContent=lista.length;
-  sec.style.display=lista.length>0?'':'none';
-  if(lista.length===0){listEl.innerHTML='';return;}
-  listEl.innerHTML=lista.map(o=>`
-    <div style="background:var(--bg2);border:1.5px solid rgba(245,158,11,.3);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow-card)">
+  if(badge)badge.textContent=todas.length;
+  sec.style.display=todas.length>0?'':'none';
+  if(todas.length===0){listEl.innerHTML='';return;}
+
+  // Filtro de busca (só aparece quando a fila cresce)
+  const termo=(document.getElementById('os-pag-busca')?.value||'').toLowerCase();
+  let lista=todas;
+  if(termo) lista=todas.filter(o=>((o.numero||'')+' '+(o.cliente_nome||'')+' '+(o.aparelho||'')).toLowerCase().includes(termo));
+
+  // Limite: com muitas OS, mostrar todas de uma vez trava a tela
+  const LIMITE=5;
+  const excedeu = !_osPagMostrarTodas && !termo && lista.length>LIMITE;
+  const visiveis = excedeu ? lista.slice(0,LIMITE) : lista;
+
+  const buscaHtml = todas.length>LIMITE
+    ? `<div class="ig" style="margin-bottom:10px"><i class="ti ti-search"></i><input type="text" id="os-pag-busca" value="${esc(termo)}" placeholder="Buscar por número, cliente ou aparelho..." oninput="renderOSAguardPag()"></div>`
+    : '';
+
+  listEl.innerHTML = buscaHtml + (visiveis.length===0
+    ? '<div style="text-align:center;color:var(--txt3);font-size:12.5px;padding:14px">Nenhuma OS encontrada.</div>'
+    : visiveis.map(o=>`
+    <div style="background:var(--bg2);border:1.5px solid rgba(245,158,11,.3);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow-card);margin-bottom:8px">
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
           <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:var(--pri)">${o.numero}</span>
@@ -13123,14 +13175,19 @@ function renderOSAguardPag(){
         </div>
         <div style="font-size:12px;color:var(--txt2)"><i class="ti ti-user" style="font-size:11px"></i> ${esc(o.cliente_nome||'—')} ${o.tecnico_nome?'· <i class="ti ti-badge" style="font-size:11px"></i> '+esc(o.tecnico_nome):''}</div>
         ${o.data_pronto?`<div style="font-size:11px;color:var(--txt3);margin-top:2px"><i class="ti ti-clock"></i> Pronto desde ${fmtDT(o.data_pronto)}</div>`:''}
+        ${o.valor_pago_os>0?`<div style="font-size:11px;color:#16a34a;margin-top:2px;font-weight:600"><i class="ti ti-cash"></i> Já pagou ${fmt(o.valor_pago_os)} · falta ${fmt((o.total||0)-o.valor_pago_os)}</div>`:''}
       </div>
       <div style="text-align:right;flex-shrink:0">
-        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:var(--pri);margin-bottom:6px">${fmt(o.total||0)}</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:var(--pri);margin-bottom:6px">${fmt((o.total||0)-(o.valor_pago_os||0))}</div>
         <button class="btn btn-pri btn-sm" onclick="abrirPagamentoOS('${o.id}')">
-          <i class="ti ti-cash"></i> Receber Pagamento
+          <i class="ti ti-cash"></i> Receber
         </button>
       </div>
-    </div>`).join('');
+    </div>`).join(''))
+    + (excedeu
+      ? `<button class="btn btn-out btn-sm" style="width:100%" onclick="_osPagMostrarTodas=true;renderOSAguardPag()">Ver todas as ${lista.length} OS <i class="ti ti-chevron-down"></i></button>`
+      : (_osPagMostrarTodas && lista.length>LIMITE
+         ? `<button class="btn btn-out btn-sm" style="width:100%" onclick="_osPagMostrarTodas=false;renderOSAguardPag()">Mostrar menos <i class="ti ti-chevron-up"></i></button>` : ''));
 }
 
 /* Abre o modal de pagamento de OS (reutiliza o modal-os-det como drawer lateral) */
@@ -13143,9 +13200,10 @@ function abrirPagamentoOS(id){
       <div style="font-size:11px;color:var(--txt3);text-transform:uppercase;letter-spacing:.6px;font-weight:700;margin-bottom:2px">OS · ${o.aparelho}</div>
       <div style="font-size:12.5px;color:var(--txt2);margin-bottom:6px"><i class="ti ti-user" style="font-size:12px"></i> ${esc(o.cliente_nome||'—')}</div>
       <div style="display:flex;align-items:center;justify-content:space-between">
-        <span style="font-size:13px;font-weight:600;color:var(--txt2)">Total a receber</span>
-        <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:24px;color:var(--pri)">${fmt(o.total||0)}</span>
+        <span style="font-size:13px;font-weight:600;color:var(--txt2)">${o.valor_pago_os>0?'Saldo a receber':'Total a receber'}</span>
+        <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:24px;color:var(--pri)">${fmt((o.total||0)-(o.valor_pago_os||0))}</span>
       </div>
+      ${o.valor_pago_os>0?`<div style="font-size:11.5px;color:#16a34a;margin-top:4px;font-weight:600"><i class="ti ti-check"></i> Já recebido: ${fmt(o.valor_pago_os)} de ${fmt(o.total||0)}</div>`:''}
     </div>
 
     <div class="fg"><label class="lbl">Forma de Pagamento</label>
@@ -13237,13 +13295,32 @@ function selOSPag(btn,forma){
 function renderOSPagTroco(osId){
   const o=G.os.find(x=>x.id===osId);if(!o)return;
   const recebido=parseFloat(document.getElementById('ospag-recebido')?.value)||0;
-  const total=o.total||0;
+  const total=(o.total||0)-(o.valor_pago_os||0);
   const troco=Math.max(0,recebido-total);
   const trocoEl=document.getElementById('ospag-troco');
   const trocoVal=document.getElementById('ospag-troco-val');
   if(trocoEl&&trocoVal){
     trocoEl.style.display=troco>0?'flex':'none';
     trocoVal.textContent=fmt(troco);
+  }
+  // Aviso de pagamento parcial (aceito, mas a OS continua aguardando o resto)
+  let aviso=document.getElementById('ospag-parcial-aviso');
+  if(!aviso){
+    const campo=document.getElementById('ospag-recebido');
+    if(campo&&campo.parentElement){
+      aviso=document.createElement('div');
+      aviso.id='ospag-parcial-aviso';
+      aviso.style.cssText='display:none;font-size:12px;margin-top:8px;padding:9px 12px;border-radius:9px;background:rgba(217,119,6,.12);border:1px solid rgba(217,119,6,.35);color:#d97706;font-weight:600';
+      campo.parentElement.appendChild(aviso);
+    }
+  }
+  if(aviso){
+    const parcial = recebido>0 && recebido < total-0.01;
+    aviso.style.display = parcial ? 'block' : 'none';
+    if(parcial){
+      aviso.innerHTML=`<i class="ti ti-info-circle"></i> Pagamento parcial: faltarão <b>${fmt(total-recebido)}</b>.<br>
+        <span style="font-weight:400;font-size:11.5px">A OS continua aguardando pagamento e o aparelho não é entregue ainda.</span>`;
+    }
   }
 }
 
@@ -13278,16 +13355,19 @@ async function confirmarPagamentoOS(id){
   const conteudo=document.getElementById('os-det-content');
   const forma=conteudo?.dataset?.osPagForma||'dinheiro';
   const obs=document.getElementById('ospag-obs')?.value||'';
-  const total=o.total||0;
+  const total=(o.total||0)-(o.valor_pago_os||0);  // considera o que já foi pago antes
   // Validações por forma
-  let troco=0;
+  let troco=0, parcial=false, valorRecebido=total;
   let maqId=null,maqNome=null,parc=1,taxa=0,modalidade='credito';
   if(forma==='dinheiro'){
     const recebido=parseFloat(document.getElementById('ospag-recebido')?.value)||0;
     if(recebido>0&&recebido<total-0.01){
-      notify(`Valor insuficiente: faltam ${fmt(total-recebido)}.`,'warn');return;
+      // Pagamento parcial: aceita, registra o saldo e mantém a OS aguardando
+      parcial=true; valorRecebido=recebido; troco=0;
+    } else {
+      troco=recebido>0?Math.max(0,recebido-total):0;
+      valorRecebido=total;
     }
-    troco=recebido>0?Math.max(0,recebido-total):0;
   }
   if(forma==='cartao'){
     maqId=document.getElementById('ospag-maq')?.value||null;
@@ -13300,13 +13380,19 @@ async function confirmarPagamentoOS(id){
   }
   setLoad(true);
   try{
-    // 1. Avança OS para Entregue com info de pagamento
-    const tl=[...(o.timeline||[]),{
-      status:'Entregue',data:new Date().toISOString(),
-      operador:G.profile?.nome||'Caixa',
-      pagamento:forma,obs
-    }];
-    const plOS={
+    // 1. Atualiza a OS. Se foi pagamento parcial, ela CONTINUA aguardando.
+    const jaPago=(o.valor_pago_os||0)+valorRecebido;
+    const tl=[...(o.timeline||[]), parcial
+      ? { status:'Ag. Pagamento', data:new Date().toISOString(), operador:G.profile?.nome||'Caixa',
+          pagamento:forma, obs:`Pagamento parcial de ${fmt(valorRecebido)}${obs?' · '+obs:''}` }
+      : { status:'Entregue', data:new Date().toISOString(), operador:G.profile?.nome||'Caixa',
+          pagamento:forma, obs }
+    ];
+    const plOS = parcial ? {
+      status:'Ag. Pagamento', timeline:tl,
+      atualizado_em:new Date().toISOString(),
+      valor_pago_os: jaPago
+    } : {
       status:'Entregue',progresso:100,timeline:tl,
       atualizado_em:new Date().toISOString(),
       data_conclusao:new Date().toISOString(),
@@ -13314,18 +13400,19 @@ async function confirmarPagamentoOS(id){
       maquininha_id:maqId,maquininha_nome:maqNome,
       cartao_parcelas:forma==='cartao'?parc:null,
       cartao_taxa:forma==='cartao'?taxa:null,
-      troco_os:troco
+      troco_os:troco,
+      valor_pago_os: jaPago
     };
     const {error:errOS}=await db.from('ordens_servico').update(plOS).eq('id',id);
     if(errOS)throw errOS;
 
     // 2. Registra no caixa como entrada de serviço
-    const descMov=`OS ${o.numero} — ${o.aparelho} (${o.cliente_nome||'—'})${obs?` · ${obs}`:''}`;
+    const descMov=`OS ${o.numero} — ${o.aparelho} (${o.cliente_nome||'—'})${parcial?` · PARCIAL (falta ${fmt((o.total||0)-jaPago)})`:''}${obs?` · ${obs}`:''}`;
     const {error:errCx}=await db.from('movimentacoes_caixa').insert({
       empresa_id:EID(),
       caixa_id:G.caixaAtual.id,
       tipo:'servico_os',
-      valor:total,
+      valor:valorRecebido,
       descricao:descMov,
       os_id:id,
       os_numero:o.numero,
