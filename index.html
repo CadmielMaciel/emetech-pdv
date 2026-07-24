@@ -223,6 +223,13 @@ try{
 .plano-nome { position: relative; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 21px; margin-bottom: 6px; letter-spacing: -.4px; color: rgb(var(--glow)); }
 .plano-preco { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 32px; margin-bottom: 6px; letter-spacing: -1px; color: var(--txt); line-height: 1.1; white-space: nowrap; }
 
+/* O modal de planos precisa ser mais largo que os demais: são 3 cards lado a lado.
+   Sem isso, uma regra genérica de .modal (560px) empurrava o Enterprise para baixo. */
+@media (min-width: 821px) {
+  #modal-planos .modal { max-width: 940px !important; width: 940px !important; }
+  #modal-planos .planos-grid { grid-template-columns: repeat(3, 1fr) !important; }
+}
+
 /* Telas estreitas: um plano por linha, com fontes proporcionais.
    Antes o grid era fixo em 3 colunas e cortava títulos e preços. */
 @media (max-width: 820px) {
