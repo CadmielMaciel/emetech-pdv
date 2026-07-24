@@ -11793,6 +11793,76 @@ function renderOSList(q=''){
 }
 
 let _detOSAtual = null;
+// Vincula (ou troca) o cliente de uma OS já criada.
+function abrirVincularCliente(osId){
+  const o=G.os.find(x=>x.id===osId); if(!o)return;
+  const clientes=(G.clientes||[]).slice().sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
+  const html=`
+    <div class="card-title" style="gap:8px;margin-bottom:10px"><i class="ti ti-user-plus" style="color:var(--pri)"></i> ${o.cliente_id?'Trocar':'Vincular'} cliente</div>
+    ${o.cliente_nome?`<div style="font-size:12px;color:var(--txt3);margin-bottom:10px">Cliente atual: <b>${esc(o.cliente_nome)}</b></div>`:''}
+    <div class="fg"><label class="lbl">Escolher cliente cadastrado</label>
+      <select id="vc-cliente">
+        <option value="">— selecione —</option>
+        ${clientes.map(c=>`<option value="${c.id}" ${o.cliente_id===c.id?'selected':''}>${esc(c.nome)}${c.telefone?' · '+esc(c.telefone):''}</option>`).join('')}
+      </select>
+    </div>
+    <div style="text-align:center;font-size:11.5px;color:var(--txt3);margin:10px 0">— ou cadastre um novo —</div>
+    <div class="g2">
+      <div class="fg"><label class="lbl">Nome</label><input type="text" id="vc-novo-nome" placeholder="Nome do cliente"></div>
+      <div class="fg"><label class="lbl">Telefone</label><input type="text" id="vc-novo-tel" placeholder="(00) 00000-0000"></div>
+    </div>`;
+  const foot=`
+    <button class="btn btn-out" onclick="closeModal('modal-generic')">Cancelar</button>
+    ${o.cliente_id?`<button class="btn btn-out" style="color:var(--danger,#dc2626)" onclick="desvincularClienteOS('${osId}')">Desvincular</button>`:''}
+    <button class="btn btn-pri" onclick="salvarVinculoCliente('${osId}')"><i class="ti ti-check"></i> Salvar</button>`;
+  abrirModalGenerico(html, foot);
+}
+
+async function salvarVinculoCliente(osId){
+  const o=G.os.find(x=>x.id===osId); if(!o)return;
+  const selId=(document.getElementById('vc-cliente')?.value||'').trim();
+  const novoNome=(document.getElementById('vc-novo-nome')?.value||'').trim();
+  const novoTel=(document.getElementById('vc-novo-tel')?.value||'').trim();
+
+  let cliente=null;
+  setLoad(true);
+  try{
+    if(novoNome){
+      // Cadastra o novo cliente e usa ele
+      const {data,error}=await db.from('clientes').insert({nome:novoNome,telefone:novoTel||'',empresa_id:EID()}).select().single();
+      if(error){ setLoad(false); notify('Erro ao criar cliente: '+error.message,'error'); return; }
+      cliente=data;
+      G.clientes.push(data);
+      if(typeof popSelects==='function') popSelects();
+    } else if(selId){
+      cliente=(G.clientes||[]).find(c=>c.id===selId)||null;
+    }
+    if(!cliente){ setLoad(false); notify('Escolha um cliente ou preencha o nome do novo.','warn'); return; }
+
+    const upd={cliente_id:cliente.id, cliente_nome:cliente.nome, atualizado_em:new Date().toISOString()};
+    const {error:e2}=await db.from('ordens_servico').update(upd).eq('id',osId);
+    setLoad(false);
+    if(e2){ notify('Erro ao vincular: '+e2.message,'error'); return; }
+    Object.assign(o,upd);
+    closeModal('modal-generic');
+    notify(`Cliente ${cliente.nome} vinculado à OS.`,'success');
+    detOS(osId); renderOSList();
+  }catch(e){ setLoad(false); notify('Erro: '+(e.message||''),'error'); }
+}
+
+async function desvincularClienteOS(osId){
+  const o=G.os.find(x=>x.id===osId); if(!o)return;
+  const upd={cliente_id:null, cliente_nome:'', atualizado_em:new Date().toISOString()};
+  setLoad(true);
+  const {error}=await db.from('ordens_servico').update(upd).eq('id',osId);
+  setLoad(false);
+  if(error){ notify('Erro: '+error.message,'error'); return; }
+  Object.assign(o,upd);
+  closeModal('modal-generic');
+  notify('Cliente desvinculado da OS.','info');
+  detOS(osId); renderOSList();
+}
+
 function detOS(id){
   const o=G.os.find(x=>x.id===id)||(G._osHistDev||[]).find(x=>x.id===id);if(!o)return;
   _detOSAtual = o;
@@ -11895,6 +11965,16 @@ function detOS(id){
 
         <!-- Dados da OS -->
         <div style="display:flex;flex-direction:column;gap:10px">
+          <!-- Cliente (permite vincular/trocar depois da OS criada) -->
+          <div style="background:var(--surface);border-radius:10px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px">
+            <div style="min-width:0;flex:1">
+              <div style="font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px">
+                <i class="ti ti-user" style="font-size:11px"></i> Cliente
+              </div>
+              <div style="font-size:13.5px;color:var(--txt);line-height:1.4">${o.cliente_nome?esc(o.cliente_nome):'<span style="color:var(--txt3);font-style:italic">Sem cliente vinculado</span>'}</div>
+            </div>
+            ${['admin','gerente','tecnico'].includes(G.role)?`<button class="btn btn-out btn-xs" style="flex-shrink:0" onclick="abrirVincularCliente('${o.id}')"><i class="ti ti-${o.cliente_id?'switch-horizontal':'plus'}"></i> ${o.cliente_id?'Trocar':'Vincular'}</button>`:''}
+          </div>
           ${[
             ['Aparelho',   o.aparelho,   'ti-device-mobile'],
             ['IMEI/Série', o.imei,       'ti-fingerprint'],
@@ -22467,7 +22547,7 @@ const PAGE_FEATURE = {
   catalogo:     'store.catalogo',
   relatorios:   'reports.advanced',
   inteligencia: 'ai.insights',
-  crm:          'crm.funil',
+  crm:          'crm.enabled',
 };
 
 async function carregarEntitlements() {
