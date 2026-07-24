@@ -210,17 +210,34 @@ try{
   box-shadow: 0 0 0 3px rgba(var(--glow),.25), 0 10px 30px rgba(var(--glow),.16);
 }
 .plano-card.ativo::before { opacity: 0 !important; }
-/* Badge "Plano Atual" */
+/* Badge "Plano Atual" — o nome reserva espaço à direita para não ficar coberto */
+.plano-card.ativo > .plano-nome { padding-right: 62px; }
 .plano-card.ativo > .plano-nome::after {
   content: '✓ Atual';
-  position: absolute; top: -4px; right: 0;
+  position: absolute; top: 2px; right: 0;
   background: linear-gradient(90deg, rgba(var(--glow),.85), rgb(var(--glow))); color: #fff;
   font-size: 10px; font-weight: 700; padding: 3px 8px;
   border-radius: 6px; font-family: 'DM Sans', sans-serif;
   box-shadow: 0 4px 12px rgba(var(--glow),.4);
 }
 .plano-nome { position: relative; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 21px; margin-bottom: 6px; letter-spacing: -.4px; color: rgb(var(--glow)); }
-.plano-preco { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 32px; margin-bottom: 6px; letter-spacing: -1px; color: var(--txt); line-height: 1.1; }
+.plano-preco { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 32px; margin-bottom: 6px; letter-spacing: -1px; color: var(--txt); line-height: 1.1; white-space: nowrap; }
+
+/* Telas estreitas: um plano por linha, com fontes proporcionais.
+   Antes o grid era fixo em 3 colunas e cortava títulos e preços. */
+@media (max-width: 820px) {
+  .planos-grid { grid-template-columns: 1fr !important; }
+  .plano-card { padding: 16px 18px !important; }
+  .plano-nome { font-size: 19px; }
+  .plano-preco { font-size: 28px; }
+  .plano-desc { min-height: 0; margin-bottom: 12px; }
+  #modal-planos .modal { max-width: 96vw !important; }
+}
+@media (max-width: 420px) {
+  .plano-nome { font-size: 17px; }
+  .plano-preco { font-size: 25px; }
+  .plano-feat-item { font-size: 12px; }
+}
 .plano-preco span { font-size: 13px; font-weight: 500; color: var(--txt3); letter-spacing: 0; }
 .plano-desc { font-size: 13px; color: var(--txt2); margin-bottom: 18px; min-height: 34px; line-height: 1.45; font-weight: 400; }
 .plano-feat { display: flex; flex-direction: column; gap: 8px; }
@@ -5527,8 +5544,8 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
       </div>
     </div>
 
-    <!-- Cards dos 3 planos -->
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px">
+    <!-- Cards dos 3 planos (grid responsivo: quebra em telas estreitas) -->
+    <div class="planos-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-bottom:20px">
 
       <!-- BÁSICO -->
       <div class="plano-card" id="plano-card-basico" onclick="selecionarPlano('basico')">
