@@ -15827,7 +15827,9 @@ async function confirmarSalvarSolucao(comoVerificar){
   const {error}=await db.from('solucoes').insert(payload);
   setLoad(false);
   if(error){
-    if(/relation|does not exist/i.test(error.message||'')) notify('Rode a migração SOL01 para ativar Minhas Soluções.','warn',7000);
+    const msg=(error.message||'')+' '+(error.details||'')+' '+(error.hint||'');
+    if(/relation|does not exist|schema cache|could not find the table/i.test(msg))
+      notify('A tabela de soluções ainda não existe. Rode a migração SOL01 no Supabase para ativar.','warn',8000);
     else notify('Erro: '+error.message,'error');
     return;
   }
