@@ -13512,7 +13512,10 @@ function cfgTab(aba, btn) {
     const el = document.getElementById('cfg-' + t);
     if (el) el.style.display = t === aba ? '' : 'none';
   });
-  if(aba==='gateway'){ if(typeof carregarHandleInfinitePay==='function') carregarHandleInfinitePay(); }
+  if(aba==='gateway'){
+    if(typeof renderConfigPagamento==='function') renderConfigPagamento();
+    if(typeof carregarHandleInfinitePay==='function') carregarHandleInfinitePay();
+  }
   if(aba==='os'){ const chk=document.getElementById('cfg-assin-balcao'); if(chk)chk.checked=(localStorage.getItem('misu_assin_balcao')==='1'); const fs=document.getElementById('cfg-fullscreen-auto'); if(fs)fs.checked=(localStorage.getItem('misu_fullscreen_auto')==='1'); }
   document.querySelectorAll('#page-configuracoes .fin-tab').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
