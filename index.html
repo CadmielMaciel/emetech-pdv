@@ -2559,6 +2559,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
               </button>
               <button class="fin-btn" id="fin-btn" onclick="finalizeSale()" disabled><i class="ti ti-check"></i>Finalizar Venda</button>
               <button class="btn btn-out" id="btn-qr-asaas" onclick="cobrarPdvAsaas()" style="width:100%;justify-content:center;margin-top:6px;font-size:12.5px"><i class="ti ti-qrcode"></i> Cobrar com QR (Asaas)</button>
+              <button class="btn btn-out" id="btn-qr-infinitepay" onclick="cobrarPdvInfinitePay()" style="width:100%;justify-content:center;margin-top:6px;font-size:12.5px;border-color:#7c3aed;color:#7c3aed"><i class="ti ti-qrcode"></i> Cobrar com QR (InfinitePay)</button>
             </div>
           </div>
         </div>
@@ -3851,9 +3852,28 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
               <i class="ti ti-shield-lock"></i> O dinheiro cai direto na conta Asaas desta loja. O sistema não intermedia o pagamento.
             </div>
           </div>
-        </div>
 
-        <!-- ABA: IMPRESSORA -->
+          <!-- InfinitePay — link de pagamento (Pix + cartão até 12x) -->
+          <div class="card" style="max-width:640px;margin-top:16px">
+            <div class="card-hdr" style="margin-bottom:14px"><div class="card-title"><i class="ti ti-qrcode" style="color:#7c3aed"></i> Link de Pagamento — InfinitePay</div></div>
+            <div style="font-size:12.5px;color:var(--txt2);margin-bottom:14px">Gere link/QR Code de pagamento (Pix grátis e cartão em até 12x) direto no PDV e nas OS. O dinheiro cai na conta InfinitePay <b>desta loja</b>.</div>
+            <div id="ip-status" style="margin-bottom:14px"></div>
+            <div class="fg"><label class="lbl">Seu handle (usuário InfinitePay)</label>
+              <div style="display:flex;align-items:center;gap:6px">
+                <span style="font-size:16px;color:var(--txt3);font-weight:700">@</span>
+                <input type="text" id="ip-handle" placeholder="ex: misutech" autocomplete="off" style="flex:1" oninput="this.value=this.value.replace(/[^a-zA-Z0-9_.]/g,'').toLowerCase()">
+              </div>
+              <div style="font-size:11px;color:var(--txt3);margin-top:4px">É o seu nome de usuário na InfinitePay (o mesmo do seu link de pagamento). Não é senha — pode digitar sem medo.</div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+              <button class="btn btn-pri" onclick="salvarHandleInfinitePay()"><i class="ti ti-device-floppy"></i> Salvar</button>
+              <a class="btn btn-out" href="https://app.infinitepay.io" target="_blank"><i class="ti ti-external-link"></i> Abrir InfinitePay</a>
+            </div>
+            <div style="font-size:11.5px;color:var(--txt3);margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+              <i class="ti ti-shield-lock"></i> O dinheiro cai direto na conta InfinitePay desta loja. O sistema apenas gera o link — não intermedia o pagamento.
+            </div>
+          </div>
+        </div>
         <div id="cfg-impressora" style="display:none">
           <div class="card" style="max-width:620px">
             <div class="card-hdr" style="margin-bottom:14px"><div class="card-title"><i class="ti ti-printer" style="color:var(--pri)"></i> Configuração de Impressora Térmica</div></div>
@@ -13288,6 +13308,7 @@ function abrirPagamentoOS(id){
 
   document.getElementById('os-det-footer').innerHTML=`
     <button class="btn btn-out btn-sm" onclick="closeModal('modal-os-det')">Cancelar</button>
+    <button class="btn btn-out btn-sm" onclick="cobrarOSInfinitePay('${id}')" style="border-color:#7c3aed;color:#7c3aed"><i class="ti ti-qrcode"></i> QR InfinitePay</button>
     <button class="btn btn-pri btn-sm" onclick="confirmarPagamentoOS('${id}')">
       <i class="ti ti-check"></i> Confirmar Pagamento e Entregar
     </button>`;
@@ -13474,6 +13495,7 @@ function cfgTab(aba, btn) {
     const el = document.getElementById('cfg-' + t);
     if (el) el.style.display = t === aba ? '' : 'none';
   });
+  if(aba==='gateway'){ if(typeof carregarHandleInfinitePay==='function') carregarHandleInfinitePay(); }
   if(aba==='os'){ const chk=document.getElementById('cfg-assin-balcao'); if(chk)chk.checked=(localStorage.getItem('misu_assin_balcao')==='1'); const fs=document.getElementById('cfg-fullscreen-auto'); if(fs)fs.checked=(localStorage.getItem('misu_fullscreen_auto')==='1'); }
   document.querySelectorAll('#page-configuracoes .fin-tab').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
@@ -18279,6 +18301,75 @@ function baixarParcela(contratoId, parcIdx) {
 // estiver configurado, avisa o usuário com honestidade (não finge funcionar).
 // Cobra o total do carrinho via Asaas e mostra o QR na tela do PDV.
 // Reaproveita a Edge Function gerar-cobranca (cobra na conta da PRÓPRIA loja).
+/* ── COBRANÇA VIA INFINITEPAY (link + QR Code) ──────────────────── */
+// Gera o link e mostra o QR. Reutilizada pelo PDV e pela OS.
+async function gerarLinkInfinitePay({order_nsu, origem, origem_id, itens, descricao}){
+  const {data,error}=await db.functions.invoke('infinitepay-link',{
+    body:{ empresa_id:EID(), order_nsu, origem, origem_id, descricao,
+           itens, redirect_url:location.origin }
+  });
+  if(error) throw new Error(error.message||'falha na chamada');
+  if(!data||!data.success){
+    const code=data?.error?.code||'';
+    const msg=data?.error?.message||'Não foi possível gerar a cobrança.';
+    if(code==='SEM_HANDLE') throw new Error('Conecte sua conta InfinitePay em Configurações → Gateway de Pagamento.');
+    throw new Error(msg);
+  }
+  return data; // { checkout_url, order_nsu, valor }
+}
+
+function mostrarQRInfinitePay(url, valor, contexto){
+  const html=`
+    <div class="card-title" style="gap:8px;margin-bottom:6px;justify-content:center"><i class="ti ti-qrcode" style="color:#7c3aed"></i> Pagamento InfinitePay</div>
+    <div style="text-align:center;font-size:13px;color:var(--txt2);margin-bottom:14px">${contexto||''} — <b style="color:#7c3aed;font-size:16px">${fmt(valor)}</b></div>
+    <div style="display:flex;justify-content:center;margin-bottom:14px">
+      <div style="background:#fff;padding:14px;border-radius:14px;box-shadow:var(--shadow-card)">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(url)}" alt="QR Code" style="width:220px;height:220px;display:block" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+        <div style="display:none;font-size:12px;color:var(--txt3);width:220px;text-align:center">Não foi possível gerar o QR. Use o link abaixo.</div>
+      </div>
+    </div>
+    <div style="font-size:12px;color:var(--txt2);text-align:center;margin-bottom:12px">O cliente lê o QR ou abre o link para pagar (Pix ou cartão em até 12x).</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center">
+      <a class="btn btn-out btn-sm" href="${url}" target="_blank"><i class="ti ti-external-link"></i> Abrir link</a>
+      <button class="btn btn-out btn-sm" onclick="navigator.clipboard.writeText('${url}').then(()=>notify('Link copiado!','success'))"><i class="ti ti-copy"></i> Copiar link</button>
+      ${navigator.share?`<button class="btn btn-out btn-sm" onclick="navigator.share({title:'Pagamento',url:'${url}'})"><i class="ti ti-share"></i> Enviar</button>`:''}
+    </div>
+    <div style="font-size:11px;color:var(--txt3);text-align:center;margin-top:14px;padding-top:10px;border-top:1px solid var(--border)">
+      <i class="ti ti-info-circle"></i> Confirme o pagamento no seu app InfinitePay. O valor cai direto na sua conta.
+    </div>`;
+  abrirModalGenerico(html, `<button class="btn btn-pri" onclick="closeModal('modal-generic')">Fechar</button>`);
+}
+
+async function cobrarPdvInfinitePay(){
+  const itens=(G.cart||[]).map(i=>({nome:i.nome||i.descricao||'Item', quantidade:i.qtd||1, preco:i.preco||i.valor||0}));
+  if(!itens.length){ notify('Carrinho vazio.','warn'); return; }
+  const total=itens.reduce((s,i)=>s+i.preco*i.quantidade,0);
+  if(total<=0){ notify('Valor inválido.','warn'); return; }
+  const btn=document.getElementById('btn-qr-infinitepay');
+  if(btn){ btn.disabled=true; btn.innerHTML='<i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Gerando...'; }
+  try{
+    const nsu='pdv_'+Date.now();
+    const data=await gerarLinkInfinitePay({order_nsu:nsu, origem:'venda', origem_id:nsu, itens, descricao:'Venda no balcão'});
+    mostrarQRInfinitePay(data.checkout_url, data.valor, 'Venda');
+  }catch(e){ notify(e.message||'Erro ao gerar cobrança.','error',6000); }
+  finally{ if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-qrcode"></i> Cobrar com QR (InfinitePay)'; } }
+}
+
+// Cobrança de uma OS via InfinitePay
+async function cobrarOSInfinitePay(osId){
+  const o=G.os.find(x=>x.id===osId); if(!o)return;
+  const saldo=(o.total||0)-(o.valor_pago_os||0);
+  if(saldo<=0){ notify('Esta OS já está paga.','info'); return; }
+  try{
+    const data=await gerarLinkInfinitePay({
+      order_nsu:'os_'+o.id, origem:'os', origem_id:o.id,
+      itens:[{nome:`OS ${o.numero} — ${o.aparelho||'Serviço'}`, quantidade:1, preco:saldo}],
+      descricao:`OS ${o.numero}`
+    });
+    mostrarQRInfinitePay(data.checkout_url, data.valor, `OS ${o.numero}`);
+  }catch(e){ notify(e.message||'Erro ao gerar cobrança.','error',6000); }
+}
+
 async function cobrarPdvAsaas(){
   const total=parseFloat((document.getElementById('c-tot')?.textContent||'').replace(/[^\d,]/g,'').replace(',','.'))||0;
   if(total<=0){ notify('Adicione itens ao carrinho primeiro.','warn'); return; }
@@ -18682,6 +18773,43 @@ async function renderConfigPagamento(){
   }catch(e){
     if(box)box.innerHTML='<div style="background:#FFF7ED;border:1px solid #FED7AA;border-radius:9px;padding:10px 12px;font-size:13px;color:#9A3412"><i class="ti ti-alert-circle"></i> Não foi possível verificar agora (rode a migração R01 se ainda não rodou).</div>';
   }
+}
+
+/* ── INTEGRAÇÃO INFINITEPAY (handle por loja) ────────────────────── */
+async function carregarHandleInfinitePay(){
+  const inp=document.getElementById('ip-handle');
+  const box=document.getElementById('ip-status');
+  if(!inp)return;
+  try{
+    const {data,error}=await db.from('empresas').select('infinitepay_handle').eq('id',EID()).maybeSingle();
+    if(error)throw error;
+    const h=data?.infinitepay_handle||'';
+    inp.value=h;
+    if(box){
+      box.innerHTML = h
+        ? `<div style="background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.3);border-radius:9px;padding:10px 12px;font-size:13px;color:#16a34a"><i class="ti ti-circle-check"></i> Conectado como <b>@${esc(h)}</b> — pronto para gerar cobranças.</div>`
+        : `<div style="background:rgba(100,116,139,.08);border:1px solid var(--border);border-radius:9px;padding:10px 12px;font-size:13px;color:var(--txt3)"><i class="ti ti-info-circle"></i> Ainda não conectado. Cole seu handle para ativar.</div>`;
+    }
+  }catch(e){
+    if(box)box.innerHTML='<div style="background:#FFF7ED;border:1px solid #FED7AA;border-radius:9px;padding:10px 12px;font-size:13px;color:#9A3412"><i class="ti ti-alert-circle"></i> Rode a migração IP01 para ativar a InfinitePay.</div>';
+  }
+}
+
+async function salvarHandleInfinitePay(){
+  const inp=document.getElementById('ip-handle');
+  const handle=(inp?.value||'').trim().replace(/^@/,'').toLowerCase();
+  if(!handle){ notify('Digite seu handle da InfinitePay.','warn'); return; }
+  if(handle.length<3){ notify('Handle muito curto. Confira no app da InfinitePay.','warn'); return; }
+  setLoad(true);
+  const {error}=await db.from('empresas').update({infinitepay_handle:handle}).eq('id',EID());
+  setLoad(false);
+  if(error){
+    if(/column|does not exist|schema cache/i.test(error.message||'')) notify('Rode a migração IP01 no Supabase primeiro.','warn',7000);
+    else notify('Erro ao salvar: '+error.message,'error');
+    return;
+  }
+  notify('✅ InfinitePay conectada como @'+handle,'success');
+  carregarHandleInfinitePay();
 }
 
 async function salvarChaveAsaas(){
