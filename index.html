@@ -7385,14 +7385,17 @@ async function verificarPagamentoPendente(){
 
   // ── 1) INADIMPLÊNCIA REAL: mensalidade do PLANO ATUAL vencida ──
   // (isto sim pode bloquear — é dívida do plano que a loja já usa)
+  const TOLERANCIA_DIAS = 3;  // folga após o vencimento (banco compensa com atraso; evita bloquear cliente bom)
   const st = emp.pagamento_status;
   const vence = emp.pagamento_vence_em ? new Date(emp.pagamento_vence_em) : null;
   if((st==='pendente' || st==='atrasado') && vence){
     const dias = Math.ceil((vence - new Date())/86400000);
-    if(dias < 0){
+    if(dias < -TOLERANCIA_DIAS){
+      // Passou o vencimento + tolerância → bloqueia
       mostrarTelaBloqueio({...emp, motivo_bloqueio:`Mensalidade do plano em atraso. Regularize para reativar o acesso.`});
       return;
     }
+    // Ainda no vencimento ou dentro da tolerância → só avisa, não bloqueia
     _bannerInadimplencia(emp, dias);
   }
 
