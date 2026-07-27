@@ -3865,6 +3865,23 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
               </div>
               <div style="font-size:11px;color:var(--txt3);margin-top:4px">É o seu nome de usuário na InfinitePay (o mesmo do seu link de pagamento). Não é senha — pode digitar sem medo.</div>
             </div>
+            <div class="g2" style="margin-top:4px">
+              <div class="fg"><label class="lbl">Parcelamento máximo</label>
+                <select id="ip-parcelas">
+                  ${[1,2,3,4,5,6,7,8,9,10,11,12].map(n=>`<option value="${n}"${n===12?' selected':''}>até ${n}x</option>`).join('')}
+                </select>
+              </div>
+              <div class="fg"><label class="lbl">Taxas do cartão</label>
+                <select id="ip-taxa">
+                  <option value="cliente" selected>Cliente paga (repassar)</option>
+                  <option value="loja">Loja assume</option>
+                </select>
+              </div>
+            </div>
+            <label style="display:flex;align-items:center;gap:9px;cursor:pointer;margin-bottom:4px">
+              <input type="checkbox" id="ip-pix" checked style="width:18px;height:18px;accent-color:#7c3aed">
+              <span style="font-size:13px">Aceitar Pix (além do cartão)</span>
+            </label>
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
               <button class="btn btn-pri" onclick="salvarHandleInfinitePay()"><i class="ti ti-device-floppy"></i> Salvar</button>
               <a class="btn btn-out" href="https://app.infinitepay.io" target="_blank"><i class="ti ti-external-link"></i> Abrir InfinitePay</a>
@@ -18304,9 +18321,18 @@ function baixarParcela(contratoId, parcIdx) {
 /* ── COBRANÇA VIA INFINITEPAY (link + QR Code) ──────────────────── */
 // Gera o link e mostra o QR. Reutilizada pelo PDV e pela OS.
 async function gerarLinkInfinitePay({order_nsu, origem, origem_id, itens, descricao}){
+  // Opções da loja (parcelas, taxa, pix) — usa o que já carregou ou busca
+  let cfg=G._ipConfig;
+  if(!cfg){
+    try{ const {data}=await db.from('empresas').select('infinitepay_config').eq('id',EID()).maybeSingle(); cfg=data?.infinitepay_config||{}; G._ipConfig=cfg; }
+    catch(e){ cfg={}; }
+  }
   const {data,error}=await db.functions.invoke('infinitepay-link',{
     body:{ empresa_id:EID(), order_nsu, origem, origem_id, descricao,
-           itens, redirect_url:location.origin }
+           itens, redirect_url:location.origin,
+           max_parcelas:cfg.max_parcelas||12,
+           taxa_por_conta:cfg.taxa_por_conta||'cliente',
+           pix:cfg.pix!==false }
   });
   if(error) throw new Error(error.message||'falha na chamada');
   if(!data||!data.success){
@@ -18335,7 +18361,8 @@ function mostrarQRInfinitePay(url, valor, contexto){
       ${navigator.share?`<button class="btn btn-out btn-sm" onclick="navigator.share({title:'Pagamento',url:'${url}'})"><i class="ti ti-share"></i> Enviar</button>`:''}
     </div>
     <div style="font-size:11px;color:var(--txt3);text-align:center;margin-top:14px;padding-top:10px;border-top:1px solid var(--border)">
-      <i class="ti ti-info-circle"></i> Confirme o pagamento no seu app InfinitePay. O valor cai direto na sua conta.
+      <i class="ti ti-info-circle"></i> Confirme o pagamento no seu app InfinitePay. O valor cai direto na sua conta.<br>
+      <span style="opacity:.8">O link não expira, mas o cliente tem até 3 dias para pagar.</span>
     </div>`;
   abrirModalGenerico(html, `<button class="btn btn-pri" onclick="closeModal('modal-generic')">Fechar</button>`);
 }
@@ -18785,6 +18812,12 @@ async function carregarHandleInfinitePay(){
     if(error)throw error;
     const h=data?.infinitepay_handle||'';
     inp.value=h;
+    // Restaura as opções salvas
+    const cfg=data?.infinitepay_config||{};
+    G._ipConfig=cfg;
+    const pcl=document.getElementById('ip-parcelas'); if(pcl&&cfg.max_parcelas)pcl.value=cfg.max_parcelas;
+    const tx=document.getElementById('ip-taxa'); if(tx&&cfg.taxa_por_conta)tx.value=cfg.taxa_por_conta;
+    const px=document.getElementById('ip-pix'); if(px)px.checked=cfg.pix!==false;
     if(box){
       box.innerHTML = h
         ? `<div style="background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.3);border-radius:9px;padding:10px 12px;font-size:13px;color:#16a34a"><i class="ti ti-circle-check"></i> Conectado como <b>@${esc(h)}</b> — pronto para gerar cobranças.</div>`
@@ -18800,14 +18833,20 @@ async function salvarHandleInfinitePay(){
   const handle=(inp?.value||'').trim().replace(/^@/,'').toLowerCase();
   if(!handle){ notify('Digite seu handle da InfinitePay.','warn'); return; }
   if(handle.length<3){ notify('Handle muito curto. Confira no app da InfinitePay.','warn'); return; }
+  const cfg={
+    max_parcelas: parseInt(document.getElementById('ip-parcelas')?.value)||12,
+    taxa_por_conta: document.getElementById('ip-taxa')?.value||'cliente',
+    pix: document.getElementById('ip-pix')?.checked!==false
+  };
   setLoad(true);
-  const {error}=await db.from('empresas').update({infinitepay_handle:handle}).eq('id',EID());
+  const {error}=await db.from('empresas').update({infinitepay_handle:handle, infinitepay_config:cfg}).eq('id',EID());
   setLoad(false);
   if(error){
     if(/column|does not exist|schema cache/i.test(error.message||'')) notify('Rode a migração IP01 no Supabase primeiro.','warn',7000);
     else notify('Erro ao salvar: '+error.message,'error');
     return;
   }
+  G._ipConfig=cfg;
   notify('✅ InfinitePay conectada como @'+handle,'success');
   carregarHandleInfinitePay();
 }
