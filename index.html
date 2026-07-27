@@ -7145,12 +7145,86 @@ function renderInfoAssinatura(){
   const planoNome=(typeof PLANOS!=='undefined'&&PLANOS[emp.plano])?PLANOS[emp.plano].nome:(emp.plano||'—');
   const status=emp.status==='ativa'?'<span style="color:var(--success,#16a34a);font-weight:600">Ativa</span>':
     (emp.status==='trial'?'<span style="color:var(--warn,#d97706);font-weight:600">Período de teste</span>':`<span style="color:var(--txt2)">${esc(emp.status||'—')}</span>`);
+  const temAssinatura = !!emp.asaas_subscription_id;
+  const metodoLabel = {CREDIT_CARD:'Cartão (débito automático)', BOLETO:'Boleto mensal', PIX:'Pix mensal'}[emp.pagamento_metodo]||null;
+
   cont.innerHTML=`
     <div style="display:flex;flex-direction:column;gap:5px">
       <div>Plano atual: <b>${esc(planoNome)}</b></div>
       <div>Situação: ${status}</div>
+      ${emp.pagamento_vence_em?`<div>Próximo vencimento: <b>${new Date(emp.pagamento_vence_em).toLocaleDateString('pt-BR')}</b></div>`:''}
+      ${temAssinatura&&metodoLabel?`<div style="color:var(--success,#16a34a)"><i class="ti ti-circle-check"></i> Pagamento automático ativo · ${metodoLabel}</div>`:''}
       ${emp.pagamento_status==='pendente'||emp.pagamento_status==='atrasado'?'<div style="color:var(--danger,#dc2626)">Há uma mensalidade pendente.</div>':''}
-    </div>`;
+    </div>
+    ${!temAssinatura?`
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+        <div style="font-size:13px;font-weight:600;margin-bottom:8px">Ative o pagamento automático</div>
+        <div style="font-size:12px;color:var(--txt3);margin-bottom:10px">Escolha como quer pagar sua mensalidade. Você não precisa lembrar de pagar todo mês.</div>
+        <button class="btn btn-pri btn-sm" onclick="abrirAtivarAssinatura()"><i class="ti ti-credit-card"></i> Configurar pagamento</button>
+      </div>`:''}`;
+}
+
+// Modal para a loja escolher método e ativar a assinatura recorrente
+function abrirAtivarAssinatura(){
+  const emp=G.empresa||{};
+  const plano=emp.plano||'';
+  const planoObj=(typeof PLANOS!=='undefined'&&PLANOS[plano])?PLANOS[plano]:null;
+  const valor=planoObj?(planoObj.preco||planoObj.valor||0):0;
+  const planoNome=planoObj?planoObj.nome:plano;
+  const html=`
+    <div class="card-title" style="gap:8px;margin-bottom:6px"><i class="ti ti-credit-card" style="color:var(--pri)"></i> Ativar pagamento automático</div>
+    <div style="font-size:13px;color:var(--txt2);margin-bottom:14px">Plano <b>${esc(planoNome)}</b> — <b style="color:var(--pri)">${fmt(valor)}/mês</b></div>
+    <div class="fg"><label class="lbl">Como você quer pagar?</label>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
+        <label class="assin-opt" style="display:flex;align-items:center;gap:10px;border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;cursor:pointer">
+          <input type="radio" name="assin-metodo" value="CREDIT_CARD" checked style="accent-color:var(--pri)">
+          <div><div style="font-weight:600;font-size:13px">Cartão de crédito</div><div style="font-size:11.5px;color:var(--txt3)">Cobra sozinho todo mês. Você não precisa fazer nada.</div></div>
+        </label>
+        <label class="assin-opt" style="display:flex;align-items:center;gap:10px;border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;cursor:pointer">
+          <input type="radio" name="assin-metodo" value="BOLETO" style="accent-color:var(--pri)">
+          <div><div style="font-weight:600;font-size:13px">Boleto mensal</div><div style="font-size:11.5px;color:var(--txt3)">Geramos o boleto todo mês. Você paga pelo banco.</div></div>
+        </label>
+        <label class="assin-opt" style="display:flex;align-items:center;gap:10px;border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;cursor:pointer">
+          <input type="radio" name="assin-metodo" value="PIX" style="accent-color:var(--pri)">
+          <div><div style="font-weight:600;font-size:13px">Pix mensal</div><div style="font-size:11.5px;color:var(--txt3)">Geramos a cobrança Pix todo mês.</div></div>
+        </label>
+      </div>
+    </div>
+    <div class="fg"><label class="lbl">Melhor dia de vencimento</label>
+      <select id="assin-dia">${[5,10,15,20,25].map(d=>`<option value="${d}"${d===10?' selected':''}>Dia ${d}</option>`).join('')}</select>
+    </div>
+    <div style="font-size:11px;color:var(--txt3);margin-top:4px"><i class="ti ti-shield-lock"></i> O pagamento é processado pelo Asaas. Seus dados de cartão não passam pelo nosso sistema.</div>`;
+  const foot=`
+    <button class="btn btn-out" onclick="closeModal('modal-generic')">Cancelar</button>
+    <button class="btn btn-pri" onclick="ativarAssinatura(${valor})"><i class="ti ti-check"></i> Ativar</button>`;
+  abrirModalGenerico(html, foot);
+}
+
+async function ativarAssinatura(valor){
+  const metodo=document.querySelector('input[name="assin-metodo"]:checked')?.value||'CREDIT_CARD';
+  const dia=parseInt(document.getElementById('assin-dia')?.value)||10;
+  const emp=G.empresa||{};
+  if(!valor||valor<=0){ notify('Não foi possível identificar o valor do plano. Contate o suporte.','warn'); return; }
+  setLoad(true);
+  try{
+    const {data,error}=await db.functions.invoke('criar-assinatura-plano',{
+      body:{ empresa_id:EID(), metodo, plano:emp.plano, valor, dia_vencimento:dia }
+    });
+    setLoad(false);
+    if(error) throw new Error(error.message||'falha');
+    if(!data||!data.success){ notify(data?.error||'Não foi possível ativar agora.','error',6000); return; }
+    closeModal('modal-generic');
+    // Cartão/boleto: abre o link para o primeiro pagamento
+    if(data.link_pagamento){
+      notify('Assinatura criada! Abrindo a página de pagamento...','success',5000);
+      window.open(data.link_pagamento,'_blank');
+    } else {
+      notify('✅ Pagamento automático ativado!','success',5000);
+    }
+    // Atualiza dados locais
+    if(G.empresa){ G.empresa.asaas_subscription_id=data.subscription_id; G.empresa.pagamento_metodo=data.metodo; G.empresa.pagamento_vence_em=data.next_due; }
+    renderInfoAssinatura();
+  }catch(e){ setLoad(false); notify('Erro: '+(e.message||''),'error',6000); }
 }
 
 // Cancelamento de assinatura — ação séria, com confirmação em duas etapas
