@@ -127,10 +127,10 @@ try{
   border-style: solid;
   border-color: rgb(30,94,255);      /* fallback fixo */
   border-color: rgb(var(--glow));    /* cor do plano (se suportado) */
-  border-radius: 20px;
-  padding: 26px 22px 24px;
+  border-radius: 18px;
+  padding: 20px 18px 18px;
   transition: transform .28s cubic-bezier(.2,.7,.3,1), box-shadow .28s;
-  cursor: pointer; position: relative; overflow: hidden;
+  cursor: default; position: relative; overflow: hidden;
   background: linear-gradient(160deg, var(--card-bg1), var(--card-bg2));
   animation: planoEntra .5s cubic-bezier(.2,.7,.3,1) both, planoFlutua 5s ease-in-out infinite;
 }
@@ -206,6 +206,23 @@ try{
 .plano-card:hover .plano-cta { opacity: 1; transform: translateY(0); }
 .plano-card.ativo .plano-cta { display: none; }
 
+/* Botões do rodapé do card: Ver recursos + Escolher */
+.plano-acoes { display: flex; flex-direction: column; gap: 7px; margin-top: 14px; position: relative; z-index: 2; }
+.plano-ver-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 8px; border-radius: 9px; font-size: 12px; font-weight: 600;
+  background: transparent; color: var(--txt2); border: 1px solid var(--border);
+  cursor: pointer; font-family: inherit; transition: all .15s;
+}
+.plano-ver-btn:hover { background: var(--surface2); color: var(--txt); }
+.plano-escolher-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 10px; border-radius: 9px; font-size: 13px; font-weight: 700;
+  background: rgb(var(--glow)); color: #fff; border: none;
+  cursor: pointer; font-family: inherit; transition: all .15s;
+}
+.plano-escolher-btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
+
 .plano-card.ativo {
   box-shadow: 0 0 0 3px rgba(var(--glow),.25), 0 10px 30px rgba(var(--glow),.16);
 }
@@ -220,8 +237,8 @@ try{
   border-radius: 6px; font-family: 'DM Sans', sans-serif;
   box-shadow: 0 4px 12px rgba(var(--glow),.4);
 }
-.plano-nome { position: relative; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 21px; margin-bottom: 6px; letter-spacing: -.4px; color: rgb(var(--glow)); }
-.plano-preco { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 32px; margin-bottom: 6px; letter-spacing: -1px; color: var(--txt); line-height: 1.1; white-space: nowrap; }
+.plano-nome { position: relative; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 17px; margin-bottom: 4px; letter-spacing: -.4px; color: rgb(var(--glow)); }
+.plano-preco { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 27px; margin-bottom: 5px; letter-spacing: -1px; color: var(--txt); line-height: 1.1; white-space: nowrap; }
 
 /* O modal de planos precisa ser mais largo que os demais: são 3 cards lado a lado.
    Sem isso, uma regra genérica de .modal (560px) empurrava o Enterprise para baixo. */
@@ -5592,7 +5609,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
     <div class="planos-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-bottom:20px">
 
       <!-- BÁSICO -->
-      <div class="plano-card" id="plano-card-basico" onclick="selecionarPlano('basico')">
+      <div class="plano-card" id="plano-card-basico">
         <div class="plano-nome" style="color:var(--txt3)">Básico</div>
         <div class="plano-preco" id="preco-basico">R$89<span id="ciclo-lbl-basico">/mês</span></div>
         <div class="plano-desc">Ideal para quem está começando</div>
@@ -5608,11 +5625,11 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
           <div class="plano-feat-item no"><i class="ti ti-x"></i> WhatsApp automático</div>
           <div class="plano-feat-item no"><i class="ti ti-x"></i> Múltiplos caixas</div>
         </div>
-        <div class="plano-cta"><i class="ti ti-hand-click"></i> Escolher Básico</div>
+        <div class="plano-acoes"><button type="button" class="plano-ver-btn" onclick="event.stopPropagation();verRecursosPlano('basico')"><i class="ti ti-list-details"></i> Ver recursos</button><button type="button" class="plano-escolher-btn" onclick="event.stopPropagation();selecionarPlano('basico')"><i class="ti ti-check"></i> Escolher Básico</button></div>
       </div>
 
       <!-- PRO -->
-      <div class="plano-card" id="plano-card-pro" onclick="selecionarPlano('pro')">
+      <div class="plano-card" id="plano-card-pro">
         <div style="position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:linear-gradient(90deg,var(--pri2),var(--pri));color:#fff;font-size:10px;font-weight:700;padding:3px 12px;border-radius:0 0 8px 8px;font-family:'DM Sans',sans-serif;white-space:nowrap">MAIS POPULAR</div>
         <div class="plano-nome" style="color:var(--pri);margin-top:12px">Pro</div>
         <div class="plano-preco" id="preco-pro" style="color:var(--pri)">R$149<span id="ciclo-lbl-pro">/mês</span></div>
@@ -5628,11 +5645,11 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
           <div class="plano-feat-item no"><i class="ti ti-x"></i> WhatsApp automático</div>
           <div class="plano-feat-item no"><i class="ti ti-x"></i> API + Integrações</div>
         </div>
-        <div class="plano-cta"><i class="ti ti-hand-click"></i> Escolher Pro</div>
+        <div class="plano-acoes"><button type="button" class="plano-ver-btn" onclick="event.stopPropagation();verRecursosPlano('pro')"><i class="ti ti-list-details"></i> Ver recursos</button><button type="button" class="plano-escolher-btn" onclick="event.stopPropagation();selecionarPlano('pro')"><i class="ti ti-check"></i> Escolher Pro</button></div>
       </div>
 
       <!-- ENTERPRISE -->
-      <div class="plano-card enterprise" id="plano-card-enterprise" onclick="selecionarPlano('enterprise')">
+      <div class="plano-card enterprise" id="plano-card-enterprise">
         <div class="plano-nome" style="color:#b45309">Enterprise</div>
         <div class="plano-preco" id="preco-enterprise" style="color:#b45309">R$299<span id="ciclo-lbl-enterprise">/mês</span></div>
         <div class="plano-desc">Para redes e múltiplas unidades</div>
@@ -5646,7 +5663,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
           <div class="plano-feat-item ok"><i class="ti ti-check"></i> Suporte prioritário</div>
           <div class="plano-feat-item ok"><i class="ti ti-check"></i> Multi-unidade</div>
         </div>
-        <div class="plano-cta"><i class="ti ti-hand-click"></i> Escolher Enterprise</div>
+        <div class="plano-acoes"><button type="button" class="plano-ver-btn" onclick="event.stopPropagation();verRecursosPlano('enterprise')"><i class="ti ti-list-details"></i> Ver recursos</button><button type="button" class="plano-escolher-btn" onclick="event.stopPropagation();selecionarPlano('enterprise')"><i class="ti ti-check"></i> Escolher Enterprise</button></div>
       </div>
     </div>
 
@@ -7759,6 +7776,37 @@ async function responderTicketLoja(id){
   abrirTicketLoja(id);
 }
 
+// Guarda a lista completa de recursos de cada plano (preenchida ao renderizar)
+let _recursosPlano={};
+
+// Abre um modal com TODOS os recursos do plano, separados em incluídos / não
+function verRecursosPlano(planoId){
+  const lista=_recursosPlano[planoId]||[];
+  const nomes={basico:'Básico',pro:'Pro',enterprise:'Enterprise'};
+  const inc=lista.filter(x=>x.liberado);
+  const nao=lista.filter(x=>!x.liberado);
+  const bloco=(titulo,itens,ok)=>{
+    if(!itens.length) return '';
+    return `<div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:${ok?'#16a34a':'var(--txt3)'};margin-bottom:8px">
+        <i class="ti ti-${ok?'circle-check':'circle-x'}"></i> ${titulo} (${itens.length})
+      </div>
+      ${itens.map(x=>`<div style="display:flex;align-items:center;gap:9px;padding:6px 0;font-size:13px;${ok?'':'opacity:.55'}">
+        <i class="ti ti-${ok?'check':'x'}" style="color:${ok?'#16a34a':'var(--txt3)'};font-size:14px"></i> ${esc(x.texto)}
+      </div>`).join('')}
+    </div>`;
+  };
+  const html=`
+    <div class="card-title" style="gap:8px;margin-bottom:4px"><i class="ti ti-list-details" style="color:var(--pri)"></i> Recursos do plano ${nomes[planoId]||''}</div>
+    <div style="font-size:12px;color:var(--txt3);margin-bottom:14px">Veja tudo o que está incluído neste plano.</div>
+    ${bloco('Incluídos', inc, true)}
+    ${bloco('Não incluídos', nao, false)}`;
+  const foot=`
+    <button class="btn btn-out" onclick="closeModal('modal-generic')">Fechar</button>
+    <button class="btn btn-pri" onclick="closeModal('modal-generic');selecionarPlano('${planoId}')"><i class="ti ti-check"></i> Escolher ${nomes[planoId]||'este plano'}</button>`;
+  abrirModalGenerico(html, foot);
+}
+
 // Preenche a lista de recursos de cada card de plano com o que o admin
 // realmente liberou (feature_catalog + plano_entitlements). Se o banco não
 // tiver os dados, mantém a lista fixa que já está no HTML (não quebra).
@@ -7783,7 +7831,8 @@ async function renderRecursosDosPlanos(){
       const cont=document.getElementById('plano-feat-'+planoId);
       if(!cont) return;
       const valores=porPlano[planoId]||{};
-      const linhas=catalogo.map(f=>{
+      // Monta a lista COMPLETA (guardada para o modal "Ver recursos")
+      const todos=catalogo.map(f=>{
         let liberado, texto=f.nome;
         if(f.tipo==='flag'){
           const v = (f.key in valores) ? valores[f.key] : f.default_bool;
@@ -7791,15 +7840,21 @@ async function renderRecursosDosPlanos(){
         } else {
           const v = (f.key in valores) ? valores[f.key] : f.default_int;
           liberado = (v===-1 || v>0);
-          // Limites ficam mais naturais: "Até 5 usuários" / "Usuários ilimitados"
           if(liberado){
-            const nomeMin = f.nome.charAt(0).toLowerCase()+f.nome.slice(1);
+            const nomeMin=f.nome.charAt(0).toLowerCase()+f.nome.slice(1);
             texto = v===-1 ? (f.nome+' ilimitados') : ('Até '+v+' '+nomeMin);
           }
         }
-        return `<div class="plano-feat-item ${liberado?'ok':'no'}"><i class="ti ti-${liberado?'check':'x'}"></i> ${esc(texto)}</div>`;
-      }).join('');
-      if(linhas) cont.innerHTML=linhas;
+        return {texto, liberado, categoria:f.categoria||'Geral'};
+      });
+      _recursosPlano[planoId]=todos;  // guarda p/ o modal
+
+      // No CARD mostra só os liberados, no máximo 6 (resumo)
+      const destaque=todos.filter(x=>x.liberado).slice(0,6);
+      const restante=todos.length-destaque.length;
+      let html=destaque.map(x=>`<div class="plano-feat-item ok"><i class="ti ti-check"></i> ${esc(x.texto)}</div>`).join('');
+      if(restante>0) html+=`<div class="plano-feat-item" style="opacity:.7;font-size:11px;color:var(--txt3)"><i class="ti ti-dots"></i> e mais ${restante} recurso(s)</div>`;
+      if(html) cont.innerHTML=html;
     });
   }catch(e){ /* mantém o HTML fixo se algo falhar */ }
 }
