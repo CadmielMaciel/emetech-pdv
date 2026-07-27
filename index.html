@@ -2575,8 +2575,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
                 <i class="ti ti-file-invoice"></i> Crediário (parcelar)
               </button>
               <button class="fin-btn" id="fin-btn" onclick="finalizeSale()" disabled><i class="ti ti-check"></i>Finalizar Venda</button>
-              <button class="btn btn-out" id="btn-qr-asaas" onclick="cobrarPdvAsaas()" style="width:100%;justify-content:center;margin-top:6px;font-size:12.5px"><i class="ti ti-qrcode"></i> Cobrar com QR (Asaas)</button>
-              <button class="btn btn-out" id="btn-qr-infinitepay" onclick="cobrarPdvInfinitePay()" style="width:100%;justify-content:center;margin-top:6px;font-size:12.5px;border-color:#7c3aed;color:#7c3aed"><i class="ti ti-qrcode"></i> Cobrar com QR (InfinitePay)</button>
+              <div id="qr-cobranca-area" style="display:none;margin-top:6px"></div>
             </div>
           </div>
         </div>
@@ -9961,7 +9960,68 @@ function selPay(btn,m){
     maqRow.style.display=m==='cartao'?'flex':'none';
     if(m==='cartao') popMaquininhaPDV();
   }
+  renderBotoesQR(m);   // mostra QR só em Pix/Cartão e só dos gateways conectados
   renderCart(); // já atualiza a lista de pagamentos confirmados e o "falta pagar"
+}
+
+// Detecta quais gateways estão conectados (cacheado após o 1º carregamento)
+async function detectarGateways(){
+  if(G._gateways) return G._gateways;
+  const g={ asaas:false, infinitepay:false };
+  try{
+    const {data}=await db.from('empresas').select('infinitepay_handle').eq('id',EID()).maybeSingle();
+    g.infinitepay = !!(data && data.infinitepay_handle);
+  }catch(e){}
+  try{
+    const {data}=await db.rpc('status_pagamento');
+    const st=Array.isArray(data)?data[0]:data;
+    g.asaas = !!(st && st.configurado);
+  }catch(e){}
+  G._gateways=g;
+  return g;
+}
+
+// Mostra os botões de QR só quando faz sentido: forma Pix ou Cartão,
+// e apenas os gateways realmente conectados. Dois conectados = 1 botão com escolha.
+async function renderBotoesQR(metodo){
+  const area=document.getElementById('qr-cobranca-area');
+  if(!area) return;
+  // QR só faz sentido para Pix e Cartão (dinheiro/crediário não usam)
+  if(metodo!=='pix' && metodo!=='cartao'){ area.style.display='none'; area.innerHTML=''; return; }
+
+  const g=await detectarGateways();
+  const conectados=[];
+  if(g.infinitepay) conectados.push({id:'infinitepay',nome:'InfinitePay',cor:'#7c3aed',fn:'cobrarPdvInfinitePay()'});
+  if(g.asaas)       conectados.push({id:'asaas',nome:'Asaas',cor:'var(--pri)',fn:'cobrarPdvAsaas()'});
+
+  if(!conectados.length){ area.style.display='none'; area.innerHTML=''; return; }
+
+  area.style.display='block';
+  if(conectados.length===1){
+    const c=conectados[0];
+    area.innerHTML=`<button class="btn btn-out" onclick="${c.fn}" style="width:100%;justify-content:center;font-size:12.5px;border-color:${c.cor};color:${c.cor}"><i class="ti ti-qrcode"></i> Cobrar com QR (${c.nome})</button>`;
+  } else {
+    // Dois ou mais: um botão que abre a escolha
+    area.innerHTML=`<button class="btn btn-out" onclick="escolherGatewayQR()" style="width:100%;justify-content:center;font-size:12.5px"><i class="ti ti-qrcode"></i> Cobrar com QR</button>`;
+  }
+}
+
+// Quando há mais de um gateway, deixa a pessoa escolher qual usar
+async function escolherGatewayQR(){
+  const g=await detectarGateways();
+  const opcoes=[];
+  if(g.infinitepay) opcoes.push({nome:'InfinitePay',cor:'#7c3aed',fn:'cobrarPdvInfinitePay',desc:'Pix grátis e cartão até 12x'});
+  if(g.asaas)       opcoes.push({nome:'Asaas',cor:'#2563eb',fn:'cobrarPdvAsaas',desc:'Pix e boleto'});
+  const html=`
+    <div class="card-title" style="gap:8px;margin-bottom:12px"><i class="ti ti-qrcode" style="color:var(--pri)"></i> Cobrar com QR</div>
+    <div style="font-size:12.5px;color:var(--txt3);margin-bottom:14px">Escolha por onde gerar a cobrança:</div>
+    <div style="display:flex;flex-direction:column;gap:9px">
+      ${opcoes.map(o=>`<button class="btn btn-out" onclick="closeModal('modal-generic');${o.fn}()" style="width:100%;justify-content:flex-start;gap:10px;padding:13px 15px;border-color:${o.cor}">
+        <i class="ti ti-qrcode" style="color:${o.cor};font-size:18px"></i>
+        <span style="text-align:left"><span style="font-weight:700;color:${o.cor}">${o.nome}</span><br><span style="font-size:11px;color:var(--txt3)">${o.desc}</span></span>
+      </button>`).join('')}
+    </div>`;
+  abrirModalGenerico(html, `<button class="btn btn-out" onclick="closeModal('modal-generic')">Cancelar</button>`);
 }
 
 // Renderiza o painel de restante a pagar e atualiza estado
@@ -19027,7 +19087,7 @@ async function salvarHandleInfinitePay(){
     else notify('Erro ao salvar: '+error.message,'error');
     return;
   }
-  G._ipConfig=cfg;
+  G._ipConfig=cfg; G._gateways=null;
   notify('✅ InfinitePay conectada como @'+handle,'success');
   carregarHandleInfinitePay();
 }
@@ -19049,6 +19109,7 @@ async function salvarChaveAsaas(){
     return;
   }
   document.getElementById('pag-key').value='';
+  G._gateways=null;   // força redetectar os gateways no PDV
   notify(key?'Conexão com o Asaas salva!':'Ambiente atualizado.','success');
   renderConfigPagamento();
 }
