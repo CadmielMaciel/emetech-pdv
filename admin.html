@@ -2173,7 +2173,7 @@ async function abrirEntitlements(planoId) {
   openModal('modal-entitlements');
 
   const [catalogo, entitlements] = await Promise.all([
-    getFeatureCatalog(), getPlanoEntitlements(planoId),
+    getFeatureCatalog(true), getPlanoEntitlements(planoId),
   ]);
   // Mapa de valores atuais do plano
   const mapa = {};
@@ -2183,24 +2183,25 @@ async function abrirEntitlements(planoId) {
   const grupos = {};
   catalogo.forEach(f => { (grupos[f.categoria] = grupos[f.categoria] || []).push(f); });
 
-  let html = '';
+  let html = '<div style="font-size:11.5px;color:var(--txt3);background:var(--bg3);border-radius:8px;padding:8px 11px;margin-bottom:6px"><i class="ti ti-info-circle"></i> Marque o que este plano libera. Nos limites, <b>-1</b> significa ilimitado.</div>';
   Object.keys(grupos).forEach(cat => {
-    html += `<div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:var(--pri);margin:16px 0 8px;text-transform:uppercase;letter-spacing:.5px">${cat}</div>`;
+    const totalCat = grupos[cat].length;
+    html += `<div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:var(--pri);margin:16px 0 8px;text-transform:uppercase;letter-spacing:.5px">${cat} <span style="font-weight:400;color:var(--txt3);font-size:11px;text-transform:none">(${totalCat})</span></div>`;
     grupos[cat].forEach(f => {
       const atual = mapa[f.key];
       if (f.tipo === 'flag') {
         const val = atual?.bool_value != null ? atual.bool_value : f.default_bool;
         html += `
-          <label style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:8px;cursor:pointer;gap:10px" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
-            <span style="font-size:13px;color:var(--txt)">${f.nome}<br><span style="font-size:11px;color:var(--txt3);font-family:monospace">${f.key}</span></span>
+          <label style="display:flex;align-items:center;justify-content:space-between;padding:9px 10px;border-radius:8px;cursor:pointer;gap:10px" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
+            <span style="font-size:13px;color:var(--txt)">${f.nome}<br><span style="font-size:10px;color:var(--txt3);font-family:monospace;opacity:.6">${f.key}</span></span>
             <input type="checkbox" class="ent-flag" data-key="${f.key}" ${val ? 'checked' : ''} style="width:18px;height:18px;cursor:pointer">
           </label>`;
       } else {
         const val = atual?.int_value != null ? atual.int_value : f.default_int;
         html += `
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;gap:10px">
-            <span style="font-size:13px;color:var(--txt)">${f.nome}<br><span style="font-size:11px;color:var(--txt3);font-family:monospace">${f.key}</span></span>
-            <input type="number" class="ent-limit" data-key="${f.key}" value="${val}" style="width:100px;text-align:right" title="-1 = ilimitado">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 10px;gap:10px">
+            <span style="font-size:13px;color:var(--txt)">${f.nome}<br><span style="font-size:10px;color:var(--txt3);font-family:monospace;opacity:.6">${f.key}</span></span>
+            <input type="number" class="ent-limit" data-key="${f.key}" value="${val}" style="width:100px;text-align:right" title="-1 = ilimitado" placeholder="-1 = ilimitado">
           </div>`;
       }
     });
