@@ -5596,7 +5596,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
         <div class="plano-nome" style="color:var(--txt3)">Básico</div>
         <div class="plano-preco" id="preco-basico">R$89<span id="ciclo-lbl-basico">/mês</span></div>
         <div class="plano-desc">Ideal para quem está começando</div>
-        <div class="plano-feat">
+        <div class="plano-feat" id="plano-feat-basico">
           <div class="plano-feat-item ok"><i class="ti ti-check"></i> PDV completo</div>
           <div class="plano-feat-item ok"><i class="ti ti-check"></i> Até 2 usuários</div>
           <div class="plano-feat-item ok"><i class="ti ti-check"></i> 1 caixa</div>
@@ -5617,7 +5617,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
         <div class="plano-nome" style="color:var(--pri);margin-top:12px">Pro</div>
         <div class="plano-preco" id="preco-pro" style="color:var(--pri)">R$149<span id="ciclo-lbl-pro">/mês</span></div>
         <div class="plano-desc">Para assistências em crescimento</div>
-        <div class="plano-feat">
+        <div class="plano-feat" id="plano-feat-pro">
           <div class="plano-feat-item ok"><i class="ti ti-check"></i> Tudo do Básico</div>
           <div class="plano-feat-item ok"><i class="ti ti-check"></i> Até 5 usuários</div>
           <div class="plano-feat-item ok"><i class="ti ti-check"></i> Até 3 caixas</div>
@@ -5636,7 +5636,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
         <div class="plano-nome" style="color:#b45309">Enterprise</div>
         <div class="plano-preco" id="preco-enterprise" style="color:#b45309">R$299<span id="ciclo-lbl-enterprise">/mês</span></div>
         <div class="plano-desc">Para redes e múltiplas unidades</div>
-        <div class="plano-feat">
+        <div class="plano-feat" id="plano-feat-enterprise">
           <div class="plano-feat-item ok"><i class="ti ti-check"></i> Tudo do Pro</div>
           <div class="plano-feat-item ok"><i class="ti ti-check"></i> Usuários ilimitados</div>
           <div class="plano-feat-item ok"><i class="ti ti-check"></i> Caixas ilimitados</div>
@@ -7759,11 +7759,57 @@ async function responderTicketLoja(id){
   abrirTicketLoja(id);
 }
 
+// Preenche a lista de recursos de cada card de plano com o que o admin
+// realmente liberou (feature_catalog + plano_entitlements). Se o banco não
+// tiver os dados, mantém a lista fixa que já está no HTML (não quebra).
+async function renderRecursosDosPlanos(){
+  try{
+    const [cat, ents] = await Promise.all([
+      db.from('feature_catalog').select('*').eq('ativo',true).order('ordem'),
+      db.from('plano_entitlements').select('*')
+    ]);
+    const catalogo = cat.data||[];
+    const entitlements = ents.data||[];
+    if(!catalogo.length) return; // sem catálogo: mantém o HTML fixo
+
+    // mapa: plano -> { feature_key: valor }
+    const porPlano = {};
+    entitlements.forEach(e=>{
+      (porPlano[e.plano_id]=porPlano[e.plano_id]||{})[e.feature_key] =
+        (e.bool_value!=null?e.bool_value:(e.int_value!=null?e.int_value:null));
+    });
+
+    ['basico','pro','enterprise'].forEach(planoId=>{
+      const cont=document.getElementById('plano-feat-'+planoId);
+      if(!cont) return;
+      const valores=porPlano[planoId]||{};
+      const linhas=catalogo.map(f=>{
+        let liberado, texto=f.nome;
+        if(f.tipo==='flag'){
+          const v = (f.key in valores) ? valores[f.key] : f.default_bool;
+          liberado = v===true;
+        } else {
+          const v = (f.key in valores) ? valores[f.key] : f.default_int;
+          liberado = (v===-1 || v>0);
+          // Limites ficam mais naturais: "Até 5 usuários" / "Usuários ilimitados"
+          if(liberado){
+            const nomeMin = f.nome.charAt(0).toLowerCase()+f.nome.slice(1);
+            texto = v===-1 ? (f.nome+' ilimitados') : ('Até '+v+' '+nomeMin);
+          }
+        }
+        return `<div class="plano-feat-item ${liberado?'ok':'no'}"><i class="ti ti-${liberado?'check':'x'}"></i> ${esc(texto)}</div>`;
+      }).join('');
+      if(linhas) cont.innerHTML=linhas;
+    });
+  }catch(e){ /* mantém o HTML fixo se algo falhar */ }
+}
+
 // Abre o modal de planos (upgrade)
 async function abrirUpgrade(){
   if (typeof openModal === 'function') openModal('modal-planos');
   // Sincroniza preço/nome dos planos com o que o admin configurou no banco
   await sincronizarPlanosDoBanco();
+  await renderRecursosDosPlanos();  // lista de recursos reflete o que o admin liberou
   if (typeof setCicloPlano === 'function') setCicloPlano(_cicloPlano||'mensal');
   if (typeof _ativarGlowPlanos === 'function') setTimeout(_ativarGlowPlanos, 50);
   // Atualiza nomes/descrições visíveis nos cards
