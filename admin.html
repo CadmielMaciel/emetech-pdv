@@ -999,7 +999,7 @@ select option { background: var(--bg2); }
             <table>
               <thead>
                 <tr>
-                  <th>Empresa</th><th>Plano</th><th>Vencimento</th><th>Status</th>
+                  <th>Empresa</th><th>Plano</th><th>Pagamento</th><th>Vencimento</th><th>Status</th>
                   <th>Dias atraso/tolerância</th><th>Valor</th><th>Ações</th>
                 </tr>
               </thead>
@@ -2016,6 +2016,8 @@ function mapEmpresaFromDb(r) {
     statusFinanceiroSrv: r.status_financeiro,
     diasAtrasoSrv: r.dias_atraso,
     proxVencSrv: r.prox_venc,
+    pagamentoMetodo: r.pagamento_metodo,
+    asaasSubscriptionId: r.asaas_subscription_id,
   };
 }
 function mapEmpresaToDb(e) {
@@ -2742,13 +2744,13 @@ let _onbDados=null;
 
 async function renderOnboarding(){
   const tb=document.getElementById('onb-tabela');
-  if(tb)tb.innerHTML='<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--txt3)">Carregando…</td></tr>';
+  if(tb)tb.innerHTML='<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--txt3)">Carregando…</td></tr>';
   try{
     const {data,error}=await db.rpc('admin_onboarding');
     if(error)throw error;
     _onbDados=data;
   }catch(e){
-    if(tb)tb.innerHTML=`<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--danger)">Erro: ${e.message}.<br><span style="font-size:11px;color:var(--txt3)">Rode a migração A03 (admin_onboarding).</span></td></tr>`;
+    if(tb)tb.innerHTML=`<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--danger)">Erro: ${e.message}.<br><span style="font-size:11px;color:var(--txt3)">Rode a migração A03 (admin_onboarding).</span></td></tr>`;
     return;
   }
   const emp=(_onbDados?.empresas)||[];
@@ -2804,7 +2806,7 @@ function renderOnbTabela(){
   if(filtro==='parciais')list=list.filter(e=>marcos(e)>0&&marcos(e)<3);
   if(filtro==='completas')list=list.filter(e=>marcos(e)===3);
 
-  if(!list.length){tb.innerHTML='<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--txt3)">Nenhuma empresa neste estágio.</td></tr>';return;}
+  if(!list.length){tb.innerHTML='<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--txt3)">Nenhuma empresa neste estágio.</td></tr>';return;}
 
   const check=v=>v?'<i class="ti ti-circle-check" style="color:var(--success)"></i>':'<i class="ti ti-circle" style="color:var(--txt4)"></i>';
   tb.innerHTML=list.map(e=>{
@@ -3004,13 +3006,13 @@ async function renderFinanceiro(){
 
 async function renderUso(){
   const tb=document.getElementById('uso-tabela');
-  if(tb&&!_usoDados)tb.innerHTML='<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--txt3)">Carregando dados de uso…</td></tr>';
+  if(tb&&!_usoDados)tb.innerHTML='<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--txt3)">Carregando dados de uso…</td></tr>';
   try{
     const {data,error}=await db.rpc('admin_relatorio_uso');
     if(error)throw error;
     _usoDados=data;
   }catch(e){
-    if(tb)tb.innerHTML=`<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--danger)">Erro ao carregar: ${e.message}.<br><span style="font-size:11px;color:var(--txt3)">Rode a migração A01 (admin_relatorio_uso) no Supabase SQL Editor.</span></td></tr>`;
+    if(tb)tb.innerHTML=`<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--danger)">Erro ao carregar: ${e.message}.<br><span style="font-size:11px;color:var(--txt3)">Rode a migração A01 (admin_relatorio_uso) no Supabase SQL Editor.</span></td></tr>`;
     return;
   }
   const d=_usoDados||{};
@@ -3048,7 +3050,7 @@ function renderUsoTabela(){
   if(filtro==='inativas15')list=list.filter(e=>_diasInativa(e,agora)>=15);
   if(filtro==='inativas30')list=list.filter(e=>_diasInativa(e,agora)>=30);
 
-  if(!list.length){tb.innerHTML='<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--txt3)">Nenhuma empresa neste filtro.</td></tr>';return;}
+  if(!list.length){tb.innerHTML='<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--txt3)">Nenhuma empresa neste filtro.</td></tr>';return;}
 
   tb.innerHTML=list.map(e=>{
     const dias=_diasInativa(e,agora);
@@ -5170,7 +5172,7 @@ async function renderCobrancas() {
   const filtroStatus = document.getElementById('cob-filtro-status')?.value || '';
   const busca = (document.getElementById('cob-filtro-busca')?.value || '').trim();
 
-  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--txt3);padding:20px">Carregando...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--txt3);padding:20px">Carregando...</td></tr>';
 
   // Busca todas as empresas não-canceladas da view (status financeiro já
   // calculado no servidor). Cobranças mostra o quadro completo — não usa a
@@ -5179,7 +5181,7 @@ async function renderCobrancas() {
   if (filtroStatus) q = q.eq('status_financeiro', filtroStatus);
   if (busca) q = q.ilike('nome', `%${busca}%`);
   const { data, error } = await q.order('dias_atraso', { ascending: false }).limit(500);
-  if (error) { console.error(error); tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--danger);padding:20px">Erro ao carregar cobranças</td></tr>'; return; }
+  if (error) { console.error(error); tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--danger);padding:20px">Erro ao carregar cobranças</td></tr>'; return; }
 
   const lista = (data || []).map(mapEmpresaFromDb).map(e => ({
     e,
@@ -5201,7 +5203,7 @@ async function renderCobrancas() {
   document.getElementById('cob-st-bloqueadas').textContent = m.fin_bloqueado ?? 0;
 
   if (lista.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--txt3);padding:20px">Nenhuma cobrança encontrada</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--txt3);padding:20px">Nenhuma cobrança encontrada</td></tr>';
     return;
   }
 
@@ -5218,6 +5220,12 @@ async function renderCobrancas() {
         <div style="font-size:11px;color:var(--txt3)">${e.cidade||'—'}</div>
       </td>
       <td>${plano ? plano.nome : e.plano || '—'}</td>
+      <td>${(()=>{
+        const met={CREDIT_CARD:['Cartão','ti-credit-card','#16a34a'],BOLETO:['Boleto','ti-barcode','#2563eb'],PIX:['Pix','ti-qrcode','#7c3aed']}[e.pagamentoMetodo];
+        if(e.asaasSubscriptionId && met) return `<span style="display:inline-flex;align-items:center;gap:4px;font-size:11.5px;color:${met[2]};font-weight:600"><i class="ti ${met[1]}"></i> ${met[0]}</span><div style="font-size:9.5px;color:var(--txt3)">automático</div>`;
+        if(met) return `<span style="font-size:11.5px;color:var(--txt2)">${met[0]}</span>`;
+        return '<span style="font-size:11px;color:var(--txt3)">manual</span>';
+      })()}</td>
       <td>${vencStr}</td>
       <td><span class="fin-badge ${finStatusClass(fin.status)}">${finStatusLabel(fin.status)}</span></td>
       <td style="font-size:12px;color:var(--txt2)">${diasTxt}</td>
