@@ -569,10 +569,11 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
 .ms{font-size:10.5px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:1.1px;padding:12px 0 7px;border-bottom:1px solid var(--border);margin-bottom:12px}
 .toggle{position:relative;width:42px;height:22px;flex-shrink:0}
 .toggle input{opacity:0;width:0;height:0}
-.tslider{position:absolute;inset:0;background:var(--border2);border-radius:22px;cursor:pointer;transition:.3s}
-.tslider::before{content:'';position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.3s;box-shadow:0 1px 4px rgba(0,0,0,.18)}
-.toggle input:checked+.tslider{background:var(--pri)}
+.tslider{position:absolute;inset:0;background:#c7ccd6;border:1px solid #b3b9c6;border-radius:22px;cursor:pointer;transition:.3s}
+.tslider::before{content:'';position:absolute;width:15px;height:15px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.3s;box-shadow:0 1px 4px rgba(0,0,0,.25)}
+.toggle input:checked+.tslider{background:var(--pri);border-color:var(--pri)}
 .toggle input:checked+.tslider::before{transform:translateX(20px)}
+[data-theme="dark"] .tslider{background:#4a5262;border-color:#5a6273}
 .loading-overlay{position:fixed;inset:0;background:rgba(15,10,30,.7);display:flex;align-items:center;justify-content:center;z-index:5000;opacity:0;pointer-events:none;transition:opacity .2s}
 .loading-overlay.show{opacity:1;pointer-events:all}
 .spinner{width:48px;height:48px;border:3.5px solid rgba(255,255,255,.15);border-top-color:#fff;border-radius:50%;animation:spin .75s linear infinite}
@@ -840,8 +841,7 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
      Estava preso dentro do template de impressao e nunca era aplicado. -->
 <style>
 /* ── NAV CAIXAS DESTAQUE ── */
-#nav-caixas i { color: rgba(255,255,255,.85); transition: transform .2s; }
-#nav-caixas:hover i, #nav-caixas.active i { color: #fff; transform: scale(1.15); }
+#nav-caixas:hover i, #nav-caixas.active i { transform: scale(1.15); }
 
 /* ── NETFLIX SLOTS EDITÁVEIS ───────────────────────── */
 .nf-slot { display:flex;flex-direction:column;align-items:center;gap:10px;position:relative;cursor:pointer;border-radius:16px;padding:8px;transition:outline .15s,background .15s;outline:3px solid transparent; }
