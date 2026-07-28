@@ -551,8 +551,9 @@ tr:hover td{background:var(--surface)}
 .tag-inf{background:linear-gradient(135deg,#EDE9FF,#E0F2FE);color:var(--pri);border:1px solid #C7D2FE}
 .fg{margin-bottom:12px}
 .lbl{display:block;font-size:11px;font-weight:700;color:var(--txt2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.6px}
-input,select,textarea{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--txt);background:var(--bg2);outline:none;transition:var(--trans)}
-input:focus,select:focus,textarea:focus{border-color:var(--pri);box-shadow:0 0 0 3.5px rgba(30,94,255,.13);background:var(--bg2)}
+input:not([type=checkbox]):not([type=radio]),select,textarea{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--txt);background:var(--bg2);outline:none;transition:var(--trans)}
+input:not([type=checkbox]):not([type=radio]):focus,select:focus,textarea:focus{border-color:var(--pri);box-shadow:0 0 0 3.5px rgba(30,94,255,.13);background:var(--bg2)}
+input[type=checkbox],input[type=radio]{accent-color:var(--pri);cursor:pointer}
 input::placeholder,textarea::placeholder{color:var(--txt4)}
 .ig{position:relative}.ig i{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--txt3);font-size:16px;pointer-events:none}.ig input{padding-left:34px}
 .modal-overlay{position:fixed;inset:0;background:rgba(15,10,30,.6);display:flex;align-items:center;justify-content:center;z-index:1000;opacity:0;pointer-events:none;transition:opacity .22s;padding:14px}
@@ -567,13 +568,19 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
 .menu-acao-item{display:flex;align-items:center;gap:9px;width:100%;padding:9px 12px;background:none;border:none;border-radius:7px;font-size:13px;font-weight:600;color:var(--txt);cursor:pointer;text-align:left;font-family:inherit}
 .menu-acao-item:hover{background:var(--pri-light)}
 .ms{font-size:10.5px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:1.1px;padding:12px 0 7px;border-bottom:1px solid var(--border);margin-bottom:12px}
-.toggle{position:relative;width:42px;height:22px;flex-shrink:0}
-.toggle input{opacity:0;width:0;height:0}
-.tslider{position:absolute;inset:0;background:#c7ccd6;border:1px solid #b3b9c6;border-radius:22px;cursor:pointer;transition:.3s}
-.tslider::before{content:'';position:absolute;width:15px;height:15px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.3s;box-shadow:0 1px 4px rgba(0,0,0,.25)}
-.toggle input:checked+.tslider{background:var(--pri);border-color:var(--pri)}
-.toggle input:checked+.tslider::before{transform:translateX(20px)}
-[data-theme="dark"] .tslider{background:#4a5262;border-color:#5a6273}
+/* ═══ SWITCH PADRÃO — unifica .toggle e .switch (mesma identidade visual) ═══ */
+.toggle,.switch{position:relative;display:inline-flex;flex-shrink:0;width:44px;height:24px;vertical-align:middle}
+.toggle input,.switch input{position:absolute;inset:0;width:100%;height:100%;margin:0;padding:0;opacity:0;cursor:pointer;z-index:1}
+.tslider,.slider{position:absolute;inset:0;background:var(--border2);border-radius:999px;cursor:pointer;transition:background .25s cubic-bezier(.4,0,.2,1),box-shadow .2s;box-shadow:inset 0 0 0 1px rgba(0,0,0,.05)}
+.tslider::before,.slider::before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform .28s cubic-bezier(.34,1.4,.5,1),box-shadow .2s;box-shadow:0 1px 3px rgba(0,0,0,.3),0 1px 1px rgba(0,0,0,.14)}
+.toggle input:checked+.tslider,.switch input:checked+.slider{background:var(--pri)}
+.toggle input:checked+.tslider::before,.switch input:checked+.slider::before{transform:translateX(20px)}
+.toggle input:focus-visible+.tslider,.switch input:focus-visible+.slider{box-shadow:0 0 0 3px rgba(30,94,255,.32)}
+.toggle:hover .tslider,.switch:hover .slider{filter:brightness(.97)}
+.toggle input:disabled,.switch input:disabled{cursor:not-allowed}
+.toggle input:disabled+.tslider,.switch input:disabled+.slider{opacity:.45;filter:none}
+[data-theme="dark"] .tslider,[data-theme="dark"] .slider{box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+[data-theme="dark"] .tslider::before,[data-theme="dark"] .slider::before{background:#F1F5FF;box-shadow:0 1px 3px rgba(0,0,0,.5)}
 .loading-overlay{position:fixed;inset:0;background:rgba(15,10,30,.7);display:flex;align-items:center;justify-content:center;z-index:5000;opacity:0;pointer-events:none;transition:opacity .2s}
 .loading-overlay.show{opacity:1;pointer-events:all}
 .spinner{width:48px;height:48px;border:3.5px solid rgba(255,255,255,.15);border-top-color:#fff;border-radius:50%;animation:spin .75s linear infinite}
@@ -841,7 +848,8 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
      Estava preso dentro do template de impressao e nunca era aplicado. -->
 <style>
 /* ── NAV CAIXAS DESTAQUE ── */
-#nav-caixas:hover i, #nav-caixas.active i { transform: scale(1.15); }
+#nav-caixas i { color: rgba(255,255,255,.85); transition: transform .2s; }
+#nav-caixas:hover i, #nav-caixas.active i { color: #fff; transform: scale(1.15); }
 
 /* ── NETFLIX SLOTS EDITÁVEIS ───────────────────────── */
 .nf-slot { display:flex;flex-direction:column;align-items:center;gap:10px;position:relative;cursor:pointer;border-radius:16px;padding:8px;transition:outline .15s,background .15s;outline:3px solid transparent; }
@@ -8980,6 +8988,12 @@ async function buscarCompatIA(){
   // ── PASSO 2: não achou na base → consulta a IA (uma única vez) ──
   if(sug)sug.innerHTML='<div style="padding:10px;text-align:center;color:var(--txt3);font-size:12.5px"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Pesquisando na web modelos compatíveis… <span style="display:block;font-size:10.5px;color:var(--txt4);margin-top:3px">Pode levar alguns segundos</span></div>';
 
+  // ── COTA DE IA: não deixa passar do limite diário do plano ──
+  if(!(await verificarCotaIA('compat'))){
+    if(sug)sug.innerHTML='<div style="padding:10px;font-size:12px;color:var(--warn);background:rgba(245,158,11,.08);border-radius:8px"><b>Limite diário de IA atingido.</b> Você pode adicionar os modelos compatíveis manualmente no campo abaixo.</div>';
+    return;
+  }
+
   // Evita duplo clique / chamadas simultâneas
   if(window._compatIALoading){ return; }
   window._compatIALoading = true;
@@ -8992,6 +9006,7 @@ async function buscarCompatIA(){
 
     // Novo formato: { success, source, cached, data:{modelos[],alertas[]} } | { success:false, error:{code,message} }
     if(data && data.success && data.data){
+      registrarUsoIA('compat'); // conta 1 consumo de IA (best-effort)
       const modelosObj = data.data.modelos || [];
       const lista = modelosObj.map(m => m.modelo).filter(Boolean);
       // Guarda os detalhes (confiança/código/obs) para o render
@@ -16221,6 +16236,12 @@ async function consultarDiagnosticoIA(forcar){
   }
 
   // PASSO 2: não achou na base da loja → consulta a IA
+  // ── COTA DE IA: respeita o limite diário do plano ──
+  if(!(await verificarCotaIA('diagnostico'))){
+    if(res) res.innerHTML='';
+    if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-search"></i> Analisar'; }
+    return;
+  }
   if(res) res.innerHTML='<div style="text-align:center;padding:20px;color:var(--txt3);font-size:12.5px"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite;font-size:20px"></i><div style="margin-top:6px">Consultando a IA e pesquisando na web…</div><div style="font-size:10.5px;color:var(--txt4)">Pode levar alguns segundos</div></div>';
 
   try{
@@ -16237,6 +16258,7 @@ async function consultarDiagnosticoIA(forcar){
     }
 
     _diagUltimo = data.data;
+    registrarUsoIA('diagnostico'); // conta 1 consumo de IA (best-effort)
     renderResultadoDiagnostico(data.data, data.cached);
     // Salva no histórico da loja (best-effort)
     try{
@@ -23395,6 +23417,50 @@ function limiteFeature(key) {
   if (!G.entitlements || !(key in G.entitlements)) return -1; // sem dado = ilimitado (tolerante)
   const v = G.entitlements[key];
   return (typeof v === 'number') ? v : -1;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   COTA DIÁRIA DE IA (Fatia 1) — limite de consultas de IA por dia
+   • O LIMITE vem dos entitlements do plano: feature 'ai.daily_limit'
+     (número). -1 ou ausente = ilimitado (modo tolerante).
+   • O USO DE HOJE vem do servidor via RPC minha_cota_ia().
+   • Cada consumo é registrado via RPC registrar_uso_ia(p_tipo).
+   Defensivo: se as RPCs ainda não existirem (migração não aplicada),
+   nada é bloqueado — o sistema continua funcionando normalmente.
+   ══════════════════════════════════════════════════════════════════ */
+
+// Consulta quantas consultas de IA esta empresa já usou HOJE.
+// Retorna número (>=0) ou null quando não deu para saber (modo tolerante).
+async function _usoIAHoje(){
+  try{
+    const { data, error } = await db.rpc('minha_cota_ia');
+    if(error) return null;
+    if(typeof data === 'number') return data;                       // retorno simples
+    if(data && typeof data.usado_hoje === 'number') return data.usado_hoje; // { usado_hoje }
+    return null;
+  }catch(e){ return null; }
+}
+
+// PRÉ-CHECAGEM: chamar ANTES de consumir IA. Retorna true se pode seguir.
+// Se estourou a cota do dia, avisa o usuário e retorna false.
+async function verificarCotaIA(tipo){
+  const limite = (typeof limiteFeature === 'function') ? limiteFeature('ai.daily_limit') : -1;
+  if(limite === -1) return true;                 // ilimitado (ou sem dado) = libera
+  const usado = await _usoIAHoje();
+  if(usado === null) return true;                // não conseguiu medir = tolerante, libera
+  const restante = limite - usado;
+  if(restante > 0){
+    if(restante <= 3) notify(`Você tem ${restante} consulta${restante>1?'s':''} de IA restante${restante>1?'s':''} hoje.`, 'info', 4000);
+    return true;
+  }
+  notify(`Você atingiu o limite de ${limite} consultas de IA por dia do seu plano. O limite renova amanhã.`, 'warn', 6000);
+  return false;
+}
+
+// REGISTRO: chamar DEPOIS de a consulta de IA dar certo.
+// Best-effort — uma falha aqui nunca quebra a experiência do usuário.
+async function registrarUsoIA(tipo){
+  try{ await db.rpc('registrar_uso_ia', { p_tipo: tipo || 'ia' }); }catch(e){ /* silencioso */ }
 }
 
 function getPlanoAtual() {
