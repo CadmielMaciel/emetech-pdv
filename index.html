@@ -25617,27 +25617,14 @@ function gerarLaudoEntrega() {
       if(/\bgo\s*\(/.test(oc)) window.pinSidebar();
     });
 
-    // 2) UNPIN (recolher) quando QUALQUER modal-overlay abrir — cobre openModal(),
-    //    classList.add('open') direto e modais inseridos via insertAdjacentHTML.
-    //    Recolher NÃO desmarca o módulo ativo (só remove .pinned). Sem polling.
-    function overlayAberto(n){
-      return n && n.nodeType===1 && (
-        (n.classList && n.classList.contains('modal-overlay') && n.classList.contains('open')) ||
-        (n.querySelector && n.querySelector('.modal-overlay.open'))
-      );
-    }
-    var obs = new MutationObserver(function(muts){
-      for(var i=0;i<muts.length;i++){
-        var m = muts[i];
-        if(m.type==='attributes'){
-          var t=m.target;
-          if(t.classList && t.classList.contains('modal-overlay') && t.classList.contains('open')){ window.unpinSidebar(); return; }
-        } else if(m.type==='childList'){
-          for(var j=0;j<m.addedNodes.length;j++){ if(overlayAberto(m.addedNodes[j])){ window.unpinSidebar(); return; } }
-        }
-      }
-    });
-    obs.observe(document.body, {subtree:true, childList:true, attributes:true, attributeFilter:['class']});
+    // 2) UNPIN (recolher) ao clicar em QUALQUER lugar FORA da sidebar.
+    //    Clique dentro da sidebar não recolhe. Recolher NÃO desmarca o módulo ativo.
+    //    Fase de captura: funciona mesmo se algum botão fizer stopPropagation().
+    document.addEventListener('click', function(e){
+      if(!sb.classList.contains('pinned')) return;
+      if(sb.contains(e.target)) return;
+      window.unpinSidebar();
+    }, true);
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
