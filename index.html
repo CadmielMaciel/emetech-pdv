@@ -355,7 +355,7 @@ button,.btn,.card,.tag,input,select,textarea{transition:var(--trans)}
 /* ── SIDEBAR RECOLHÍVEL ── */
 .sidebar{
   width:var(--sw-mini);
-  background:linear-gradient(168deg,#0b0720 0%,#130c34 35%,#18104A 70%,#100D28 100%);
+  background:linear-gradient(170deg,#6E4FDB 0%,#574AD0 32%,#414FCB 66%,#3A5EC4 100%);
   display:flex;flex-direction:column;flex-shrink:0;
   overflow:hidden;position:relative;
   transition:width .28s cubic-bezier(.4,0,.2,1);
@@ -3865,6 +3865,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
           <button class="fin-tab" onclick="cfgTab('impressora',this)"><i class="ti ti-printer" style="font-size:13px"></i> Impressora Térmica</button>
           <button class="fin-tab" onclick="cfgTab('integracoes',this)"><i class="ti ti-plug" style="font-size:13px"></i> Integrações</button>
           <button class="fin-tab" onclick="cfgTab('os',this)"><i class="ti ti-tool" style="font-size:13px"></i> Ordens de Serviço</button>
+          <button class="fin-tab" onclick="cfgTab('fiscal',this);carregarConfigFiscal()"><i class="ti ti-file-invoice" style="font-size:13px"></i> Fiscal (NFC-e)</button>
         </div>
 
         <!-- ABA: GATEWAY -->
@@ -4001,6 +4002,115 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
             <div style="display:flex;gap:8px;flex-wrap:wrap">
               <button class="btn btn-pri btn-sm" onclick="go('planos')"><i class="ti ti-arrow-up"></i> Ver planos</button>
               <button class="btn btn-out btn-sm" onclick="abrirCancelamento()" style="color:var(--danger,#dc2626);border-color:var(--danger,#dc2626)"><i class="ti ti-x"></i> Cancelar assinatura</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ABA: FISCAL (NFC-e via Focus NFe) -->
+        <div id="cfg-fiscal" style="display:none">
+          <div class="alert-box alert-info" style="max-width:640px;font-size:12px;margin-bottom:14px">
+            <i class="ti ti-info-circle" style="font-size:14px"></i>
+            <div>A emissão começa em <b>homologação (teste)</b> — não gera nota com valor fiscal. Confirme regime, CSC e séries com seu <b>contador</b> antes de ir pra produção.</div>
+          </div>
+
+          <div class="card" style="max-width:640px">
+            <div class="card-hdr" style="margin-bottom:14px"><div class="card-title"><i class="ti ti-building-store" style="color:var(--pri)"></i> Dados do emitente</div></div>
+            <div class="g2">
+              <div class="fg"><label class="lbl">Razão social</label><input type="text" id="fisc-razao"></div>
+              <div class="fg"><label class="lbl">Nome fantasia</label><input type="text" id="fisc-fantasia"></div>
+            </div>
+            <div class="g2">
+              <div class="fg"><label class="lbl">CNPJ</label><input type="text" id="fisc-cnpj" placeholder="00.000.000/0000-00"></div>
+              <div class="fg"><label class="lbl">Inscrição Estadual (IE)</label><input type="text" id="fisc-ie"></div>
+            </div>
+            <div class="g2">
+              <div class="fg"><label class="lbl">Inscrição Municipal (IM)</label><input type="text" id="fisc-im"></div>
+              <div class="fg"><label class="lbl">CNAE principal</label><input type="text" id="fisc-cnae" placeholder="0000000"></div>
+            </div>
+            <div class="fg"><label class="lbl">Endereço</label><input type="text" id="fisc-endereco" placeholder="Rua, nº, bairro"></div>
+            <div class="g2">
+              <div class="fg"><label class="lbl">Cidade</label><input type="text" id="fisc-cidade"></div>
+              <div class="fg"><label class="lbl">UF</label><input type="text" id="fisc-estado" maxlength="2" placeholder="BA" style="text-transform:uppercase"></div>
+            </div>
+            <div class="fg"><label class="lbl">CEP</label><input type="text" id="fisc-cep" placeholder="00000-000"></div>
+          </div>
+
+          <div class="card" style="max-width:640px;margin-top:16px">
+            <div class="card-hdr" style="margin-bottom:14px"><div class="card-title"><i class="ti ti-scale" style="color:var(--pri)"></i> Parâmetros fiscais</div></div>
+            <div class="g2">
+              <div class="fg"><label class="lbl">Regime tributário</label>
+                <select id="fisc-regime">
+                  <option value="1">1 - Simples Nacional</option>
+                  <option value="2">2 - Simples Nacional (excesso de sublimite)</option>
+                  <option value="3">3 - Regime Normal</option>
+                </select>
+              </div>
+              <div class="fg"><label class="lbl">Ambiente</label>
+                <select id="fisc-ambiente">
+                  <option value="2">Homologação (teste)</option>
+                  <option value="1">Produção (nota real)</option>
+                </select>
+              </div>
+            </div>
+            <div class="g2">
+              <div class="fg"><label class="lbl">Série NFC-e</label><input type="text" id="fisc-serie-nfce" value="001"></div>
+              <div class="fg"><label class="lbl">Próximo número NFC-e</label><input type="number" id="fisc-num-nfce" value="1" min="1"></div>
+            </div>
+          </div>
+
+          <div class="card" style="max-width:640px;margin-top:16px">
+            <div class="card-hdr" style="margin-bottom:6px"><div class="card-title"><i class="ti ti-receipt-tax" style="color:var(--pri)"></i> Padrões tributários</div></div>
+            <div style="font-size:12px;color:var(--txt2);margin-bottom:12px">Usados só quando o produto não tem o valor próprio. <b>Quem define é o seu contador.</b></div>
+            <div class="g2">
+              <div class="fg"><label class="lbl">CFOP padrão</label><input type="text" id="fisc-cfop-padrao" placeholder="5102"></div>
+              <div class="fg"><label class="lbl">CSOSN padrão (Simples)</label><input type="text" id="fisc-csosn-padrao" placeholder="102"></div>
+            </div>
+            <div class="g2">
+              <div class="fg"><label class="lbl">CST padrão (Regime Normal)</label><input type="text" id="fisc-cst-padrao" placeholder="102"></div>
+              <div class="fg"><label class="lbl">&nbsp;</label><div style="font-size:11px;color:var(--txt3);padding-top:9px">Aplicado quando o regime não é Simples.</div></div>
+            </div>
+            <div class="g2">
+              <div class="fg"><label class="lbl">Situação tributária PIS</label><input type="text" id="fisc-pis-cst" placeholder="07"></div>
+              <div class="fg"><label class="lbl">Situação tributária COFINS</label><input type="text" id="fisc-cofins-cst" placeholder="07"></div>
+            </div>
+          </div>
+
+          <div class="card" style="max-width:640px;margin-top:16px">
+            <div class="card-hdr" style="margin-bottom:14px"><div class="card-title"><i class="ti ti-plug-connected" style="color:var(--pri)"></i> Conexão Focus NFe</div></div>
+            <div style="font-size:12.5px;color:var(--txt2);margin-bottom:12px">Cole os tokens da sua conta Focus NFe. Eles ficam protegidos (RLS) e <b>não são exibidos</b> na tela. Deixe em branco para manter o token atual.</div>
+            <div class="fg"><label class="lbl">Token — Homologação (teste)</label>
+              <div style="position:relative">
+                <input type="password" id="fisc-token-h" placeholder="Token de homologação" autocomplete="off">
+                <button onclick="toggleFieldVis('fisc-token-h',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--txt3)"><i class="ti ti-eye"></i></button>
+              </div>
+              <div id="fisc-token-h-st" style="font-size:11px;color:var(--txt3);margin-top:4px"></div>
+            </div>
+            <div class="fg"><label class="lbl">Token — Produção (real)</label>
+              <div style="position:relative">
+                <input type="password" id="fisc-token-p" placeholder="Token de produção" autocomplete="off">
+                <button onclick="toggleFieldVis('fisc-token-p',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--txt3)"><i class="ti ti-eye"></i></button>
+              </div>
+              <div id="fisc-token-p-st" style="font-size:11px;color:var(--txt3);margin-top:4px"></div>
+            </div>
+            <div class="g2">
+              <div class="fg"><label class="lbl">CSC (NFC-e)</label>
+                <div style="position:relative">
+                  <input type="password" id="fisc-csc" placeholder="Deixe em branco para manter" autocomplete="off">
+                  <button onclick="toggleFieldVis('fisc-csc',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--txt3)"><i class="ti ti-eye"></i></button>
+                </div>
+              </div>
+              <div class="fg"><label class="lbl">ID do CSC</label><input type="text" id="fisc-csc-id" placeholder="000001"></div>
+            </div>
+            <label style="display:flex;align-items:center;gap:9px;cursor:pointer;margin:6px 0 2px">
+              <input type="checkbox" id="fisc-habilitado">
+              <span style="font-size:13px">Habilitar emissão fiscal nesta loja</span>
+            </label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+              <button class="btn btn-pri" onclick="salvarConfigFiscal()"><i class="ti ti-device-floppy"></i> Salvar configuração fiscal</button>
+              <a class="btn btn-out" href="https://focusnfe.com.br/cadastro/" target="_blank"><i class="ti ti-external-link"></i> Abrir Focus NFe</a>
+            </div>
+            <div style="font-size:11.5px;color:var(--txt3);margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+              <i class="ti ti-shield-lock"></i> Só aceita certificado <b>A1</b> (o A3 não funciona na nuvem). A emissão real acontecerá no servidor — o token nunca fica exposto no navegador.
             </div>
           </div>
         </div>
@@ -4629,6 +4739,8 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
       </div>
       <div id="p-fiscal-box" style="display:none">
         <div style="font-size:11px;color:var(--txt3);margin-bottom:8px">Preencha se for usar emissão fiscal no futuro. Não emite nota — apenas guarda os dados.</div>
+        <button type="button" class="btn btn-out btn-sm" onclick="sugerirPadraoFiscalSimples()" style="margin-bottom:6px"><i class="ti ti-wand"></i> Sugerir padrões (Simples Nacional)</button>
+        <div style="font-size:10.5px;color:var(--txt3);margin-bottom:10px">Preenche só campos vazios: CFOP 5102 · CSOSN 102 · Origem 0 · Unidade UN. Confira com seu contador.</div>
         <div class="g2">
           <div class="fg"><label class="lbl">NCM</label><input type="text" id="p-ncm" placeholder="0000.00.00" maxlength="10"></div>
           <div class="fg"><label class="lbl">CEST</label><input type="text" id="p-cest" placeholder="00.000.00" maxlength="9"></div>
@@ -13779,7 +13891,7 @@ async function confirmarPagamentoOS(id){
 
 // ── PÁGINA DE CONFIGURAÇÕES ───────────────────────────
 function cfgTab(aba, btn) {
-  ['gateway','impressora','integracoes','os'].forEach(t => {
+  ['gateway','impressora','integracoes','os','fiscal'].forEach(t => {
     const el = document.getElementById('cfg-' + t);
     if (el) el.style.display = t === aba ? '' : 'none';
   });
@@ -13810,6 +13922,97 @@ function sincronizarCupomConfig() {
 }
 function salvarCupomConfigPg() { sincronizarCupomConfig(); if(typeof salvarCupomConfig==='function')salvarCupomConfig(); notify('Configurações de impressora salvas!','success'); }
 function toggleFieldVis(id, btn) { const el=document.getElementById(id);if(!el)return; el.type=el.type==='password'?'text':'password'; const i=btn.querySelector('i');if(i)i.className=el.type==='password'?'ti ti-eye':'ti ti-eye-off'; }
+
+/* ═══ FISCAL — Fatia 1: carregar/salvar config fiscal (NFC-e via Focus NFe) ═══
+   Segredos (tokens/CSC) nunca são exibidos: só sinalizamos se já existem, e
+   só gravam quando o campo é preenchido (em branco = mantém o atual). */
+async function carregarConfigFiscal(){
+  const empId = (typeof EID==='function' ? EID() : null); if(!empId) return;
+  const g = id => document.getElementById(id);
+  const set = (id,v) => { const el=g(id); if(el && v!=null) el.value=v; };
+  try{
+    const { data, error } = await db.from('config_fiscal')
+      .select('razao_social,nome_fantasia,cnpj,ie,im,cnae,endereco,cidade,estado,cep,regime_tributario,ambiente,serie_nfce,proximo_numero_nfce,csc_id,fiscal_habilitado,focus_token_homologacao,focus_token_producao,csc,cfop_padrao,csosn_padrao,cst_padrao,pis_cst,cofins_cst')
+      .eq('empresa_id', empId).maybeSingle();
+    if(error){ console.warn('config_fiscal load:', error.message); return; }
+    const c = data || {};
+    set('fisc-razao',c.razao_social); set('fisc-fantasia',c.nome_fantasia); set('fisc-cnpj',c.cnpj);
+    set('fisc-ie',c.ie); set('fisc-im',c.im); set('fisc-cnae',c.cnae); set('fisc-endereco',c.endereco);
+    set('fisc-cidade',c.cidade); set('fisc-estado',c.estado); set('fisc-cep',c.cep);
+    if(g('fisc-regime')) g('fisc-regime').value = String(c.regime_tributario != null ? c.regime_tributario : 1);
+    if(g('fisc-ambiente')) g('fisc-ambiente').value = String(c.ambiente != null ? c.ambiente : 2);
+    set('fisc-serie-nfce', c.serie_nfce || '001');
+    if(g('fisc-num-nfce')) g('fisc-num-nfce').value = (c.proximo_numero_nfce != null ? c.proximo_numero_nfce : 1);
+    set('fisc-csc-id', c.csc_id || '000001');
+    set('fisc-cfop-padrao', c.cfop_padrao || '5102');
+    set('fisc-csosn-padrao', c.csosn_padrao || '102');
+    set('fisc-cst-padrao', c.cst_padrao || '102');
+    set('fisc-pis-cst', c.pis_cst || '07');
+    set('fisc-cofins-cst', c.cofins_cst || '07');
+    if(g('fisc-habilitado')) g('fisc-habilitado').checked = !!c.fiscal_habilitado;
+    // segredos: apenas status, valor nunca vai para o input
+    if(g('fisc-token-h-st')) g('fisc-token-h-st').textContent = c.focus_token_homologacao ? '✓ Token de homologação configurado (em branco = mantém).' : 'Nenhum token de homologação salvo ainda.';
+    if(g('fisc-token-p-st')) g('fisc-token-p-st').textContent = c.focus_token_producao ? '✓ Token de produção configurado (em branco = mantém).' : 'Nenhum token de produção salvo ainda.';
+  }catch(e){ console.warn('config_fiscal:', e); }
+}
+
+async function salvarConfigFiscal(){
+  const empId = (typeof EID==='function' ? EID() : null);
+  if(!empId){ notify('Empresa não identificada.','error'); return; }
+  const g = id => document.getElementById(id);
+  const val = id => (g(id)?.value || '').trim();
+  const payload = {
+    empresa_id: empId,
+    razao_social: val('fisc-razao') || null,
+    nome_fantasia: val('fisc-fantasia') || null,
+    cnpj: val('fisc-cnpj') || null,
+    ie: val('fisc-ie') || null,
+    im: val('fisc-im') || null,
+    cnae: val('fisc-cnae') || null,
+    endereco: val('fisc-endereco') || null,
+    cidade: val('fisc-cidade') || null,
+    estado: (val('fisc-estado') || '').toUpperCase() || null,
+    cep: val('fisc-cep') || null,
+    regime_tributario: parseInt(val('fisc-regime') || '1', 10),
+    ambiente: parseInt(val('fisc-ambiente') || '2', 10),
+    serie_nfce: val('fisc-serie-nfce') || '001',
+    proximo_numero_nfce: parseInt(val('fisc-num-nfce') || '1', 10),
+    csc_id: val('fisc-csc-id') || '000001',
+    cfop_padrao: val('fisc-cfop-padrao') || '5102',
+    csosn_padrao: val('fisc-csosn-padrao') || '102',
+    cst_padrao: val('fisc-cst-padrao') || '102',
+    pis_cst: val('fisc-pis-cst') || '07',
+    cofins_cst: val('fisc-cofins-cst') || '07',
+    fiscal_habilitado: !!(g('fisc-habilitado') && g('fisc-habilitado').checked)
+  };
+  const th = val('fisc-token-h'), tp = val('fisc-token-p'), csc = val('fisc-csc');
+  if(th) payload.focus_token_homologacao = th;   // em branco = mantém
+  if(tp) payload.focus_token_producao = tp;
+  if(csc) payload.csc = csc;
+  try{
+    // config_fiscal não tem unique em empresa_id → busca id e faz update/insert
+    const { data: exist, error: e0 } = await db.from('config_fiscal').select('id').eq('empresa_id', empId).maybeSingle();
+    if(e0){ notify('Erro ao consultar config: '+e0.message,'error'); return; }
+    let error;
+    if(exist && exist.id){ ({ error } = await db.from('config_fiscal').update(payload).eq('id', exist.id)); }
+    else { ({ error } = await db.from('config_fiscal').insert(payload)); }
+    if(error){ notify('Erro ao salvar: '+error.message,'error'); return; }
+    ['fisc-token-h','fisc-token-p','fisc-csc'].forEach(id=>{ if(g(id)) g(id).value=''; });
+    notify('Configuração fiscal salva!','success');
+    carregarConfigFiscal();
+  }catch(e){ notify('Erro ao salvar configuração fiscal.','error'); console.warn(e); }
+}
+
+/* Preenche APENAS os campos fiscais vazios do produto com padrões do Simples Nacional. */
+function sugerirPadraoFiscalSimples(){
+  const g = id => document.getElementById(id);
+  const setIfEmpty = (id,v) => { const el=g(id); if(el && !(el.value||'').trim()) el.value=v; };
+  setIfEmpty('p-cfop','5102');   // venda de mercadoria, dentro do estado
+  setIfEmpty('p-cst','102');     // CSOSN 102 — Simples Nacional sem crédito
+  setIfEmpty('p-origem','0');    // 0 - Nacional
+  setIfEmpty('p-unidade','UN');  // unidade
+  if(typeof notify==='function') notify('Padrões do Simples aplicados nos campos vazios. Confira com seu contador.','info',4000);
+}
 
 function popOSFiltros(){
   const t=document.getElementById('hf-tec');const c=document.getElementById('hf-cli');
