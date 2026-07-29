@@ -577,6 +577,9 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
 .ig{position:relative}.ig i{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--txt3);font-size:16px;pointer-events:none}.ig input{padding-left:34px}
 .modal-overlay{position:fixed;inset:0;background:rgba(15,10,30,.6);display:flex;align-items:center;justify-content:center;z-index:1000;opacity:0;pointer-events:none;transition:opacity var(--motion-base) var(--ease-standard);padding:14px}
 .modal-overlay.open{opacity:1;pointer-events:all;z-index:9999}
+/* Visualizador de impressão/PDF sempre acima de outros modais (ex.: aberto por cima do modal Documentos) */
+#modal-pdf-viewer.open{z-index:10050}
+#modal-docs-os.open{z-index:9990}
 .modal{background:var(--bg2);border-radius:var(--radius-lg);padding:26px;width:100%;max-width:500px;max-height:92vh;overflow-y:auto;transform:translateY(16px) scale(.98);transition:transform var(--motion-base) var(--ease-enter),opacity var(--motion-base);box-shadow:0 24px 64px rgba(15,10,30,.22),0 0 0 1px rgba(74,54,110,.06)}
 .modal-overlay.open .modal{transform:translateY(0) scale(1)}
 .modal.lg{max-width:720px}.modal.xl{max-width:960px}.modal.sm{max-width:380px}
@@ -2150,10 +2153,36 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
     <input class="l-inp" type="email" id="l-email" placeholder="seu@email.com">
     <label class="l-lbl">Senha</label>
     <input class="l-inp" type="password" id="l-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+    <div id="turnstile-box" style="margin:12px 0 0;justify-content:center;display:none"></div>
     <button class="l-btn" id="l-btn" onclick="doLogin()"><i class="ti ti-lock" style="font-size:17px"></i>Entrar</button>
+    <div style="text-align:center;margin-top:12px"><a href="javascript:void(0)" onclick="abrirRecuperarSenha()" style="font-size:12.5px;color:#9D8FC5;text-decoration:underline;cursor:pointer">Esqueci minha senha</a></div>
     <p style="text-align:center;font-size:11.5px;color:#9D8FC5;margin-top:16px">MISU SYS © 2025 — Todos os direitos reservados</p>
   </div>
 </div>
+
+<!-- RECUPERAR SENHA -->
+<div class="modal-overlay" id="modal-recuperar-senha">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-title" style="gap:8px"><i class="ti ti-lock-question" style="color:var(--pri)"></i> Recuperar senha</div>
+    <div style="font-size:12.5px;color:var(--txt2);margin:8px 0 14px">Informe seu e-mail. Enviaremos um link para você criar uma nova senha.</div>
+    <div class="fg"><label class="lbl">E-mail</label><input type="email" id="rec-email" placeholder="seu@email.com"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+      <button class="btn btn-out" onclick="closeModal('modal-recuperar-senha')">Cancelar</button>
+      <button class="btn btn-pri" id="rec-btn" onclick="enviarRecuperacaoSenha()"><i class="ti ti-mail"></i> Enviar link</button>
+    </div>
+  </div>
+</div>
+<!-- DEFINIR NOVA SENHA (retorno do link do e-mail) -->
+<div class="modal-overlay" id="modal-nova-senha" style="z-index:100001">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-title" style="gap:8px"><i class="ti ti-lock-check" style="color:var(--pri)"></i> Criar nova senha</div>
+    <div style="font-size:12.5px;color:var(--txt2);margin:8px 0 14px">Digite sua nova senha de acesso ao MISU SYS.</div>
+    <div class="fg"><label class="lbl">Nova senha</label><input type="password" id="ns-senha" placeholder="mínimo 6 caracteres"></div>
+    <div class="fg"><label class="lbl">Confirmar nova senha</label><input type="password" id="ns-senha2" placeholder="repita a senha"></div>
+    <button class="btn btn-pri" id="ns-btn" onclick="salvarNovaSenha()" style="width:100%;margin-top:6px"><i class="ti ti-device-floppy"></i> Salvar nova senha</button>
+  </div>
+</div>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback" async defer></script>
 
 <!-- TELA DE BLOQUEIO / ACESSO SUSPENSO (NOVO) -->
 <div class="modal-overlay" id="modal-termos-uso" style="z-index:100000;background:rgba(7,11,26,.85)">
@@ -6213,6 +6242,11 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
 
     <!-- Grid de tipos de documento -->
     <div class="doc-btn-grid">
+      <div class="doc-btn-card" onclick="copiarLinkClienteOS(_docOsAtual?.id)" style="border-color:var(--pri)">
+        <i class="ti ti-link" style="color:var(--pri)"></i>
+        <div class="doc-btn-nome">Link do Cliente</div>
+        <div class="doc-btn-desc">Copia o link público da OS (/os.html) para o cliente acompanhar status e garantia.</div>
+      </div>
       <div class="doc-btn-card" onclick="gerarContratoOS(_docOsAtual?.id)">
         <i class="ti ti-file-certificate"></i>
         <div class="doc-btn-nome">Contrato / Termo</div>
@@ -6665,10 +6699,13 @@ document.addEventListener('DOMContentLoaded',()=>{
   // Restauração de sessão: dispara AQUI (no DOMContentLoaded) em vez do final do arquivo,
   // para que o getSession() — que pode fazer refresh do token no servidor — comece o quanto
   // antes e não fique bloqueado aguardando o parser processar o restante do HTML.
+  // Recuperação de senha: captura o retorno do link do e-mail
+  const _recSenhaURL = location.hash.includes('type=recovery');
+  db.auth.onAuthStateChange((event)=>{ if(event==='PASSWORD_RECOVERY'){ _recuperandoSenha=true; abrirModalNovaSenha(); } });
   (async()=>{
     try{
       const {data:{session}}=await db.auth.getSession();
-      if(session?.user) await loadProfile(session.user);
+      if(session?.user && !_recSenhaURL && !_recuperandoSenha) await loadProfile(session.user);
       // ── MODO SUPORTE (impersonation vinda do admin) ──
       // O admin master abriu ?suporte=EMPRESA_ID&modo=leitura|total
       const _sp=new URLSearchParams(location.search);
@@ -7093,18 +7130,92 @@ function updateNavGroupVisibility(){
 }
 
 
+// ── Segurança do login ──────────────────────────────────────────────
+// CAPTCHA: cole aqui a "site key" do Cloudflare Turnstile para ATIVAR.
+// Vazio = desativado (login normal). Depois de preencher, ative também
+// em Supabase → Authentication → Settings → Bot & Abuse Protection.
+const CAPTCHA_SITE_KEY = "";
+let _turnstileWidgetId = null;
+let _loginFails = 0;         // trava suave (UX, não é segurança de verdade)
+let _loginLockUntil = 0;
+let _recuperandoSenha = false; // true quando o usuário voltou do link de recuperação
+
 async function doLogin(){
   const em=document.getElementById('l-email').value.trim();
   const pw=document.getElementById('l-pass').value;
   const err=document.getElementById('l-err');
   const btn=document.getElementById('l-btn');
   err.style.display='none';
+  const agora=Date.now();
+  if(_loginLockUntil>agora){
+    const seg=Math.ceil((_loginLockUntil-agora)/1000);
+    err.textContent=`Muitas tentativas. Aguarde ${seg}s e tente novamente.`;err.style.display='block';return;
+  }
   if(!em||!pw){err.textContent='Preencha e-mail e senha.';err.style.display='block';return;}
+
+  // CAPTCHA (só exige se a site key estiver configurada)
+  let captchaToken;
+  if(CAPTCHA_SITE_KEY && window.turnstile){
+    try{ captchaToken = window.turnstile.getResponse(_turnstileWidgetId); }catch(e){}
+    if(!captchaToken){ err.textContent='Confirme que você não é um robô.';err.style.display='block';return; }
+  }
+
   btn.disabled=true;btn.innerHTML='<div class="spinner" style="width:18px;height:18px;border-width:2px"></div>Entrando...';
-  const {data,error}=await db.auth.signInWithPassword({email:em,password:pw});
-  if(error){err.textContent='E-mail ou senha incorretos.';err.style.display='block';btn.disabled=false;btn.innerHTML='<i class="ti ti-lock" style="font-size:17px"></i>Entrar';return;}
+  const creds = captchaToken ? {email:em,password:pw,options:{captchaToken}} : {email:em,password:pw};
+  const {data,error}=await db.auth.signInWithPassword(creds);
+  if(error){
+    _loginFails++;
+    if(CAPTCHA_SITE_KEY && window.turnstile){ try{ window.turnstile.reset(_turnstileWidgetId); }catch(e){} }
+    if(_loginFails>=5){ _loginLockUntil=Date.now()+30000; _loginFails=0; err.textContent='Muitas tentativas. Aguarde 30 segundos antes de tentar de novo.'; }
+    else { err.textContent='E-mail ou senha incorretos.'; }
+    err.style.display='block';btn.disabled=false;btn.innerHTML='<i class="ti ti-lock" style="font-size:17px"></i>Entrar';return;
+  }
+  _loginFails=0;
   await loadProfile(data.user);
 }
+
+// ── RECUPERAÇÃO DE SENHA (Supabase Auth) ─────────────────────────────
+function abrirRecuperarSenha(){
+  const em=(document.getElementById('l-email')?.value||'').trim();
+  const inp=document.getElementById('rec-email'); if(inp) inp.value=em;
+  openModal('modal-recuperar-senha');
+}
+async function enviarRecuperacaoSenha(){
+  const em=(document.getElementById('rec-email')?.value||'').trim();
+  const btn=document.getElementById('rec-btn');
+  if(!em){ notify('Informe o e-mail.','warn'); return; }
+  if(btn){ btn.disabled=true; btn.innerHTML='<div class="spinner" style="width:16px;height:16px;border-width:2px"></div> Enviando...'; }
+  const { error } = await db.auth.resetPasswordForEmail(em, { redirectTo: location.origin });
+  if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-mail"></i> Enviar link'; }
+  if(error){ notify('Erro: '+error.message,'error'); return; }
+  closeModal('modal-recuperar-senha');
+  notify('Se este e-mail estiver cadastrado, enviamos um link de redefinição. Confira a caixa de entrada e o spam.','success',7000);
+}
+function abrirModalNovaSenha(){ openModal('modal-nova-senha'); }
+async function salvarNovaSenha(){
+  const p1=document.getElementById('ns-senha')?.value||'';
+  const p2=document.getElementById('ns-senha2')?.value||'';
+  const btn=document.getElementById('ns-btn');
+  if(p1.length<6){ notify('A senha deve ter ao menos 6 caracteres.','warn'); return; }
+  if(p1!==p2){ notify('As senhas não coincidem.','warn'); return; }
+  if(btn){ btn.disabled=true; btn.innerHTML='<div class="spinner" style="width:16px;height:16px;border-width:2px"></div> Salvando...'; }
+  const { error } = await db.auth.updateUser({ password: p1 });
+  if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-device-floppy"></i> Salvar nova senha'; }
+  if(error){ notify('Erro: '+error.message,'error'); return; }
+  _recuperandoSenha=false;
+  closeModal('modal-nova-senha');
+  notify('Senha alterada com sucesso!','success',6000);
+  history.replaceState(null,'',location.pathname+location.search); // limpa o token do link da URL
+  try{ const {data:{session}}=await db.auth.getSession(); if(session?.user) await loadProfile(session.user); }catch(e){}
+}
+// Renderiza o CAPTCHA (Turnstile) no login — só se a site key estiver configurada
+function renderTurnstile(){
+  if(!CAPTCHA_SITE_KEY) return;
+  const box=document.getElementById('turnstile-box');
+  if(!box || !window.turnstile) return;
+  try{ box.style.display='flex'; _turnstileWidgetId = window.turnstile.render(box, { sitekey: CAPTCHA_SITE_KEY }); }catch(e){ console.warn('Turnstile:',e); }
+}
+window.onloadTurnstileCallback = renderTurnstile;
 
 async function loadProfile(user){
   G.user=user;
@@ -13426,7 +13537,8 @@ function linkPublicoOS(o){
 }
 
 async function copiarLinkClienteOS(id){
-  let o=(G.os||[]).find(x=>x.id===id)||(G._osHistDev||[]).find(x=>x.id===id);
+  let o=(G.os||[]).find(x=>x.id===id)||(G._osHistDev||[]).find(x=>x.id===id)||(G._osHist||[]).find(x=>x.id===id)||((_docOsAtual&&_docOsAtual.id===id)?_docOsAtual:null);
+  if(!o){ const {data}=await db.from('ordens_servico').select('*').eq('id',id).maybeSingle(); o=data||null; }
   if(!o){notify('OS não encontrada.','warn');return;}
   // OS antiga sem token (migração X08 gera para todas, mas por garantia): gera e salva
   if(!o.token_publico){
@@ -14070,15 +14182,11 @@ async function abrirDocumentosOSHist(osId){
   }
   // Reutiliza a função principal (declarada mais abaixo, mas já existe no escopo global)
   // Injeta no _docOsAtual via timeout para garantir que está inicializado
-  setTimeout(()=>{
-    if(typeof _docOsAtual !== 'undefined'){
-      _docOsAtual = os;
-      if(typeof resetDocFormato==='function') resetDocFormato();
-      document.getElementById('modal-docs-titulo').textContent=`Documentos — OS ${os.numero}`;
-      document.getElementById('modal-docs-sub').textContent=`${os.aparelho} · ${os.cliente_nome} · Status: ${os.status}`;
-      openModal('modal-docs-os');
-    }
-  }, 0);
+  _docOsAtual = os;
+  if(typeof resetDocFormato==='function') resetDocFormato();
+  document.getElementById('modal-docs-titulo').textContent=`Documentos — OS ${os.numero}`;
+  document.getElementById('modal-docs-sub').textContent=`${os.aparelho} · ${os.cliente_nome} · Status: ${os.status}`;
+  openModal('modal-docs-os');
 }
 
 // ── AUTOCOMPLETE DE PEÇAS NA OS ─────────────────────────────────
