@@ -580,6 +580,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
 /* Visualizador de impressão/PDF sempre acima de outros modais (ex.: aberto por cima do modal Documentos) */
 #modal-pdf-viewer.open{z-index:10050}
 #modal-docs-os.open{z-index:9990}
+#modal-nfce-result.open{z-index:10000}
 .modal{background:var(--bg2);border-radius:var(--radius-lg);padding:26px;width:100%;max-width:500px;max-height:92vh;overflow-y:auto;transform:translateY(16px) scale(.98);transition:transform var(--motion-base) var(--ease-enter),opacity var(--motion-base);box-shadow:0 24px 64px rgba(15,10,30,.22),0 0 0 1px rgba(74,54,110,.06)}
 .modal-overlay.open .modal{transform:translateY(0) scale(1)}
 .modal.lg{max-width:720px}.modal.xl{max-width:960px}.modal.sm{max-width:380px}
@@ -5067,9 +5068,17 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
   <p style="font-family:'Syne',sans-serif;font-weight:800;font-size:26px;color:var(--pri)" id="vok-total"></p>
   <p style="font-size:13px;color:var(--success);font-weight:600;margin-top:4px" id="vok-troco"></p>
   <div class="modal-footer" style="justify-content:center;margin-top:18px;flex-wrap:wrap">
+    <button class="btn btn-pri" onclick="emitirNFCeVenda()"><i class="ti ti-file-invoice"></i>Emitir NFC-e</button>
     <button class="btn btn-out" onclick="gerarContratoVenda()"><i class="ti ti-file-certificate"></i>Gerar contrato</button>
     <button class="btn btn-out" onclick="closeModal('modal-venda-ok')"><i class="ti ti-plus"></i>Nova Venda</button>
   </div>
+</div></div>
+
+<!-- Resultado da NFC-e -->
+<div class="modal-overlay" id="modal-nfce-result"><div class="modal sm">
+  <div class="modal-title" style="font-size:17px"><i class="ti ti-file-invoice" style="color:var(--pri)"></i> Nota Fiscal (NFC-e)</div>
+  <div id="nfce-res-body" style="margin-top:12px"></div>
+  <div class="modal-footer" style="margin-top:16px"><button class="btn btn-out" onclick="closeModal('modal-nfce-result')">Fechar</button></div>
 </div></div>
 
 <!-- QR Asaas (PDV) -->
@@ -7138,7 +7147,28 @@ const CAPTCHA_SITE_KEY = "";
 let _turnstileWidgetId = null;
 let _loginFails = 0;         // trava suave (UX, não é segurança de verdade)
 let _loginLockUntil = 0;
+let _lockTimer = null;
 let _recuperandoSenha = false; // true quando o usuário voltou do link de recuperação
+
+// Mostra a trava com contagem regressiva ao vivo (atualiza a cada 1s).
+function mostrarTravaLogin(){
+  const err=document.getElementById('l-err');
+  const btn=document.getElementById('l-btn');
+  if(_lockTimer){ clearInterval(_lockTimer); _lockTimer=null; }
+  function tick(){
+    const seg=Math.ceil((_loginLockUntil-Date.now())/1000);
+    if(seg<=0){
+      clearInterval(_lockTimer); _lockTimer=null;
+      if(err) err.style.display='none';
+      if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-lock" style="font-size:17px"></i>Entrar'; }
+      return;
+    }
+    if(err){ err.textContent=`Muitas tentativas. Aguarde ${seg}s e tente novamente.`; err.style.display='block'; }
+    if(btn) btn.disabled=true;
+  }
+  tick();
+  _lockTimer=setInterval(tick,1000);
+}
 
 async function doLogin(){
   const em=document.getElementById('l-email').value.trim();
@@ -7147,10 +7177,7 @@ async function doLogin(){
   const btn=document.getElementById('l-btn');
   err.style.display='none';
   const agora=Date.now();
-  if(_loginLockUntil>agora){
-    const seg=Math.ceil((_loginLockUntil-agora)/1000);
-    err.textContent=`Muitas tentativas. Aguarde ${seg}s e tente novamente.`;err.style.display='block';return;
-  }
+  if(_loginLockUntil>agora){ mostrarTravaLogin(); return; }
   if(!em||!pw){err.textContent='Preencha e-mail e senha.';err.style.display='block';return;}
 
   // CAPTCHA (só exige se a site key estiver configurada)
@@ -7166,8 +7193,8 @@ async function doLogin(){
   if(error){
     _loginFails++;
     if(CAPTCHA_SITE_KEY && window.turnstile){ try{ window.turnstile.reset(_turnstileWidgetId); }catch(e){} }
-    if(_loginFails>=5){ _loginLockUntil=Date.now()+30000; _loginFails=0; err.textContent='Muitas tentativas. Aguarde 30 segundos antes de tentar de novo.'; }
-    else { err.textContent='E-mail ou senha incorretos.'; }
+    if(_loginFails>=5){ _loginLockUntil=Date.now()+30000; _loginFails=0; mostrarTravaLogin(); return; }
+    err.textContent='E-mail ou senha incorretos.';
     err.style.display='block';btn.disabled=false;btn.innerHTML='<i class="ti ti-lock" style="font-size:17px"></i>Entrar';return;
   }
   _loginFails=0;
@@ -10642,6 +10669,7 @@ async function finalizeSale(){
     await offAddVenda(venda);
     await updatePendingBadge();
     G.vendas.unshift({...venda,criado_em:new Date().toISOString(),_pendente_offline:true});
+    _ultimaVendaId = null;
     document.getElementById('vok-info').textContent=`${G.cart.length} item(s) · ${cliNome} (offline)`;
     document.getElementById('vok-total').textContent=fmt(total);
     document.getElementById('vok-troco').textContent=troco>0?`Troco: ${fmt(troco)}`:'';
@@ -10783,6 +10811,7 @@ async function finalizeSale(){
     numero:'',
     marca:(G.cart&&G.cart[0]&&(G.cart[0].marca||''))||''
   };
+  _ultimaVendaId = vendaInserida?.id || null;
   document.getElementById('vok-info').textContent=`${G.cart.length} item(s) · ${cliNome}`;
   document.getElementById('vok-total').textContent=fmt(total);
   document.getElementById('vok-troco').textContent=troco>0?`Troco: ${fmt(troco)}`:'';
@@ -11305,6 +11334,16 @@ function verDetalheVenda(id){
   const fmLabels={dinheiro:'Dinheiro',pix:'Pix',cartao:'Cartão',crediario:'Crediário',misto:'Misto'};
   const itensHTML=(v.itens||[]).map(i=>`<tr><td>${esc(i.nome||'')}</td><td style="text-align:center">${i.qty}</td><td style="text-align:right">${fmt(i.preco)}</td><td style="text-align:right;font-weight:700">${fmt((i.preco||0)*(i.qty||1))}</td></tr>`).join('');
   const pgsHTML=(v.pagamentos||[{forma:v.pagamento,valor:v.total}]).map(p=>`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span>${fmLabels[p.forma]||p.forma}${p.parcelas>1?' ('+p.parcelas+'x)':''}</span><b>${fmt(p.valor)}</b></div>`).join('');
+  const _st=v.nfce_status||'nao_emitida';
+  const _stLbl={nao_emitida:'Não emitida',autorizada:'Autorizada ✓',cancelada:'Cancelada',processando_autorizacao:'Processando',erro:'Erro'}[_st]||_st;
+  const _emit=_st==='autorizada';
+  const fiscalHTML=`<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
+      <div style="font-size:11.5px;color:var(--txt3);margin-bottom:7px">NFC-e: <b style="color:${_emit?'var(--success)':'var(--txt2)'}">${_stLbl}</b>${v.nfce_numero?(' · nº '+v.nfce_numero):''}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${(_st==='nao_emitida'||_st==='erro')?`<button class="btn btn-pri btn-xs" onclick="emitirNFCePorId('${v.id}')"><i class="ti ti-file-invoice"></i> Emitir NFC-e</button>`:''}
+        ${_emit?`<button class="btn btn-out btn-xs" onclick="consultarNFCePorId('${v.id}')"><i class="ti ti-eye"></i> Ver nota</button><button class="btn btn-out btn-xs" onclick="enviarNFCeEmailPorId('${v.id}')"><i class="ti ti-mail"></i> Email</button><button class="btn btn-danger btn-xs" onclick="cancelarNFCePorId('${v.id}')"><i class="ti ti-ban"></i> Cancelar</button>`:''}
+      </div>
+    </div>`;
   confirmAct(`Venda — ${String(v.id||'').slice(-6).toUpperCase()}`,
     `<div style="font-size:13px">
       <div style="margin-bottom:8px;color:var(--txt3)">${fmtDT(v.criado_em)} · Op: ${v.operador_nome||'—'} · Cliente: ${v.cliente_nome||'Consumidor Final'}</div>
@@ -11316,6 +11355,7 @@ function verDetalheVenda(id){
       <div style="display:flex;justify-content:space-between;font-weight:700"><span>Total</span><span>${fmt(v.total)}</span></div>
       ${v.troco>0?`<div style="display:flex;justify-content:space-between;color:var(--success)"><span>Troco</span><span>${fmt(v.troco)}</span></div>`:''}
       ${v.garantia_dias>0?`<div style="color:var(--txt3);font-size:11px;margin-top:6px"><i class="ti ti-shield"></i> Garantia: ${v.garantia_dias} dias</div>`:''}
+      ${fiscalHTML}
     </div>`,
     ()=>imprimirCupomVenda(id)
   );
@@ -24228,8 +24268,89 @@ let G_CONTRATOS_MODELOS = [];
 let _cgContexto = null;      // contexto (venda/os) p/ gerar
 let _cgFmt = 'a4';
 let _ultimaVendaContrato = null;  // resumo da última venda
+let _ultimaVendaId = null;        // id da última venda ONLINE (para emitir NFC-e)
+let _nfceResult = null;           // último retorno de NFC-e
+let _nfceVendaId = null;          // venda em foco nas ações de NFC-e
 
 // Botão "Gerar contrato" no modal de Venda Concluída
+async function emitirNFCePorId(id){
+  if(!id){ notify('Venda não identificada.','warn'); return; }
+  _nfceVendaId=id;
+  notify('Emitindo NFC-e…','info',2000);
+  try{
+    const { data, error } = await db.functions.invoke('emitir-nfce', { body:{ venda_id:id } });
+    if(error){ notify('Falha na emissão: '+(error.message||'erro'),'error',6000); return; }
+    if(data && data.erro){ notify('NFC-e: '+data.erro,'error',7000); return; }
+    _nfceResult = data || null;
+    _atualizaVendaNFCe(id, data);
+    mostrarResultadoNFCe(data||{});
+  }catch(e){ notify('Erro ao emitir NFC-e.','error'); console.warn(e); }
+}
+function _atualizaVendaNFCe(id, data){
+  if(!data) return;
+  const v=(G.vendas||[]).find(x=>x.id===id); if(!v) return;
+  v.nfce_status = data.ok ? 'autorizada' : (data.status || v.nfce_status);
+  if(data.numero) v.nfce_numero=String(data.numero);
+  if(data.chave) v.nfce_chave=data.chave;
+  if(typeof renderHistoricoVendas==='function'){ try{ renderHistoricoVendas(); }catch(e){} }
+}
+async function consultarNFCePorId(id){
+  if(!id) return; _nfceVendaId=id; notify('Consultando NFC-e…','info',1500);
+  try{
+    const { data, error } = await db.functions.invoke('consultar-nfce', { body:{ venda_id:id } });
+    if(error||(data&&data.erro)){ notify('Falha: '+((error&&error.message)||(data&&data.erro)||''),'error',6000); return; }
+    _nfceResult=data||null; _atualizaVendaNFCe(id,data); mostrarResultadoNFCe(data||{});
+  }catch(e){ notify('Erro ao consultar NFC-e.','error'); }
+}
+async function cancelarNFCePorId(id){
+  if(!id) return;
+  const just=prompt('Justificativa do cancelamento (15 a 255 caracteres):');
+  if(just===null) return;
+  if(just.trim().length<15){ notify('A justificativa precisa de ao menos 15 caracteres.','warn'); return; }
+  try{
+    const { data, error } = await db.functions.invoke('cancelar-nfce', { body:{ venda_id:id, justificativa:just.trim() } });
+    if(error||(data&&data.erro)){ notify('Falha ao cancelar: '+((error&&error.message)||(data&&data.erro)||''),'error',6000); return; }
+    if(data&&data.ok){ const v=(G.vendas||[]).find(x=>x.id===id); if(v)v.nfce_status='cancelada'; if(typeof renderHistoricoVendas==='function'){try{renderHistoricoVendas();}catch(e){}} notify('NFC-e cancelada com sucesso.','success'); }
+    else notify('Não cancelada: '+((data&&(data.mensagem||data.status))||'verifique a janela de 30 minutos'),'warn',7000);
+  }catch(e){ notify('Erro ao cancelar NFC-e.','error'); }
+}
+async function emitirNFCeVenda(){
+  if(!_ultimaVendaId){ notify('NFC-e só para venda online (esta ainda não sincronizou).','warn',5000); return; }
+  const btn=document.querySelector("#modal-venda-ok button[onclick=\"emitirNFCeVenda()\"]");
+  if(btn){ btn.disabled=true; btn.innerHTML='<div class="spinner" style="width:15px;height:15px;border-width:2px"></div> Emitindo...'; }
+  try{ await emitirNFCePorId(_ultimaVendaId); }
+  finally{ if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-file-invoice"></i>Emitir NFC-e'; } }
+}
+
+function mostrarResultadoNFCe(d){
+  const ok=!!d.ok;
+  const box=document.getElementById('nfce-res-body'); if(!box) return;
+  box.innerHTML =
+    `<div style="font-weight:700;color:${ok?'var(--success)':'var(--warn)'};margin-bottom:6px">${ok?'NFC-e autorizada ✓':'Status: '+(d.status||'—')}</div>`+
+    (d.numero?`<div style="font-size:12.5px">Número: <b>${d.numero}</b>${d.serie?(' · Série '+d.serie):''}</div>`:'')+
+    (d.chave?`<div style="font-size:11px;color:var(--txt3);word-break:break-all;margin-top:2px">Chave: ${d.chave}</div>`:'')+
+    (d.mensagem?`<div style="font-size:12px;color:var(--txt2);margin-top:6px">${d.mensagem}</div>`:'')+
+    `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">`+
+      (d.danfe?`<a class="btn btn-pri" target="_blank" rel="noopener" href="${d.danfe}"><i class="ti ti-printer"></i>DANFE</a>`:'')+
+      (d.xml?`<a class="btn btn-out" target="_blank" rel="noopener" href="${d.xml}"><i class="ti ti-file-code"></i>XML</a>`:'')+
+      (d.qrcode?`<a class="btn btn-out" target="_blank" rel="noopener" href="${d.qrcode}"><i class="ti ti-qrcode"></i>QR Code</a>`:'')+
+      (ok?`<button class="btn btn-out" onclick="enviarNFCeEmail()"><i class="ti ti-mail"></i>Enviar por email</button>`:'')+
+    `</div>`;
+  openModal('modal-nfce-result');
+}
+
+async function enviarNFCeEmailPorId(id){
+  if(!id){ notify('Venda não identificada.','warn'); return; }
+  const email=prompt('Enviar a NFC-e para qual email?');
+  if(!email) return;
+  try{
+    const { data, error } = await db.functions.invoke('enviar-nfce-email', { body:{ venda_id:id, emails:[email.trim()] } });
+    if(error || (data && data.erro)){ notify('Falha ao enviar: '+((error&&error.message)||data.erro||''),'error',6000); return; }
+    notify('NFC-e enviada para '+email.trim(),'success');
+  }catch(e){ notify('Erro ao enviar email.','error'); }
+}
+async function enviarNFCeEmail(){ await enviarNFCeEmailPorId(_nfceVendaId||_ultimaVendaId); }
+
 function gerarContratoVenda(){
   if(!_ultimaVendaContrato){ notify('Faça uma venda primeiro.','info'); return; }
   abrirGerarContrato(_ultimaVendaContrato);
