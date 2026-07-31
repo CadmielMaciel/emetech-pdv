@@ -2715,7 +2715,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
           <select id="orc-filter" onchange="renderOrcamentos()" style="padding:7px 10px;font-size:12.5px;border-radius:8px;width:auto">
             <option value="">Todos os status</option><option value="aberto">Aberto</option><option value="aprovado">Aprovado</option><option value="convertido">Convertido</option><option value="recusado">Recusado</option><option value="expirado">Expirado</option>
           </select>
-          <button class="btn btn-pri" onclick="abrirModalOrcamento()"><i class="ti ti-plus"></i>Novo Orçamento</button>
+          <button class="btn btn-pri" onclick="abrirTipoOrcamento()"><i class="ti ti-plus"></i>Novo Orçamento</button>
         </div>
         <div class="card" style="padding:0"><div class="tw"><table>
           <thead><tr><th>#</th><th>Cliente</th><th>Operador</th><th>Total</th><th>Validade</th><th>Status</th><th>Ações</th></tr></thead>
@@ -4877,6 +4877,99 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
     <button class="btn btn-out" onclick="closeModal('modal-orc')">Cancelar</button>
     <button class="btn btn-success btn-sm" onclick="saveOrcamento('aberto')"><i class="ti ti-device-floppy"></i>Salvar</button>
     <button class="btn btn-pri" onclick="converterOrcamento()"><i class="ti ti-shopping-cart"></i>Converter em Venda</button>
+  </div>
+</div></div>
+
+<!-- 6.1 — Escolha do tipo de orçamento -->
+<div class="modal-overlay" id="modal-orc-tipo"><div class="modal">
+  <div class="modal-title"><i class="ti ti-file-invoice"></i>Qual tipo de orçamento?</div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px">
+    <div onclick="escolherTipoOrc('produto')" style="flex:1;min-width:180px;cursor:pointer;border:1.5px solid var(--border);border-radius:12px;padding:18px;text-align:center;transition:all .15s" onmouseover="this.style.borderColor='var(--pri)';this.style.background='var(--pri-light)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='transparent'">
+      <div style="font-size:30px">🛒</div>
+      <div style="font-weight:700;font-size:14.5px;margin-top:6px">Produto</div>
+      <div style="font-size:12px;color:var(--txt3);margin-top:3px">Venda de produtos, peças ou acessórios.</div>
+    </div>
+    <div onclick="escolherTipoOrc('assistencia')" style="flex:1;min-width:180px;cursor:pointer;border:1.5px solid var(--border);border-radius:12px;padding:18px;text-align:center;transition:all .15s" onmouseover="this.style.borderColor='var(--pri)';this.style.background='var(--pri-light)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='transparent'">
+      <div style="font-size:30px">🔧</div>
+      <div style="font-weight:700;font-size:14.5px;margin-top:6px">Assistência Técnica</div>
+      <div style="font-size:12px;color:var(--txt3);margin-top:3px">Aparelho precisa de análise e possível reparo.</div>
+    </div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-out" onclick="closeModal('modal-orc-tipo')">Cancelar</button></div>
+</div></div>
+
+<!-- 6.2 — Triagem de assistência (balconista) -->
+<div class="modal-overlay" id="modal-orc-assist"><div class="modal lg">
+  <div class="modal-title"><i class="ti ti-tool"></i><span id="orca-ttl">Novo Orçamento — Assistência</span></div>
+  <input type="hidden" id="orca-id">
+  <div class="g2">
+    <div class="fg"><label class="lbl">Cliente</label><select id="orca-cli"></select></div>
+    <div class="fg"><label class="lbl">Urgência</label><select id="orca-urg"><option value="normal">Normal</option><option value="baixa">Baixa</option><option value="alta">Alta</option></select></div>
+  </div>
+  <div class="g2">
+    <div class="fg"><label class="lbl">Aparelho (marca / modelo)</label><input id="orca-aparelho" placeholder="Ex.: iPhone 11 128GB"></div>
+    <div class="fg"><label class="lbl">IMEI / Série</label><input id="orca-imei" placeholder="Opcional"></div>
+  </div>
+  <div class="fg"><label class="lbl">Sintoma relatado pelo cliente</label><textarea id="orca-sintoma" rows="2" placeholder="O que o cliente relatou..."></textarea></div>
+  <div class="g2">
+    <div class="fg"><label class="lbl">Condição visual</label><input id="orca-cond" placeholder="Ex.: tela trincada, riscos na traseira"></div>
+    <div class="fg"><label class="lbl">Acessórios entregues</label><input id="orca-acess" placeholder="Ex.: capa, carregador, chip"></div>
+  </div>
+  <div class="g2">
+    <div class="fg"><label class="lbl">Validade</label><input type="date" id="orca-val"></div>
+    <div class="fg"><label class="lbl">Estimativa preliminar (R$)</label><input type="number" step="0.01" id="orca-estim" placeholder="Opcional"></div>
+  </div>
+  <div style="background:var(--amb-light,rgba(245,158,11,.12));border:1px solid var(--amb,#f59e0b);border-radius:8px;padding:9px 12px;font-size:11.5px;color:var(--txt2);margin-top:2px">
+    <i class="ti ti-alert-triangle" style="color:var(--amb,#f59e0b)"></i> Valor acima é <b>ESTIMATIVA PRELIMINAR</b>. O diagnóstico e o orçamento final são feitos pelo técnico.
+  </div>
+  <div class="fg" style="margin-top:8px"><label class="lbl">Observação da triagem</label><textarea id="orca-obs" rows="2" placeholder="Observações internas da triagem..."></textarea></div>
+  <div class="modal-footer">
+    <button class="btn btn-out" onclick="closeModal('modal-orc-assist')">Cancelar</button>
+    <button class="btn btn-pri btn-sm" onclick="saveOrcAssist()"><i class="ti ti-send"></i>Enviar para análise técnica</button>
+  </div>
+</div></div>
+
+<!-- 6.3 — Análise técnica do orçamento -->
+<div class="modal-overlay" id="modal-orc-tecnico"><div class="modal lg">
+  <div class="modal-title"><i class="ti ti-microscope"></i><span id="orctec-ttl">Análise técnica</span></div>
+  <input type="hidden" id="orctec-id">
+  <div id="orctec-info" style="background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:11px 13px;font-size:12.5px;margin-bottom:10px"></div>
+
+  <div class="fg"><label class="lbl">Diagnóstico</label><textarea id="orctec-diag" rows="2" placeholder="Causa identificada..."></textarea></div>
+  <div class="fg"><label class="lbl">Testes realizados</label><textarea id="orctec-testes" rows="2" placeholder="O que foi testado..."></textarea></div>
+
+  <div class="ms">Peças necessárias</div>
+  <div style="display:flex;gap:7px;margin-bottom:8px">
+    <select id="orctec-prod-sel" style="flex:2;font-size:12.5px;padding:7px 9px;border-radius:7px"><option value="">Selecionar peça...</option></select>
+    <input type="number" id="orctec-qty" value="1" min="1" style="width:60px;padding:7px;font-size:12.5px;border-radius:7px;text-align:center">
+    <button class="btn btn-out btn-sm" onclick="addTecPeca()"><i class="ti ti-plus"></i></button>
+  </div>
+  <div id="orctec-pecas-list"></div>
+
+  <div class="fg"><label class="lbl">Serviços / mão de obra (descrição)</label><input id="orctec-serv" placeholder="Ex.: troca de tela + calibração"></div>
+  <div class="g2">
+    <div class="fg"><label class="lbl">Mão de obra (R$)</label><input type="number" step="0.01" id="orctec-mao" value="0" oninput="calcTecValor()"></div>
+    <div class="fg"><label class="lbl">Custo estimado interno (R$)</label><input type="number" step="0.01" id="orctec-custo" value="0"></div>
+  </div>
+  <div class="g2">
+    <div class="fg"><label class="lbl">Prazo (dias)</label><input type="number" id="orctec-prazo" value="3"></div>
+    <div class="fg"><label class="lbl">Garantia (dias)</label><input type="number" id="orctec-gar" value="90"></div>
+  </div>
+  <div style="display:flex;justify-content:space-between;align-items:center;background:var(--pri-light);border-radius:9px;padding:10px 13px;margin-top:4px">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:12.5px;color:var(--txt2)">Valor ao cliente (R$)</span>
+      <input type="number" step="0.01" id="orctec-valor" value="0" style="width:110px;padding:5px 8px;font-size:14px;font-weight:700;text-align:right;border-radius:6px">
+    </div>
+    <div style="font-size:11.5px;color:var(--txt3)">sugestão: <b id="orctec-sug">R$ 0,00</b> <a href="#" onclick="aplicarSugTec();return false" style="color:var(--pri)">usar</a></div>
+  </div>
+  <div class="g2" style="margin-top:8px">
+    <div class="fg"><label class="lbl">Observação interna</label><textarea id="orctec-obsint" rows="2" placeholder="Só para a equipe..."></textarea></div>
+    <div class="fg"><label class="lbl">Observação para o cliente</label><textarea id="orctec-obscli" rows="2" placeholder="Aparece na aprovação..."></textarea></div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-out" onclick="closeModal('modal-orc-tecnico')">Cancelar</button>
+    <button class="btn btn-out btn-sm" onclick="saveTecnicoOrc(false)"><i class="ti ti-device-floppy"></i>Salvar rascunho</button>
+    <button class="btn btn-success btn-sm" onclick="saveTecnicoOrc(true)"><i class="ti ti-check"></i>Confirmar orçamento técnico</button>
   </div>
 </div></div>
 
@@ -10869,6 +10962,228 @@ function abrirModalOrcamento(){
   openModal('modal-orc');
 }
 
+/* 6.1 — seletor de tipo antes de abrir o formulário */
+function abrirTipoOrcamento(){ openModal('modal-orc-tipo'); }
+function escolherTipoOrc(t){
+  closeModal('modal-orc-tipo');
+  if(t==='assistencia') abrirAssistOrc();
+  else abrirModalOrcamento();
+}
+
+/* 6.2 — triagem da balconista (assistência técnica) */
+function abrirAssistOrc(id){
+  popSelects();
+  const set=(k,v)=>{const e=document.getElementById(k); if(e) e.value=v;};
+  const d=new Date(); d.setDate(d.getDate()+15);
+  if(id){
+    const o=G.orcamentos.find(x=>x.id===id); if(!o){notify('Orçamento não encontrado!','error');return;}
+    document.getElementById('orca-ttl').textContent='Editar triagem — #'+pad(o.numero||0);
+    set('orca-id',o.id); set('orca-aparelho',o.aparelho||''); set('orca-imei',o.imei||'');
+    set('orca-sintoma',o.sintoma||''); set('orca-cond',o.condicao_visual||''); set('orca-acess',o.acessorios||'');
+    set('orca-urg',o.urgencia||'normal'); set('orca-val',o.validade||d.toISOString().split('T')[0]);
+    set('orca-estim',o.estimativa_preliminar??''); set('orca-obs',o.observacoes||'');
+    const cli=document.getElementById('orca-cli'); if(cli&&o.cliente_id) cli.value=o.cliente_id;
+  } else {
+    document.getElementById('orca-ttl').textContent='Novo Orçamento — Assistência';
+    ['orca-id','orca-aparelho','orca-imei','orca-sintoma','orca-cond','orca-acess','orca-estim','orca-obs'].forEach(k=>set(k,''));
+    set('orca-urg','normal'); set('orca-val',d.toISOString().split('T')[0]);
+  }
+  openModal('modal-orc-assist');
+}
+
+async function saveOrcAssist(){
+  const g=k=>document.getElementById(k);
+  const aparelho=(g('orca-aparelho').value||'').trim();
+  const sintoma=(g('orca-sintoma').value||'').trim();
+  if(!aparelho){notify('Informe o aparelho.','error');return;}
+  if(!sintoma){notify('Descreva o sintoma relatado.','error');return;}
+  const cliSel=g('orca-cli');
+  const editId=g('orca-id').value;
+  const payload={
+    tipo:'assistencia', status:'aguardando_analise',
+    cliente_id:cliSel?.value||null,
+    cliente_nome:cliSel?.options[cliSel.selectedIndex]?.text||'Consumidor Final',
+    aparelho, imei:(g('orca-imei').value||'').trim()||null, sintoma,
+    condicao_visual:(g('orca-cond').value||'').trim()||null,
+    acessorios:(g('orca-acess').value||'').trim()||null,
+    urgencia:g('orca-urg').value||'normal',
+    estimativa_preliminar:parseFloat(g('orca-estim').value)||null,
+    validade:g('orca-val').value||null,
+    observacoes:(g('orca-obs').value||'').trim()||null,
+    itens:[], subtotal:0, desconto_pct:0, total:0
+  };
+  setLoad(true);
+  if(editId){
+    const {data,error}=await db.from('orcamentos').update(payload).eq('id',editId).select().single();
+    setLoad(false);
+    if(error){notify('Erro: '+error.message,'error');return;}
+    const idx=G.orcamentos.findIndex(o=>o.id===editId); if(idx>=0)G.orcamentos[idx]=data;
+    closeModal('modal-orc-assist');renderOrcamentos();notify('Triagem atualizada!');
+  } else {
+    const ins={...payload,empresa_id:EID(),operador_id:G.profile.id,operador_nome:G.profile.nome};
+    const {data,error}=await db.from('orcamentos').insert(ins).select().single();
+    setLoad(false);
+    if(error){notify('Erro: '+error.message,'error');return;}
+    G.orcamentos.unshift(data);closeModal('modal-orc-assist');renderOrcamentos();
+    notify('Enviado para análise técnica!','success');
+  }
+}
+
+/* 6.3 — Análise técnica */
+function abrirTecnicoOrc(id){
+  const o=G.orcamentos.find(x=>x.id===id); if(!o){notify('Orçamento não encontrado!','error');return;}
+  G.orcTecId=id;
+  document.getElementById('orctec-ttl').textContent='Análise técnica — #'+pad(o.numero||0);
+  const urg={alta:'🔴 Alta',baixa:'🟢 Baixa',normal:'🟡 Normal'}[o.urgencia||'normal']||o.urgencia;
+  document.getElementById('orctec-info').innerHTML=
+    `<div style="font-weight:700;margin-bottom:4px">${esc(o.cliente_nome||'')} · ${esc(o.aparelho||'')}</div>
+     <div style="color:var(--txt2)"><b>Sintoma:</b> ${esc(o.sintoma||'—')}</div>
+     ${o.imei?`<div style="color:var(--txt2)"><b>IMEI:</b> ${esc(o.imei)}</div>`:''}
+     ${o.condicao_visual?`<div style="color:var(--txt2)"><b>Condição:</b> ${esc(o.condicao_visual)}</div>`:''}
+     ${o.acessorios?`<div style="color:var(--txt2)"><b>Acessórios:</b> ${esc(o.acessorios)}</div>`:''}
+     <div style="color:var(--txt2)"><b>Urgência:</b> ${urg}${o.estimativa_preliminar?` · <b>Estimativa preliminar:</b> ${fmt(o.estimativa_preliminar)}`:''}</div>
+     ${o.observacoes?`<div style="color:var(--txt3);margin-top:3px">Triagem: ${esc(o.observacoes)}</div>`:''}`;
+  // peças disponíveis
+  const sel=document.getElementById('orctec-prod-sel');
+  if(sel) sel.innerHTML='<option value="">Selecionar peça...</option>'+(G.produtos||[]).filter(p=>p.status==='ativo').map(p=>`<option value="${p.id}">${esc(p.nome)} — ${fmt(p.preco)}</option>`).join('');
+  G.orcTecPecas=(o.pecas||[]).map(i=>({id:i.id,nome:i.nome,preco:Number(i.preco)||0,qty:Number(i.qty)||1}));
+  const set=(k,v)=>{const e=document.getElementById(k); if(e) e.value=v;};
+  set('orctec-id',o.id); set('orctec-diag',o.diagnostico||''); set('orctec-testes',o.testes||'');
+  set('orctec-serv',o.servicos||''); set('orctec-mao',o.mao_obra??0); set('orctec-custo',o.custo_estimado??0);
+  set('orctec-valor',o.valor??0); set('orctec-prazo',o.prazo_dias??3); set('orctec-gar',o.garantia_dias??90);
+  set('orctec-obsint',o.obs_interna||''); set('orctec-obscli',o.obs_cliente||'');
+  renderTecPecas(); calcTecValor();
+  openModal('modal-orc-tecnico');
+}
+function addTecPeca(){
+  const sel=document.getElementById('orctec-prod-sel');
+  const qty=parseInt(document.getElementById('orctec-qty').value)||1;
+  const id=sel.value; if(!id){notify('Selecione uma peça','warn');return;}
+  const p=(G.produtos||[]).find(x=>x.id===id); if(!p)return;
+  G.orcTecPecas=G.orcTecPecas||[];
+  const ex=G.orcTecPecas.find(x=>x.id===id);
+  if(ex)ex.qty+=qty; else G.orcTecPecas.push({id,nome:p.nome,preco:Number(p.preco)||0,qty});
+  sel.value=''; document.getElementById('orctec-qty').value=1;
+  renderTecPecas(); calcTecValor();
+}
+function renderTecPecas(){
+  const c=document.getElementById('orctec-pecas-list'); if(!c)return;
+  const lst=G.orcTecPecas||[];
+  c.innerHTML=lst.length===0?'<div style="text-align:center;padding:12px;color:var(--txt3);font-size:12.5px">Nenhuma peça</div>':lst.map((i,idx)=>`<div style="display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 10px;margin-bottom:5px">
+    <div style="flex:1;font-size:12.5px;font-weight:600">${esc(i.nome)}</div>
+    <div class="qty-ctrl"><div class="qb" onclick="G.orcTecPecas[${idx}].qty=Math.max(1,G.orcTecPecas[${idx}].qty-1);renderTecPecas();calcTecValor()">−</div><div class="qn">${i.qty}</div><div class="qb" onclick="G.orcTecPecas[${idx}].qty++;renderTecPecas();calcTecValor()">+</div></div>
+    <div style="font-weight:700;font-size:12.5px;color:var(--pri)">${fmt(i.preco*i.qty)}</div>
+    <button class="qb" onclick="G.orcTecPecas.splice(${idx},1);renderTecPecas();calcTecValor()" style="border-color:var(--danger);color:var(--danger)"><i class="ti ti-x" style="font-size:10px"></i></button>
+  </div>`).join('');
+}
+function _tecSugestao(){
+  const pecas=(G.orcTecPecas||[]).reduce((s,i)=>s+i.preco*i.qty,0);
+  const mao=parseFloat(document.getElementById('orctec-mao')?.value)||0;
+  return pecas+mao;
+}
+function calcTecValor(){ const e=document.getElementById('orctec-sug'); if(e) e.textContent=fmt(_tecSugestao()); }
+function aplicarSugTec(){ const e=document.getElementById('orctec-valor'); if(e) e.value=_tecSugestao().toFixed(2); }
+
+async function saveTecnicoOrc(confirmar){
+  const id=document.getElementById('orctec-id').value; if(!id)return;
+  const g=k=>document.getElementById(k);
+  const valor=parseFloat(g('orctec-valor').value)||0;
+  if(confirmar && valor<=0){notify('Informe o valor ao cliente antes de confirmar.','error');return;}
+  const payload={
+    diagnostico:(g('orctec-diag').value||'').trim()||null,
+    testes:(g('orctec-testes').value||'').trim()||null,
+    pecas:G.orcTecPecas||[],
+    servicos:(g('orctec-serv').value||'').trim()||null,
+    mao_obra:parseFloat(g('orctec-mao').value)||0,
+    custo_estimado:parseFloat(g('orctec-custo').value)||0,
+    valor, total:valor,
+    prazo_dias:parseInt(g('orctec-prazo').value)||null,
+    garantia_dias:parseInt(g('orctec-gar').value)||null,
+    obs_interna:(g('orctec-obsint').value||'').trim()||null,
+    obs_cliente:(g('orctec-obscli').value||'').trim()||null,
+    tecnico_id:G.profile.id, tecnico_nome:G.profile.nome,
+    status: confirmar?'aguardando_cliente':'em_analise'
+  };
+  setLoad(true);
+  const {data,error}=await db.from('orcamentos').update(payload).eq('id',id).select().single();
+  setLoad(false);
+  if(error){notify('Erro: '+error.message,'error');return;}
+  const idx=G.orcamentos.findIndex(o=>o.id===id); if(idx>=0)G.orcamentos[idx]=data;
+  closeModal('modal-orc-tecnico'); renderOrcamentos();
+  notify(confirmar?'Orçamento técnico confirmado — aguardando o cliente.':'Rascunho salvo.','success');
+}
+
+/* 6.4 (interino) — aprovação/recusa no balcão. O portal público (os.html) alimenta os mesmos estados. */
+function aprovarOrcBalcao(id){
+  const o=G.orcamentos.find(x=>x.id===id); if(!o)return;
+  confirmAct('Aprovar no balcão',`Confirmar aprovação do orçamento #${pad(o.numero||0)} de "${esc(o.cliente_nome||'')}" pelo cliente no balcão?`,async()=>{
+    setLoad(true);
+    const {data,error}=await db.from('orcamentos').update({status:'aprovado',aprovado_em:new Date().toISOString(),aprovacao_resposta:'aprovado (balcão)'}).eq('id',id).select().single();
+    setLoad(false);
+    if(error){notify('Erro: '+error.message,'error');return;}
+    const idx=G.orcamentos.findIndex(x=>x.id===id); if(idx>=0)G.orcamentos[idx]=data;
+    renderOrcamentos(); notify('Orçamento aprovado. Já pode virar OS.','success');
+  });
+}
+function recusarOrc(id){
+  const o=G.orcamentos.find(x=>x.id===id); if(!o)return;
+  confirmAct('Recusar orçamento',`Marcar o orçamento #${pad(o.numero||0)} como recusado pelo cliente?`,async()=>{
+    setLoad(true);
+    const {data,error}=await db.from('orcamentos').update({status:'recusado',aprovacao_resposta:'recusado (balcão)'}).eq('id',id).select().single();
+    setLoad(false);
+    if(error){notify('Erro: '+error.message,'error');return;}
+    const idx=G.orcamentos.findIndex(x=>x.id===id); if(idx>=0)G.orcamentos[idx]=data;
+    renderOrcamentos(); notify('Orçamento recusado.');
+  });
+}
+
+/* 6.5 — conversão do orçamento aprovado em OS (carrega tudo + vincula os_id ↔ orcamento_id).
+   NÃO baixa estoque: a regra de peça/estoque da OS é aplicada no fluxo real da OS. */
+async function converterOrcEmOS(id){
+  const o=G.orcamentos.find(x=>x.id===id); if(!o){notify('Orçamento não encontrado!','error');return;}
+  if(o.status!=='aprovado'){notify('Só orçamentos aprovados podem virar OS.','warn');return;}
+  if(o.os_id){notify('Este orçamento já foi convertido em OS.','warn');return;}
+  confirmAct('Converter em OS',`Criar uma OS a partir do orçamento #${pad(o.numero||0)}? Todos os dados serão carregados automaticamente.`,async()=>{
+    const pecas=(o.pecas||[]);
+    const valorPecas=pecas.reduce((s,i)=>s+(Number(i.preco)||0)*(Number(i.qty)||0),0);
+    const total=Number(o.valor)||Number(o.total)||0;
+    const valorServico=Math.max(0,total-valorPecas);
+    let prazo=null; if(o.prazo_dias){ const d=new Date(); d.setDate(d.getDate()+parseInt(o.prazo_dias)); prazo=d.toISOString().split('T')[0]; }
+    const obs=[o.servicos?('Serviços: '+o.servicos):'',o.obs_cliente||''].filter(Boolean).join(' · ');
+    const tl=[{status:'Aguardando',data:new Date().toISOString()}];
+    let numero='OS-'+pad(G.osCounter++), data, error, tent=0;
+    setLoad(true);
+    while(tent<6){
+      const base={ empresa_id:EID(), numero, cliente_id:o.cliente_id||null, cliente_nome:o.cliente_nome||'Consumidor Final',
+        tecnico_id:o.tecnico_id||null, tecnico_nome:o.tecnico_nome||null,
+        aparelho:o.aparelho||'—', imei:o.imei||null, defeito:o.sintoma||'—', diagnostico:o.diagnostico||null,
+        pecas, valor_servico:valorServico, valor_pecas:valorPecas, total,
+        garantia_dias:parseInt(o.garantia_dias)||90, prazo, observacoes:obs||null,
+        status:'Aguardando', progresso:8, timeline:tl,
+        token_publico:(crypto.randomUUID()+crypto.randomUUID()).replace(/-/g,''),
+        orcamento_id:o.id };
+      ({data,error}=await db.from('ordens_servico').insert(base).select().single());
+      if(error && /orcamento_id|column|schema/i.test(error.message||'')){
+        const {orcamento_id:_oi, ...semOrc}=base;
+        ({data,error}=await db.from('ordens_servico').insert(semOrc).select().single());
+        if(!error) notify('OS criada. (Rode a migração ORC02 para gravar o vínculo.)','warn',6000);
+      }
+      if(error && /duplicate key|unique|already exists|numero/i.test(error.message||'')){
+        tent++; numero='OS-'+pad(parseInt(String(numero).replace(/\D/g,''),10)+1); continue;
+      }
+      break;
+    }
+    if(error){ setLoad(false); notify('Erro ao criar OS: '+error.message,'error');return; }
+    const {data:od,error:eu}=await db.from('orcamentos').update({status:'convertido_os',os_id:data.id}).eq('id',o.id).select().single();
+    setLoad(false);
+    if(!eu && od){ const i2=G.orcamentos.findIndex(x=>x.id===o.id); if(i2>=0)G.orcamentos[i2]=od; }
+    G.os=G.os||[]; G.os.unshift(data);
+    G.osCounter=Math.max(G.osCounter,(parseInt(String(data.numero||'').replace(/\D/g,''),10)||0)+1);
+    renderOrcamentos(); if(typeof renderOSList==='function') renderOSList(); if(typeof renderDashboard==='function') renderDashboard();
+    notify((data.numero||numero)+' criada a partir do orçamento!','success',6000);
+  });
+}
+
 function addOrcItem(){
   const sel=document.getElementById('orc-prod-sel');
   const qty=parseInt(document.getElementById('orc-qty').value)||1;
@@ -10967,18 +11282,22 @@ async function converterOrcamento(){
 function renderOrcamentos(q=''){
   const f=q.toLowerCase();
   const fs=document.getElementById('orc-filter')?.value||'';
-  const stC={aberto:'tag-amb',aprovado:'tag-grn',convertido:'tag-blu',recusado:'tag-red',expirado:'tag-gry'};
+  const stC={aberto:'tag-amb',aprovado:'tag-grn',convertido:'tag-blu',convertido_os:'tag-blu',recusado:'tag-red',expirado:'tag-gry',aguardando_analise:'tag-amb',em_analise:'tag-pur',aguardando_cliente:'tag-cyn'};
+  const stLabel={aguardando_analise:'aguardando análise',em_analise:'em análise',aguardando_cliente:'aguardando cliente',convertido_os:'convertido em OS'};
   const list=G.orcamentos.filter(o=>(!f||o.cliente_nome.toLowerCase().includes(f))&&(!fs||o.status===fs));
   document.getElementById('orc-table').innerHTML=list.length===0?'<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--txt3)">Nenhum orçamento</td></tr>':list.map(o=>`<tr>
-    <td style="font-weight:700;color:var(--pri)">#${pad(o.numero||0)}</td>
-    <td>${o.cliente_nome}</td>
+    <td style="font-weight:700;color:var(--pri)">${o.tipo==='assistencia'?'🔧':'🛒'} #${pad(o.numero||0)}</td>
+    <td>${o.cliente_nome}${o.tipo==='assistencia'&&o.aparelho?`<div style="font-size:11px;color:var(--txt3)">${esc(o.aparelho)}</div>`:''}</td>
     <td style="font-size:12px;color:var(--txt2)">${o.operador_nome||'—'}</td>
-    <td style="font-weight:700">${fmt(o.total)}</td>
+    <td style="font-weight:700">${o.tipo==='assistencia'&&!o.total?'<span style="color:var(--txt3);font-weight:500;font-size:12px">a definir</span>':fmt(o.total)}</td>
     <td style="font-size:12px">${o.validade?fmtD(o.validade+'T12:00'):'—'}</td>
-    <td><span class="tag ${stC[o.status]||'tag-gry'}">${o.status}</span></td>
+    <td><span class="tag ${stC[o.status]||'tag-gry'}">${stLabel[o.status]||o.status}</span></td>
     <td><div style="display:flex;gap:3px">
-      ${o.status!=='convertido'?`<button class="btn btn-out btn-xs" onclick="reabrirOrc('${o.id}')" title="Editar"><i class="ti ti-edit"></i></button>`:''}
-      ${o.status==='aberto'?`<button class="btn btn-success btn-xs" onclick="conv2venda('${o.id}')"><i class="ti ti-shopping-cart"></i>Converter</button>`:''}
+      ${(o.status!=='convertido'&&o.status!=='convertido_os')?`<button class="btn btn-out btn-xs" onclick="${o.tipo==='assistencia'?`abrirAssistOrc('${o.id}')`:`reabrirOrc('${o.id}')`}" title="Editar"><i class="ti ti-edit"></i></button>`:''}
+      ${(o.tipo==='assistencia'&&(o.status==='aguardando_analise'||o.status==='em_analise'))?`<button class="btn btn-pri btn-xs" onclick="abrirTecnicoOrc('${o.id}')" title="Análise técnica"><i class="ti ti-microscope"></i>Analisar</button>`:''}
+      ${(o.tipo==='assistencia'&&o.status==='aguardando_cliente')?`<button class="btn btn-success btn-xs" onclick="aprovarOrcBalcao('${o.id}')" title="Aprovar (balcão)"><i class="ti ti-check"></i></button><button class="btn btn-danger btn-xs" onclick="recusarOrc('${o.id}')" title="Recusar (balcão)"><i class="ti ti-x"></i></button>`:''}
+      ${(o.tipo==='assistencia'&&o.status==='aprovado')?`<button class="btn btn-pri btn-xs" onclick="converterOrcEmOS('${o.id}')" title="Criar OS"><i class="ti ti-clipboard-plus"></i>Criar OS</button>`:''}
+      ${(o.tipo!=='assistencia'&&o.status==='aberto')?`<button class="btn btn-success btn-xs" onclick="conv2venda('${o.id}')"><i class="ti ti-shopping-cart"></i>Converter</button>`:''}
       <button class="btn btn-out btn-xs" onclick="gerarPdfOrcamento('${o.id}')" title="PDF"><i class="ti ti-file-text"></i></button>
       <button class="btn btn-danger btn-xs" onclick="excluirOrc('${o.id}')" title="Excluir"><i class="ti ti-trash"></i></button>
     </div></td>
@@ -11537,6 +11856,26 @@ function _fornNome(id){ const f=(G.fornecedores||[]).find(x=>x.id===id); return 
    editável e só entra no estoque ao confirmar. Idempotente por chave. */
 let _nfImport = null;
 const _nfEsc = s => String(s==null?'':s).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+/* Fatia 5.1 — resolve o fornecedor da NF-e para um fornecedor_id real.
+   Ordem: 1) casa por cpf_cnpj (so digitos)  2) fallback por razao social
+   3) se nao existir, cria (match-first -> nao duplica). Retorna id ou null. */
+async function _resolverFornecedorNFe(forn){
+  if(!forn) return null;
+  const soDig=s=>String(s||'').replace(/\D/g,'');
+  const cnpj=soDig(forn.cnpj), nome=(forn.nome||'').trim();
+  const lista=G.fornecedores||[];
+  let f = cnpj ? lista.find(x=>soDig(x.cpf_cnpj)===cnpj) : null;
+  if(!f && nome) f = lista.find(x=>(x.razao_social||'').trim().toLowerCase()===nome.toLowerCase());
+  if(f) return f.id;
+  if(!nome && !cnpj) return null;
+  const {data:nf,error}=await db.from('fornecedores').insert({
+    empresa_id:EID(), razao_social:nome||('Fornecedor '+(cnpj||'').slice(-6)),
+    nome_fantasia:forn.fantasia||null, cpf_cnpj:forn.cnpj||null
+  }).select('*').single();
+  if(error){ console.warn('NF-e: nao consegui criar fornecedor -',error.message); return null; }
+  (G.fornecedores=G.fornecedores||[]).push(nf);
+  return nf.id;
+}
 
 function abrirImportarNFe(){
   const f=document.getElementById('nfe-file'); if(f) f.value='';
@@ -11578,6 +11917,24 @@ function _matchProduto(item){
   return {p:null, motivo:null};
 }
 
+/* 5.2 — normalizacao + correspondencia aproximada por nome (apenas SUGERE, nunca auto-vincula) */
+function _nfNorm(s){ return String(s||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z0-9 ]/g,' ').replace(/\s+/g,' ').trim(); }
+function _matchFuzzyProduto(item){
+  const alvo=_nfNorm(item.xProd); if(alvo.length<4) return null;
+  const toksA=new Set(alvo.split(' ').filter(t=>t.length>=3)); if(!toksA.size) return null;
+  let best=null,bestScore=0;
+  for(const pr of (G.produtos||[])){
+    const n=_nfNorm(pr.nome); if(!n) continue;
+    let score=0;
+    if((n.includes(alvo)||alvo.includes(n)) && Math.min(alvo.length,n.length)>=6) score=3;
+    const toksB=new Set(n.split(' ').filter(t=>t.length>=3));
+    let overlap=0; toksA.forEach(t=>{ if(toksB.has(t)) overlap++; });
+    if(overlap>score) score=overlap;
+    if(score>bestScore){ bestScore=score; best=pr; }
+  }
+  return bestScore>=2?best:null;
+}
+
 function onArquivoNFe(ev){
   const file=ev.target.files?.[0]; if(!file) return;
   const rd=new FileReader();
@@ -11591,10 +11948,13 @@ function abrirRevisaoNFe(parsed){
   const linhas=parsed.itens.map(it=>{
     const m=_matchProduto(it);
     const ean=/^\d{8,14}$/.test((it.cEAN||'').trim())?(it.cEAN||'').trim():'';
+    let status='nova', prodId=null, matchNome='', matchMotivo='', sugestaoId=null, sugestaoNome='';
+    if(m.p){ status='existente'; prodId=m.p.id; matchNome=m.p.nome; matchMotivo=m.motivo||''; }
+    else { const fz=_matchFuzzyProduto(it); if(fz){ status='possivel'; sugestaoId=fz.id; sugestaoNome=fz.nome; } }
     return { xProd:it.xProd, cProd:it.cProd, ean, ncm:it.ncm, qCom:it.qCom,
-      custo:it.vUnCom, preco:m.p?Number(m.p.preco||0):0,
-      nome:m.p?m.p.nome:it.xProd, prodId:m.p?m.p.id:null, matchNome:m.p?m.p.nome:'', matchMotivo:m.motivo||'',
-      status:m.p?'existente':'nova' };
+      custo:it.vUnCom, preco:(m.p?Number(m.p.preco||0):0),
+      nome:(m.p?m.p.nome:it.xProd), prodId, matchNome, matchMotivo, sugestaoId, sugestaoNome, status,
+      categoria:'', categoriaId:null, barcode:(ean||''), estoqueMin:3 };
   });
   _nfImport={ parsed, linhas };
   closeModal('modal-nfe-import');
@@ -11606,19 +11966,79 @@ function abrirRevisaoNFe(parsed){
 
 function renderRevisaoNFe(){
   const body=document.getElementById('nfe-rev-body'); if(!body) return;
+  const prods=[...(G.produtos||[])].sort((a,b)=>String(a.nome||'').localeCompare(String(b.nome||'')));
+  const optsBase=prods.map(pr=>`<option value="${pr.id}">${_nfEsc(pr.nome)}${pr.sku?' · '+_nfEsc(pr.sku):''}</option>`).join('');
+  const cats=[...(G.categorias||[])].sort((a,b)=>String(a.nome||'').localeCompare(String(b.nome||'')));
+  const catOpts=cats.map(c=>`<option value="${c.id}" data-nome="${_nfEsc(c.nome)}">${_nfEsc(c.nome)}</option>`).join('');
+  const badges={
+    existente:'<span class="tag tag-grn" style="font-size:10px">✓ Encontrado</span>',
+    possivel:'<span class="tag tag-amb" style="font-size:10px">⚠ Possível</span>',
+    nova:'<span class="tag tag-blu" style="font-size:10px">+ Novo</span>'
+  };
   body.innerHTML=_nfImport.linhas.map((l,i)=>{
-    const st={existente:'<span class="tag tag-grn" style="font-size:10px">✓ Encontrado</span>',nova:'<span class="tag tag-blu" style="font-size:10px">+ Novo</span>'}[l.status]||l.status;
-    const misu=l.prodId?`<span style="color:var(--success)">${_nfEsc(l.matchNome)}</span> <span style="font-size:10px;color:var(--txt3)">(${l.matchMotivo})</span>`:'<span style="color:var(--txt3)">— será criado —</span>';
+    const badge=badges[l.status]||l.status;
+    const sel=`<select class="nf-vinc-sel" onchange="_nfSetVinculo(${i},this.value)" style="width:210px;padding:5px 6px;font-size:11.5px"><option value="">— Criar novo produto —</option>${optsBase}</select>`;
+    const hint=(l.status==='possivel'&&l.sugestaoId&&!l.prodId)
+      ? `<div style="font-size:10.5px;color:var(--warn);margin-top:3px">Parece com <b>${_nfEsc(l.sugestaoNome)}</b> · <a href="#" onclick="_nfSetVinculo(${i},'${l.sugestaoId}');return false" style="color:var(--pri)">vincular</a></div>`
+      : (l.prodId&&l.matchMotivo?`<div style="font-size:10px;color:var(--txt3);margin-top:2px">vínculo: ${_nfEsc(l.matchMotivo)}</div>`:'');
+    const novo=!l.prodId;
+    const toggle=novo?`<a href="#" onclick="_nfToggleDet(${i});return false" style="font-size:10.5px;color:var(--pri);display:inline-block;margin-top:3px">⚙ detalhes do novo</a>`:'';
+    const detRow=novo?`<tr class="nf-det-row" data-i="${i}" style="display:none;background:var(--bg2)">
+      <td></td>
+      <td colspan="6" style="padding:8px 10px">
+        <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end">
+          <label style="font-size:11px;color:var(--txt2)">Categoria<br>
+            <select class="nf-cat-sel" onchange="_nfSetCat(${i},this)" style="width:170px;padding:5px 6px;font-size:11.5px;margin-top:3px"><option value="">— sem categoria —</option>${catOpts}</select></label>
+          <label style="font-size:11px;color:var(--txt2)">Código de barras<br>
+            <input value="${_nfEsc(l.barcode||'')}" oninput="_nfImport.linhas[${i}].barcode=this.value.trim()" placeholder="EAN/GTIN" style="width:150px;padding:5px 7px;font-size:11.5px;margin-top:3px"></label>
+          <label style="font-size:11px;color:var(--txt2)">Estoque mínimo<br>
+            <input type="number" min="0" value="${l.estoqueMin}" oninput="_nfImport.linhas[${i}].estoqueMin=parseInt(this.value)||0" style="width:80px;padding:5px;font-size:11.5px;margin-top:3px"></label>
+          <span style="font-size:10.5px;color:var(--txt3)">SKU: <b>${_nfEsc(l.cProd||'—')}</b> · NCM: ${_nfEsc(l.ncm||'—')}</span>
+        </div>
+      </td>
+    </tr>`:'';
     return `<tr>
-      <td>${st}</td>
-      <td><input value="${_nfEsc(l.nome)}" oninput="_nfImport.linhas[${i}].nome=this.value" style="width:190px;padding:5px 7px;font-size:11.5px"></td>
+      <td>${badge}${toggle}</td>
+      <td><input value="${_nfEsc(l.nome)}" oninput="_nfImport.linhas[${i}].nome=this.value" style="width:180px;padding:5px 7px;font-size:11.5px"></td>
       <td style="font-size:11px">${_nfEsc(l.ean||'—')}</td>
       <td style="text-align:center"><input type="number" value="${l.qCom}" oninput="_nfImport.linhas[${i}].qCom=parseFloat(this.value)||0" style="width:54px;padding:5px;text-align:center"></td>
       <td><input type="number" step="0.01" value="${l.custo}" oninput="_nfImport.linhas[${i}].custo=parseFloat(this.value)||0" style="width:74px;padding:5px;text-align:right"></td>
       <td><input type="number" step="0.01" value="${l.preco}" oninput="_nfImport.linhas[${i}].preco=parseFloat(this.value)||0" style="width:74px;padding:5px;text-align:right"></td>
-      <td style="font-size:11.5px">${misu}</td>
-    </tr>`;
+      <td>${sel}${hint}</td>
+    </tr>${detRow}`;
   }).join('');
+  // preencher selects pela classe (há mais de um select por linha agora)
+  const vincSels=body.querySelectorAll('.nf-vinc-sel');
+  const catSels=body.querySelectorAll('.nf-cat-sel');
+  _nfImport.linhas.forEach((l,i)=>{ if(vincSels[i]) vincSels[i].value=l.prodId||''; });
+  // categoria: casa por índice das linhas "novas"
+  let ci=0;
+  _nfImport.linhas.forEach((l)=>{ if(!l.prodId){ if(catSels[ci]) catSels[ci].value=l.categoriaId||''; ci++; } });
+}
+
+/* 5.3 — abre/fecha o painel de detalhes do produto novo */
+function _nfToggleDet(i){
+  const r=document.querySelector('.nf-det-row[data-i="'+i+'"]'); if(!r) return;
+  r.style.display = (r.style.display==='none'||!r.style.display) ? 'table-row' : 'none';
+}
+/* 5.3 — guarda categoria (id + nome) da linha */
+function _nfSetCat(i,selEl){
+  const l=_nfImport.linhas[i]; if(!l) return;
+  l.categoriaId = selEl.value || null;
+  l.categoria = selEl.value ? (selEl.selectedOptions[0]?.dataset.nome||'') : '';
+}
+
+/* 5.2 — vincula/desvincula manualmente uma linha da NF-e a um produto existente */
+function _nfSetVinculo(i,id){
+  const l=_nfImport.linhas[i]; if(!l) return;
+  if(id){
+    const pr=(G.produtos||[]).find(x=>x.id===id);
+    l.prodId=id; l.status='existente'; l.matchNome=pr?pr.nome:''; l.matchMotivo='manual';
+    if(pr && !l.preco) l.preco=Number(pr.preco||0);
+  } else {
+    l.prodId=null; l.matchMotivo=''; l.status=l.sugestaoId?'possivel':'nova';
+  }
+  renderRevisaoNFe();
 }
 
 async function confirmarImportacaoNFe(){
@@ -11626,42 +12046,40 @@ async function confirmarImportacaoNFe(){
   const empId=EID();
   const btn=document.getElementById('nfe-conf-btn'); if(btn){ btn.disabled=true; btn.innerHTML='<div class="spinner" style="width:14px;height:14px;border-width:2px"></div> Importando...'; }
   try{
-    // Idempotência: mesma chave não entra 2x
-    const { data: jaImp } = await db.from('nf_importacoes').select('id,criado_em').eq('empresa_id',empId).eq('chave',imp.parsed.chave).maybeSingle();
-    if(jaImp){ notify('Esta NF-e já foi importada em '+fmtD(jaImp.criado_em)+'. Estoque não foi reaplicado.','warn',7000); return; }
+    // 5.1 — garante fornecedor_id
+    const fornId = await _resolverFornecedorNFe(imp.parsed.fornecedor);
+    // monta itens para a RPC transacional (5.4)
+    const itens = imp.linhas
+      .filter(l=>Math.round(Number(l.qCom)||0)>0)
+      .map(l=>({
+        prod_id:l.prodId||null, nome:l.nome, ean:l.ean||null,
+        barcode:(l.barcode||l.ean||null), sku:l.cProd||null, ncm:l.ncm||null,
+        categoria:l.categoria||null, categoria_id:l.categoriaId||null,
+        custo:Number(l.custo)||0, preco:Number(l.preco)||0,
+        qtd:Math.round(Number(l.qCom)||0),
+        estoque_min:(Number.isFinite(l.estoqueMin)?l.estoqueMin:3),
+        nome_fiscal:l.xProd||null
+      }));
+    if(!itens.length){ notify('Nenhum item com quantidade válida.','warn'); return; }
 
-    let novos=0, atualizados=0; const movs=[];
-    for(const l of imp.linhas){
-      const qty=Math.round(Number(l.qCom)||0); if(qty<=0) continue;
-      let prodId=l.prodId, prodNome=l.nome;
-      if(prodId){
-        const p=(G.produtos||[]).find(x=>x.id===prodId);
-        const novoEst=Number(p?.estoque||0)+qty;
-        const {error}=await db.from('produtos').update({estoque:novoEst, custo:Number(l.custo)||p?.custo||0}).eq('id',prodId);
-        if(error){ notify('Erro ao atualizar '+prodNome+': '+error.message,'error'); return; }
-        if(p){ p.estoque=novoEst; p.custo=Number(l.custo)||p.custo; }
-        atualizados++;
-      } else {
-        const {data:np,error}=await db.from('produtos').insert({ empresa_id:empId, nome:l.nome, gtin:l.ean||null, sku:l.cProd||null,
-          ncm:l.ncm||null, custo:Number(l.custo)||0, preco:Number(l.preco)||0, estoque:qty, estoque_minimo:3,
-          fornecedor:imp.parsed.fornecedor.nome||null, descricao_fiscal_original:l.xProd||null }).select('*').single();
-        if(error){ notify('Erro ao criar '+l.nome+': '+error.message,'error'); return; }
-        prodId=np.id; (G.produtos=G.produtos||[]).push(np); novos++;
-      }
-      movs.push({ empresa_id:empId, produto_id:prodId, produto_nome:prodNome, tipo:'entrada', quantidade:qty,
-        usuario_id:G.profile?.id||null, usuario_nome:G.profile?.nome||'Sistema', referencia_tipo:'nfe',
-        motivo:`Entrada NF-e ${imp.parsed.numero||''} · ${imp.parsed.fornecedor.nome||''} · chave ${imp.parsed.chave.slice(-6)}` });
+    const { data, error } = await db.rpc('importar_nfe', {
+      p_empresa:empId, p_chave:imp.parsed.chave, p_numero:imp.parsed.numero||null,
+      p_serie:imp.parsed.serie||null, p_data_emissao:imp.parsed.data||null,
+      p_forn_cnpj:imp.parsed.fornecedor.cnpj||null, p_forn_nome:imp.parsed.fornecedor.nome||null,
+      p_forn_id:fornId, p_usuario_id:G.profile?.id||null, p_usuario_nome:G.profile?.nome||null,
+      p_itens:itens
+    });
+    if(error){ notify('Erro na importação: '+error.message,'error',7000); return; }
+    if(data && data.status==='duplicada'){
+      notify('Esta NF-e já foi importada em '+fmtD(data.criado_em)+'. Estoque não foi reaplicado.','warn',7000);
+      closeModal('modal-nfe-revisao'); _nfImport=null; return;
     }
-    if(movs.length){ const {error:em}=await db.from('movimentacoes_estoque').insert(movs); if(em) console.warn('mov:',em.message); }
 
-    await db.from('nf_importacoes').insert({ empresa_id:empId, chave:imp.parsed.chave, numero:imp.parsed.numero, serie:imp.parsed.serie,
-      data_emissao:imp.parsed.data||null, fornecedor_cnpj:imp.parsed.fornecedor.cnpj, fornecedor_nome:imp.parsed.fornecedor.nome,
-      qtd_itens:imp.linhas.length, valor_total:imp.linhas.reduce((s,l)=>s+(Number(l.custo)||0)*(Number(l.qCom)||0),0),
-      usuario_id:G.profile?.id||null, usuario_nome:G.profile?.nome||null });
-
+    const novos=data?.novos||0, atualizados=data?.atualizados||0;
     notify(`Importação concluída! ${novos} novo(s) · ${atualizados} atualizado(s).`,'success',6000);
-    closeModal('modal-nfe-revisao');
-    _nfImport=null;
+    closeModal('modal-nfe-revisao'); _nfImport=null;
+    // recarrega produtos (alterados no servidor de forma atômica)
+    try{ const {data:pd}=await db.from('produtos').select('*').eq('empresa_id',empId); if(pd) G.produtos=pd; }catch(_){}
     if(typeof renderReposicao==='function') renderReposicao();
     if(typeof renderProdTable==='function') renderProdTable();
   }catch(e){ notify('Erro na importação.','error'); console.warn(e); }
@@ -18362,7 +18780,7 @@ async function toggleUsr(id){
 /* ── SELECTS HELPERS ─────────────────────────────────── */
 function popSelects(){
   const opts='<option value="">Consumidor Final</option>'+G.clientes.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
-  ['cart-cli','os-cli','orc-cli'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=opts;});
+  ['cart-cli','os-cli','orc-cli','orca-cli'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=opts;});
   // Crediário: seletor de cliente do "Novo Crediário" (não tem Consumidor Final — exige cliente)
   const ncCli=document.getElementById('nc-cli');
   if(ncCli)ncCli.innerHTML='<option value="">Selecione o cliente...</option>'+G.clientes.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
