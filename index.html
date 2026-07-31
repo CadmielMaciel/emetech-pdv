@@ -870,8 +870,6 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
      Estava preso dentro do template de impressao e nunca era aplicado. -->
 <style>
 /* ── NAV CAIXAS DESTAQUE ── */
-#nav-caixas i { color: rgba(255,255,255,.85); transition: transform .2s; }
-#nav-caixas:hover i, #nav-caixas.active i { color: #fff; transform: scale(1.15); }
 
 /* ── NETFLIX SLOTS EDITÁVEIS ───────────────────────── */
 .nf-slot { display:flex;flex-direction:column;align-items:center;gap:10px;position:relative;cursor:pointer;border-radius:16px;padding:8px;transition:outline .15s,background .15s;outline:3px solid transparent; }
@@ -3426,6 +3424,14 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
           </div>
           <button class="btn btn-pri btn-sm" onclick="abrirEntregaAvulsa()"><i class="ti ti-plus"></i> Nova Entrega</button>
         </div>
+        <!-- CENTRAL DE ENTREGAS -->
+        <div class="card" style="padding:14px;margin-bottom:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+            <div class="card-title"><i class="ti ti-truck-delivery" style="color:var(--pri)"></i> Central de Entregas</div>
+            <div id="central-chips" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+          </div>
+          <div id="central-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px"></div>
+        </div>
         <div class="card" style="padding:14px">
           <div id="agenda-grid" class="agenda-grid"></div>
         </div>
@@ -3601,6 +3607,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
             <option value="zerado">Só zerados</option>
             <option value="critico">Zerado + crítico</option>
           </select>
+          <button class="btn btn-pri" onclick="abrirImportarNFe()"><i class="ti ti-file-import"></i> Importar NF-e</button>
           <button class="btn btn-out" onclick="abrirExportReposicao()"><i class="ti ti-download"></i> Exportar lista</button>
         </div>
         <div class="card" style="padding:0"><div class="tw"><table>
@@ -5079,6 +5086,38 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
   <div class="modal-title" style="font-size:17px"><i class="ti ti-file-invoice" style="color:var(--pri)"></i> Nota Fiscal (NFC-e)</div>
   <div id="nfce-res-body" style="margin-top:12px"></div>
   <div class="modal-footer" style="margin-top:16px"><button class="btn btn-out" onclick="closeModal('modal-nfce-result')">Fechar</button></div>
+</div></div>
+
+<!-- Importar NF-e -->
+<div class="modal-overlay" id="modal-nfe-import"><div class="modal sm">
+  <div class="modal-title" style="font-size:17px"><i class="ti ti-file-import" style="color:var(--pri)"></i> Importar NF-e</div>
+  <div style="font-size:12.5px;color:var(--txt2);margin:10px 0">Envie o <b>XML da NF-e</b> do fornecedor. Ele é lido no seu navegador — nada é enviado à SEFAZ.</div>
+  <label class="lbl">Arquivo XML da NF-e</label>
+  <input type="file" id="nfe-file" accept=".xml,text/xml" onchange="onArquivoNFe(event)">
+  <div style="border-top:1px solid var(--border);margin:16px 0 10px;padding-top:12px">
+    <label class="lbl">Ou cole a chave de acesso (44 dígitos)</label>
+    <input type="text" id="nfe-chave" placeholder="chave de 44 dígitos" maxlength="60">
+    <div style="font-size:11px;color:var(--txt3);margin-top:6px"><i class="ti ti-info-circle"></i> A busca por chave exige integração oficial com certificado digital (fase futura, server-side). Por ora, use o XML.</div>
+  </div>
+  <div id="nfe-import-erro" style="color:var(--danger);font-size:12px;margin-top:8px;display:none"></div>
+  <div class="modal-footer" style="margin-top:14px"><button class="btn btn-out" onclick="closeModal('modal-nfe-import')">Cancelar</button><button class="btn btn-out" onclick="verHistoricoNFe()"><i class="ti ti-history"></i> Histórico</button></div>
+</div></div>
+
+<!-- Revisar importação NF-e -->
+<div class="modal-overlay" id="modal-nfe-revisao"><div class="modal" style="max-width:920px">
+  <div class="modal-title" style="font-size:17px"><i class="ti ti-checklist" style="color:var(--pri)"></i> Revisar importação</div>
+  <div id="nfe-rev-info" style="font-size:12.5px;color:var(--txt2);margin:8px 0 12px"></div>
+  <div class="tw" style="max-height:52vh;overflow:auto"><table style="font-size:12px">
+    <thead><tr><th>Status</th><th>Produto (NF-e)</th><th>EAN</th><th style="text-align:center">Qtd</th><th style="text-align:right">Custo</th><th style="text-align:right">Preço</th><th>Produto MISU</th></tr></thead>
+    <tbody id="nfe-rev-body"></tbody>
+  </table></div>
+  <div class="modal-footer" style="margin-top:14px;justify-content:space-between;flex-wrap:wrap;gap:8px">
+    <div style="font-size:11.5px;color:var(--txt3)"><i class="ti ti-info-circle"></i> Nada entra no estoque até você confirmar.</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-out" onclick="closeModal('modal-nfe-revisao')">Cancelar</button>
+      <button class="btn btn-pri" id="nfe-conf-btn" onclick="confirmarImportacaoNFe()"><i class="ti ti-package-import"></i> Confirmar entrada no estoque</button>
+    </div>
+  </div>
 </div></div>
 
 <!-- QR Asaas (PDV) -->
@@ -8511,7 +8550,7 @@ function go(page){
     'hist-vendas':renderHistoricoVendas,
     os:()=>{renderOSList();popSelects();popTecSel();popOSChecklist();},
     'os-hist':()=>{popOSFiltros();renderOSHist();},
-    agenda:renderAgenda,
+    agenda:initCentral,
     comissoes:renderComissoes,
     produtos:()=>{renderProdTable();popProdSelects();renderCatChips();},
     estoque:()=>{popMovFiltros();renderMov();},
@@ -11492,6 +11531,152 @@ function _repoClassificar(p){
 function _repoIdeal(p){ const min=Number(p.estoque_minimo)||0; return min>0?min*2:Math.max(1,(Number(p.estoque)||0)); }
 function _repoComprar(p){ const ideal=_repoIdeal(p); const atual=Number(p.estoque)||0; return Math.max(0, ideal-atual); }
 function _fornNome(id){ const f=(G.fornecedores||[]).find(x=>x.id===id); return f?(f.nome_fantasia||f.razao_social):''; }
+
+/* ═══ IMPORTAÇÃO DE NF-e (Fatia 5) ═══════════════════════════════════
+   Lê o XML da NF-e no navegador (sem SEFAZ), casa com produtos, revisão
+   editável e só entra no estoque ao confirmar. Idempotente por chave. */
+let _nfImport = null;
+const _nfEsc = s => String(s==null?'':s).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+
+function abrirImportarNFe(){
+  const f=document.getElementById('nfe-file'); if(f) f.value='';
+  const ch=document.getElementById('nfe-chave'); if(ch) ch.value='';
+  const er=document.getElementById('nfe-import-erro'); if(er) er.style.display='none';
+  openModal('modal-nfe-import');
+}
+function _nfErro(m){ const e=document.getElementById('nfe-import-erro'); if(e){ e.textContent=m; e.style.display='block'; } }
+
+function parseNFeXML(txt){
+  const xml=new DOMParser().parseFromString(txt,'text/xml');
+  if(xml.getElementsByTagName('parsererror').length) throw new Error('Arquivo XML inválido.');
+  const inf=xml.getElementsByTagName('infNFe')[0];
+  if(!inf) throw new Error('Este XML não parece uma NF-e (infNFe ausente).');
+  const q=(el,tag)=>el?.getElementsByTagName(tag)?.[0]?.textContent?.trim()||'';
+  const ide=xml.getElementsByTagName('ide')[0], emit=xml.getElementsByTagName('emit')[0];
+  const chave=(inf.getAttribute('Id')||'').replace(/^NFe/,'');
+  const dEmi=q(ide,'dhEmi')||q(ide,'dEmi');
+  const itens=[...xml.getElementsByTagName('det')].map(det=>{
+    const prod=det.getElementsByTagName('prod')[0];
+    return { cProd:q(prod,'cProd'), cEAN:q(prod,'cEAN'), cEANTrib:q(prod,'cEANTrib'), xProd:q(prod,'xProd'),
+      ncm:q(prod,'NCM'), cest:q(prod,'CEST'), cfop:q(prod,'CFOP'), uCom:q(prod,'uCom'),
+      qCom:parseFloat(q(prod,'qCom')||'0'), vUnCom:parseFloat(q(prod,'vUnCom')||'0'), vProd:parseFloat(q(prod,'vProd')||'0') };
+  });
+  return { chave, numero:q(ide,'nNF'), serie:q(ide,'serie'), data:(dEmi||'').slice(0,10),
+    fornecedor:{ cnpj:q(emit,'CNPJ'), nome:q(emit,'xNome'), fantasia:q(emit,'xFant') }, itens };
+}
+
+function _matchProduto(item){
+  const ean=(item.cEAN||'').trim();
+  if(/^\d{8,14}$/.test(ean)){
+    const p=(G.produtos||[]).find(x=>x.gtin && String(x.gtin).trim()===ean);
+    if(p) return {p, motivo:'EAN'};
+  }
+  if(item.cProd){
+    const p=(G.produtos||[]).find(x=>x.sku && String(x.sku).trim().toLowerCase()===String(item.cProd).trim().toLowerCase());
+    if(p) return {p, motivo:'SKU'};
+  }
+  return {p:null, motivo:null};
+}
+
+function onArquivoNFe(ev){
+  const file=ev.target.files?.[0]; if(!file) return;
+  const rd=new FileReader();
+  rd.onload=()=>{ try{ abrirRevisaoNFe(parseNFeXML(rd.result)); }catch(e){ _nfErro(e.message||'Falha ao ler o XML.'); } };
+  rd.onerror=()=>_nfErro('Não consegui ler o arquivo.');
+  rd.readAsText(file);
+}
+
+function abrirRevisaoNFe(parsed){
+  if(!parsed.itens.length){ _nfErro('Nenhum item encontrado na NF-e.'); return; }
+  const linhas=parsed.itens.map(it=>{
+    const m=_matchProduto(it);
+    const ean=/^\d{8,14}$/.test((it.cEAN||'').trim())?(it.cEAN||'').trim():'';
+    return { xProd:it.xProd, cProd:it.cProd, ean, ncm:it.ncm, qCom:it.qCom,
+      custo:it.vUnCom, preco:m.p?Number(m.p.preco||0):0,
+      nome:m.p?m.p.nome:it.xProd, prodId:m.p?m.p.id:null, matchNome:m.p?m.p.nome:'', matchMotivo:m.motivo||'',
+      status:m.p?'existente':'nova' };
+  });
+  _nfImport={ parsed, linhas };
+  closeModal('modal-nfe-import');
+  const inf=document.getElementById('nfe-rev-info');
+  if(inf) inf.innerHTML=`NF-e <b>${_nfEsc(parsed.numero)}</b> · Fornecedor: <b>${_nfEsc(parsed.fornecedor.nome||'—')}</b> · ${parsed.itens.length} item(ns)`;
+  renderRevisaoNFe();
+  openModal('modal-nfe-revisao');
+}
+
+function renderRevisaoNFe(){
+  const body=document.getElementById('nfe-rev-body'); if(!body) return;
+  body.innerHTML=_nfImport.linhas.map((l,i)=>{
+    const st={existente:'<span class="tag tag-grn" style="font-size:10px">✓ Encontrado</span>',nova:'<span class="tag tag-blu" style="font-size:10px">+ Novo</span>'}[l.status]||l.status;
+    const misu=l.prodId?`<span style="color:var(--success)">${_nfEsc(l.matchNome)}</span> <span style="font-size:10px;color:var(--txt3)">(${l.matchMotivo})</span>`:'<span style="color:var(--txt3)">— será criado —</span>';
+    return `<tr>
+      <td>${st}</td>
+      <td><input value="${_nfEsc(l.nome)}" oninput="_nfImport.linhas[${i}].nome=this.value" style="width:190px;padding:5px 7px;font-size:11.5px"></td>
+      <td style="font-size:11px">${_nfEsc(l.ean||'—')}</td>
+      <td style="text-align:center"><input type="number" value="${l.qCom}" oninput="_nfImport.linhas[${i}].qCom=parseFloat(this.value)||0" style="width:54px;padding:5px;text-align:center"></td>
+      <td><input type="number" step="0.01" value="${l.custo}" oninput="_nfImport.linhas[${i}].custo=parseFloat(this.value)||0" style="width:74px;padding:5px;text-align:right"></td>
+      <td><input type="number" step="0.01" value="${l.preco}" oninput="_nfImport.linhas[${i}].preco=parseFloat(this.value)||0" style="width:74px;padding:5px;text-align:right"></td>
+      <td style="font-size:11.5px">${misu}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function confirmarImportacaoNFe(){
+  const imp=_nfImport; if(!imp) return;
+  const empId=EID();
+  const btn=document.getElementById('nfe-conf-btn'); if(btn){ btn.disabled=true; btn.innerHTML='<div class="spinner" style="width:14px;height:14px;border-width:2px"></div> Importando...'; }
+  try{
+    // Idempotência: mesma chave não entra 2x
+    const { data: jaImp } = await db.from('nf_importacoes').select('id,criado_em').eq('empresa_id',empId).eq('chave',imp.parsed.chave).maybeSingle();
+    if(jaImp){ notify('Esta NF-e já foi importada em '+fmtD(jaImp.criado_em)+'. Estoque não foi reaplicado.','warn',7000); return; }
+
+    let novos=0, atualizados=0; const movs=[];
+    for(const l of imp.linhas){
+      const qty=Math.round(Number(l.qCom)||0); if(qty<=0) continue;
+      let prodId=l.prodId, prodNome=l.nome;
+      if(prodId){
+        const p=(G.produtos||[]).find(x=>x.id===prodId);
+        const novoEst=Number(p?.estoque||0)+qty;
+        const {error}=await db.from('produtos').update({estoque:novoEst, custo:Number(l.custo)||p?.custo||0}).eq('id',prodId);
+        if(error){ notify('Erro ao atualizar '+prodNome+': '+error.message,'error'); return; }
+        if(p){ p.estoque=novoEst; p.custo=Number(l.custo)||p.custo; }
+        atualizados++;
+      } else {
+        const {data:np,error}=await db.from('produtos').insert({ empresa_id:empId, nome:l.nome, gtin:l.ean||null, sku:l.cProd||null,
+          ncm:l.ncm||null, custo:Number(l.custo)||0, preco:Number(l.preco)||0, estoque:qty, estoque_minimo:3,
+          fornecedor:imp.parsed.fornecedor.nome||null, descricao_fiscal_original:l.xProd||null }).select('*').single();
+        if(error){ notify('Erro ao criar '+l.nome+': '+error.message,'error'); return; }
+        prodId=np.id; (G.produtos=G.produtos||[]).push(np); novos++;
+      }
+      movs.push({ empresa_id:empId, produto_id:prodId, produto_nome:prodNome, tipo:'entrada', quantidade:qty,
+        usuario_id:G.profile?.id||null, usuario_nome:G.profile?.nome||'Sistema', referencia_tipo:'nfe',
+        motivo:`Entrada NF-e ${imp.parsed.numero||''} · ${imp.parsed.fornecedor.nome||''} · chave ${imp.parsed.chave.slice(-6)}` });
+    }
+    if(movs.length){ const {error:em}=await db.from('movimentacoes_estoque').insert(movs); if(em) console.warn('mov:',em.message); }
+
+    await db.from('nf_importacoes').insert({ empresa_id:empId, chave:imp.parsed.chave, numero:imp.parsed.numero, serie:imp.parsed.serie,
+      data_emissao:imp.parsed.data||null, fornecedor_cnpj:imp.parsed.fornecedor.cnpj, fornecedor_nome:imp.parsed.fornecedor.nome,
+      qtd_itens:imp.linhas.length, valor_total:imp.linhas.reduce((s,l)=>s+(Number(l.custo)||0)*(Number(l.qCom)||0),0),
+      usuario_id:G.profile?.id||null, usuario_nome:G.profile?.nome||null });
+
+    notify(`Importação concluída! ${novos} novo(s) · ${atualizados} atualizado(s).`,'success',6000);
+    closeModal('modal-nfe-revisao');
+    _nfImport=null;
+    if(typeof renderReposicao==='function') renderReposicao();
+    if(typeof renderProdTable==='function') renderProdTable();
+  }catch(e){ notify('Erro na importação.','error'); console.warn(e); }
+  finally{ if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-package-import"></i> Confirmar entrada no estoque'; } }
+}
+
+async function verHistoricoNFe(){
+  try{
+    const { data } = await db.from('nf_importacoes').select('*').eq('empresa_id',EID()).order('criado_em',{ascending:false}).limit(50);
+    const rows=(data||[]).map(n=>`<tr><td>${fmtD(n.criado_em)}</td><td>${_nfEsc(n.numero||'')}</td><td>${_nfEsc(n.fornecedor_nome||'')}</td><td style="text-align:center">${n.qtd_itens||0}</td><td style="text-align:right">${fmt(n.valor_total||0)}</td><td>${_nfEsc(n.usuario_nome||'')}</td></tr>`).join('');
+    confirmAct('Histórico de importações de NF-e',
+      (data&&data.length)?`<div class="tw" style="max-height:50vh;overflow:auto"><table style="font-size:12px"><thead><tr><th>Data</th><th>NF-e</th><th>Fornecedor</th><th style="text-align:center">Itens</th><th style="text-align:right">Valor</th><th>Usuário</th></tr></thead><tbody>${rows}</tbody></table></div>`:'<div style="color:var(--txt3);padding:16px;text-align:center">Nenhuma importação ainda.</div>',
+      null);
+  }catch(e){ notify('Erro ao carregar histórico.','error'); }
+}
 
 function renderReposicao(){
   const prods=G.produtos||[];
@@ -16912,10 +17097,25 @@ function editarSolucao(id){
 function getRelVendas(){
   const de=document.getElementById('r-de')?.value;
   const ate=document.getElementById('r-ate')?.value;
-  let list=G.vendas.filter(v=>v.status!=='cancelada');
+  let list=G.vendas.filter(v=>v.status!=='cancelada' && v.tipo!=='servico_os');
   if(de)list=list.filter(v=>v.criado_em>=de+'T00:00:00');
   if(ate)list=list.filter(v=>v.criado_em<=(ate+'T23:59:59'));
   return list.sort((a,b)=>b.criado_em.localeCompare(a.criado_em));
+}
+
+// Receita de SERVIÇOS/OS efetivamente RECEBIDA no período.
+// Fonte canônica: movimentacoes_caixa (tipo 'servico_os'), onde valor = valor recebido
+// (cobre pagamento parcial). Vendas de produto NÃO gravam aqui → não há duplicidade.
+async function getRelReceitaOS(){
+  const de=document.getElementById('r-de')?.value, ate=document.getElementById('r-ate')?.value;
+  try{
+    let q=db.from('movimentacoes_caixa').select('valor,criado_em').eq('empresa_id',EID()).eq('tipo','servico_os');
+    if(de) q=q.gte('criado_em', de+'T00:00:00');
+    if(ate) q=q.lte('criado_em', ate+'T23:59:59.999');
+    const {data,error}=await q;
+    if(error||!Array.isArray(data)) return {total:0,count:0};
+    return { total:data.reduce((s,m)=>s+Number(m.valor||0),0), count:data.length };
+  }catch(e){ return {total:0,count:0}; }
 }
 
 // Define atalhos de período (hoje/7 dias/mês/ano/tudo)
@@ -16935,13 +17135,27 @@ function setRelPeriodo(p){
     document.getElementById('r-ate').value='';
     renderRelatorios();return;
   }
-  document.getElementById('r-de').value=de.toISOString().split('T')[0];
-  document.getElementById('r-ate').value=ate.toISOString().split('T')[0];
+  const _ymd=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  document.getElementById('r-de').value=_ymd(de);
+  document.getElementById('r-ate').value=_ymd(ate);
   renderRelatorios();
 }
 
 // Troca de aba dentro de Relatórios
+let _relTabAtiva = 'vendas';
+function _renderRelAba(tab){
+  switch(tab){
+    case 'operadores': renderRelOperadores(); break;
+    case 'produtos':   renderRelProdutos(); break;
+    case 'os':         renderRelOS(); break;
+    case 'clientes':   renderRelClientes(); break;
+    case 'pagamentos': renderRelPagamentos(); break;
+    case 'estoque':    renderRelEstoque(); break;
+    default:           renderRelVendas();
+  }
+}
 function relTab(tab,btnEl){
+  _relTabAtiva = tab;
   document.querySelectorAll('#page-relatorios .fin-tabs .fin-tab').forEach(b=>b.classList.remove('active'));
   if(btnEl)btnEl.classList.add('active');
   ['vendas','operadores','produtos','os','clientes','estoque','pagamentos'].forEach(t=>{
@@ -17152,25 +17366,22 @@ function renderRelPagamentos(){
   if(c2&&typeof Chart!=='undefined')G.charts.pagFat=new Chart(c2,{type:'doughnut',data:{labels,datasets:[{data:rows.map(([,d])=>d.total),backgroundColor:cores}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10}}}}}});
 }
 
-function renderRelatorios(){
-  const vendas=getRelVendas();
-  const fat=vendas.reduce((s,v)=>s+v.total,0);
+async function renderRelatorios(){
+  const vendas=getRelVendas();                            // apenas produtos (tipo !== 'servico_os')
+  const fatProd=vendas.reduce((s,v)=>s+v.total,0);
   const lucro=vendas.reduce((s,v)=>s+(v.lucro||0),0);
-  const ticket=vendas.length?fat/vendas.length:0;
-  const margem=fat>0?(lucro/fat*100):0;
+  const os=await getRelReceitaOS();                        // OS efetivamente recebida no período
+  const fat=fatProd+os.total;                              // Faturamento REALIZADO (produtos + OS recebida)
+  const nTrans=vendas.length+os.count;
+  const ticket=nTrans?fat/nTrans:0;
+  const margem=fatProd>0?(lucro/fatProd*100):0;            // margem dos produtos (OS não tem custo confiável)
   const elFat=document.getElementById('r-fat');if(elFat)elFat.textContent=fmt(fat);
   const elLucro=document.getElementById('r-lucro');if(elLucro)elLucro.textContent=fmt(lucro);
   const elTicket=document.getElementById('r-ticket');if(elTicket)elTicket.textContent=fmt(ticket);
   const elMargem=document.getElementById('r-margem');if(elMargem)elMargem.textContent=margem.toFixed(1)+'%';
 
-  // Renderiza a aba ativa no momento (padrão: vendas)
-  const abaAtiva=document.querySelector('#page-relatorios .fin-tabs .fin-tab.active');
-  const tab=abaAtiva ? abaAtiva.textContent.trim().toLowerCase() : 'vendas';
-  if(!abaAtiva || tab.includes('vendas')){renderRelVendas();}
-  // Estoque não depende do filtro de data, mas atualiza junto se já visível
-  if(document.getElementById('rel-estoque')&&document.getElementById('rel-estoque').style.display!=='none'){
-    renderRelEstoque();
-  }
+  // Re-renderiza a ABA ATIVA (não só Vendas), usando estado explícito
+  _renderRelAba(_relTabAtiva);
 }
 
 function renderRelVendas(){
@@ -17440,6 +17651,163 @@ function agendaColetarEventos(){
     }
   });
   return eventos;
+}
+
+/* ═══ CENTRAL DE ENTREGAS (Fatia 3) ═══════════════════════════════════
+   Materializa candidatos em `entregas` (idempotente):
+   • OS 'Pronto'/'Ag. Pagamento' não entregue → entrega (pago = valor_pago_os >= total)
+   • entregas_avulsas → espelhadas (origem_id = id da avulsa, evita duplicar)
+   Venda NÃO entra automática (sem campo de entrega) — só manual. */
+async function sincronizarEntregas(){
+  const empId=(typeof EID==='function'?EID():null); if(!empId) return [];
+  const { data: atuais, error } = await db.from('entregas').select('*').eq('empresa_id',empId);
+  if(error){ console.warn('entregas load:',error.message); return G.entregas||[]; }
+  G.entregas=atuais||[];
+  const porOrigem={}; G.entregas.forEach(e=>{ if(e.origem_id) porOrigem[e.origem_tipo+':'+e.origem_id]=e; });
+  const novos=[], updates=[];
+  const cliDe=id=>(G.clientes||[]).find(c=>c.id===id)||{};
+
+  (G.os||[]).forEach(o=>{
+    if(o.status!=='Pronto' && o.status!=='Ag. Pagamento') return;
+    const total=Number(o.total||0);
+    const pago = total>0 && Number(o.valor_pago_os||0)>=total;
+    const ex=porOrigem['os:'+o.id];
+    if(ex){
+      if(ex.pago!==pago && ex.status!=='entregue' && ex.status!=='cancelada')
+        updates.push({id:ex.id,patch:{pago,atualizado_em:new Date().toISOString()}});
+    } else {
+      const c=cliDe(o.cliente_id);
+      novos.push({empresa_id:empId,origem_tipo:'os',origem_id:o.id,cliente_id:o.cliente_id||null,
+        cliente_nome:o.cliente_nome||null,telefone:c.telefone||null,endereco:c.endereco||null,
+        descricao:o.aparelho||('OS '+(o.numero||'')),forma:'retirada',pago,status:'para_agendar'});
+    }
+  });
+  (G.entregasAvulsas||[]).forEach(a=>{
+    if(a.status==='cancelado') return;
+    if(porOrigem['avulsa:'+a.id]) return;
+    novos.push({empresa_id:empId,origem_tipo:'avulsa',origem_id:a.id,cliente_nome:a.cliente_nome||null,
+      descricao:a.titulo||'Compromisso',forma:'entrega',data_agendada:a.data||null,
+      janela:a.hora?String(a.hora).slice(0,5):null,observacoes:a.observacoes||null,pago:false,
+      status:a.status==='concluido'?'entregue':'agendada'});
+  });
+
+  if(novos.length){ const {error:eIns}=await db.from('entregas').insert(novos); if(eIns) console.warn('entregas insert:',eIns.message); }
+  for(const u of updates){ await db.from('entregas').update(u.patch).eq('id',u.id); }
+  const { data: fin } = await db.from('entregas').select('*').eq('empresa_id',empId);
+  G.entregas=fin||[];
+  return G.entregas;
+}
+
+let _entregaFiltro='todas';
+const _ENTREGA_ESTADOS=[['todas','Todas'],['para_agendar','Para agendar'],['agendada','Agendadas'],['hoje','Hoje'],['atrasadas','Atrasadas'],['em_rota','Em rota'],['retirada','Retirada'],['entregue','Entregues']];
+function _hojeYMD(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function _entregaMatch(e,f){
+  if(e.status==='cancelada') return false;
+  const h=_hojeYMD();
+  switch(f){
+    case 'todas': return true;
+    case 'para_agendar': return e.status==='para_agendar';
+    case 'agendada': return e.status==='agendada';
+    case 'em_rota': return e.status==='em_rota';
+    case 'retirada': return e.forma==='retirada' && e.status!=='entregue';
+    case 'entregue': return e.status==='entregue';
+    case 'hoje': return e.data_agendada===h && e.status!=='entregue';
+    case 'atrasadas': return e.data_agendada && e.data_agendada<h && e.status!=='entregue';
+    default: return true;
+  }
+}
+function setEntregaFiltro(f){ _entregaFiltro=f; renderCentralEntregas(); }
+function renderCentralEntregas(){
+  const chips=document.getElementById('central-chips'), cont=document.getElementById('central-cards');
+  if(!chips||!cont) return;
+  const lista=G.entregas||[];
+  chips.innerHTML=_ENTREGA_ESTADOS.map(([k,l])=>{
+    const n=lista.filter(e=>_entregaMatch(e,k)).length;
+    return `<button class="btn ${_entregaFiltro===k?'btn-pri':'btn-out'} btn-xs" onclick="setEntregaFiltro('${k}')">${l}${n?` (${n})`:''}</button>`;
+  }).join('');
+  const fil=lista.filter(e=>_entregaMatch(e,_entregaFiltro));
+  cont.innerHTML=fil.length?fil.map(_cardEntrega).join(''):'<div style="color:var(--txt3);font-size:13px;padding:16px;grid-column:1/-1;text-align:center">Nenhuma entrega neste filtro.</div>';
+}
+function _cardEntrega(e){
+  const tipoLbl={venda:'Produto',os:'OS',avulsa:'Compromisso'}[e.origem_tipo]||e.origem_tipo;
+  const stLbl={para_agendar:'Para agendar',agendada:'Agendada',em_rota:'Em rota',retirada:'Retirada',entregue:'Entregue',cancelada:'Cancelada'}[e.status]||e.status;
+  const isAvulsa=e.origem_tipo==='avulsa';
+  const pagoBadge=isAvulsa?'':(e.pago?'<span style="color:var(--success);font-size:11px"><i class="ti ti-check"></i> Pago</span>':'<span style="color:var(--warn);font-size:11px"><i class="ti ti-alert-triangle"></i> Pagamento pendente</span>');
+  const prontaTxt=(e.origem_tipo==='os'&&e.status==='para_agendar')?(e.pago?'<div style="font-size:11px;color:var(--success);font-weight:600;margin-top:3px">PRONTA PARA ENTREGA</div>':'<div style="font-size:11px;color:var(--warn);font-weight:600;margin-top:3px">PRONTA — PAGAMENTO PENDENTE</div>'):'';
+  const podeEntregar=isAvulsa||e.pago;
+  const dataTxt=e.data_agendada?`${fmtD(e.data_agendada+'T12:00')}${e.janela?(' · '+e.janela):''}`:'<span style="color:var(--txt3)">sem data</span>';
+  return `<div style="border:1px solid var(--border);border-radius:12px;padding:12px;background:var(--bg2)">
+    <div style="display:flex;justify-content:space-between;align-items:start;gap:8px">
+      <div style="font-weight:700;font-size:13.5px">${e.cliente_nome||'—'}</div>
+      <span class="tag tag-gry" style="font-size:10px">${tipoLbl}</span>
+    </div>
+    <div style="font-size:12px;color:var(--txt2);margin-top:2px">${e.descricao||''}</div>
+    ${prontaTxt}
+    <div style="font-size:11.5px;color:var(--txt3);margin-top:6px">${e.forma==='retirada'?'<i class="ti ti-building-store"></i> Retirada na loja':'<i class="ti ti-truck"></i> Entrega'} · ${dataTxt}</div>
+    <div style="display:flex;gap:8px;align-items:center;margin-top:6px">${pagoBadge}<span class="tag tag-blu" style="font-size:10px">${stLbl}</span></div>
+    ${e.endereco?`<div style="font-size:11px;color:var(--txt3);margin-top:4px"><i class="ti ti-map-pin"></i> ${e.endereco}</div>`:''}
+    <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:10px">
+      <button class="btn btn-out btn-xs" title="Agendar" onclick="agendarEntrega('${e.id}')"><i class="ti ti-calendar"></i></button>
+      <button class="btn btn-out btn-xs" title="Gerar link do cliente" onclick="gerarLinkEntrega('${e.id}')"><i class="ti ti-link"></i></button>
+      ${e.telefone?`<button class="btn btn-out btn-xs" title="WhatsApp" onclick="whatsappEntrega('${e.id}')"><i class="ti ti-brand-whatsapp"></i></button>`:''}
+      ${e.status!=='entregue'&&e.forma!=='retirada'?`<button class="btn btn-out btn-xs" title="Iniciar entrega" onclick="iniciarEntrega('${e.id}')"><i class="ti ti-route"></i></button>`:''}
+      ${e.status!=='entregue'?`<button class="btn ${podeEntregar?'btn-pri':'btn-out'} btn-xs" onclick="marcarEntregueEntrega('${e.id}')"><i class="ti ti-check"></i> Entregue</button>`:''}
+      ${e.origem_id&&!isAvulsa?`<button class="btn btn-out btn-xs" title="Ver origem" onclick="verOrigemEntrega('${e.id}')"><i class="ti ti-external-link"></i></button>`:''}
+    </div>
+  </div>`;
+}
+async function _updEntrega(id,patch){
+  patch.atualizado_em=new Date().toISOString();
+  const {error}=await db.from('entregas').update(patch).eq('id',id);
+  if(error){ notify('Erro: '+error.message,'error'); return false; }
+  const e=(G.entregas||[]).find(x=>x.id===id); if(e) Object.assign(e,patch);
+  renderCentralEntregas(); return true;
+}
+async function agendarEntrega(id){
+  const e=(G.entregas||[]).find(x=>x.id===id); if(!e) return;
+  const d=prompt('Data da entrega (AAAA-MM-DD):', e.data_agendada||''); if(d===null) return;
+  const j=prompt('Janela de horário (opcional, ex.: 14h-18h):', e.janela||'');
+  if(await _updEntrega(id,{data_agendada:d||null,janela:(j||'').trim()||null,status:(e.status==='para_agendar'?'agendada':e.status)})) notify('Entrega agendada.','success');
+}
+async function iniciarEntrega(id){ if(await _updEntrega(id,{status:'em_rota'})) notify('Entrega em rota.','info'); }
+async function marcarEntregueEntrega(id){
+  const e=(G.entregas||[]).find(x=>x.id===id); if(!e) return;
+  if(e.origem_tipo!=='avulsa' && !e.pago){ notify('Pagamento pendente — não liberado para entrega.','warn',5000); return; }
+  if(await _updEntrega(id,{status:'entregue',entregue_em:new Date().toISOString()})) notify('Marcada como entregue!','success');
+}
+function whatsappEntrega(id){
+  const e=(G.entregas||[]).find(x=>x.id===id); if(!e||!e.telefone) return;
+  const tel=String(e.telefone||'').replace(/\D/g,'');
+  const msg=encodeURIComponent(`Olá ${e.cliente_nome||''}! Sobre sua entrega: ${e.descricao||''}.`);
+  window.open(`https://wa.me/55${tel}?text=${msg}`,'_blank');
+}
+async function gerarLinkEntrega(id){
+  const e=(G.entregas||[]).find(x=>x.id===id); if(!e) return;
+  let tok=e.token_publico;
+  if(!tok){
+    tok=(crypto.randomUUID()+crypto.randomUUID()).replace(/-/g,'');   // alta entropia
+    const exp=new Date(Date.now()+30*24*3600*1000).toISOString();      // expira em 30 dias
+    const {error}=await db.from('entregas').update({token_publico:tok, token_expira_em:exp}).eq('id',id);
+    if(error){ notify('Erro ao gerar link: '+error.message,'error'); return; }
+    e.token_publico=tok; e.token_expira_em=exp;
+  }
+  const link=`${location.origin}/entrega.html?t=${tok}`;
+  try{ await navigator.clipboard.writeText(link); notify('Link de entrega copiado!','success'); }
+  catch(_){ notify('Link: '+link,'info',9000); }
+  if(e.telefone){
+    const tel=String(e.telefone).replace(/\D/g,'');
+    const msg=encodeURIComponent(`Olá ${e.cliente_nome||''}! Preencha seus dados de entrega aqui: ${link}`);
+    window.open(`https://wa.me/55${tel}?text=${msg}`,'_blank');
+  }
+}
+function verOrigemEntrega(id){
+  const e=(G.entregas||[]).find(x=>x.id===id); if(!e) return;
+  if(e.origem_tipo==='os') go('os'); else if(e.origem_tipo==='venda') go('hist-vendas');
+}
+async function initCentral(){
+  try{ await sincronizarEntregas(); }catch(e){ console.warn('sincronizarEntregas:',e); }
+  renderCentralEntregas();
+  renderAgenda();
 }
 
 function renderAgenda(){
