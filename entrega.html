@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Portal de Entrega MISU</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--pri:#1E5EFF;--bg:#F5F2EC;--bg2:#ffffff;--txt:#1A1230;--txt2:#5B5470;--txt3:#8A8296;--border:#E6DED3;--ok:#16a34a;--warn:#d97706}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;padding:16px}
+.wrap{max-width:460px;margin:0 auto}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:18px;padding:20px;box-shadow:0 4px 24px rgba(0,0,0,.06)}
+.logo{text-align:center;margin-bottom:14px;font-weight:800;font-size:20px;color:var(--pri)}
+h1{font-size:18px;margin-bottom:4px}
+.sub{color:var(--txt2);font-size:13px;margin-bottom:14px}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:5px 11px;border-radius:999px}
+.badge.ok{background:#e7f6ec;color:var(--ok)} .badge.warn{background:#fdf0e0;color:var(--warn)}
+.opt{display:flex;gap:10px;margin:16px 0}
+.opt button{flex:1;padding:14px;border:2px solid var(--border);border-radius:14px;background:#fff;font-weight:700;font-size:13.5px;cursor:pointer;color:var(--txt)}
+.opt button.sel{border-color:var(--pri);background:#eef3ff;color:var(--pri)}
+label{display:block;font-size:12px;font-weight:600;color:var(--txt2);margin:10px 0 4px}
+input,textarea{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:11px;font-size:14px;font-family:inherit;color:var(--txt);background:#fff}
+input:focus,textarea:focus{outline:none;border-color:var(--pri)}
+.row{display:flex;gap:10px}.row>*{flex:1}
+.chk{display:flex;gap:9px;align-items:center;margin:16px 0 6px;font-size:13px}
+.chk input{width:auto}
+.btn{width:100%;padding:14px;border:none;border-radius:13px;background:var(--pri);color:#fff;font-weight:700;font-size:15px;cursor:pointer;margin-top:8px}
+.btn:disabled{opacity:.5}
+.hide{display:none}
+.msg{text-align:center;padding:34px 10px;font-size:15px;line-height:1.6}
+.store{font-size:12.5px;color:var(--txt2);background:#f7f4ef;border-radius:12px;padding:12px;margin:12px 0}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"><div class="card"><div class="msg">Carregando…</div></div></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SURL='https://icgfpfwcnhkjglrmnuca.supabase.co';
+const SKEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljZ2ZwZndjbmhramdscm1udWNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwODA2OTEsImV4cCI6MjA5NTY1NjY5MX0.xDGiGCIlqXaqdWhWo0NoNi_XUdlw5raCogO_Jnc0ezw';
+const db=supabase.createClient(SURL,SKEY);
+const token=new URLSearchParams(location.search).get('t');
+let E=null, forma='entrega';
+
+function esc(s){ return String(s==null?'':s).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
+function erro(m){ document.getElementById('app').innerHTML=`<div class="card"><div class="msg">⚠️<br>${esc(m)}</div></div>`; }
+
+async function load(){
+  if(!token){ return erro('Link inválido.'); }
+  try{
+    const { data, error } = await db.rpc('entrega_publica', { tok: token });
+    if(error){ return erro('Não foi possível carregar. Tente novamente mais tarde.'); }
+    if(!data){ return erro('Link inválido ou expirado.'); }
+    if(data.ok===false){ return erro(data.expirado?'Este link expirou. Peça um novo à loja.':'Link indisponível.'); }
+    E=data; forma=data.forma||'entrega'; render();
+  }catch(e){ erro('Erro ao carregar.'); }
+}
+
+function render(){
+  const d=E.dados||{};
+  const pago = E.pago
+    ? '<span class="badge ok">✓ Pagamento confirmado</span>'
+    : '<span class="badge warn">⚠ Pagamento pendente</span>';
+  const jaFeito = E.dados_preenchidos ? '<div class="store">✓ Você já enviou seus dados. Pode reenviar para atualizar.</div>' : '';
+  document.getElementById('app').innerHTML=`<div class="card">
+    <div class="logo">${esc(E.loja_nome||'Portal de Entrega')}</div>
+    <h1>Como você prefere receber?</h1>
+    <div class="sub">${esc(E.descricao||'')}</div>
+    <div>${pago}</div>
+    ${jaFeito}
+    <div class="opt">
+      <button id="op-e" onclick="setForma('entrega')">🚚 Receber no endereço</button>
+      <button id="op-r" onclick="setForma('retirada')">🏬 Retirar na loja</button>
+    </div>
+    <div id="form-entrega">
+      <label>Nome do recebedor *</label><input id="f-rec" value="${esc(d.rec_nome)}">
+      <label>Telefone</label><input id="f-tel" inputmode="tel" value="${esc(d.rec_telefone)}">
+      <div class="row"><div><label>CEP</label><input id="f-cep" inputmode="numeric" value="${esc(d.cep)}"></div><div><label>UF</label><input id="f-uf" maxlength="2" style="text-transform:uppercase" value="${esc(d.uf)}"></div></div>
+      <label>Rua *</label><input id="f-rua" value="${esc(d.rua)}">
+      <div class="row"><div><label>Número *</label><input id="f-num" value="${esc(d.numero)}"></div><div><label>Complemento</label><input id="f-comp" value="${esc(d.complemento)}"></div></div>
+      <label>Bairro</label><input id="f-bairro" value="${esc(d.bairro)}">
+      <label>Cidade *</label><input id="f-cidade" value="${esc(d.cidade)}">
+      <label>Ponto de referência</label><input id="f-ref" value="${esc(d.referencia)}">
+    </div>
+    <div id="form-retirada" class="hide"><div class="store">Você retira na loja${E.loja_nome?(' — '+esc(E.loja_nome)):''}. Escolha a data desejada abaixo.</div>
+      <label>Nome de quem vai retirar *</label><input id="f-rec-r" value="${esc(d.rec_nome)}">
+    </div>
+    <div class="row"><div><label>Data desejada</label><input id="f-data" type="date" value="${esc(E.data_agendada)}"></div><div><label>Janela</label><input id="f-jan" placeholder="14h-18h" value="${esc(E.janela)}"></div></div>
+    <label>Observações</label><textarea id="f-obs" rows="2">${esc(d.observacoes)}</textarea>
+    <div class="chk"><input type="checkbox" id="f-conf"><label for="f-conf" style="margin:0">Confirmo que os dados acima estão corretos.</label></div>
+    <button class="btn" id="btn-conf" onclick="confirmar()">CONFIRMAR ${forma==='retirada'?'RETIRADA':'ENTREGA'}</button>
+  </div>`;
+  setForma(forma);
+}
+
+function setForma(f){
+  forma=f;
+  document.getElementById('op-e').classList.toggle('sel',f==='entrega');
+  document.getElementById('op-r').classList.toggle('sel',f==='retirada');
+  document.getElementById('form-entrega').classList.toggle('hide',f==='retirada');
+  document.getElementById('form-retirada').classList.toggle('hide',f!=='retirada');
+  const b=document.getElementById('btn-conf'); if(b) b.textContent='CONFIRMAR '+(f==='retirada'?'RETIRADA':'ENTREGA');
+}
+
+async function confirmar(){
+  if(!document.getElementById('f-conf').checked){ alert('Marque a confirmação dos dados.'); return; }
+  const g=id=>(document.getElementById(id)?.value||'').trim();
+  const p={ forma, data:g('f-data'), janela:g('f-jan'), observacoes:g('f-obs'), referencia:g('f-ref') };
+  if(forma==='entrega'){
+    Object.assign(p,{ rec_nome:g('f-rec'), rec_telefone:g('f-tel'), cep:g('f-cep'), rua:g('f-rua'),
+      numero:g('f-num'), complemento:g('f-comp'), bairro:g('f-bairro'), cidade:g('f-cidade'), uf:g('f-uf') });
+    if(!p.rec_nome||!p.rua||!p.numero||!p.cidade){ alert('Preencha: nome, rua, número e cidade.'); return; }
+  } else {
+    p.rec_nome=g('f-rec-r');
+    if(!p.rec_nome){ alert('Informe o nome de quem vai retirar.'); return; }
+  }
+  const btn=document.getElementById('btn-conf'); btn.disabled=true; btn.textContent='Enviando…';
+  try{
+    const { data, error } = await db.rpc('entrega_publica_confirmar', { tok:token, p, ua:navigator.userAgent });
+    if(error||!data||data.ok===false){ throw new Error(); }
+    document.getElementById('app').innerHTML=`<div class="card"><div class="msg">✅<br><b>${forma==='retirada'?'Retirada':'Entrega'} confirmada!</b><br><span style="color:var(--txt2);font-size:13px">A loja recebeu seus dados. Obrigado!</span></div></div>`;
+  }catch(e){ btn.disabled=false; btn.textContent='Tentar novamente'; alert('Não foi possível confirmar. Verifique os dados e tente de novo.'); }
+}
+
+load();
+</script>
+</body>
+</html>
