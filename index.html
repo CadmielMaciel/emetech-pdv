@@ -3997,6 +3997,14 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
               <div class="empty-st" style="padding:20px"><i class="ti ti-brand-whatsapp"></i><h3>Configure em Aparência & Marca</h3><p style="font-size:12px">As configurações de WhatsApp ficam na aba Aparência & Marca → WhatsApp.</p><button class="btn btn-out btn-sm" onclick="go('aparencia')" style="margin-top:8px"><i class="ti ti-external-link"></i> Ir para Aparência</button></div>
             </div>
           </div>
+          <!-- IA / Assistente Técnico (Fatia 7) -->
+          <div class="card" style="max-width:640px;margin-top:16px">
+            <div class="card-hdr" style="margin-bottom:14px"><div class="card-title"><i class="ti ti-sparkles" style="color:var(--pri)"></i> Assistente Técnico (IA)</div></div>
+            <div style="font-size:12.5px;color:var(--txt2);margin-bottom:12px">A chave da IA fica protegida no servidor (Edge Function). Aqui você verifica se a conexão com o provedor está funcionando.</div>
+            <div id="ia-test-status" style="margin-bottom:12px"></div>
+            <button class="btn btn-pri" onclick="testarConexaoIA()" id="ia-test-btn"><i class="ti ti-plug-connected"></i> Testar conexão</button>
+            <div style="font-size:11.5px;color:var(--txt3);margin-top:14px;padding-top:12px;border-top:1px solid var(--border)"><i class="ti ti-shield-lock"></i> A chave nunca aparece aqui nem no navegador — o teste roda no servidor.</div>
+          </div>
         </div>
 
         <!-- ABA: ORDENS DE SERVIÇO -->
@@ -11089,6 +11097,7 @@ async function saveTecnicoOrc(confirmar){
   const g=k=>document.getElementById(k);
   const valor=parseFloat(g('orctec-valor').value)||0;
   if(confirmar && valor<=0){notify('Informe o valor ao cliente antes de confirmar.','error');return;}
+  const o=G.orcamentos.find(x=>x.id===id)||{};
   const payload={
     diagnostico:(g('orctec-diag').value||'').trim()||null,
     testes:(g('orctec-testes').value||'').trim()||null,
@@ -11104,6 +11113,10 @@ async function saveTecnicoOrc(confirmar){
     tecnico_id:G.profile.id, tecnico_nome:G.profile.nome,
     status: confirmar?'aguardando_cliente':'em_analise'
   };
+  if(confirmar && !o.token_publico){
+    payload.token_publico=(crypto.randomUUID()+crypto.randomUUID()).replace(/-/g,'');
+    const _exp=new Date(); _exp.setDate(_exp.getDate()+15); payload.token_expira_em=_exp.toISOString();
+  }
   setLoad(true);
   const {data,error}=await db.from('orcamentos').update(payload).eq('id',id).select().single();
   setLoad(false);
@@ -11182,6 +11195,30 @@ async function converterOrcEmOS(id){
     renderOrcamentos(); if(typeof renderOSList==='function') renderOSList(); if(typeof renderDashboard==='function') renderDashboard();
     notify((data.numero||numero)+' criada a partir do orçamento!','success',6000);
   });
+}
+
+/* 6.4 — link do portal público de aprovação */
+function linkPublicoOrcamento(o){ return o?.token_publico?`${location.origin}/orcamento.html?t=${o.token_publico}`:null; }
+async function copiarLinkOrcamento(id){
+  const o=G.orcamentos.find(x=>x.id===id); if(!o)return;
+  if(!o.token_publico){
+    const tok=(crypto.randomUUID()+crypto.randomUUID()).replace(/-/g,'');
+    const exp=new Date(); exp.setDate(exp.getDate()+15);
+    setLoad(true);
+    const {error}=await db.from('orcamentos').update({token_publico:tok,token_expira_em:exp.toISOString()}).eq('id',id);
+    setLoad(false);
+    if(error){notify('Erro ao gerar link: '+error.message,'error');return;}
+    o.token_publico=tok;
+  }
+  const link=linkPublicoOrcamento(o);
+  try{ await navigator.clipboard.writeText(link); notify('Link de aprovação copiado!','success'); }catch(_){ }
+  const cli=(G.clientes||[]).find(c=>c.id===o.cliente_id||c.nome===o.cliente_nome);
+  const tel=(cli?.whatsapp||cli?.telefone||'').replace(/\D/g,'');
+  if(tel){
+    const msg=`Olá ${o.cliente_nome||''}! 🔧\n\nSeu orçamento de assistência (${o.aparelho||''}) está pronto para aprovação:\n\n${link}\n\nÉ só abrir e aprovar ou recusar.`;
+    confirmAct('Enviar ao cliente?',`Abrir o WhatsApp de <b>${esc(o.cliente_nome||'')}</b> com o link de aprovação?`,
+      ()=>window.open(`https://api.whatsapp.com/send?phone=55${tel}&text=${encodeURIComponent(msg)}`,'_blank'));
+  }
 }
 
 function addOrcItem(){
@@ -11295,7 +11332,7 @@ function renderOrcamentos(q=''){
     <td><div style="display:flex;gap:3px">
       ${(o.status!=='convertido'&&o.status!=='convertido_os')?`<button class="btn btn-out btn-xs" onclick="${o.tipo==='assistencia'?`abrirAssistOrc('${o.id}')`:`reabrirOrc('${o.id}')`}" title="Editar"><i class="ti ti-edit"></i></button>`:''}
       ${(o.tipo==='assistencia'&&(o.status==='aguardando_analise'||o.status==='em_analise'))?`<button class="btn btn-pri btn-xs" onclick="abrirTecnicoOrc('${o.id}')" title="Análise técnica"><i class="ti ti-microscope"></i>Analisar</button>`:''}
-      ${(o.tipo==='assistencia'&&o.status==='aguardando_cliente')?`<button class="btn btn-success btn-xs" onclick="aprovarOrcBalcao('${o.id}')" title="Aprovar (balcão)"><i class="ti ti-check"></i></button><button class="btn btn-danger btn-xs" onclick="recusarOrc('${o.id}')" title="Recusar (balcão)"><i class="ti ti-x"></i></button>`:''}
+      ${(o.tipo==='assistencia'&&o.status==='aguardando_cliente')?`<button class="btn btn-out btn-xs" onclick="copiarLinkOrcamento('${o.id}')" title="Link de aprovação"><i class="ti ti-link"></i></button><button class="btn btn-success btn-xs" onclick="aprovarOrcBalcao('${o.id}')" title="Aprovar (balcão)"><i class="ti ti-check"></i></button><button class="btn btn-danger btn-xs" onclick="recusarOrc('${o.id}')" title="Recusar (balcão)"><i class="ti ti-x"></i></button>`:''}
       ${(o.tipo==='assistencia'&&o.status==='aprovado')?`<button class="btn btn-pri btn-xs" onclick="converterOrcEmOS('${o.id}')" title="Criar OS"><i class="ti ti-clipboard-plus"></i>Criar OS</button>`:''}
       ${(o.tipo!=='assistencia'&&o.status==='aberto')?`<button class="btn btn-success btn-xs" onclick="conv2venda('${o.id}')"><i class="ti ti-shopping-cart"></i>Converter</button>`:''}
       <button class="btn btn-out btn-xs" onclick="gerarPdfOrcamento('${o.id}')" title="PDF"><i class="ti ti-file-text"></i></button>
@@ -17171,6 +17208,46 @@ function abrirDiagnosticoIA(aparelhoPre, sintomaPre){
   abrirModalGenerico(html, foot);
 }
 
+/* 7 — mapeamento de erros da IA (título + mensagem clara, sem expor segredo) */
+function _iaErroTitulo(code){ return ({
+  AI_AUTH_ERROR:'Chave / permissão recusada',
+  AI_RATE_LIMIT_DIA:'Cota diária atingida',
+  AI_RATE_LIMIT_MINUTO:'Muitas consultas por minuto',
+  AI_UNAVAILABLE:'IA indisponível',
+  BAD_REQUEST:'Dados incompletos'
+})[code]||'Não deu certo'; }
+function _iaErroMsg(code, fallback){ return ({
+  AI_AUTH_ERROR:'O Gemini recusou a chave (401/403). Costuma ser chave revogada, a API "Generative Language" desativada no projeto, ou restrições de chave (referrer/IP). Gere uma chave nova sem restrições no Google AI Studio e atualize o secret GEMINI_API_KEY.',
+  AI_RATE_LIMIT_DIA:'O limite diário de consultas da IA foi atingido. Renova por volta das 4h (horário de Brasília).',
+  AI_RATE_LIMIT_MINUTO:'Muitas consultas em pouco tempo. Aguarde cerca de 1 minuto e tente de novo.',
+  AI_UNAVAILABLE:fallback||'A IA não conseguiu responder agora. Tente novamente em instantes.',
+  BAD_REQUEST:fallback||'Preencha o aparelho e o sintoma corretamente.'
+})[code]||fallback||'Não foi possível analisar agora.'; }
+
+/* 7 — teste administrativo de conexão da IA (usa o autodiagnóstico GET da função) */
+async function testarConexaoIA(){
+  const box=document.getElementById('ia-test-status');
+  const btn=document.getElementById('ia-test-btn');
+  if(btn){ btn.disabled=true; btn.innerHTML='<i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Testando...'; }
+  const card=(cor,ico,txt,sub)=>{ if(box) box.innerHTML=`<div class="card" style="padding:11px 14px;border-left:3px solid ${cor};font-size:12.5px"><b style="color:${cor}"><i class="ti ${ico}"></i> ${txt}</b>${sub?`<div style="color:var(--txt3);margin-top:5px;font-size:11.5px;line-height:1.55">${sub}</div>`:''}</div>`; };
+  try{
+    const { data, error } = await db.functions.invoke('diagnostico-ia', { method:'GET' });
+    if(error) throw new Error(error.message||'falha na chamada');
+    if(data && data.success){
+      const prim=data.configurado?.primario||'—';
+      if(data.primario_disponivel){
+        card('#16a34a','ti-circle-check','IA conectada', `Modelo <b>${esc(prim)}</b> disponível na sua chave.`);
+      } else {
+        const disp=(data.modelos_disponiveis||[]).slice(0,12).map(esc).join(', ')||'nenhum';
+        card('var(--warn,#f59e0b)','ti-alert-triangle','Modelo indisponível', `O modelo primário <b>${esc(prim)}</b> não aparece na sua chave.<br>Disponíveis: ${disp}.<br>Ajuste o secret <b>GEMINI_PRIMARY_MODEL</b> para um desses.`);
+      }
+    } else {
+      const code=data?.error?.code||''; card('var(--danger,#dc2626)','ti-alert-triangle',_iaErroTitulo(code),_iaErroMsg(code,data?.error?.message));
+    }
+  }catch(e){ card('var(--danger,#dc2626)','ti-wifi-off','Não foi possível testar', esc(e.message||'Erro ao chamar a função de IA.')); }
+  finally{ if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-plug-connected"></i> Testar conexão'; } }
+}
+
 async function consultarDiagnosticoIA(forcar){
   const aparelho=(document.getElementById('diag-aparelho')?.value||'').trim();
   const sintoma=(document.getElementById('diag-sintoma')?.value||'').trim();
@@ -17224,8 +17301,8 @@ async function consultarDiagnosticoIA(forcar){
 
     if(!data || !data.success){
       const code=data?.error?.code||'';
-      const msg=data?.error?.message||'Não foi possível analisar agora.';
-      if(res) res.innerHTML=`<div class="card" style="border-left:3px solid var(--danger,#dc2626);padding:12px 14px;font-size:12.5px"><b>Não deu certo.</b><div style="color:var(--txt2);margin-top:4px">${esc(msg)}</div>${code==='AI_AUTH_ERROR'?'<div style="font-size:11px;color:var(--txt3);margin-top:6px">O administrador precisa revisar a chave da IA.</div>':''}</div>`;
+      const msg=_iaErroMsg(code, data?.error?.message);
+      if(res) res.innerHTML=`<div class="card" style="border-left:3px solid var(--danger,#dc2626);padding:12px 14px;font-size:12.5px"><b>${esc(_iaErroTitulo(code))}.</b><div style="color:var(--txt2);margin-top:4px">${esc(msg)}</div></div>`;
       return;
     }
 
@@ -17446,21 +17523,27 @@ async function salvarSolucao(){
   const como=document.getElementById('sol-como').value.trim();
   if(!titulo||!causa||!como){notify('Preencha título, causa real e como resolveu.','warn');return;}
   const editId=document.getElementById('sol-id').value;
+  // Fatia 8 — base canônica única: solucoes
   const payload={
-    empresa_id:EID(), titulo, aparelho:document.getElementById('sol-aparelho').value||null,
-    padrao_panic:document.getElementById('sol-padrao').value||null,
-    causa_real:causa, como_resolveu:como, pecas_usadas:document.getElementById('sol-pecas').value||null,
+    empresa_id:EID(),
+    aparelho:(document.getElementById('sol-aparelho').value||'').trim()||'—',
+    sintoma:titulo,
+    causa,
+    solucao:como,
+    como_verificar:document.getElementById('sol-padrao').value||null,
+    peca_usada:document.getElementById('sol-pecas').value||null,
+    origem:'panic',
     atualizado_em:new Date().toISOString()
   };
   setLoad(true);
   if(editId){
-    const {data,error}=await db.from('solucoes_diagnostico').update(payload).eq('id',editId).select().single();
+    const {data,error}=await db.from('solucoes').update(payload).eq('id',editId).select().single();
     setLoad(false);
     if(error){notify('Erro: '+error.message,'error');return;}
     const i=G_SOLUCOES.findIndex(s=>s.id===editId); if(i>=0)G_SOLUCOES[i]=data;
   }else{
     payload.criado_por=G.profile?.id||null;
-    const {data,error}=await db.from('solucoes_diagnostico').insert(payload).select().single();
+    const {data,error}=await db.from('solucoes').insert(payload).select().single();
     setLoad(false);
     if(error){notify('Erro: '+error.message,'error');return;}
     G_SOLUCOES.unshift(data);
@@ -17473,41 +17556,45 @@ async function salvarSolucao(){
   notify('✅ Solução salva na sua base de conhecimento!','success');
 }
 async function carregarSolucoes(){
-  try{ const {data}=await db.from('solucoes_diagnostico').select('*').order('criado_em',{ascending:false}).limit(300); G_SOLUCOES=data||[]; }catch(e){G_SOLUCOES=[];}
+  try{ const {data}=await db.from('solucoes').select('*').eq('empresa_id',EID()).order('criado_em',{ascending:false}).limit(500); G_SOLUCOES=data||[]; }catch(e){G_SOLUCOES=[];}
 }
 async function renderSolucoes(){
   if(!G_SOLUCOES.length) await carregarSolucoes();
   const busca=(document.getElementById('sol-busca')?.value||'').toLowerCase();
   let list=G_SOLUCOES.slice();
-  if(busca)list=list.filter(s=>(s.titulo+' '+(s.aparelho||'')+' '+(s.causa_real||'')+' '+(s.como_resolveu||'')).toLowerCase().includes(busca));
+  if(busca)list=list.filter(s=>((s.sintoma||'')+' '+(s.aparelho||'')+' '+(s.causa||'')+' '+(s.solucao||'')).toLowerCase().includes(busca));
   const cont=document.getElementById('sol-list'); if(!cont)return;
+  const orig={ia:['IA','#3b5eff'],panic:['Panic','#8b5cf6'],manual:['Manual','#64748b']};
   cont.innerHTML=list.length===0
     ?'<div class="card" style="text-align:center;padding:30px;color:var(--txt3)"><i class="ti ti-bulb" style="font-size:32px;opacity:.4"></i><p style="margin-top:8px">Nenhuma solução ainda. Resolva um diagnóstico para começar sua base de conhecimento.</p></div>'
-    :list.map(s=>`<div class="card" style="margin-bottom:10px">
+    :list.map(s=>{ const [ol,oc]=orig[s.origem]||orig.manual; return `<div class="card" style="margin-bottom:10px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
         <div style="flex:1">
-          <div style="font-weight:700;font-size:14px">${s.titulo}</div>
-          ${s.aparelho?`<div style="font-size:11.5px;color:var(--txt3)">${s.aparelho}</div>`:''}
+          <div style="font-weight:700;font-size:14px">${esc(s.sintoma||'')}</div>
+          ${s.aparelho&&s.aparelho!=='—'?`<div style="font-size:11.5px;color:var(--txt3)">${esc(s.aparelho)}</div>`:''}
         </div>
-        <button class="btn btn-out btn-xs" onclick="editarSolucao('${s.id}')"><i class="ti ti-edit"></i></button>
+        <div style="display:flex;gap:5px;align-items:center">
+          <span style="font-size:9px;font-weight:700;color:${oc};background:${oc}18;border-radius:99px;padding:2px 7px">${ol}</span>
+          <button class="btn btn-out btn-xs" onclick="editarSolucao('${s.id}')"><i class="ti ti-edit"></i></button>
+        </div>
       </div>
-      <div style="font-size:12.5px;margin-top:8px"><b style="color:var(--pri)">Causa:</b> ${s.causa_real}</div>
-      <div style="font-size:12.5px;margin-top:3px"><b style="color:var(--success)">Solução:</b> ${s.como_resolveu}</div>
-      ${s.pecas_usadas?`<div style="font-size:11.5px;color:var(--txt3);margin-top:3px">Peças: ${s.pecas_usadas}</div>`:''}
-      ${s.padrao_panic?`<div style="font-size:10.5px;color:var(--txt3);margin-top:5px;font-family:monospace">🔍 ${s.padrao_panic}</div>`:''}
-    </div>`).join('');
+      ${s.causa?`<div style="font-size:12.5px;margin-top:8px"><b style="color:var(--pri)">Causa:</b> ${esc(s.causa)}</div>`:''}
+      <div style="font-size:12.5px;margin-top:3px"><b style="color:var(--success)">Solução:</b> ${esc(s.solucao||'')}</div>
+      ${s.peca_usada?`<div style="font-size:11.5px;color:var(--txt3);margin-top:3px">Peças: ${esc(s.peca_usada)}</div>`:''}
+      ${s.como_verificar?`<div style="font-size:10.5px;color:var(--txt3);margin-top:5px;font-family:monospace">🔍 ${esc(s.como_verificar)}</div>`:''}
+    </div>`;}).join('');
 }
 function editarSolucao(id){
   const s=G_SOLUCOES.find(x=>x.id===id); if(!s)return;
   abrirNovaSolucao();
   document.getElementById('sol-ttl').textContent='Editar Solução';
   document.getElementById('sol-id').value=s.id;
-  document.getElementById('sol-titulo').value=s.titulo||'';
-  document.getElementById('sol-aparelho').value=s.aparelho||'';
-  document.getElementById('sol-pecas').value=s.pecas_usadas||'';
-  document.getElementById('sol-padrao').value=s.padrao_panic||'';
-  document.getElementById('sol-causa').value=s.causa_real||'';
-  document.getElementById('sol-como').value=s.como_resolveu||'';
+  document.getElementById('sol-titulo').value=s.sintoma||'';
+  document.getElementById('sol-aparelho').value=(s.aparelho&&s.aparelho!=='—')?s.aparelho:'';
+  document.getElementById('sol-pecas').value=s.peca_usada||'';
+  document.getElementById('sol-padrao').value=s.como_verificar||'';
+  document.getElementById('sol-causa').value=s.causa||'';
+  document.getElementById('sol-como').value=s.solucao||'';
 }
 
 /* ── RELATÓRIOS ──────────────────────────────────────── */
