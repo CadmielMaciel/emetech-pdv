@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aprovação de Orçamento</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="icon" type="image/png" href="/icon-192.png">
+<style>
+:root{--pri:#1E5EFF;--pri2:#3D8BFF;--bg:#070B1A;--card:#0E1730;--card2:#13204A;--txt:#EAF0FF;--txt2:#A8BAE8;--txt3:#6B7FB8;--border:#1B2A55;--success:#10B981;--warn:#F59E0B;--danger:#EF4444}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;background-image:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(30,94,255,.18),transparent)}
+.wrap{max-width:560px;margin:0 auto;padding:28px 18px 60px}
+.header{text-align:center;margin-bottom:22px}
+.header img{width:74px;height:74px;object-fit:contain;filter:drop-shadow(0 4px 18px rgba(30,94,255,.5))}
+.emp-nome{font-family:'Syne',sans-serif;font-weight:800;font-size:19px;margin-top:10px;letter-spacing:.5px}
+.emp-sub{font-size:12px;color:var(--txt3);margin-top:2px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:20px;margin-bottom:14px;box-shadow:0 8px 32px rgba(0,0,0,.35)}
+.orc-num{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:var(--pri2)}
+.status-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 16px;border-radius:99px;font-size:13px;font-weight:700;margin-top:8px}
+.aparelho{font-size:16px;font-weight:700;margin-top:14px}
+.linha{font-size:13.5px;color:var(--txt2);margin-top:6px;line-height:1.5}
+.linha b{color:var(--txt)}
+.sec-t{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--txt3);font-weight:700;margin:18px 0 8px}
+.peca{display:flex;justify-content:space-between;font-size:13.5px;padding:7px 0;border-bottom:1px dashed var(--border)}
+.valor-box{background:linear-gradient(135deg,rgba(30,94,255,.16),rgba(61,139,255,.06));border:1px solid var(--pri);border-radius:14px;padding:16px;text-align:center;margin-top:18px}
+.valor-box .lbl{font-size:12px;color:var(--txt2);text-transform:uppercase;letter-spacing:.6px}
+.valor-box .val{font-family:'Syne',sans-serif;font-weight:800;font-size:30px;color:var(--txt);margin-top:2px}
+.meta{display:flex;gap:10px;margin-top:12px}
+.meta .m{flex:1;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center}
+.meta .m .k{font-size:11px;color:var(--txt3)}
+.meta .m .v{font-size:14px;font-weight:700;margin-top:2px}
+.btns{display:flex;gap:10px;margin-top:20px}
+.btn{flex:1;border:none;border-radius:12px;padding:15px;font-size:15px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:7px;transition:transform .1s}
+.btn:active{transform:scale(.97)}
+.btn-ok{background:var(--success);color:#fff}
+.btn-no{background:transparent;color:var(--danger);border:1.5px solid var(--danger)}
+.center{text-align:center;padding:60px 20px;color:var(--txt3)}
+.center i{font-size:44px;display:block;margin-bottom:14px;opacity:.6}
+.obs{background:var(--card2);border-radius:10px;padding:12px;font-size:13px;color:var(--txt2);margin-top:10px;line-height:1.5}
+.result{text-align:center;padding:30px 16px}
+.result i{font-size:52px;display:block;margin-bottom:12px}
+.foot{text-align:center;font-size:11px;color:var(--txt3);margin-top:18px;line-height:1.6}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="conteudo"><div class="center"><i class="ti ti-loader-2" style="animation:pulse 1s infinite"></i><p>Carregando orçamento…</p></div></div>
+</div>
+
+<script>
+const SURL = 'https://icgfpfwcnhkjglrmnuca.supabase.co';
+const SKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljZ2ZwZndjbmhramdscm1udWNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwODA2OTEsImV4cCI6MjA5NTY1NjY5MX0.xDGiGCIlqXaqdWhWo0NoNi_XUdlw5raCogO_Jnc0ezw';
+const db = supabase.createClient(SURL, SKEY);
+
+const token = new URLSearchParams(location.search).get('t') || '';
+const esc = s => String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = v => 'R$ ' + (parseFloat(v)||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
+const fmtD = d => d ? new Date(d+(String(d).length===10?'T12:00':'')).toLocaleDateString('pt-BR') : '—';
+
+const STATUS = {
+  aguardando_cliente:{cor:'#F59E0B',bg:'rgba(245,158,11,.14)',ico:'ti-clock',txt:'Aguardando sua aprovação'},
+  aprovado:{cor:'#10B981',bg:'rgba(16,185,129,.14)',ico:'ti-circle-check',txt:'Aprovado'},
+  recusado:{cor:'#EF4444',bg:'rgba(239,68,68,.14)',ico:'ti-circle-x',txt:'Recusado'},
+  convertido_os:{cor:'#3D8BFF',bg:'rgba(61,139,255,.14)',ico:'ti-tool',txt:'Em atendimento'},
+  em_analise:{cor:'#8B5CF6',bg:'rgba(139,92,246,.14)',ico:'ti-search',txt:'Em análise técnica'},
+  aguardando_analise:{cor:'#8B5CF6',bg:'rgba(139,92,246,.14)',ico:'ti-search',txt:'Em análise técnica'},
+  expirado:{cor:'#6B7280',bg:'rgba(107,114,128,.14)',ico:'ti-ban',txt:'Expirado'}
+};
+
+let _orc = null;
+
+async function carregar(){
+  if(!token || token.length < 32){
+    document.getElementById('conteudo').innerHTML =
+      '<div class="center"><i class="ti ti-link-off"></i><p>Link inválido ou incompleto.<br>Solicite o link à loja.</p></div>';
+    return;
+  }
+  try{
+    const { data, error } = await db.rpc('orcamento_publico', { tok: token });
+    if(error) throw error;
+    if(!data){
+      document.getElementById('conteudo').innerHTML =
+        '<div class="center"><i class="ti ti-file-off"></i><p>Orçamento não encontrado ou expirado.<br>Verifique o link com a loja.</p></div>';
+      return;
+    }
+    _orc = data;
+    render(data);
+  }catch(e){
+    document.getElementById('conteudo').innerHTML =
+      '<div class="center"><i class="ti ti-wifi-off"></i><p>Não foi possível carregar agora.<br>Tente novamente em instantes.</p></div>';
+  }
+}
+
+function render(o){
+  const st = STATUS[o.status] || STATUS['aguardando_cliente'];
+  const pecas = Array.isArray(o.pecas) ? o.pecas : [];
+  const header = `
+    <div class="header">
+      ${o.logo?`<img src="${esc(o.logo)}" alt="">`:'<div style="font-size:44px">🔧</div>'}
+      <div class="emp-nome">${esc(o.empresa_nome||'Assistência Técnica')}</div>
+      <div class="emp-sub">Orçamento de assistência técnica</div>
+    </div>`;
+
+  const respondido = o.status!=='aguardando_cliente';
+  const resultBanner = respondido ? `
+    <div class="result" style="color:${st.cor}">
+      <i class="ti ${st.ico}"></i>
+      <div style="font-size:18px;font-weight:800">${o.status==='aprovado'||o.status==='convertido_os'?'Orçamento aprovado':o.status==='recusado'?'Orçamento recusado':st.txt}</div>
+      <div style="font-size:13px;color:var(--txt3);margin-top:6px">${o.status==='aprovado'||o.status==='convertido_os'?'Obrigado! Já vamos dar andamento no reparo.':o.status==='recusado'?'Tudo bem. Fale com a loja se mudar de ideia.':''}</div>
+    </div>` : '';
+
+  document.getElementById('conteudo').innerHTML = `
+    ${header}
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div class="orc-num">Orçamento #${String(o.numero||0).padStart(4,'0')}</div>
+          <span class="status-pill" style="color:${st.cor};background:${st.bg};border:1.5px solid ${st.cor}44"><i class="ti ${st.ico}"></i> ${esc(st.txt)}</span>
+        </div>
+      </div>
+      <div class="aparelho">${esc(o.aparelho||'')}</div>
+      ${o.sintoma?`<div class="linha"><b>Problema relatado:</b> ${esc(o.sintoma)}</div>`:''}
+      ${o.diagnostico?`<div class="linha"><b>Diagnóstico:</b> ${esc(o.diagnostico)}</div>`:''}
+      ${o.servicos?`<div class="linha"><b>Serviço:</b> ${esc(o.servicos)}</div>`:''}
+
+      ${pecas.length?`<div class="sec-t">Peças</div>${pecas.map(p=>`<div class="peca"><span>${esc(p.nome)} ${p.qty>1?`× ${p.qty}`:''}</span><span>${fmt((p.preco||0)*(p.qty||1))}</span></div>`).join('')}`:''}
+
+      <div class="valor-box">
+        <div class="lbl">Valor total do reparo</div>
+        <div class="val">${fmt(o.valor)}</div>
+      </div>
+
+      <div class="meta">
+        <div class="m"><div class="k">Prazo</div><div class="v">${o.prazo_dias?o.prazo_dias+' dia(s)':'—'}</div></div>
+        <div class="m"><div class="k">Garantia</div><div class="v">${o.garantia_dias?o.garantia_dias+' dias':'—'}</div></div>
+        <div class="m"><div class="k">Válido até</div><div class="v" style="font-size:12.5px">${fmtD(o.validade)}</div></div>
+      </div>
+
+      ${o.obs_cliente?`<div class="obs"><i class="ti ti-message-circle"></i> ${esc(o.obs_cliente)}</div>`:''}
+
+      ${respondido ? resultBanner : `
+      <div class="btns">
+        <button class="btn btn-no" onclick="responder(false)"><i class="ti ti-x"></i> Recusar</button>
+        <button class="btn btn-ok" onclick="responder(true)"><i class="ti ti-check"></i> Aprovar reparo</button>
+      </div>
+      <div class="foot">Ao aprovar, você autoriza a loja a realizar o reparo pelo valor acima.</div>`}
+    </div>
+    <div class="foot">Este é um link seguro e pessoal. Em caso de dúvida, fale com a loja.</div>`;
+}
+
+async function responder(aceitar){
+  if(!aceitar && !confirm('Tem certeza que deseja recusar este orçamento?')) return;
+  const btns=document.querySelector('.btns');
+  if(btns) btns.innerHTML='<div style="flex:1;text-align:center;padding:14px;color:var(--txt3)"><i class="ti ti-loader-2" style="animation:pulse 1s infinite;font-size:22px"></i><br>Registrando…</div>';
+  try{
+    const { data, error } = await db.rpc('orcamento_responder', {
+      tok: token, aceitar, dispositivo: navigator.userAgent.slice(0,180)
+    });
+    if(error) throw error;
+    if(data && data.ok){ carregar(); }
+    else { alert(data?.erro || 'Não foi possível registrar.'); carregar(); }
+  }catch(e){ alert('Erro ao registrar. Tente novamente.'); carregar(); }
+}
+
+carregar();
+</script>
+</body>
+</html>
