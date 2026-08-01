@@ -4947,8 +4947,8 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
   <div class="fg"><label class="lbl">Testes realizados</label><textarea id="orctec-testes" rows="2" placeholder="O que foi testado..."></textarea></div>
 
   <div class="ms">Peças necessárias</div>
-  <div style="display:flex;gap:7px;margin-bottom:8px">
-    <select id="orctec-prod-sel" style="flex:2;font-size:12.5px;padding:7px 9px;border-radius:7px"><option value="">Selecionar peça...</option></select>
+  <div style="display:flex;gap:7px;margin-bottom:8px;flex-wrap:wrap">
+    <select id="orctec-prod-sel" style="flex:2;min-width:160px;font-size:12.5px;padding:7px 9px;border-radius:7px"><option value="">Selecionar peça...</option></select>
     <input type="number" id="orctec-qty" value="1" min="1" style="width:60px;padding:7px;font-size:12.5px;border-radius:7px;text-align:center">
     <button class="btn btn-out btn-sm" onclick="addTecPeca()"><i class="ti ti-plus"></i></button>
   </div>
@@ -4963,7 +4963,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
     <div class="fg"><label class="lbl">Prazo (dias)</label><input type="number" id="orctec-prazo" value="3"></div>
     <div class="fg"><label class="lbl">Garantia (dias)</label><input type="number" id="orctec-gar" value="90"></div>
   </div>
-  <div style="display:flex;justify-content:space-between;align-items:center;background:var(--pri-light);border-radius:9px;padding:10px 13px;margin-top:4px">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;background:var(--pri-light);border-radius:9px;padding:10px 13px;margin-top:4px">
     <div style="display:flex;align-items:center;gap:10px">
       <span style="font-size:12.5px;color:var(--txt2)">Valor ao cliente (R$)</span>
       <input type="number" step="0.01" id="orctec-valor" value="0" style="width:110px;padding:5px 8px;font-size:14px;font-weight:700;text-align:right;border-radius:6px">
@@ -10970,6 +10970,22 @@ function abrirModalOrcamento(){
   openModal('modal-orc');
 }
 
+/* 10 — checagem de papel (usa G.role já carregado) */
+function temRole(...roles){ return roles.includes(G.role); }
+
+/* 11 — auditoria: persiste na tabela logs (por empresa) e espelha no log local.
+   Nunca registra tokens/chaves/segredos/senhas — só dados de negócio. */
+async function auditar(acao, detalhe){
+  const det=String(detalhe||'').slice(0,500);
+  try{
+    await db.from('logs').insert({
+      empresa_id:EID(), empresa_nome:(G.empresa?.nome)||null,
+      acao, detalhe:det, usuario:(G.profile?.nome||G.profile?.email||'—')
+    });
+  }catch(e){ /* best-effort */ }
+  try{ if(typeof registrarAudit==='function') registrarAudit(acao, det, G.profile?.nome||'—', '', 'success'); }catch(e){}
+}
+
 /* 6.1 — seletor de tipo antes de abrir o formulário */
 function abrirTipoOrcamento(){ openModal('modal-orc-tipo'); }
 function escolherTipoOrc(t){
@@ -11033,12 +11049,14 @@ async function saveOrcAssist(){
     setLoad(false);
     if(error){notify('Erro: '+error.message,'error');return;}
     G.orcamentos.unshift(data);closeModal('modal-orc-assist');renderOrcamentos();
+    auditar('orcamento_criado','Assistência #'+(data.numero||'')+' · '+(data.aparelho||'')+' · '+(data.cliente_nome||''));
     notify('Enviado para análise técnica!','success');
   }
 }
 
 /* 6.3 — Análise técnica */
 function abrirTecnicoOrc(id){
+  if(!temRole('tecnico','gerente','admin','admin_master')){ notify('Apenas técnicos ou a gerência podem fazer a análise técnica.','warn'); return; }
   const o=G.orcamentos.find(x=>x.id===id); if(!o){notify('Orçamento não encontrado!','error');return;}
   G.orcTecId=id;
   document.getElementById('orctec-ttl').textContent='Análise técnica — #'+pad(o.numero||0);
@@ -11123,6 +11141,7 @@ async function saveTecnicoOrc(confirmar){
   if(error){notify('Erro: '+error.message,'error');return;}
   const idx=G.orcamentos.findIndex(o=>o.id===id); if(idx>=0)G.orcamentos[idx]=data;
   closeModal('modal-orc-tecnico'); renderOrcamentos();
+  if(confirmar) auditar('orcamento_analise_concluida','#'+(data.numero||'')+' · valor '+fmt(valor));
   notify(confirmar?'Orçamento técnico confirmado — aguardando o cliente.':'Rascunho salvo.','success');
 }
 
@@ -11135,7 +11154,7 @@ function aprovarOrcBalcao(id){
     setLoad(false);
     if(error){notify('Erro: '+error.message,'error');return;}
     const idx=G.orcamentos.findIndex(x=>x.id===id); if(idx>=0)G.orcamentos[idx]=data;
-    renderOrcamentos(); notify('Orçamento aprovado. Já pode virar OS.','success');
+    renderOrcamentos(); auditar('orcamento_aprovado','#'+(data.numero||'')+' (balcão)'); notify('Orçamento aprovado. Já pode virar OS.','success');
   });
 }
 function recusarOrc(id){
@@ -11146,7 +11165,7 @@ function recusarOrc(id){
     setLoad(false);
     if(error){notify('Erro: '+error.message,'error');return;}
     const idx=G.orcamentos.findIndex(x=>x.id===id); if(idx>=0)G.orcamentos[idx]=data;
-    renderOrcamentos(); notify('Orçamento recusado.');
+    renderOrcamentos(); auditar('orcamento_recusado','#'+(data.numero||'')+' (balcão)'); notify('Orçamento recusado.');
   });
 }
 
@@ -11193,6 +11212,7 @@ async function converterOrcEmOS(id){
     G.os=G.os||[]; G.os.unshift(data);
     G.osCounter=Math.max(G.osCounter,(parseInt(String(data.numero||'').replace(/\D/g,''),10)||0)+1);
     renderOrcamentos(); if(typeof renderOSList==='function') renderOSList(); if(typeof renderDashboard==='function') renderDashboard();
+    auditar('orcamento_convertido_os','#'+pad(o.numero||0)+' → OS '+(data.numero||numero));
     notify((data.numero||numero)+' criada a partir do orçamento!','success',6000);
   });
 }
@@ -11331,7 +11351,7 @@ function renderOrcamentos(q=''){
     <td><span class="tag ${stC[o.status]||'tag-gry'}">${stLabel[o.status]||o.status}</span></td>
     <td><div style="display:flex;gap:3px">
       ${(o.status!=='convertido'&&o.status!=='convertido_os')?`<button class="btn btn-out btn-xs" onclick="${o.tipo==='assistencia'?`abrirAssistOrc('${o.id}')`:`reabrirOrc('${o.id}')`}" title="Editar"><i class="ti ti-edit"></i></button>`:''}
-      ${(o.tipo==='assistencia'&&(o.status==='aguardando_analise'||o.status==='em_analise'))?`<button class="btn btn-pri btn-xs" onclick="abrirTecnicoOrc('${o.id}')" title="Análise técnica"><i class="ti ti-microscope"></i>Analisar</button>`:''}
+      ${(o.tipo==='assistencia'&&(o.status==='aguardando_analise'||o.status==='em_analise')&&temRole('tecnico','gerente','admin','admin_master'))?`<button class="btn btn-pri btn-xs" onclick="abrirTecnicoOrc('${o.id}')" title="Análise técnica"><i class="ti ti-microscope"></i>Analisar</button>`:''}
       ${(o.tipo==='assistencia'&&o.status==='aguardando_cliente')?`<button class="btn btn-out btn-xs" onclick="copiarLinkOrcamento('${o.id}')" title="Link de aprovação"><i class="ti ti-link"></i></button><button class="btn btn-success btn-xs" onclick="aprovarOrcBalcao('${o.id}')" title="Aprovar (balcão)"><i class="ti ti-check"></i></button><button class="btn btn-danger btn-xs" onclick="recusarOrc('${o.id}')" title="Recusar (balcão)"><i class="ti ti-x"></i></button>`:''}
       ${(o.tipo==='assistencia'&&o.status==='aprovado')?`<button class="btn btn-pri btn-xs" onclick="converterOrcEmOS('${o.id}')" title="Criar OS"><i class="ti ti-clipboard-plus"></i>Criar OS</button>`:''}
       ${(o.tipo!=='assistencia'&&o.status==='aberto')?`<button class="btn btn-success btn-xs" onclick="conv2venda('${o.id}')"><i class="ti ti-shopping-cart"></i>Converter</button>`:''}
@@ -12113,6 +12133,7 @@ async function confirmarImportacaoNFe(){
     }
 
     const novos=data?.novos||0, atualizados=data?.atualizados||0;
+    auditar('nfe_importada',novos+' novo(s), '+atualizados+' atualizado(s) · NF-e '+(imp.parsed.numero||''));
     notify(`Importação concluída! ${novos} novo(s) · ${atualizados} atualizado(s).`,'success',6000);
     closeModal('modal-nfe-revisao'); _nfImport=null;
     // recarrega produtos (alterados no servidor de forma atômica)
@@ -17138,6 +17159,7 @@ async function confirmarSalvarSolucao(comoVerificar){
     return;
   }
   closeModal('modal-generic');
+  auditar('solucao_salva',(payload.sintoma||'')+' · '+(payload.aparelho||'')+' (IA)');
   notify('✅ Solução salva! Ela vai aparecer na próxima vez que esse sintoma surgir.','success',6000);
 }
 
@@ -17553,6 +17575,7 @@ async function salvarSolucao(){
   }
   closeModal('modal-solucao');
   renderSolucoes();
+  auditar('solucao_salva',(payload.sintoma||'')+' · '+(payload.aparelho||''));
   notify('✅ Solução salva na sua base de conhecimento!','success');
 }
 async function carregarSolucoes(){
