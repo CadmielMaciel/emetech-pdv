@@ -11,7 +11,7 @@ try{
   if(_temaSalvo === 'dark' || _temaSalvo === 'light') document.documentElement.setAttribute('data-theme', _temaSalvo);
 }catch(e){}
 </script>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>MISU SYS — ERP & PDV</title>
 <!-- ═══ PWA — App instalável (mobile + desktop) ═══ -->
 <link rel="manifest" href="/manifest.json">
@@ -305,7 +305,26 @@ try{
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:10px}
 ::-webkit-scrollbar-thumb:hover{background:var(--txt4)}
-body{font-family:'DM Sans',sans-serif;background:var(--bg);background-image:radial-gradient(ellipse 1400px 700px at 105% -5%, rgba(232,145,91,.06), transparent 58%),radial-gradient(ellipse 1100px 600px at -8% 108%, rgba(61,139,255,.07), transparent 52%),radial-gradient(ellipse 600px 400px at 50% 50%, rgba(30,94,255,.025), transparent 70%);background-attachment:fixed;color:var(--txt);min-height:100vh;overflow:hidden;transition:background .3s,color .3s}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);background-image:radial-gradient(ellipse 1400px 700px at 105% -5%, rgba(232,145,91,.06), transparent 58%),radial-gradient(ellipse 1100px 600px at -8% 108%, rgba(61,139,255,.07), transparent 52%),radial-gradient(ellipse 600px 400px at 50% 50%, rgba(30,94,255,.025), transparent 70%);background-attachment:fixed;color:var(--txt);min-height:100vh;min-height:100dvh;overflow:hidden;transition:background .3s,color .3s}
+
+/* ═══ FATIA 2 — FUNDAÇÃO RESPONSIVA ═══════════════════════════════════
+   Convenção de breakpoints para as próximas fatias:
+     ≤600 phone · 601–900 tablet-portrait · 901–1199 tablet-landscape · 1200+ desktop
+   Centraliza safe-areas (iOS/PWA), proteção de mídia e base de input mobile. */
+:root{
+  --sat:env(safe-area-inset-top,0px);
+  --sab:env(safe-area-inset-bottom,0px);
+  --sal:env(safe-area-inset-left,0px);
+  --sar:env(safe-area-inset-right,0px);
+}
+img,svg,video,canvas{max-width:100%}
+/* iOS: evita zoom involuntário ao focar inputs de formulário (zoom agora liberado) */
+@media (max-width:600px){
+  .fg input,.fg select,.fg textarea,
+  input[type="text"],input[type="tel"],input[type="email"],input[type="password"],input[type="search"],input[type="date"]{
+    font-size:16px;
+  }
+}
 
 /* ── Polimento aconchegante + acessibilidade ── */
 ::selection{background:rgba(232,145,91,.28);color:var(--txt)}
@@ -348,7 +367,7 @@ button,.btn,.card,.tag,input,select,textarea{transition:var(--trans)}
 .bq-foot{font-size:11px;color:#7A6FAA;margin-top:20px}
 
 /* APP */
-.app{display:flex;height:100vh;opacity:0;transition:opacity .4s}
+.app{display:flex;height:100vh;height:100dvh;opacity:0;transition:opacity .4s}
 .app.visible{opacity:1}
 /* empurra o main conforme sidebar expande */
 .main{transition:margin-left .28s cubic-bezier(.4,0,.2,1)}
@@ -514,7 +533,7 @@ button,.btn,.card,.tag,input,select,textarea{transition:var(--trans)}
 .card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;transition:background .3s;box-shadow:var(--shadow-card)}
 .card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px}
 .card-title{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:var(--txt)}
-.sg{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.sg{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:20px}
 .sc{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;position:relative;overflow:hidden;transition:var(--trans);display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:var(--shadow-card)}
 .sc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--pri),var(--pri2));opacity:0;transition:opacity .25s;border-radius:var(--radius-lg) var(--radius-lg) 0 0}
 .sc:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg)}
@@ -543,9 +562,10 @@ button,.btn,.card,.tag,input,select,textarea{transition:var(--trans)}
 /* Dashboard bottom grid com ações rápidas */
 .gdash3{display:grid;grid-template-columns:1fr 1fr 280px;gap:14px}
 @media(max-width:1100px){.gdash3{grid-template-columns:1fr 1fr}.gdash3 .dash-quick{grid-column:1/-1}}
+@media(max-width:600px){.gdash3{grid-template-columns:1fr}}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
-.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.g4{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
 .gdash{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .tw{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow-card)}
 table{width:100%;border-collapse:collapse;min-width:480px}
@@ -853,7 +873,7 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
 .gdash{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
-.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.g4{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}
 /* Alert box mais arredondado */
 .alert-box{display:flex;align-items:center;gap:10px;border-radius:11px;padding:11px 14px;margin-bottom:13px;font-size:13px;font-weight:500}
 /* Caixas de op de caixa mais arredondadas */
@@ -2133,6 +2153,27 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
   border: 1px dashed var(--border2); border-radius: 8px;
   height: 70px; display: flex; align-items: flex-end;
   padding: 8px 12px; font-size: 11px; color: var(--txt3);
+}
+
+/* ═══ FATIA 3 — TABLET TIER: navegação ═══════════════════════════════
+   Corrige o "tablet vira desktop". Vence por ordem de fonte. */
+/* safe-area no drawer (mobile + tablet) */
+@media (max-width:900px){ .sidebar{ padding-top:var(--sat); padding-bottom:var(--sab); } }
+/* Tablet portrait (601–900px): sidebar como DRAWER com hamburger */
+@media (min-width:601px) and (max-width:900px){
+  .sidebar{
+    position:fixed!important; left:-300px!important; top:0; bottom:0;
+    width:260px!important; z-index:999; box-shadow:none;
+    transition:left .28s cubic-bezier(.4,0,.2,1)!important;
+  }
+  .sidebar.mobile-open{ left:0!important; box-shadow:4px 0 32px rgba(0,0,0,.35)!important; }
+  .sidebar:hover{ width:260px!important; }
+  .sidebar .ni-label,.sidebar .logo-text,.sidebar .logo-sub,.sidebar .user-name,.sidebar .logout-btn{ opacity:1!important; }
+  .sidebar .nav-sec{ display:none!important; }
+  .sidebar .ni-tip{ display:none!important; }
+  .main{ margin-left:0!important; }
+  #hamburger-btn{ display:flex!important; }
+  #sidebar-overlay.active{ display:block!important; }
 }
 </style>
 
@@ -23320,14 +23361,14 @@ function closeSidebarMobile() {
 (function patchNavMobile() {
   document.querySelectorAll('.ni').forEach(ni => {
     ni.addEventListener('click', () => {
-      if (window.innerWidth <= 768) closeSidebarMobile();
+      if (window.innerWidth <= 900) closeSidebarMobile();
     });
   });
 })();
 
 // Fecha drawer ao rotacionar para landscape
 window.addEventListener('resize', () => {
-  if (window.innerWidth > 768) closeSidebarMobile();
+  if (window.innerWidth > 900) closeSidebarMobile();
 });
 
 // Swipe para fechar o drawer (touch)
