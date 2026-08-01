@@ -1,66 +1,44 @@
-/* ══════════════════════════════════════════════════════════════
-   MISU TECNOLOGY — Service Worker (PWA)
-   Estratégia:
-   - App shell (index): NETWORK-FIRST → atualizações chegam na hora;
-     se offline, serve a última versão cacheada.
-   - Ícones/manifest: cache-first (mudam raramente).
-   - Supabase (API/Auth/Realtime): NUNCA intercepta — passa direto.
-     O modo offline do PDV usa IndexedDB no próprio app.
-   ══════════════════════════════════════════════════════════════ */
-const CACHE = 'misu-shell-v1';
-const SHELL = ['/', '/index.html', '/manifest.json', '/icon-192.png', '/icon-512.png'];
+/* ============================================================================
+ * sw.js — VERSÃO SEGURA (corrige o service worker preso / shell quebrado)
+ * ----------------------------------------------------------------------------
+ * Substitui o /sw.js atual na RAIZ do projeto (Vercel).
+ * O que ele faz:
+ *   - Ativa imediatamente (skipWaiting + clients.claim).
+ *   - APAGA todos os caches antigos — inclui o shell quebrado que estava
+ *     causando o crash em loop no celular.
+ *   - NÃO cacheia mais o HTML/JS (network-only) — acaba o "cache poisoning".
+ *   - Força os clientes já abertos a recarregarem da rede.
+ *
+ * Depois que o app voltar a abrir normalmente, dá pra reintroduzir cache
+ * offline com versionamento (me peça e eu faço uma versão com cache seguro).
+ * ========================================================================== */
 
-self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open(CACHE)
-      .then((c) => c.addAll(SHELL).catch(() => {})) // tolera falha parcial
-      .then(() => self.skipWaiting())
-  );
+const VERSION = 'misu-safe-v1';
+
+self.addEventListener('install', () => {
+  // não espera a aba antiga fechar — assume o controle na hora
+  self.skipWaiting();
 });
 
-self.addEventListener('activate', (e) => {
-  e.waitUntil(
-    caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
-      .then(() => self.clients.claim())
-  );
+self.addEventListener('activate', (event) => {
+  event.waitUntil((async () => {
+    // 1) apaga TODOS os caches (inclui o shell quebrado)
+    const keys = await caches.keys();
+    await Promise.all(keys.map((k) => caches.delete(k)));
+
+    // 2) assume o controle das abas abertas
+    await self.clients.claim();
+
+    // 3) força os clientes presos a recarregar (agora vem da rede, corrigido)
+    const clients = await self.clients.matchAll({ type: 'window' });
+    for (const c of clients) {
+      try { await c.navigate(c.url); } catch (_) { /* ignora */ }
+    }
+  })());
 });
 
-self.addEventListener('fetch', (e) => {
-  const url = new URL(e.request.url);
-
-  // Nunca interceptar Supabase (API, Auth, Realtime/WebSocket) nem métodos não-GET
-  if (e.request.method !== 'GET') return;
-  if (url.hostname.endsWith('supabase.co') || url.hostname.endsWith('supabase.in')) return;
-
-  // Navegação (abrir o app): network-first com fallback ao cache (offline)
-  if (e.request.mode === 'navigate') {
-    e.respondWith(
-      fetch(e.request)
-        .then((resp) => {
-          const copia = resp.clone();
-          caches.open(CACHE).then((c) => c.put('/index.html', copia)).catch(() => {});
-          return resp;
-        })
-        .catch(() => caches.match('/index.html').then((r) => r || caches.match('/')))
-    );
-    return;
-  }
-
-  // Estáticos same-origin (ícones, manifest): cache-first com atualização em fundo
-  if (url.origin === self.location.origin) {
-    e.respondWith(
-      caches.match(e.request).then((cacheado) => {
-        const rede = fetch(e.request)
-          .then((resp) => {
-            caches.open(CACHE).then((c) => c.put(e.request, resp.clone())).catch(() => {});
-            return resp;
-          })
-          .catch(() => cacheado);
-        return cacheado || rede;
-      })
-    );
-    return;
-  }
-  // CDNs externos (fonts, libs): comportamento padrão do navegador (HTTP cache)
+// Sempre busca da rede — nunca serve HTML/JS de cache (fim do poisoning).
+// Se a rede falhar, deixa o navegador tratar (não serve versão velha).
+self.addEventListener('fetch', (event) => {
+  event.respondWith(fetch(event.request));
 });
