@@ -7320,25 +7320,46 @@ async function doLogin(){
   if(_loginLockUntil>agora){ mostrarTravaLogin(); return; }
   if(!em||!pw){err.textContent='Preencha e-mail e senha.';err.style.display='block';return;}
 
-  // CAPTCHA (só exige se a site key estiver configurada)
-  let captchaToken;
-  if(CAPTCHA_SITE_KEY && window.turnstile){
-    try{ captchaToken = window.turnstile.getResponse(_turnstileWidgetId); }catch(e){}
-    if(!captchaToken){ err.textContent='Confirme que você não é um robô.';err.style.display='block';return; }
-  }
+  let loginConcluido=false;
+  try{
+    btn.disabled=true;btn.innerHTML='<div class="spinner" style="width:18px;height:18px;border-width:2px"></div>Entrando...';
 
-  btn.disabled=true;btn.innerHTML='<div class="spinner" style="width:18px;height:18px;border-width:2px"></div>Entrando...';
-  const creds = captchaToken ? {email:em,password:pw,options:{captchaToken}} : {email:em,password:pw};
-  const {data,error}=await db.auth.signInWithPassword(creds);
-  if(error){
-    _loginFails++;
-    if(CAPTCHA_SITE_KEY && window.turnstile){ try{ window.turnstile.reset(_turnstileWidgetId); }catch(e){} }
-    if(_loginFails>=5){ _loginLockUntil=Date.now()+30000; _loginFails=0; mostrarTravaLogin(); return; }
-    err.textContent='E-mail ou senha incorretos.';
-    err.style.display='block';btn.disabled=false;btn.innerHTML='<i class="ti ti-lock" style="font-size:17px"></i>Entrar';return;
+    // CAPTCHA (só exige se a site key estiver configurada)
+    let captchaToken;
+    if(CAPTCHA_SITE_KEY && window.turnstile){
+      try{ captchaToken = window.turnstile.getResponse(_turnstileWidgetId); }catch(e){}
+      if(!captchaToken){ throw new Error('Confirme que você não é um robô.'); }
+    }
+
+    const creds = captchaToken ? {email:em,password:pw,options:{captchaToken}} : {email:em,password:pw};
+    const {data,error}=await db.auth.signInWithPassword(creds);
+    if(error){
+      _loginFails++;
+      if(CAPTCHA_SITE_KEY && window.turnstile){ try{ window.turnstile.reset(_turnstileWidgetId); }catch(e){} }
+      if(_loginFails>=5){ _loginLockUntil=Date.now()+30000; _loginFails=0; mostrarTravaLogin(); return; }
+      throw error;
+    }
+    if(!data?.user){ throw new Error('O login foi realizado, mas o usuário não foi retornado.'); }
+
+    await loadProfile(data.user);   // se o boot falhar aqui, cai no catch (não trava o botão)
+    loginConcluido=true;
+    _loginFails=0;
+  }catch(error){
+    console.error('Falha durante o login ou inicialização:', error);
+    const msg=error?.message||'';
+    err.textContent = (msg==='Invalid login credentials')
+      ? 'E-mail ou senha incorretos.'
+      : (msg==='Confirme que você não é um robô.' ? msg
+        : `Não foi possível abrir o sistema: ${msg||'erro desconhecido'}`);
+    err.style.display='block';
+    // erro pós-autenticação: desloga pra não ficar em estado meio-logado
+    try{ await db.auth.signOut(); }catch(_){}
+  }finally{
+    if(!loginConcluido){
+      btn.disabled=false;
+      btn.innerHTML='<i class="ti ti-lock" style="font-size:17px"></i>Entrar';
+    }
   }
-  _loginFails=0;
-  await loadProfile(data.user);
 }
 
 // ── RECUPERAÇÃO DE SENHA (Supabase Auth) ─────────────────────────────
@@ -7417,7 +7438,7 @@ async function loadProfile(user){
       carregarSuporteConfigApp(),
       aplicarMarcasSalvas().catch(()=>{})
     ]);
-    aplicarPaletaSalva();
+    try{ aplicarPaletaSalva(); }catch(e){ console.error('Erro ao aplicar paleta salva:', e); }
 
     document.getElementById('ls').classList.add('hidden');
     await loadAll();
@@ -7442,7 +7463,7 @@ async function loadProfile(user){
     carregarSuporteConfigApp(),
     aplicarMarcasSalvas().catch(()=>{})
   ]);
-  aplicarPaletaSalva();
+  try{ aplicarPaletaSalva(); }catch(e){ console.error('Erro ao aplicar paleta salva:', e); }
 
   document.getElementById('ls').classList.add('hidden');
   await loadAll();
@@ -8029,7 +8050,7 @@ async function carregarSuporteConfigApp() {
    APP_VERSION = versão que ESTE build conhece. O admin incrementa
    app_config.app_version ao publicar; quando o servidor tem versão maior,
    o app avisa (contagem de 5s) e recarrega furando o cache.              */
-const APP_VERSION = 3; // ⬆️ Incremente este número a cada deploy (igual ao do painel)
+const APP_VERSION = 4; // ⬆️ Incremente este número a cada deploy (igual ao do painel)
 let _serverVersionInicial = APP_VERSION;
 let _avisoAtualizacaoAberto = false;
 
@@ -21549,22 +21570,33 @@ function shadeColor(hex, pct) {
 }
 
 function atualizarFavicon(c1, c2) {
-  const canvas = document.createElement('canvas');
-  canvas.width = 64; canvas.height = 64;
-  const ctx2d = canvas.getContext('2d');
-  const grad = ctx2d.createLinearGradient(0,0,64,64);
-  grad.addColorStop(0, c1); grad.addColorStop(1, c2);
-  ctx2d.fillStyle = grad;
-  ctx2d.roundRect(0, 0, 64, 64, 12);
-  ctx2d.fill();
-  ctx2d.fillStyle = '#fff';
-  ctx2d.font = 'bold 28px Syne, sans-serif';
-  ctx2d.textAlign = 'center';
-  ctx2d.textBaseline = 'middle';
-  ctx2d.fillText('ET', 32, 34);
-  let link = document.querySelector("link[rel~='icon']");
-  if (!link) { link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link); }
-  link.href = canvas.toDataURL();
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = 64; canvas.height = 64;
+    const ctx2d = canvas.getContext('2d');
+    if (!ctx2d) return;
+    const grad = ctx2d.createLinearGradient(0,0,64,64);
+    grad.addColorStop(0, c1); grad.addColorStop(1, c2);
+    ctx2d.fillStyle = grad;
+    ctx2d.beginPath();
+    if (typeof ctx2d.roundRect === 'function') {
+      ctx2d.roundRect(0, 0, 64, 64, 12);
+    } else {
+      // Fallback: navegadores mobile/WebView sem suporte a roundRect
+      ctx2d.rect(0, 0, 64, 64);
+    }
+    ctx2d.fill();
+    ctx2d.fillStyle = '#fff';
+    ctx2d.font = 'bold 28px Syne, sans-serif';
+    ctx2d.textAlign = 'center';
+    ctx2d.textBaseline = 'middle';
+    ctx2d.fillText('ET', 32, 34);
+    let link = document.querySelector("link[rel~='icon']");
+    if (!link) { link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link); }
+    link.href = canvas.toDataURL('image/png');
+  } catch (error) {
+    console.warn('Não foi possível gerar o favicon personalizado:', error);
+  }
 }
 
 function aplicarPaletaSalva() {
