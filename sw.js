@@ -1,44 +1,37 @@
 /* ============================================================================
- * sw.js — VERSÃO SEGURA (corrige o service worker preso / shell quebrado)
- * ----------------------------------------------------------------------------
- * Substitui o /sw.js atual na RAIZ do projeto (Vercel).
- * O que ele faz:
- *   - Ativa imediatamente (skipWaiting + clients.claim).
- *   - APAGA todos os caches antigos — inclui o shell quebrado que estava
- *     causando o crash em loop no celular.
- *   - NÃO cacheia mais o HTML/JS (network-only) — acaba o "cache poisoning".
- *   - Força os clientes já abertos a recarregarem da rede.
- *
- * Depois que o app voltar a abrir normalmente, dá pra reintroduzir cache
- * offline com versionamento (me peça e eu faço uma versão com cache seguro).
+ * sw.js — MISU SYS  (versão 2026-08-02-03)
+ * Navegação sempre pela REDE (index.html nunca fica preso no cache),
+ * limpa caches antigos e ativa imediatamente. Corrige o "shell preso".
  * ========================================================================== */
+const CACHE_NAME = 'misu-sys-2026-08-02-03';
 
-const VERSION = 'misu-safe-v1';
-
-self.addEventListener('install', () => {
-  // não espera a aba antiga fechar — assume o controle na hora
+self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil((async () => {
-    // 1) apaga TODOS os caches (inclui o shell quebrado)
-    const keys = await caches.keys();
-    await Promise.all(keys.map((k) => caches.delete(k)));
-
-    // 2) assume o controle das abas abertas
-    await self.clients.claim();
-
-    // 3) força os clientes presos a recarregar (agora vem da rede, corrigido)
-    const clients = await self.clients.matchAll({ type: 'window' });
-    for (const c of clients) {
-      try { await c.navigate(c.url); } catch (_) { /* ignora */ }
-    }
-  })());
+  event.waitUntil(Promise.all([
+    caches.keys().then((keys) =>
+      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+    ),
+    self.clients.claim()
+  ]));
 });
 
-// Sempre busca da rede — nunca serve HTML/JS de cache (fim do poisoning).
-// Se a rede falhar, deixa o navegador tratar (não serve versão velha).
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
 self.addEventListener('fetch', (event) => {
-  event.respondWith(fetch(event.request));
+  const request = event.request;
+  // Navegação (index.html): sempre rede, sem cache. Fallback só se offline.
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request, { cache: 'no-store' }).catch(() => caches.match('/index.html'))
+    );
+    return;
+  }
+  // Demais requisições: comportamento padrão do navegador (rede).
 });
