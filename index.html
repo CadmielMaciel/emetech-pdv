@@ -6482,6 +6482,53 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
      JAVASCRIPT
      ============================================================ -->
 <script>
+/* ══ BUILD / DIAGNÓSTICO MOBILE ══════════════════════════════════════ */
+const BUILD_ID = 'MISU-2026-08-02-SAFARI-03';
+console.log('[MISU BUILD]', BUILD_ID);
+
+// Badge discreto na tela (confirma qual versão está realmente no ar)
+document.addEventListener('DOMContentLoaded', () => {
+  try{
+    const badge = document.createElement('div');
+    badge.textContent = BUILD_ID;
+    badge.style.cssText = 'position:fixed;right:6px;bottom:6px;z-index:999999;font-size:9px;color:rgba(255,255,255,.55);pointer-events:none';
+    document.body.appendChild(badge);
+  }catch(_){}
+});
+
+// Mostra erros diretamente na tela do iPhone (temporário, para depuração)
+function mostrarErroSafari(tipo, erro){
+  const mensagem = typeof erro==='string' ? erro : (erro?.message || String(erro||'Erro desconhecido'));
+  console.error('['+tipo+']', erro);
+  try{
+    const box=document.createElement('div');
+    box.style.cssText='position:fixed;left:10px;right:10px;bottom:10px;z-index:9999999;padding:14px;border-radius:12px;background:#7f1d1d;color:#fff;font:12px/1.5 monospace;word-break:break-word;max-height:45vh;overflow:auto';
+    box.textContent=BUILD_ID+'\n'+tipo+': '+mensagem+'\n'+navigator.userAgent;
+    document.body.appendChild(box);
+  }catch(_){}
+}
+window.addEventListener('error', e => mostrarErroSafari('WINDOW ERROR', e.error || e.message));
+window.addEventListener('unhandledrejection', e => mostrarErroSafari('PROMISE REJECTION', e.reason));
+
+// Limpeza de cache/SW por URL: abrir  ...?reset-cache=1
+async function limparCachePWA(){
+  const params = new URLSearchParams(location.search);
+  if(!params.has('reset-cache')) return;
+  try{
+    if('serviceWorker' in navigator){
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r=>r.unregister()));
+    }
+    if('caches' in window){
+      const nomes = await caches.keys();
+      await Promise.all(nomes.map(n=>caches.delete(n)));
+    }
+    try{ localStorage.removeItem('misu_upd_tentada'); }catch(_){}
+    location.replace(location.origin + location.pathname + '?build=' + Date.now());
+  }catch(error){ console.error('[CACHE RESET]', error); }
+}
+limparCachePWA();
+
 /* ── LOGO BASE64 ─────────────────────────────────────── */
 const LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 580" fill="white">
   <!-- Topo horizontal -->
@@ -6762,15 +6809,15 @@ function registerPWA(){
   try{
     // 1. Service Worker (arquivo real na raiz — habilita instalação + shell offline)
     if('serviceWorker' in navigator && location.protocol==='https:'){
-      navigator.serviceWorker.register('/sw.js').then(reg=>{
+      const SW_VERSION = '2026-08-02-03';
+      navigator.serviceWorker.register('/sw.js?v='+SW_VERSION, { updateViaCache: 'none' }).then(async reg=>{
         console.log('✓ Service Worker registrado (PWA ativo)');
-        // Se houver atualização do SW, ativa na próxima navegação
+        try{ await reg.update(); }catch(_){}
+        if(reg.waiting){ reg.waiting.postMessage({ type:'SKIP_WAITING' }); }
         reg.addEventListener('updatefound',()=>{
           const nw=reg.installing;
           nw?.addEventListener('statechange',()=>{
-            if(nw.state==='installed'&&navigator.serviceWorker.controller){
-              console.log('Nova versão do app disponível — será aplicada ao recarregar.');
-            }
+            if(nw.state==='installed' && reg.waiting){ reg.waiting.postMessage({ type:'SKIP_WAITING' }); }
           });
         });
       }).catch(e=>console.warn('SW não registrado:',e.message));
@@ -8426,47 +8473,70 @@ async function doLogout(){
 }
 
 /* ── LOAD ALL DATA ───────────────────────────────────── */
+// ── BOOT resiliente: timeout por consulta (evita loading infinito no Safari) ──
+function comTimeout(promise, nome, tempo=12000){
+  return Promise.race([
+    promise,
+    new Promise((_,reject)=>setTimeout(()=>reject(new Error('Tempo esgotado ao carregar '+nome)), tempo))
+  ]);
+}
+async function consultaSegura(nome, consulta, fallback=[]){
+  try{
+    const r = await comTimeout(consulta, nome);
+    if(r && r.error) throw r.error;
+    return (r && r.data) || fallback;
+  }catch(e){ console.error('[BOOT] Falha em '+nome+':', e); return fallback; }
+}
+
 async function loadAll(){
   setLoad(true);
+  // 1) carrega SÓ usuários primeiro (necessário para a tela de perfis) — com timeout
+  G.usuarios = await consultaSegura('usuários', db.from('usuarios').select('*').eq('empresa_id',EID()).order('nome'));
+  setLoad(false);
+  // 2) o restante em segundo plano, sem travar a entrada
+  carregarDadosSecundarios();
+}
+
+async function carregarDadosSecundarios(){
   try{
-    const [pr,cl,os,ve,us,mv,fo,oc,dv,re,pa,cx,en,mq]= await Promise.all([
-      db.from('produtos').select('*').neq('status','vendido').order('nome'),
-      db.from('clientes').select('*').order('nome'),
-      db.from('ordens_servico').select('*').not('status','in','("Entregue","Cancelada")').order('criado_em',{ascending:false}),
-      db.from('vendas').select('*').order('criado_em',{ascending:false}).limit(150),
-      db.from('usuarios').select('*').eq('empresa_id',EID()).order('nome'),
-      db.from('movimentacoes_estoque').select('*').order('criado_em',{ascending:false}).limit(200),
-      db.from('fornecedores').select('*').order('razao_social'),
-      db.from('orcamentos').select('*').order('criado_em',{ascending:false}).limit(50),
-      db.from('devolucoes').select('*').order('criado_em',{ascending:false}).limit(100),
-      db.from('contas_receber').select('*').order('data_vencimento').limit(200),
-      db.from('contas_pagar').select('*').order('data_vencimento').limit(200),
-      db.from('caixas').select('*').order('criado_em',{ascending:false}).limit(10),
-      db.from('entregas_avulsas').select('*').neq('status','cancelado').order('data').limit(100),
-      // ─── MAQUININHAS: carregadas no boot para estarem disponíveis no PDV ───
-      db.from('maquininhas_cartao').select('*').order('criado_em')
+    const [pr,cl,os,ve] = await Promise.all([
+      consultaSegura('produtos', db.from('produtos').select('*').neq('status','vendido').order('nome')),
+      consultaSegura('clientes', db.from('clientes').select('*').order('nome')),
+      consultaSegura('ordens de serviço', db.from('ordens_servico').select('*').not('status','in','("Entregue","Cancelada")').order('criado_em',{ascending:false})),
+      consultaSegura('vendas', db.from('vendas').select('*').order('criado_em',{ascending:false}).limit(150)),
     ]);
-    G.produtos=pr.data||[];G.clientes=cl.data||[];G.os=os.data||[];
-    G.vendas=ve.data||[];G.usuarios=us.data||[];G.movs=mv.data||[];
-    G.fornecedores=fo.data||[];G.orcamentos=oc.data||[];G.devolucoes=dv.data||[];
-    G.receber=re.data||[];G.pagar=pa.data||[];G.caixas=cx.data||[];
-    G.entregasAvulsas=en.data||[];
-    // Maquininhas disponíveis globalmente desde o primeiro carregamento
-    G_MAQUINAS=mq.data||[];
-    G._osHistDev=null; // limpa cache do histórico de OS para devoluções
-    G.caixaAtual=G.caixas.find(c=>c.status==='aberto'&&c.operador_id===G.profile?.id)
-                 || G.caixas.find(c=>c.status==='aberto')   // caixa da loja aberto por outro perfil
-                 || null;
-    carregarContratosModelos();
+    G.produtos=pr; G.clientes=cl; G.os=os; G.vendas=ve;
+
+    const [mv,fo,oc,dv] = await Promise.all([
+      consultaSegura('movimentações', db.from('movimentacoes_estoque').select('*').order('criado_em',{ascending:false}).limit(200)),
+      consultaSegura('fornecedores', db.from('fornecedores').select('*').order('razao_social')),
+      consultaSegura('orçamentos', db.from('orcamentos').select('*').order('criado_em',{ascending:false}).limit(50)),
+      consultaSegura('devoluções', db.from('devolucoes').select('*').order('criado_em',{ascending:false}).limit(100)),
+    ]);
+    G.movs=mv; G.fornecedores=fo; G.orcamentos=oc; G.devolucoes=dv;
+
+    const [re,pa,cx,en,mq] = await Promise.all([
+      consultaSegura('contas a receber', db.from('contas_receber').select('*').order('data_vencimento').limit(200)),
+      consultaSegura('contas a pagar', db.from('contas_pagar').select('*').order('data_vencimento').limit(200)),
+      consultaSegura('caixas', db.from('caixas').select('*').order('criado_em',{ascending:false}).limit(10)),
+      consultaSegura('entregas', db.from('entregas_avulsas').select('*').neq('status','cancelado').order('data').limit(100)),
+      consultaSegura('maquininhas', db.from('maquininhas_cartao').select('*').order('criado_em')),
+    ]);
+    G.receber=re; G.pagar=pa; G.caixas=cx; G.entregasAvulsas=en; G_MAQUINAS=mq;
+
+    G._osHistDev=null;
+    G.caixaAtual=(G.caixas||[]).find(c=>c.status==='aberto'&&c.operador_id===G.profile?.id)
+                 || (G.caixas||[]).find(c=>c.status==='aberto') || null;
+    try{ carregarContratosModelos(); }catch(_){}
     const _maxOS=(G.os||[]).reduce((m,o)=>{ const n=parseInt(String(o.numero||'').replace(/\D/g,''),10)||0; return n>m?n:m; }, 0);
     G.osCounter=_maxOS+1;
-    updateCaixaPill();
+    try{ updateCaixaPill(); }catch(_){}
     offCacheProdutos(G.produtos).catch(()=>{});
     offCacheClientes(G.clientes).catch(()=>{});
-    // Sincronização em tempo real entre dispositivos/perfis da mesma empresa
-    iniciarRealtime();
-  }catch(e){notify('Erro ao carregar dados.','error');}
-  finally{setLoad(false);}
+    try{ iniciarRealtime(); }catch(_){}
+    // re-render suave: se já entrou no app, atualiza a página atual agora que os dados chegaram
+    try{ if(typeof renderDashboard==='function' && document.getElementById('page-inicio')?.classList.contains('active')) renderDashboard(); }catch(_){}
+  }catch(e){ console.error('[BOOT] Erro nos dados secundários:', e); }
 }
 
 /* ══════════════════════════════════════════════════════════════
