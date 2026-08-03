@@ -2134,6 +2134,15 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
   height: 70px; display: flex; align-items: flex-end;
   padding: 8px 12px; font-size: 11px; color: var(--txt3);
 }
+
+/* ═══ MOBILE (≤600px): contém modais e empilha campos ═══ */
+@media (max-width:600px){
+  .modal{ max-width:calc(100vw - 16px)!important; width:calc(100vw - 16px)!important; max-height:90vh; overflow-y:auto; overflow-x:hidden; }
+  .modal .g2,.modal .g3,.modal .g4,.g2,.g3,.g4{ grid-template-columns:1fr!important; }
+  .modal-footer{ flex-wrap:wrap; }
+  .modal-footer .btn{ flex:1 1 auto; }
+  .tw{ max-width:100%; overflow-x:auto; }
+}
 </style>
 
 </head>
