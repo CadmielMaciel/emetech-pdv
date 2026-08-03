@@ -2143,6 +2143,15 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
   .modal-footer .btn{ flex:1 1 auto; }
   .tw{ max-width:100%; overflow-x:auto; }
 }
+
+/* ═══ P0 — OS mobile só na rota de OS (fim do vazamento) ═══ */
+@media (max-width:768px){
+  body:not([data-route="os"]) .os-fab,
+  body:not([data-route="os"]) #os-mobile-list,
+  body:not([data-route="os"]) #os-mobile-busca,
+  body:not([data-route="os"]) #os-mobile-tabs,
+  body:not([data-route="os"]) .os-filter-bar{ display:none!important; }
+}
 </style>
 
 </head>
@@ -6493,17 +6502,6 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
 <script>
 /* ══ BUILD / DIAGNÓSTICO MOBILE ══════════════════════════════════════ */
 const BUILD_ID = 'MISU-2026-08-02-SAFARI-03';
-console.log('[MISU BUILD]', BUILD_ID);
-
-// Badge discreto na tela (confirma qual versão está realmente no ar)
-document.addEventListener('DOMContentLoaded', () => {
-  try{
-    const badge = document.createElement('div');
-    badge.textContent = BUILD_ID;
-    badge.style.cssText = 'position:fixed;right:6px;bottom:6px;z-index:999999;font-size:9px;color:rgba(255,255,255,.55);pointer-events:none';
-    document.body.appendChild(badge);
-  }catch(_){}
-});
 
 // Mostra erros diretamente na tela do iPhone (temporário, para depuração)
 function mostrarErroSafari(tipo, erro){
@@ -7467,7 +7465,7 @@ async function loadProfile(user){
   // ── MODELO NOVO: a conta logada é a CONTA DA EMPRESA ──
   let empresa = null;
   try {
-    const { data: emp } = await db.from('empresas').select('*').eq('auth_user_id', user.id).maybeSingle();
+    const { data: emp } = await comTimeout(db.from('empresas').select('*').eq('auth_user_id', user.id).maybeSingle(), 'empresa');
     empresa = emp || null;
   } catch(e) { console.error('Erro ao resolver empresa por auth_user_id:', e); }
 
@@ -7490,9 +7488,9 @@ async function loadProfile(user){
 
     // Paraleliza as 3 chamadas de configuração que antes rodavam em série (~1s cada)
     await Promise.all([
-      carregarEntitlements(),
-      carregarSuporteConfigApp(),
-      aplicarMarcasSalvas().catch(()=>{})
+      comTimeout(carregarEntitlements(), 'entitlements').catch(()=>{}),
+      comTimeout(carregarSuporteConfigApp(), 'config').catch(()=>{}),
+      comTimeout(aplicarMarcasSalvas(), 'marcas').catch(()=>{})
     ]);
     try{ aplicarPaletaSalva(); }catch(e){ console.error('Erro ao aplicar paleta salva:', e); }
 
@@ -7515,9 +7513,9 @@ async function loadProfile(user){
 
   // Paraleliza aqui também
   await Promise.all([
-    carregarEntitlements(),
-    carregarSuporteConfigApp(),
-    aplicarMarcasSalvas().catch(()=>{})
+    comTimeout(carregarEntitlements(), 'entitlements').catch(()=>{}),
+    comTimeout(carregarSuporteConfigApp(), 'config').catch(()=>{}),
+    comTimeout(aplicarMarcasSalvas(), 'marcas').catch(()=>{})
   ]);
   try{ aplicarPaletaSalva(); }catch(e){ console.error('Erro ao aplicar paleta salva:', e); }
 
@@ -8705,6 +8703,7 @@ function goHub(hub){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
   pageEl.classList.add('active');
+  document.body.dataset.route = page;   // P0: contexto de rota
   const titleEl=document.getElementById('topbar-title');
   if(titleEl) titleEl.textContent=PT[page]||PT['hub-'+hub]||hub;
   document.querySelectorAll('.ni-group').forEach(el=>{if(el.dataset.hub===hub)el.classList.add('active');});
@@ -8731,6 +8730,7 @@ function go(page){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+page)?.classList.add('active');
+  document.body.dataset.route = page;   // P0: contexto de rota (OS só na rota de OS)
   document.getElementById('topbar-title').textContent=PT[page]||page;
   document.querySelectorAll('.ni').forEach(el=>{if(el.getAttribute('onclick')?.includes(`'${page}'`))el.classList.add('active');});
   // Manter grupo pai ativo quando dentro de um módulo filho
@@ -8746,7 +8746,7 @@ function go(page){
   const R={
     dashboard:renderDashboard,
     pdv:()=>{ setTimeout(initPDVMobile, 80);renderPDVGrid();popSelects();checkCaixaStatus();entrarModoPDV();},
-    orcamentos:()=>{ setTimeout(initOSMobile, 80);renderOrcamentos();popSelects();popProdSel();},
+    orcamentos:()=>{ renderOrcamentos();popSelects();popProdSel();},
     devolucoes:()=>{ renderDevolucoes(); renderDevVendas(); },
     'hist-vendas':renderHistoricoVendas,
     os:()=>{renderOSList();popSelects();popTecSel();popOSChecklist();},
@@ -24625,7 +24625,7 @@ window.addEventListener('resize', () => {
     if (pdvCart) pdvCart.style.display = '';
     // Fechar drawer sidebar se aberto
     closeSidebarMobile();
-  } else {
+  } else if (document.getElementById('page-os')?.classList.contains('active')) {
     initOSMobile();
   }
 });
