@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 :root{--pri:#5B3FE8;--pri2:#7C5CFF;--pri-d:#3D2596;--bg:#F4F2FB;--card:#fff;--txt:#1A1533;--txt2:#5B5478;--txt3:#9A93B8;--border:#E6E1F2;--ok:#16A34A;--warn:#F59E0B;--danger:#DC2626;--sab:env(safe-area-inset-bottom,0px);--sat:env(safe-area-inset-top,0px)}
@@ -122,6 +123,11 @@ input,select,textarea,button{font-family:inherit;font-size:16px}
       <div><div class="mod-t">Venda Rápida</div><div class="mod-d">Link/QR de pagamento no WhatsApp</div></div>
       <i class="ti ti-chevron-right"></i>
     </div>
+    <div class="mod" onclick="abrir('estoque')">
+      <div class="mod-ic" style="background:#fef9c3;color:#ca8a04">📊</div>
+      <div><div class="mod-t">Ver Estoque</div><div class="mod-d">Consultar quantidades da loja</div></div>
+      <i class="ti ti-chevron-right"></i>
+    </div>
     <div id="recentes-wrap" class="hidden" style="margin-top:24px">
       <div style="font-size:12px;font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px">Cadastrados hoje</div>
       <div id="recentes"></div>
@@ -207,7 +213,11 @@ input,select,textarea,button{font-family:inherit;font-size:16px}
     <button class="btn" style="margin-top:10px;background:transparent;color:var(--txt2)" onclick="goHome()">Voltar ao início</button>
   </div>
 
-  <!-- VENDA RÁPIDA -->
+  <!-- ESTOQUE -->
+  <div class="wrap hidden" id="scr-estoque">
+    <input class="inp" id="est-busca" placeholder="🔍 Buscar produto..." oninput="renderEstoque(this.value)" style="margin-bottom:14px">
+    <div id="estoque-list"></div>
+  </div>
   <div class="wrap hidden" id="scr-venda">
     <div class="aviso" style="background:#ede9fe;border-color:var(--pri);color:var(--pri-d)">
       <i class="ti ti-info-circle"></i>
@@ -340,13 +350,14 @@ async function carregarRecentes(){
 
 /* ── NAVEGAÇÃO ── */
 function abrir(scr){
-  ['home','produto','os','os-ok','venda','venda-ok'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
+  ['home','produto','os','os-ok','venda','venda-ok','estoque'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
   $('scr-'+scr).classList.remove('hidden');
   $('btn-back').classList.remove('hidden');
-  $('scr-title').textContent = ({produto:'Cadastrar Produto',os:'OS Rápida',venda:'Venda Rápida'})[scr]||scr;
+  $('scr-title').textContent = ({produto:'Cadastrar Produto',os:'OS Rápida',venda:'Venda Rápida',estoque:'Estoque'})[scr]||scr;
+  if(scr==='estoque') abrirEstoque();
 }
 function goHome(){
-  ['produto','os','os-ok','venda','venda-ok'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
+  ['produto','os','os-ok','venda','venda-ok','estoque'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
   $('scr-home').classList.remove('hidden');
   $('btn-back').classList.add('hidden');
   $('scr-title').textContent='Início';
@@ -367,36 +378,36 @@ function renderThumbs(){
   $('p-thumbs').innerHTML=G.fotos.map((s,i)=>`<div class="thumb"><img src="${s}"><button class="del" onclick="G.fotos.splice(${i},1);renderThumbs()">✕</button></div>`).join('');
 }
 
-/* ── SCANNER (BarcodeDetector) ── */
-let _scanStream=null,_scanRAF=null,_detector=null;
+/* ── SCANNER (ZXing — funciona no Safari; só câmera traseira) ── */
+let _zxReader=null;
 async function abrirScanner(){
-  if(!('BarcodeDetector' in window)){
-    notify('Seu navegador não suporta scanner. Digite o código manualmente.','warn');
-    return;
+  if(typeof ZXing==='undefined'){ notify('Scanner ainda carregando, tente de novo em 1s.','warn'); return; }
+  $('scan').style.display='flex';
+  $('scan-hint').textContent='Permita a câmera e aponte para o código';
+  try{
+    _zxReader=new ZXing.BrowserMultiFormatReader();
+    // facingMode environment = câmera TRASEIRA; getUserMedia pede a permissão ao dono
+    await _zxReader.decodeFromConstraints(
+      { video:{ facingMode:{ ideal:'environment' } } },
+      'scan-video',
+      (result)=>{
+        if(result){
+          const cod=result.getText();
+          $('p-bc').value=cod;
+          notify('Código lido: '+cod,'ok');
+          fecharScanner();
+        }
+      }
+    );
+  }catch(e){
+    const nm=e?.name||'';
+    if(nm==='NotAllowedError') notify('Permissão da câmera negada. Libere nos ajustes do navegador.','err');
+    else notify('Não foi possível abrir a câmera.','err');
+    fecharScanner();
   }
-  try{
-    _detector=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128','code_39','qr_code']});
-    _scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
-    const v=$('scan-video'); v.srcObject=_scanStream; await v.play();
-    $('scan').style.display='flex';
-    loopScan();
-  }catch(e){ notify('Não foi possível abrir a câmera.','err'); fecharScanner(); }
-}
-async function loopScan(){
-  const v=$('scan-video');
-  try{
-    const codes=await _detector.detect(v);
-    if(codes && codes.length){
-      $('p-bc').value=codes[0].rawValue;
-      notify('Código lido: '+codes[0].rawValue,'ok');
-      fecharScanner(); return;
-    }
-  }catch(_){}
-  _scanRAF=requestAnimationFrame(loopScan);
 }
 function fecharScanner(){
-  if(_scanRAF)cancelAnimationFrame(_scanRAF);
-  if(_scanStream){ _scanStream.getTracks().forEach(t=>t.stop()); _scanStream=null; }
+  try{ if(_zxReader){ _zxReader.reset(); _zxReader=null; } }catch(_){}
   $('scan').style.display='none';
 }
 
@@ -544,6 +555,34 @@ function enviarLinkVenda(){
   window.open(url,'_blank');
 }
 async function copiarLinkVenda(){ const v=G.ultimaVenda; if(!v?.url)return; try{ await navigator.clipboard.writeText(v.url); notify('Link copiado!','ok'); }catch(_){ notify(v.url); } }
+
+/* ── VER ESTOQUE ── */
+async function abrirEstoque(){
+  const c=$('estoque-list');
+  c.innerHTML='<div style="text-align:center;padding:30px"><div class="spinner" style="border-color:rgba(0,0,0,.12);border-top-color:var(--pri);margin:0 auto"></div></div>';
+  try{
+    const {data}=await comTimeout(db.from('produtos').select('id,nome,preco,estoque,estoque_minimo,fotos').eq('empresa_id',G.empresaId).eq('status','ativo').order('nome').limit(500),'estoque');
+    G.estoqueCache=data||[];
+    renderEstoque($('est-busca')?.value||'');
+  }catch(e){ c.innerHTML='<div style="text-align:center;padding:22px;color:var(--danger)">Erro ao carregar estoque.</div>'; }
+}
+function renderEstoque(q){
+  const c=$('estoque-list'); if(!c) return;
+  const busca=(q||'').toLowerCase();
+  let list=(G.estoqueCache||[]);
+  if(busca) list=list.filter(p=>(p.nome||'').toLowerCase().includes(busca));
+  if(!list.length){ c.innerHTML='<div style="text-align:center;padding:24px;color:var(--txt3)">Nenhum produto encontrado.</div>'; return; }
+  c.innerHTML=list.map(p=>{
+    const f=Array.isArray(p.fotos)&&p.fotos[0]?p.fotos[0]:null;
+    const est=Number(p.estoque)||0, min=Number(p.estoque_minimo)||0;
+    const cor=est<=0?'var(--danger)':(est<=min?'var(--warn)':'var(--ok)');
+    return `<div class="card" style="display:flex;align-items:center;gap:12px;padding:11px 13px">
+      ${f?`<img src="${f}" style="width:44px;height:44px;border-radius:10px;object-fit:cover;flex-shrink:0">`:`<div style="width:44px;height:44px;border-radius:10px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">📦</div>`}
+      <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.nome)}</div><div style="font-size:12px;color:var(--txt3)">R$ ${(Number(p.preco)||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>
+      <div style="text-align:center;flex-shrink:0"><div style="font-size:20px;font-weight:800;color:${cor};font-family:'Syne',sans-serif;line-height:1">${est}</div><div style="font-size:10px;color:var(--txt3)">em estoque</div></div>
+    </div>`;
+  }).join('');
+}
 
 /* ── BOOT: restaura sessão (com timeout, sem travar) ── */
 (async()=>{
