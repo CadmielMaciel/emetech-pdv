@@ -11,6 +11,20 @@ try{
   if(_temaSalvo === 'dark' || _temaSalvo === 'light') document.documentElement.setAttribute('data-theme', _temaSalvo);
 }catch(e){}
 </script>
+<script>
+/* Redireciona celular para o app leve (app.html). Desktop/tablet continua no sistema.
+   ?full=1 força o sistema completo mesmo no celular. Não redireciona o app.html nem o portal. */
+(function(){
+  try{
+    var p = location.pathname;
+    if (/app\.html|os\.html|orcamento\.html|catalogo\.html/i.test(p)) return;
+    if (new URLSearchParams(location.search).get('full') === '1') return;
+    var ehCel = window.matchMedia('(max-width:640px)').matches
+             || /iPhone|Android.*Mobile|iPod/i.test(navigator.userAgent);
+    if (ehCel) location.replace('/app.html' + location.search + location.hash);
+  }catch(e){}
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>MISU SYS — ERP & PDV</title>
 <!-- ═══ PWA — App instalável (mobile + desktop) ═══ -->
