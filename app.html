@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>MISU Campo</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--pri:#5B3FE8;--pri2:#7C5CFF;--pri-d:#3D2596;--bg:#F4F2FB;--card:#fff;--txt:#1A1533;--txt2:#5B5478;--txt3:#9A93B8;--border:#E6E1F2;--ok:#16A34A;--warn:#F59E0B;--danger:#DC2626;--sab:env(safe-area-inset-bottom,0px);--sat:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;min-height:100dvh}
+input,select,textarea,button{font-family:inherit;font-size:16px}
+.hidden{display:none!important}
+/* ── LOGIN ── */
+#login{position:fixed;inset:0;background:linear-gradient(150deg,var(--pri-d),var(--pri) 55%,var(--pri2));display:flex;align-items:center;justify-content:center;padding:24px;z-index:100}
+.login-card{background:#fff;border-radius:22px;padding:30px 24px calc(24px + var(--sab));width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.login-logo{text-align:center;font-family:'Syne',sans-serif;font-weight:800;font-size:26px;color:var(--pri)}
+.login-sub{text-align:center;font-size:13px;color:var(--txt3);margin:4px 0 22px}
+.lbl{display:block;font-size:12px;font-weight:600;color:var(--txt2);margin:14px 0 6px;text-transform:uppercase;letter-spacing:.4px}
+.inp{width:100%;border:1.5px solid var(--border);border-radius:12px;padding:13px 14px;font-size:16px;background:#fff;color:var(--txt)}
+.inp:focus{outline:none;border-color:var(--pri)}
+.btn{width:100%;border:none;border-radius:13px;padding:15px;font-size:16px;font-weight:700;color:#fff;background:var(--pri);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:transform .1s}
+.btn:active{transform:scale(.98)}
+.btn:disabled{opacity:.6}
+.btn-out{background:#fff;color:var(--pri);border:1.5px solid var(--pri)}
+.btn-ok{background:var(--ok)}
+.l-err{background:#fee2e2;color:#991b1b;border-radius:10px;padding:11px;font-size:13px;margin-top:14px;display:none}
+.spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* ── APP SHELL ── */
+#app{min-height:100dvh;padding-top:var(--sat)}
+.topbar{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--border);padding:calc(12px + var(--sat)) 16px 12px;display:flex;align-items:center;gap:12px;z-index:20}
+.topbar .back{font-size:22px;color:var(--pri);cursor:pointer;width:32px}
+.topbar h1{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;flex:1}
+.topbar .emp{font-size:11px;color:var(--txt3);font-weight:600}
+.wrap{padding:16px 16px calc(24px + var(--sab))}
+/* ── HOME ── */
+.home-hi{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;margin-bottom:2px}
+.home-sub{font-size:13px;color:var(--txt3);margin-bottom:20px}
+.mod{display:flex;align-items:center;gap:16px;background:#fff;border:1px solid var(--border);border-radius:18px;padding:18px;margin-bottom:14px;cursor:pointer;transition:transform .1s}
+.mod:active{transform:scale(.98)}
+.mod-ic{width:54px;height:54px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0}
+.mod-t{font-weight:700;font-size:16px}
+.mod-d{font-size:12.5px;color:var(--txt3);margin-top:2px}
+.mod .ti-chevron-right{margin-left:auto;color:var(--txt3);font-size:20px}
+.soon{opacity:.55}
+.soon .badge{font-size:9px;font-weight:700;background:var(--warn);color:#fff;border-radius:99px;padding:2px 7px;margin-left:6px}
+/* ── FORM CARD ── */
+.card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:14px}
+.card-t{font-size:11px;font-weight:700;color:var(--pri);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.bc-row{display:flex;gap:8px}
+.bc-row .inp{flex:1}
+.icon-btn{background:var(--pri);color:#fff;border:none;border-radius:12px;width:52px;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer}
+.aviso{background:#fef3c7;border:1px solid var(--warn);border-radius:12px;padding:12px;font-size:12.5px;color:#92400e;display:flex;gap:9px;margin-bottom:14px}
+.aviso i{font-size:18px;flex-shrink:0}
+/* fotos */
+.foto-add{border:2px dashed var(--border);border-radius:14px;padding:22px;text-align:center;color:var(--txt3);cursor:pointer}
+.foto-add i{font-size:30px;display:block;margin-bottom:6px;color:var(--pri)}
+.thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.thumb{position:relative;width:76px;height:76px;border-radius:12px;overflow:hidden;border:1px solid var(--border)}
+.thumb img{width:100%;height:100%;object-fit:cover}
+.thumb .del{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:12px;cursor:pointer}
+/* scanner overlay */
+#scan{position:fixed;inset:0;background:#000;z-index:200;display:none;flex-direction:column}
+#scan video{width:100%;flex:1;object-fit:cover}
+#scan .scan-top{position:absolute;top:calc(12px + var(--sat));left:0;right:0;display:flex;justify-content:space-between;padding:0 16px;color:#fff;z-index:2}
+#scan .scan-close{background:rgba(0,0,0,.5);border:none;color:#fff;font-size:26px;width:44px;height:44px;border-radius:50%;cursor:pointer}
+#scan .scan-hint{position:absolute;bottom:calc(30px + var(--sab));left:0;right:0;text-align:center;color:#fff;font-size:14px;text-shadow:0 1px 4px #000}
+#scan .scan-frame{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:75%;height:130px;border:3px solid #5B3FE8;border-radius:14px;box-shadow:0 0 0 2000px rgba(0,0,0,.45)}
+/* toast */
+#toast{position:fixed;left:16px;right:16px;bottom:calc(20px + var(--sab));z-index:300;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.tst{background:#1A1533;color:#fff;border-radius:12px;padding:13px 16px;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.3);animation:up .25s}
+.tst.ok{background:var(--ok)}.tst.err{background:var(--danger)}.tst.warn{background:var(--warn)}
+@keyframes up{from{transform:translateY(12px);opacity:0}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login">
+  <div class="login-card">
+    <div class="login-logo">MISU Campo</div>
+    <div class="login-sub">Cadastro rápido pelo celular</div>
+    <label class="lbl">E-mail</label>
+    <input class="inp" type="email" id="l-email" placeholder="seu@email.com" autocomplete="username">
+    <label class="lbl">Senha</label>
+    <input class="inp" type="password" id="l-pass" placeholder="••••••••" autocomplete="current-password">
+    <div id="l-err" class="l-err"></div>
+    <button class="btn" id="l-btn" onclick="doLogin()" style="margin-top:18px"><i class="ti ti-lock"></i>Entrar</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" class="hidden">
+  <div class="topbar">
+    <i class="ti ti-arrow-left back hidden" id="btn-back" onclick="goHome()"></i>
+    <h1 id="scr-title">Início</h1>
+    <img id="topbar-logo" class="hidden" style="height:26px;width:26px;object-fit:contain;border-radius:7px">
+    <div class="emp" id="emp-nome"></div>
+  </div>
+
+  <!-- HOME -->
+  <div class="wrap" id="scr-home">
+    <div class="home-hi" id="hi">Olá 👋</div>
+    <div class="home-sub">O que você quer fazer?</div>
+    <div class="mod" onclick="abrir('produto')">
+      <div class="mod-ic" style="background:#ede9fe;color:#5B3FE8">📦</div>
+      <div><div class="mod-t">Cadastrar Produto</div><div class="mod-d">Foto, código de barras e salvar na loja</div></div>
+      <i class="ti ti-chevron-right"></i>
+    </div>
+    <div class="mod soon" onclick="notify('Módulo em construção — chega na próxima atualização.','warn')">
+      <div class="mod-ic" style="background:#dbeafe;color:#2563eb">🔧</div>
+      <div><div class="mod-t">OS Rápida <span class="badge">EM BREVE</span></div><div class="mod-d">Item, fotos e link pro cliente</div></div>
+      <i class="ti ti-chevron-right"></i>
+    </div>
+    <div class="mod soon" onclick="notify('Módulo em construção — chega na próxima atualização.','warn')">
+      <div class="mod-ic" style="background:#dcfce7;color:#16a34a">🛒</div>
+      <div><div class="mod-t">Venda Rápida <span class="badge">EM BREVE</span></div><div class="mod-d">Link/QR de pagamento no WhatsApp</div></div>
+      <i class="ti ti-chevron-right"></i>
+    </div>
+    <div id="recentes-wrap" class="hidden" style="margin-top:24px">
+      <div style="font-size:12px;font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px">Cadastrados hoje</div>
+      <div id="recentes"></div>
+    </div>
+  </div>
+
+  <!-- PRODUTO -->
+  <div class="wrap hidden" id="scr-produto">
+    <div class="aviso">
+      <i class="ti ti-info-circle"></i>
+      <div>Cadastro rápido. Os <b>dados fiscais</b> (NCM, CFOP, origem) você completa depois no sistema, na aba <b>Produtos</b>, antes de vender com nota.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-t">Fotos do produto</div>
+      <label class="foto-add" for="p-foto"><i class="ti ti-camera"></i>Tirar foto / escolher</label>
+      <input type="file" id="p-foto" accept="image/*" capture="environment" multiple class="hidden" onchange="addFotos(event)">
+      <div class="thumbs" id="p-thumbs"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-t">Identificação</div>
+      <label class="lbl">Nome do produto *</label>
+      <input class="inp" id="p-nome" placeholder="Ex.: Capa iPhone 11 Preta">
+      <label class="lbl">Código de barras</label>
+      <div class="bc-row">
+        <input class="inp" id="p-bc" placeholder="Escaneie ou digite" inputmode="numeric">
+        <button class="icon-btn" onclick="abrirScanner()" title="Escanear"><i class="ti ti-scan"></i></button>
+      </div>
+      <div class="row2">
+        <div><label class="lbl">Categoria</label><input class="inp" id="p-cat" placeholder="Ex.: Acessório"></div>
+        <div><label class="lbl">Marca</label><input class="inp" id="p-marca" placeholder="Opcional"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-t">Preço e estoque</div>
+      <div class="row2">
+        <div><label class="lbl">Custo (R$)</label><input class="inp" id="p-custo" type="number" inputmode="decimal" placeholder="0,00"></div>
+        <div><label class="lbl">Preço venda (R$) *</label><input class="inp" id="p-preco" type="number" inputmode="decimal" placeholder="0,00"></div>
+      </div>
+      <label class="lbl">Quantidade em estoque</label>
+      <input class="inp" id="p-est" type="number" inputmode="numeric" placeholder="0" value="1">
+    </div>
+
+    <button class="btn btn-ok" id="p-save" onclick="salvarProduto()"><i class="ti ti-device-floppy"></i>Salvar na loja</button>
+  </div>
+</div>
+
+<!-- SCANNER -->
+<div id="scan">
+  <div class="scan-top"><div></div><button class="scan-close" onclick="fecharScanner()"><i class="ti ti-x"></i></button></div>
+  <video id="scan-video" playsinline muted></video>
+  <div class="scan-frame"></div>
+  <div class="scan-hint" id="scan-hint">Aponte para o código de barras</div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const SURL='https://icgfpfwcnhkjglrmnuca.supabase.co';
+const SKEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljZ2ZwZndjbmhramdscm1udWNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwODA2OTEsImV4cCI6MjA5NTY1NjY5MX0.xDGiGCIlqXaqdWhWo0NoNi_XUdlw5raCogO_Jnc0ezw';
+const db=supabase.createClient(SURL,SKEY,{auth:{autoRefreshToken:true,persistSession:true}});
+
+// polyfill randomUUID (iOS<15.4)
+try{ if(typeof crypto!=='undefined'&&typeof crypto.randomUUID!=='function'&&crypto.getRandomValues){ crypto.randomUUID=function(){return([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,c=>(c^crypto.getRandomValues(new Uint8Array(1))[0]&15>>c/4).toString(16));};} }catch(_){}
+
+const G={empresa:null,empresaId:null,fotos:[]};
+function comTimeout(p,nome,ms=12000){return Promise.race([p,new Promise((_,r)=>setTimeout(()=>r(new Error('Tempo esgotado: '+nome)),ms))]);}
+const $=id=>document.getElementById(id);
+function esc(s){return String(s==null?'':s).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));}
+
+function notify(msg,tipo){
+  const t=document.createElement('div'); t.className='tst '+(tipo||''); t.textContent=msg;
+  $('toast').appendChild(t); setTimeout(()=>t.remove(),3500);
+}
+
+/* ── LOGIN ── */
+async function doLogin(){
+  const em=$('l-email').value.trim(), pw=$('l-pass').value, err=$('l-err'), btn=$('l-btn');
+  err.style.display='none';
+  if(!em||!pw){err.textContent='Preencha e-mail e senha.';err.style.display='block';return;}
+  let ok=false;
+  try{
+    btn.disabled=true; btn.innerHTML='<div class="spinner"></div>Entrando...';
+    const {data,error}=await comTimeout(db.auth.signInWithPassword({email:em,password:pw}),'login');
+    if(error) throw error;
+    if(!data?.user) throw new Error('Usuário não retornado.');
+    await carregarEmpresa(data.user);
+    ok=true;
+  }catch(e){
+    err.textContent = (e?.message==='Invalid login credentials') ? 'E-mail ou senha incorretos.' : ('Não foi possível entrar: '+(e?.message||'erro'));
+    err.style.display='block';
+    try{ await db.auth.signOut(); }catch(_){}
+  }finally{
+    if(!ok){ btn.disabled=false; btn.innerHTML='<i class="ti ti-lock"></i>Entrar'; }
+  }
+}
+
+async function carregarEmpresa(user){
+  const {data:emp}=await comTimeout(db.from('empresas').select('id,nome,status').eq('auth_user_id',user.id).maybeSingle(),'empresa');
+  if(!emp) throw new Error('Esta conta não é de uma empresa. Use o login da loja.');
+  if(emp.status==='bloqueada') throw new Error('Empresa bloqueada. Fale com o suporte.');
+  G.empresa=emp; G.empresaId=emp.id;
+  $('emp-nome').textContent=emp.nome||'';
+  $('hi').textContent='Olá 👋';
+  $('login').classList.add('hidden');
+  $('app').classList.remove('hidden');
+  goHome();
+  carregarMarca(emp.id);
+  carregarRecentes();
+}
+
+/* ── SINCRONIZAÇÃO DE MARCA (cores + logo da empresa) ── */
+function aplicarPaletaApp(p){
+  if(!p) return;
+  if((p.c1||'').toUpperCase()==='#5B47E0') p={...p,c1:'#1E5EFF',c2:'#3D8BFF',dark:'#0A2FA8'};
+  const s=document.documentElement.style;
+  if(p.c1) s.setProperty('--pri',p.c1);
+  if(p.c2) s.setProperty('--pri2',p.c2);
+  if(p.dark) s.setProperty('--pri-d',p.dark);
+}
+async function carregarMarca(empId){
+  try{
+    const {data}=await comTimeout(db.from('aparencia_config').select('config_marca').eq('empresa_id',empId).maybeSingle(),'marca');
+    const m=data?.config_marca||{};
+    if(m.paleta) aplicarPaletaApp(m.paleta);
+    const logo=m.logoSidebar||m.logoLogin;
+    if(logo){ const t=$('topbar-logo'); if(t){ t.src=logo; t.classList.remove('hidden'); } }
+  }catch(_){}
+}
+async function carregarRecentes(){
+  try{
+    const hoje=new Date(); hoje.setHours(0,0,0,0);
+    const {data}=await comTimeout(db.from('produtos').select('id,nome,preco,fotos,criado_em').eq('empresa_id',G.empresaId).gte('criado_em',hoje.toISOString()).order('criado_em',{ascending:false}).limit(10),'recentes');
+    const list=data||[]; const w=$('recentes-wrap'), c=$('recentes');
+    if(!list.length){ w.classList.add('hidden'); return; }
+    w.classList.remove('hidden');
+    c.innerHTML=list.map(p=>{
+      const f=Array.isArray(p.fotos)&&p.fotos[0]?p.fotos[0]:null;
+      return `<div class="card" style="display:flex;align-items:center;gap:12px;padding:11px 13px">
+        ${f?`<img src="${f}" style="width:44px;height:44px;border-radius:10px;object-fit:cover;flex-shrink:0">`:`<div style="width:44px;height:44px;border-radius:10px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">📦</div>`}
+        <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.nome)}</div><div style="font-size:12px;color:var(--pri);font-weight:700">R$ ${(Number(p.preco)||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>
+      </div>`;
+    }).join('');
+  }catch(_){}
+}
+
+/* ── NAVEGAÇÃO ── */
+function abrir(scr){
+  ['home','produto'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
+  $('scr-'+scr).classList.remove('hidden');
+  $('btn-back').classList.remove('hidden');
+  $('scr-title').textContent = scr==='produto'?'Cadastrar Produto':scr;
+}
+function goHome(){
+  ['produto'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
+  $('scr-home').classList.remove('hidden');
+  $('btn-back').classList.add('hidden');
+  $('scr-title').textContent='Início';
+}
+
+/* ── FOTOS (base64 → produtos.fotos) ── */
+function addFotos(ev){
+  const files=[...(ev.target.files||[])];
+  files.forEach(f=>{
+    if(!f.type.startsWith('image/'))return;
+    const r=new FileReader();
+    r.onload=e=>{ G.fotos.push(e.target.result); renderThumbs(); };
+    r.readAsDataURL(f);
+  });
+  ev.target.value='';
+}
+function renderThumbs(){
+  $('p-thumbs').innerHTML=G.fotos.map((s,i)=>`<div class="thumb"><img src="${s}"><button class="del" onclick="G.fotos.splice(${i},1);renderThumbs()">✕</button></div>`).join('');
+}
+
+/* ── SCANNER (BarcodeDetector) ── */
+let _scanStream=null,_scanRAF=null,_detector=null;
+async function abrirScanner(){
+  if(!('BarcodeDetector' in window)){
+    notify('Seu navegador não suporta scanner. Digite o código manualmente.','warn');
+    return;
+  }
+  try{
+    _detector=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128','code_39','qr_code']});
+    _scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+    const v=$('scan-video'); v.srcObject=_scanStream; await v.play();
+    $('scan').style.display='flex';
+    loopScan();
+  }catch(e){ notify('Não foi possível abrir a câmera.','err'); fecharScanner(); }
+}
+async function loopScan(){
+  const v=$('scan-video');
+  try{
+    const codes=await _detector.detect(v);
+    if(codes && codes.length){
+      $('p-bc').value=codes[0].rawValue;
+      notify('Código lido: '+codes[0].rawValue,'ok');
+      fecharScanner(); return;
+    }
+  }catch(_){}
+  _scanRAF=requestAnimationFrame(loopScan);
+}
+function fecharScanner(){
+  if(_scanRAF)cancelAnimationFrame(_scanRAF);
+  if(_scanStream){ _scanStream.getTracks().forEach(t=>t.stop()); _scanStream=null; }
+  $('scan').style.display='none';
+}
+
+/* ── SALVAR PRODUTO ── */
+async function salvarProduto(){
+  const nome=$('p-nome').value.trim();
+  const preco=parseFloat($('p-preco').value)||0;
+  if(!nome){ notify('Informe o nome do produto.','warn'); return; }
+  if(preco<=0){ notify('Informe o preço de venda.','warn'); return; }
+  const btn=$('p-save');
+  btn.disabled=true; btn.innerHTML='<div class="spinner"></div>Salvando...';
+  try{
+    const bc=$('p-bc').value.trim();
+    if(bc){
+      const {data:dup}=await db.from('produtos').select('nome').eq('empresa_id',G.empresaId).eq('barcode',bc).limit(1);
+      if(dup&&dup.length && !confirm('Já existe um produto com esse código de barras: "'+dup[0].nome+'". Cadastrar assim mesmo?')){
+        btn.disabled=false; btn.innerHTML='<i class="ti ti-device-floppy"></i>Salvar na loja'; return;
+      }
+    }
+    const payload={
+      empresa_id:G.empresaId, nome,
+      sku:'SKU-'+Date.now(),
+      barcode:bc||null,
+      gtin:bc||null,
+      categoria:$('p-cat').value.trim()||null,
+      marca:$('p-marca').value.trim()||null,
+      custo:parseFloat($('p-custo').value)||0,
+      preco,
+      estoque:parseInt($('p-est').value)||0,
+      estoque_minimo:0,
+      status:'ativo',
+      fotos:G.fotos
+    };
+    const {error}=await comTimeout(db.from('produtos').insert(payload),'salvar produto');
+    if(error) throw error;
+    notify('✅ Produto salvo na loja!','ok');
+    ['p-nome','p-bc','p-cat','p-marca','p-custo','p-preco'].forEach(id=>$(id).value='');
+    $('p-est').value='1'; G.fotos=[]; renderThumbs();
+    goHome(); carregarRecentes();
+  }catch(e){
+    notify('Erro ao salvar: '+(e?.message||'tente de novo'),'err');
+  }finally{
+    btn.disabled=false; btn.innerHTML='<i class="ti ti-device-floppy"></i>Salvar na loja';
+  }
+}
+
+/* ── BOOT: restaura sessão (com timeout, sem travar) ── */
+(async()=>{
+  try{
+    const {data:{session}}=await comTimeout(db.auth.getSession(),'sessão');
+    if(session?.user) await carregarEmpresa(session.user);
+  }catch(e){ console.error('boot:',e); /* fica no login */ }
+})();
+</script>
+</body>
+</html>
