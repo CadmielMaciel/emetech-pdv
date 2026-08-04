@@ -6503,6 +6503,16 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
 /* ══ BUILD / DIAGNÓSTICO MOBILE ══════════════════════════════════════ */
 const BUILD_ID = 'MISU-2026-08-02-SAFARI-03';
 
+// Polyfill: crypto.randomUUID não existe no iOS Safari < 15.4
+try{
+  if(typeof crypto!=='undefined' && typeof crypto.randomUUID!=='function' && crypto.getRandomValues){
+    crypto.randomUUID = function(){
+      return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
+    };
+  }
+}catch(_){}
+
 // Mostra erros diretamente na tela do iPhone (temporário, para depuração)
 function mostrarErroSafari(tipo, erro){
   const mensagem = typeof erro==='string' ? erro : (erro?.message || String(erro||'Erro desconhecido'));
@@ -6907,7 +6917,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   db.auth.onAuthStateChange((event)=>{ if(event==='PASSWORD_RECOVERY'){ _recuperandoSenha=true; abrirModalNovaSenha(); } });
   (async()=>{
     try{
-      const {data:{session}}=await db.auth.getSession();
+      const {data:{session}}=await comTimeout(db.auth.getSession(), 'sessão');
       if(session?.user && !_recSenhaURL && !_recuperandoSenha) await loadProfile(session.user);
       // ── MODO SUPORTE (impersonation vinda do admin) ──
       // O admin master abriu ?suporte=EMPRESA_ID&modo=leitura|total
@@ -6916,7 +6926,14 @@ document.addEventListener('DOMContentLoaded',()=>{
       if(_supEmp && session?.user){
         await ativarModoSuporte(_supEmp, _sp.get('modo')||'leitura');
       }
-    }catch(e){ console.error('Erro ao restaurar sessão:',e); }
+    }catch(e){
+      console.error('Erro ao restaurar sessão:',e);
+      try{ mostrarErroSafari('RESTAURAR SESSÃO', e); }catch(_){}
+      // não deixa a tela branca: reexibe o login e limpa a sessão problemática
+      try{ document.getElementById('ls')?.classList.remove('hidden'); }catch(_){}
+      try{ document.getElementById('app')?.classList.remove('visible'); }catch(_){}
+      try{ await db.auth.signOut(); }catch(_){}
+    }
     if(typeof iniciarVerificacaoVersao==='function') iniciarVerificacaoVersao();
   })();
 });
