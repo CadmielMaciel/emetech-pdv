@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 :root{--pri:#5B3FE8;--pri2:#7C5CFF;--pri-d:#3D2596;--bg:#F4F2FB;--card:#fff;--txt:#1A1533;--txt2:#5B5478;--txt3:#9A93B8;--border:#E6E1F2;--ok:#16A34A;--warn:#F59E0B;--danger:#DC2626;--sab:env(safe-area-inset-bottom,0px);--sat:env(safe-area-inset-top,0px)}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -111,14 +112,14 @@ input,select,textarea,button{font-family:inherit;font-size:16px}
       <div><div class="mod-t">Cadastrar Produto</div><div class="mod-d">Foto, código de barras e salvar na loja</div></div>
       <i class="ti ti-chevron-right"></i>
     </div>
-    <div class="mod soon" onclick="notify('Módulo em construção — chega na próxima atualização.','warn')">
+    <div class="mod" onclick="abrir('os')">
       <div class="mod-ic" style="background:#dbeafe;color:#2563eb">🔧</div>
-      <div><div class="mod-t">OS Rápida <span class="badge">EM BREVE</span></div><div class="mod-d">Item, fotos e link pro cliente</div></div>
+      <div><div class="mod-t">OS Rápida</div><div class="mod-d">Aparelho, fotos e link pro cliente</div></div>
       <i class="ti ti-chevron-right"></i>
     </div>
-    <div class="mod soon" onclick="notify('Módulo em construção — chega na próxima atualização.','warn')">
+    <div class="mod" onclick="abrir('venda')">
       <div class="mod-ic" style="background:#dcfce7;color:#16a34a">🛒</div>
-      <div><div class="mod-t">Venda Rápida <span class="badge">EM BREVE</span></div><div class="mod-d">Link/QR de pagamento no WhatsApp</div></div>
+      <div><div class="mod-t">Venda Rápida</div><div class="mod-d">Link/QR de pagamento no WhatsApp</div></div>
       <i class="ti ti-chevron-right"></i>
     </div>
     <div id="recentes-wrap" class="hidden" style="margin-top:24px">
@@ -168,6 +169,74 @@ input,select,textarea,button{font-family:inherit;font-size:16px}
 
     <button class="btn btn-ok" id="p-save" onclick="salvarProduto()"><i class="ti ti-device-floppy"></i>Salvar na loja</button>
   </div>
+
+  <!-- OS RÁPIDA -->
+  <div class="wrap hidden" id="scr-os">
+    <div class="card">
+      <div class="card-t">Cliente</div>
+      <label class="lbl">Nome do cliente *</label>
+      <input class="inp" id="os-cli" placeholder="Quem trouxe o aparelho">
+      <label class="lbl">WhatsApp do cliente</label>
+      <input class="inp" id="os-fone" type="tel" inputmode="numeric" placeholder="(DDD) 9 9999-9999">
+    </div>
+    <div class="card">
+      <div class="card-t">Aparelho</div>
+      <label class="lbl">Aparelho (marca/modelo) *</label>
+      <input class="inp" id="os-aparelho" placeholder="Ex.: iPhone 11 128GB">
+      <label class="lbl">Defeito relatado *</label>
+      <textarea class="inp" id="os-defeito" rows="2" placeholder="O que o cliente relatou..."></textarea>
+    </div>
+    <div class="card">
+      <div class="card-t">Fotos do aparelho</div>
+      <label class="foto-add" for="os-foto"><i class="ti ti-camera"></i>Tirar foto / escolher</label>
+      <input type="file" id="os-foto" accept="image/*" capture="environment" multiple class="hidden" onchange="addOsFotos(event)">
+      <div class="thumbs" id="os-thumbs"></div>
+    </div>
+    <button class="btn" id="os-save" onclick="criarOSRapida()"><i class="ti ti-plus"></i>Criar OS e gerar link</button>
+  </div>
+
+  <!-- OS SUCESSO -->
+  <div class="wrap hidden" id="scr-os-ok">
+    <div style="text-align:center;padding:24px 10px 14px">
+      <div style="font-size:52px">✅</div>
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;margin-top:8px" id="os-ok-num">OS criada!</div>
+      <div style="font-size:13px;color:var(--txt3);margin-top:4px">Fotos anexadas e link do cliente pronto.</div>
+    </div>
+    <button class="btn btn-ok" onclick="enviarLinkOS()"><i class="ti ti-brand-whatsapp"></i>Enviar link no WhatsApp</button>
+    <button class="btn btn-out" style="margin-top:10px" onclick="copiarLinkOS()"><i class="ti ti-copy"></i>Copiar link</button>
+    <button class="btn" style="margin-top:10px;background:transparent;color:var(--txt2)" onclick="goHome()">Voltar ao início</button>
+  </div>
+
+  <!-- VENDA RÁPIDA -->
+  <div class="wrap hidden" id="scr-venda">
+    <div class="aviso" style="background:#ede9fe;border-color:var(--pri);color:var(--pri-d)">
+      <i class="ti ti-info-circle"></i>
+      <div>Gera um link de pagamento InfinitePay (Pix + cartão). Precisa da conta InfinitePay conectada no sistema.</div>
+    </div>
+    <div class="card">
+      <div class="card-t">Venda</div>
+      <label class="lbl">Descrição *</label>
+      <input class="inp" id="v-desc" placeholder="Ex.: Capa + Película iPhone 11">
+      <label class="lbl">Valor total (R$) *</label>
+      <input class="inp" id="v-valor" type="number" inputmode="decimal" placeholder="0,00">
+      <label class="lbl">WhatsApp do cliente</label>
+      <input class="inp" id="v-fone" type="tel" inputmode="numeric" placeholder="(DDD) 9 9999-9999">
+    </div>
+    <button class="btn" id="v-save" onclick="gerarVendaRapida()"><i class="ti ti-qrcode"></i>Gerar link de pagamento</button>
+  </div>
+
+  <!-- VENDA SUCESSO (QR) -->
+  <div class="wrap hidden" id="scr-venda-ok">
+    <div style="text-align:center;padding:14px 10px 4px">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px">Cobrança gerada</div>
+      <div style="font-size:16px;color:var(--pri);font-weight:700;margin-top:2px" id="v-ok-valor"></div>
+    </div>
+    <div style="display:flex;justify-content:center;margin:14px 0"><div id="venda-qr" style="background:#fff;padding:16px;border-radius:16px;border:1px solid var(--border)"></div></div>
+    <div style="text-align:center;font-size:12px;color:var(--txt3);margin-bottom:14px">Mostre o QR pro cliente ou envie o link</div>
+    <button class="btn btn-ok" onclick="enviarLinkVenda()"><i class="ti ti-brand-whatsapp"></i>Enviar no WhatsApp</button>
+    <button class="btn btn-out" style="margin-top:10px" onclick="copiarLinkVenda()"><i class="ti ti-copy"></i>Copiar link</button>
+    <button class="btn" style="margin-top:10px;background:transparent;color:var(--txt2)" onclick="goHome()">Voltar ao início</button>
+  </div>
 </div>
 
 <!-- SCANNER -->
@@ -188,7 +257,7 @@ const db=supabase.createClient(SURL,SKEY,{auth:{autoRefreshToken:true,persistSes
 // polyfill randomUUID (iOS<15.4)
 try{ if(typeof crypto!=='undefined'&&typeof crypto.randomUUID!=='function'&&crypto.getRandomValues){ crypto.randomUUID=function(){return([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,c=>(c^crypto.getRandomValues(new Uint8Array(1))[0]&15>>c/4).toString(16));};} }catch(_){}
 
-const G={empresa:null,empresaId:null,fotos:[]};
+const G={empresa:null,empresaId:null,fotos:[],osFotos:[],ultimaOS:null};
 function comTimeout(p,nome,ms=12000){return Promise.race([p,new Promise((_,r)=>setTimeout(()=>r(new Error('Tempo esgotado: '+nome)),ms))]);}
 const $=id=>document.getElementById(id);
 function esc(s){return String(s==null?'':s).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));}
@@ -271,13 +340,13 @@ async function carregarRecentes(){
 
 /* ── NAVEGAÇÃO ── */
 function abrir(scr){
-  ['home','produto'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
+  ['home','produto','os','os-ok','venda','venda-ok'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
   $('scr-'+scr).classList.remove('hidden');
   $('btn-back').classList.remove('hidden');
-  $('scr-title').textContent = scr==='produto'?'Cadastrar Produto':scr;
+  $('scr-title').textContent = ({produto:'Cadastrar Produto',os:'OS Rápida',venda:'Venda Rápida'})[scr]||scr;
 }
 function goHome(){
-  ['produto'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
+  ['produto','os','os-ok','venda','venda-ok'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
   $('scr-home').classList.remove('hidden');
   $('btn-back').classList.add('hidden');
   $('scr-title').textContent='Início';
@@ -373,6 +442,108 @@ async function salvarProduto(){
     btn.disabled=false; btn.innerHTML='<i class="ti ti-device-floppy"></i>Salvar na loja';
   }
 }
+
+/* ── OS RÁPIDA ── */
+function pad(n){ return String(n).padStart(4,'0'); }
+function addOsFotos(ev){ [...(ev.target.files||[])].forEach(f=>{ if(f.type&&f.type.startsWith('image/')) G.osFotos.push(f); }); renderOsThumbs(); ev.target.value=''; }
+function renderOsThumbs(){ $('os-thumbs').innerHTML=G.osFotos.map((f,i)=>`<div class="thumb"><img src="${URL.createObjectURL(f)}"><button class="del" onclick="G.osFotos.splice(${i},1);renderOsThumbs()">✕</button></div>`).join(''); }
+async function proximoNumeroOS(){
+  try{
+    const {data}=await comTimeout(db.from('ordens_servico').select('numero').eq('empresa_id',G.empresaId).order('criado_em',{ascending:false}).limit(60),'numero OS');
+    const max=(data||[]).reduce((m,o)=>{const n=parseInt(String(o.numero||'').replace(/\D/g,''),10)||0;return n>m?n:m;},0);
+    return max+1;
+  }catch(_){ return Date.now()%100000; }
+}
+async function criarOSRapida(){
+  const cli=$('os-cli').value.trim(), fone=$('os-fone').value.replace(/\D/g,''), ap=$('os-aparelho').value.trim(), def=$('os-defeito').value.trim();
+  if(!cli){ notify('Informe o nome do cliente.','warn'); return; }
+  if(!ap){ notify('Informe o aparelho.','warn'); return; }
+  if(!def){ notify('Descreva o defeito relatado.','warn'); return; }
+  const btn=$('os-save'); btn.disabled=true; btn.innerHTML='<div class="spinner"></div>Criando OS...';
+  try{
+    const token=(crypto.randomUUID()+crypto.randomUUID()).replace(/-/g,'');
+    let numero='OS-'+pad(await proximoNumeroOS()), os=null, tent=0;
+    while(tent<6){
+      const {data,error}=await comTimeout(db.from('ordens_servico').insert({
+        empresa_id:G.empresaId, numero, cliente_nome:cli, aparelho:ap, defeito:def,
+        status:'Aguardando', progresso:8, timeline:[{status:'Aguardando',data:new Date().toISOString()}],
+        token_publico:token
+      }).select().single(),'criar OS');
+      if(error && /duplicate|unique|numero/i.test(error.message||'')){ tent++; numero='OS-'+pad(parseInt(numero.replace(/\D/g,''),10)+1); continue; }
+      if(error) throw error;
+      os=data; break;
+    }
+    if(!os) throw new Error('Não foi possível gerar o número da OS.');
+    // upload das fotos pro bucket os-midias
+    for(const f of G.osFotos){
+      try{
+        const ext=(String(f.name||'').split('.').pop()||'jpg').toLowerCase();
+        const path=`${G.empresaId}/${os.id}/${Date.now()}_${Math.random().toString(36).slice(2,8)}.${ext}`;
+        const {error:up}=await db.storage.from('os-midias').upload(path,f,{contentType:f.type,upsert:false});
+        if(up) continue;
+        const {data:pub}=db.storage.from('os-midias').getPublicUrl(path);
+        await db.from('os_midias').insert({empresa_id:G.empresaId,os_id:os.id,tipo:'foto',url:pub.publicUrl,path,visivel_cliente:true,criado_por:'MISU Campo'});
+      }catch(_){}
+    }
+    G.ultimaOS={...os,fone};
+    $('os-ok-num').textContent=(os.numero||'OS')+' criada!';
+    ['os-cli','os-fone','os-aparelho','os-defeito'].forEach(id=>$(id).value=''); G.osFotos=[]; renderOsThumbs();
+    ['os','produto'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
+    $('scr-os-ok').classList.remove('hidden');
+    $('scr-title').textContent='OS criada';
+  }catch(e){ notify('Erro: '+(e?.message||'tente de novo'),'err'); }
+  finally{ btn.disabled=false; btn.innerHTML='<i class="ti ti-plus"></i>Criar OS e gerar link'; }
+}
+function linkOS(){ return G.ultimaOS?.token_publico ? (location.origin+'/os.html?t='+G.ultimaOS.token_publico) : null; }
+function enviarLinkOS(){
+  const l=linkOS(); if(!l){ notify('Link indisponível.','warn'); return; }
+  const fone=G.ultimaOS.fone;
+  const msg=`Olá! 🔧 Acompanhe sua ordem de serviço (${G.ultimaOS.aparelho||''}) por aqui:\n\n${l}`;
+  const url = fone ? `https://api.whatsapp.com/send?phone=55${fone}&text=${encodeURIComponent(msg)}` : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+  window.open(url,'_blank');
+}
+async function copiarLinkOS(){ const l=linkOS(); if(!l)return; try{ await navigator.clipboard.writeText(l); notify('Link copiado!','ok'); }catch(_){ notify(l); } }
+
+/* ── VENDA RÁPIDA (InfinitePay + QR) ── */
+async function gerarVendaRapida(){
+  const desc=$('v-desc').value.trim(), valor=parseFloat($('v-valor').value)||0, fone=$('v-fone').value.replace(/\D/g,'');
+  if(!desc){ notify('Informe a descrição da venda.','warn'); return; }
+  if(valor<=0){ notify('Informe o valor.','warn'); return; }
+  const btn=$('v-save'); btn.disabled=true; btn.innerHTML='<div class="spinner"></div>Gerando...';
+  try{
+    let cfg={};
+    try{ const {data}=await comTimeout(db.from('empresas').select('infinitepay_config').eq('id',G.empresaId).maybeSingle(),'config'); cfg=data?.infinitepay_config||{}; }catch(_){}
+    const order_nsu='APP-'+Date.now();
+    const {data,error}=await comTimeout(db.functions.invoke('infinitepay-link',{ body:{
+      empresa_id:G.empresaId, order_nsu, origem:'venda_rapida', origem_id:order_nsu,
+      descricao:desc, itens:[{descricao:desc, valor, qtd:1}], redirect_url:location.origin,
+      max_parcelas:cfg.max_parcelas||12, taxa_por_conta:cfg.taxa_por_conta||'cliente', pix:cfg.pix!==false
+    }}),'gerar cobrança');
+    if(error) throw new Error(error.message||'falha na chamada');
+    if(!data||!data.success){
+      const code=data?.error?.code||'';
+      if(code==='SEM_HANDLE') throw new Error('Conecte sua conta InfinitePay no sistema: Configurações → Gateway de Pagamento.');
+      throw new Error(data?.error?.message||'Não foi possível gerar a cobrança.');
+    }
+    G.ultimaVenda={ url:data.checkout_url, valor:data.valor||valor, fone };
+    $('v-ok-valor').textContent='R$ '+(Number(G.ultimaVenda.valor)||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
+    const q=$('venda-qr'); q.innerHTML='';
+    try{ new QRCode(q,{text:G.ultimaVenda.url,width:210,height:210,correctLevel:QRCode.CorrectLevel.M}); }catch(_){ q.textContent='(QR indisponível — use o link)'; }
+    ['v-desc','v-valor','v-fone'].forEach(id=>$(id).value='');
+    ['venda','produto','os'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
+    $('scr-venda-ok').classList.remove('hidden');
+    $('scr-title').textContent='Cobrança';
+  }catch(e){ notify(e?.message||'Erro ao gerar cobrança.','err'); }
+  finally{ btn.disabled=false; btn.innerHTML='<i class="ti ti-qrcode"></i>Gerar link de pagamento'; }
+}
+function enviarLinkVenda(){
+  const v=G.ultimaVenda; if(!v?.url){ notify('Link indisponível.','warn'); return; }
+  const val='R$ '+(Number(v.valor)||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
+  const msg=`Olá! 🛒 Aqui está o link para pagamento (${val}):\n\n${v.url}\n\nPix ou cartão em até 12x.`;
+  const url = v.fone ? `https://api.whatsapp.com/send?phone=55${v.fone}&text=${encodeURIComponent(msg)}` : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+  window.open(url,'_blank');
+}
+async function copiarLinkVenda(){ const v=G.ultimaVenda; if(!v?.url)return; try{ await navigator.clipboard.writeText(v.url); notify('Link copiado!','ok'); }catch(_){ notify(v.url); } }
 
 /* ── BOOT: restaura sessão (com timeout, sem travar) ── */
 (async()=>{
