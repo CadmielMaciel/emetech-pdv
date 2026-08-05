@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>MISU Campo</title>
+<title>MISU MOBILE</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -11,76 +11,146 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <style>
-:root{--pri:#5B3FE8;--pri2:#7C5CFF;--pri-d:#3D2596;--bg:#F4F2FB;--card:#fff;--txt:#1A1533;--txt2:#5B5478;--txt3:#9A93B8;--border:#E6E1F2;--ok:#16A34A;--warn:#F59E0B;--danger:#DC2626;--sab:env(safe-area-inset-bottom,0px);--sat:env(safe-area-inset-top,0px)}
+:root{
+  --pri:#5B3FE8;--pri2:#7C5CFF;--pri-d:#3D2596;
+  --bg:#F3F1FB;--bg2:#ECE8F8;--card:#fff;
+  --txt:#191338;--txt2:#5A5280;--txt3:#9C95B6;
+  --border:#E7E2F3;--border2:#EFEBF8;
+  --ok:#16A34A;--warn:#F59E0B;--danger:#DC2626;
+  --sab:env(safe-area-inset-bottom,0px);--sat:env(safe-area-inset-top,0px);
+  --shadow-sm:0 1px 2px rgba(24,16,56,.05);
+  --shadow:0 2px 6px rgba(24,16,56,.05),0 10px 30px -12px rgba(24,16,56,.16);
+  --glow:0 10px 26px -8px rgba(91,63,232,.45);
+  --ring:0 0 0 4px rgba(91,63,232,.12);
+  --r:16px;
+}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;min-height:100dvh}
+html,body{max-width:100%;overflow-x:hidden}
+body{font-family:'DM Sans',sans-serif;background:linear-gradient(180deg,#EEE9FB,var(--bg) 240px) no-repeat,var(--bg);color:var(--txt);min-height:100vh;min-height:100dvh;-webkit-font-smoothing:antialiased}
 input,select,textarea,button{font-family:inherit;font-size:16px}
 .hidden{display:none!important}
-/* ── LOGIN ── */
-#login{position:fixed;inset:0;background:linear-gradient(150deg,var(--pri-d),var(--pri) 55%,var(--pri2));display:flex;align-items:center;justify-content:center;padding:24px;z-index:100}
-.login-card{background:#fff;border-radius:22px;padding:30px 24px calc(24px + var(--sab));width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
-.login-logo{text-align:center;font-family:'Syne',sans-serif;font-weight:800;font-size:26px;color:var(--pri)}
-.login-sub{text-align:center;font-size:13px;color:var(--txt3);margin:4px 0 22px}
-.lbl{display:block;font-size:12px;font-weight:600;color:var(--txt2);margin:14px 0 6px;text-transform:uppercase;letter-spacing:.4px}
-.inp{width:100%;border:1.5px solid var(--border);border-radius:12px;padding:13px 14px;font-size:16px;background:#fff;color:var(--txt)}
-.inp:focus{outline:none;border-color:var(--pri)}
-.btn{width:100%;border:none;border-radius:13px;padding:15px;font-size:16px;font-weight:700;color:#fff;background:var(--pri);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:transform .1s}
-.btn:active{transform:scale(.98)}
-.btn:disabled{opacity:.6}
-.btn-out{background:#fff;color:var(--pri);border:1.5px solid var(--pri)}
-.btn-ok{background:var(--ok)}
-.l-err{background:#fee2e2;color:#991b1b;border-radius:10px;padding:11px;font-size:13px;margin-top:14px;display:none}
-.spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
+@keyframes up{from{transform:translateY(12px);opacity:0}}
+@keyframes screenIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes pop{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
+.login-logo,.topbar h1,.home-hi{font-family:'Syne',sans-serif;letter-spacing:-.02em}
+
+/* ── LOGIN ── */
+#login{position:fixed;inset:0;background:linear-gradient(155deg,var(--pri-d),var(--pri) 52%,var(--pri2));display:flex;align-items:center;justify-content:center;padding:24px;z-index:100}
+#login::before{content:"";position:absolute;inset:0;background:radial-gradient(85% 55% at 50% 0%,rgba(255,255,255,.20),transparent 60%);pointer-events:none}
+.login-card{position:relative;background:#fff;border-radius:26px;padding:34px 26px calc(28px + var(--sab));width:100%;max-width:400px;box-shadow:0 30px 70px -20px rgba(30,10,80,.5),0 2px 8px rgba(0,0,0,.06);animation:pop .4s ease}
+.login-logo{font-size:28px;font-weight:800;color:var(--pri);text-align:center;text-shadow:0 6px 20px rgba(91,63,232,.28)}
+.login-sub{text-align:center;font-size:13px;color:var(--txt3);margin:5px 0 24px;font-weight:500}
+
+/* ── LABELS / INPUTS ── */
+.lbl{display:block;font-size:11.5px;font-weight:700;color:var(--txt2);margin:15px 0 7px;text-transform:uppercase;letter-spacing:.6px}
+.inp{width:100%;border:1.5px solid var(--border);border-radius:13px;padding:14px 15px;font-size:16px;background:#fff;color:var(--txt);min-height:52px;transition:border-color .18s,box-shadow .18s}
+.inp::placeholder{color:var(--txt3)}
+.inp:focus{outline:none;border-color:var(--pri);box-shadow:var(--ring)}
+textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
+
+/* ── BUTTONS ── */
+.btn{width:100%;border:none;border-radius:14px;padding:15px;min-height:54px;font-size:16px;font-weight:700;letter-spacing:-.01em;color:#fff;background:linear-gradient(135deg,var(--pri),var(--pri2));cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;box-shadow:var(--glow);transition:transform .12s ease,box-shadow .18s,opacity .18s}
+.btn i{font-size:18px}
+.btn:active{transform:scale(.975);box-shadow:0 6px 16px -8px rgba(91,63,232,.5)}
+.btn:disabled{opacity:.55;box-shadow:none}
+.btn-out{background:#fff;color:var(--pri);border:1.5px solid var(--border);box-shadow:var(--shadow-sm)}
+.btn-out:active{border-color:var(--pri)}
+.btn-ok{background:linear-gradient(135deg,#16A34A,#22C55E);box-shadow:0 10px 26px -8px rgba(22,163,74,.45)}
+.btn-ghost{background:transparent;color:var(--txt2);box-shadow:none;font-weight:600}
+.btn-ghost:active{background:var(--bg2)}
+.l-err{background:#FEECEC;color:#B42318;border:1px solid #FBD5D5;border-radius:12px;padding:12px 13px;font-size:13px;margin-top:15px;display:none;font-weight:500}
+.spinner{width:18px;height:18px;border:2.5px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+.btn-out .spinner,.btn-ok .spinner{border-color:rgba(91,63,232,.25);border-top-color:var(--pri)}
+
 /* ── APP SHELL ── */
 #app{min-height:100dvh;padding-top:var(--sat)}
-.topbar{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--border);padding:calc(12px + var(--sat)) 16px 12px;display:flex;align-items:center;gap:12px;z-index:20}
-.topbar .back{font-size:22px;color:var(--pri);cursor:pointer;width:32px}
-.topbar h1{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;flex:1}
-.topbar .emp{font-size:11px;color:var(--txt3);font-weight:600}
-.wrap{padding:16px 16px calc(24px + var(--sab))}
+.topbar{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--border2);padding:calc(11px + var(--sat)) 14px 11px;display:flex;align-items:center;gap:12px;z-index:20}
+.topbar .back{font-size:22px;color:var(--pri);cursor:pointer;width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:12px;transition:background .15s}
+.topbar .back:active{background:var(--bg2)}
+.topbar h1{font-size:18px;font-weight:800;flex:1}
+.topbar .emp{font-size:11px;color:var(--txt3);font-weight:600;text-align:right;max-width:38%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wrap{padding:18px 16px calc(28px + var(--sab));animation:screenIn .3s ease}
+
 /* ── HOME ── */
-.home-hi{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;margin-bottom:2px}
-.home-sub{font-size:13px;color:var(--txt3);margin-bottom:20px}
-.mod{display:flex;align-items:center;gap:16px;background:#fff;border:1px solid var(--border);border-radius:18px;padding:18px;margin-bottom:14px;cursor:pointer;transition:transform .1s}
+.home-hi{font-size:24px;font-weight:800;margin-bottom:3px}
+.home-sub{font-size:13.5px;color:var(--txt3);margin-bottom:22px;font-weight:500}
+.mod{display:flex;align-items:center;gap:15px;background:var(--card);border:1px solid var(--border2);border-radius:20px;padding:17px;margin-bottom:13px;cursor:pointer;box-shadow:var(--shadow);transition:transform .14s ease,box-shadow .18s}
 .mod:active{transform:scale(.98)}
-.mod-ic{width:54px;height:54px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0}
-.mod-t{font-weight:700;font-size:16px}
-.mod-d{font-size:12.5px;color:var(--txt3);margin-top:2px}
-.mod .ti-chevron-right{margin-left:auto;color:var(--txt3);font-size:20px}
-.soon{opacity:.55}
-.soon .badge{font-size:9px;font-weight:700;background:var(--warn);color:#fff;border-radius:99px;padding:2px 7px;margin-left:6px}
-/* ── FORM CARD ── */
-.card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:14px}
-.card-t{font-size:11px;font-weight:700;color:var(--pri);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
-.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.bc-row{display:flex;gap:8px}
-.bc-row .inp{flex:1}
-.icon-btn{background:var(--pri);color:#fff;border:none;border-radius:12px;width:52px;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer}
-.aviso{background:#fef3c7;border:1px solid var(--warn);border-radius:12px;padding:12px;font-size:12.5px;color:#92400e;display:flex;gap:9px;margin-bottom:14px}
+.mod:not(.soon):active{box-shadow:var(--glow)}
+.mod-ic{width:56px;height:56px;border-radius:17px;display:flex;align-items:center;justify-content:center;font-size:27px;flex-shrink:0;box-shadow:0 6px 16px -6px rgba(91,63,232,.28)}
+.mod-t{font-weight:700;font-size:16px;letter-spacing:-.01em}
+.mod-d{font-size:12.5px;color:var(--txt3);margin-top:3px;line-height:1.35}
+.mod .ti-chevron-right{margin-left:auto;color:var(--txt3);font-size:20px;flex-shrink:0}
+.soon{opacity:.6}
+.soon .badge{font-size:9px;font-weight:800;background:var(--warn);color:#fff;border-radius:99px;padding:3px 8px;margin-left:6px;letter-spacing:.4px;vertical-align:middle}
+
+/* ── CARDS / FORMS ── */
+.card{background:var(--card);border:1px solid var(--border2);border-radius:var(--r);padding:17px;margin-bottom:14px;box-shadow:var(--shadow)}
+.card-t{font-size:11px;font-weight:800;color:var(--pri);text-transform:uppercase;letter-spacing:.7px;margin-bottom:12px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.row2>div{min-width:0}
+.bc-row{display:flex;gap:9px}
+.bc-row .inp{flex:1;min-width:0}
+.icon-btn{background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;border:none;border-radius:13px;width:54px;min-height:52px;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;box-shadow:var(--glow);flex-shrink:0;transition:transform .12s}
+.icon-btn:active{transform:scale(.95)}
+.aviso{background:linear-gradient(135deg,#FEF6DA,#FEF3C7);border:1px solid #FCE38A;border-radius:14px;padding:13px;font-size:12.5px;color:#8A5B00;display:flex;gap:10px;margin-bottom:15px;line-height:1.45;box-shadow:var(--shadow-sm)}
 .aviso i{font-size:18px;flex-shrink:0}
+
 /* fotos */
-.foto-add{border:2px dashed var(--border);border-radius:14px;padding:22px;text-align:center;color:var(--txt3);cursor:pointer}
-.foto-add i{font-size:30px;display:block;margin-bottom:6px;color:var(--pri)}
-.thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-.thumb{position:relative;width:76px;height:76px;border-radius:12px;overflow:hidden;border:1px solid var(--border)}
+.foto-add{border:2px dashed var(--border);border-radius:15px;padding:24px;text-align:center;color:var(--txt3);cursor:pointer;font-size:13px;font-weight:600;transition:border-color .18s,background .18s}
+.foto-add:active{border-color:var(--pri);background:var(--bg2)}
+.foto-add i{font-size:30px;display:block;margin-bottom:7px;color:var(--pri)}
+.thumbs{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}
+.thumb{position:relative;width:78px;height:78px;border-radius:13px;overflow:hidden;border:1px solid var(--border);box-shadow:var(--shadow-sm);animation:pop .25s ease}
 .thumb img{width:100%;height:100%;object-fit:cover}
-.thumb .del{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:12px;cursor:pointer}
-/* scanner overlay */
+.thumb .del{position:absolute;top:4px;right:4px;background:rgba(10,6,30,.62);color:#fff;border:none;border-radius:50%;width:24px;height:24px;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+
+/* scanner */
 #scan{position:fixed;inset:0;background:#000;z-index:200;display:none;flex-direction:column}
 #scan video{width:100%;flex:1;object-fit:cover}
-#scan .scan-top{position:absolute;top:calc(12px + var(--sat));left:0;right:0;display:flex;justify-content:space-between;padding:0 16px;color:#fff;z-index:2}
-#scan .scan-close{background:rgba(0,0,0,.5);border:none;color:#fff;font-size:26px;width:44px;height:44px;border-radius:50%;cursor:pointer}
-#scan .scan-hint{position:absolute;bottom:calc(30px + var(--sab));left:0;right:0;text-align:center;color:#fff;font-size:14px;text-shadow:0 1px 4px #000}
-#scan .scan-frame{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:75%;height:130px;border:3px solid #5B3FE8;border-radius:14px;box-shadow:0 0 0 2000px rgba(0,0,0,.45)}
+#scan .scan-top{position:absolute;top:calc(12px + var(--sat));left:0;right:0;display:flex;justify-content:space-between;padding:0 16px;z-index:2}
+#scan .scan-close{background:rgba(0,0,0,.5);border:none;color:#fff;font-size:26px;width:46px;height:46px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center}
+#scan .scan-hint{position:absolute;bottom:calc(34px + var(--sab));left:0;right:0;text-align:center;color:#fff;font-size:14px;font-weight:500;text-shadow:0 1px 6px #000}
+#scan .scan-frame{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:76%;height:130px;border:3px solid var(--pri2);border-radius:16px;box-shadow:0 0 0 2000px rgba(0,0,0,.5),0 0 24px rgba(124,92,255,.55)}
+
 /* toast */
-#toast{position:fixed;left:16px;right:16px;bottom:calc(20px + var(--sab));z-index:300;display:flex;flex-direction:column;gap:8px;pointer-events:none}
-.tst{background:#1A1533;color:#fff;border-radius:12px;padding:13px 16px;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.3);animation:up .25s}
-.tst.ok{background:var(--ok)}.tst.err{background:var(--danger)}.tst.warn{background:var(--warn)}
-@keyframes up{from{transform:translateY(12px);opacity:0}}
-.pg{border:1.5px solid var(--border);background:#fff;color:var(--txt2);border-radius:99px;padding:9px 15px;font-size:13px;font-weight:600;cursor:pointer}
-.pg.on{background:var(--pri);color:#fff;border-color:var(--pri)}
-.qty-b{width:30px;height:30px;border-radius:8px;border:1.5px solid var(--border);background:#fff;font-size:18px;font-weight:700;color:var(--pri);cursor:pointer;display:flex;align-items:center;justify-content:center}
+#toast{position:fixed;left:16px;right:16px;bottom:calc(20px + var(--sab));z-index:300;display:flex;flex-direction:column;gap:9px;pointer-events:none}
+.tst{background:#191338;color:#fff;border-radius:14px;padding:13px 16px;font-size:14px;font-weight:500;box-shadow:0 12px 30px -8px rgba(0,0,0,.45);animation:up .28s ease}
+.tst.ok{background:linear-gradient(135deg,#15803D,#16A34A)}.tst.err{background:linear-gradient(135deg,#B91C1C,#DC2626)}.tst.warn{background:linear-gradient(135deg,#B45309,#F59E0B)}
+
+/* pagamento / quantidade */
+.pg{border:1.5px solid var(--border);background:#fff;color:var(--txt2);border-radius:99px;padding:11px 17px;min-height:44px;font-size:13.5px;font-weight:600;cursor:pointer;transition:all .16s}
+.pg.on{background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;border-color:transparent;box-shadow:var(--glow)}
+.qty-b{width:38px;height:38px;border-radius:11px;border:1.5px solid var(--border);background:#fff;font-size:20px;font-weight:700;color:var(--pri);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .1s}
+.qty-b:active{transform:scale(.9);background:var(--bg2)}
+
+/* sucesso / QR / etiqueta */
+.success{text-align:center;padding:22px 10px 6px}
+.success-ic{width:84px;height:84px;border-radius:50%;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:42px;background:radial-gradient(circle at 50% 32%,#EEE9FB,#F7F5FD);box-shadow:0 14px 32px -10px rgba(91,63,232,.4),inset 0 0 0 1px var(--border2);animation:pop .4s ease}
+.success-t{font-family:'Syne',sans-serif;font-weight:800;font-size:21px;letter-spacing:-.02em}
+.success-sub{font-size:13px;color:var(--txt3);margin-top:6px}
+.success-val{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--pri);margin-top:4px;text-shadow:0 6px 18px rgba(91,63,232,.22)}
+.qr-box{display:flex;justify-content:center;margin:16px 0}
+.qr-box>div{background:#fff;padding:18px;border-radius:20px;box-shadow:var(--shadow),0 0 0 1px var(--border2)}
+.qr-hint{text-align:center;font-size:12.5px;color:var(--txt3);margin-bottom:16px}
+#etq-label{background:#fff;border:1px solid var(--border2);border-radius:16px;padding:18px;text-align:center;max-width:300px;margin:10px auto;box-shadow:var(--shadow)}
+#etq-nome{font-weight:700;font-size:15px;margin-bottom:2px}
+#etq-preco{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;margin:2px 0 8px;color:var(--txt)}
+#etq-bc{max-width:100%}
+
+/* telas pequenas 320–360 */
+@media (max-width:360px){
+  .wrap{padding:16px 13px calc(24px + var(--sab))}
+  .login-card{padding:28px 20px calc(24px + var(--sab))}
+  .home-hi{font-size:22px}
+  .mod{padding:15px;gap:13px}
+  .mod-ic{width:50px;height:50px;font-size:24px;border-radius:15px}
+  .card{padding:15px}
+  .row2{gap:9px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
 @media print{
   body *{visibility:hidden!important}
   #etq-label,#etq-label *{visibility:visible!important}
@@ -93,7 +163,7 @@ input,select,textarea,button{font-family:inherit;font-size:16px}
 <!-- LOGIN -->
 <div id="login">
   <div class="login-card">
-    <div class="login-logo">MISU Campo</div>
+    <div class="login-logo">MISU MOBILE</div>
     <div class="login-sub">Cadastro rápido pelo celular</div>
     <label class="lbl">E-mail</label>
     <input class="inp" type="email" id="l-email" placeholder="seu@email.com" autocomplete="username">
@@ -212,14 +282,14 @@ input,select,textarea,button{font-family:inherit;font-size:16px}
 
   <!-- OS SUCESSO -->
   <div class="wrap hidden" id="scr-os-ok">
-    <div style="text-align:center;padding:24px 10px 14px">
-      <div style="font-size:52px">✅</div>
-      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;margin-top:8px" id="os-ok-num">OS criada!</div>
-      <div style="font-size:13px;color:var(--txt3);margin-top:4px">Fotos anexadas e link do cliente pronto.</div>
+    <div class="success">
+      <div class="success-ic">✅</div>
+      <div class="success-t" id="os-ok-num">OS criada!</div>
+      <div class="success-sub">Fotos anexadas e link do cliente pronto.</div>
     </div>
     <button class="btn btn-ok" onclick="enviarLinkOS()"><i class="ti ti-brand-whatsapp"></i>Enviar link no WhatsApp</button>
     <button class="btn btn-out" style="margin-top:10px" onclick="copiarLinkOS()"><i class="ti ti-copy"></i>Copiar link</button>
-    <button class="btn" style="margin-top:10px;background:transparent;color:var(--txt2)" onclick="goHome()">Voltar ao início</button>
+    <button class="btn btn-ghost" style="margin-top:10px" onclick="goHome()">Voltar ao início</button>
   </div>
 
   <!-- ESTOQUE -->
@@ -246,15 +316,16 @@ input,select,textarea,button{font-family:inherit;font-size:16px}
 
   <!-- VENDA SUCESSO (QR) -->
   <div class="wrap hidden" id="scr-venda-ok">
-    <div style="text-align:center;padding:14px 10px 4px">
-      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px">Cobrança gerada</div>
-      <div style="font-size:16px;color:var(--pri);font-weight:700;margin-top:2px" id="v-ok-valor"></div>
+    <div class="success">
+      <div class="success-ic">🛒</div>
+      <div class="success-t">Cobrança gerada</div>
+      <div class="success-val" id="v-ok-valor"></div>
     </div>
-    <div style="display:flex;justify-content:center;margin:14px 0"><div id="venda-qr" style="background:#fff;padding:16px;border-radius:16px;border:1px solid var(--border)"></div></div>
-    <div style="text-align:center;font-size:12px;color:var(--txt3);margin-bottom:14px">Mostre o QR pro cliente ou envie o link</div>
+    <div class="qr-box"><div id="venda-qr"></div></div>
+    <div class="qr-hint">Mostre o QR pro cliente ou envie o link</div>
     <button class="btn btn-ok" onclick="enviarLinkVenda()"><i class="ti ti-brand-whatsapp"></i>Enviar no WhatsApp</button>
     <button class="btn btn-out" style="margin-top:10px" onclick="copiarLinkVenda()"><i class="ti ti-copy"></i>Copiar link</button>
-    <button class="btn" style="margin-top:10px;background:transparent;color:var(--txt2)" onclick="goHome()">Voltar ao início</button>
+    <button class="btn btn-ghost" style="margin-top:10px" onclick="goHome()">Voltar ao início</button>
   </div>
 
   <!-- CARRINHO -->
@@ -279,10 +350,10 @@ input,select,textarea,button{font-family:inherit;font-size:16px}
 
   <!-- ETIQUETA -->
   <div class="wrap hidden" id="scr-etiqueta">
-    <div id="etq-label" style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center;max-width:300px;margin:8px auto">
-      <div id="etq-nome" style="font-weight:700;font-size:15px;margin-bottom:2px"></div>
-      <div id="etq-preco" style="font-size:22px;font-weight:800;margin:2px 0 6px"></div>
-      <svg id="etq-bc" style="max-width:100%"></svg>
+    <div id="etq-label">
+      <div id="etq-nome"></div>
+      <div id="etq-preco"></div>
+      <svg id="etq-bc"></svg>
     </div>
     <button class="btn" style="margin-top:16px" onclick="imprimirEtiqueta()"><i class="ti ti-printer"></i>Imprimir etiqueta</button>
   </div>
@@ -553,7 +624,7 @@ async function criarOSRapida(){
         const {error:up}=await db.storage.from('os-midias').upload(path,f,{contentType:f.type,upsert:false});
         if(up) continue;
         const {data:pub}=db.storage.from('os-midias').getPublicUrl(path);
-        await db.from('os_midias').insert({empresa_id:G.empresaId,os_id:os.id,tipo:'foto',url:pub.publicUrl,path,visivel_cliente:true,criado_por:'MISU Campo'});
+        await db.from('os_midias').insert({empresa_id:G.empresaId,os_id:os.id,tipo:'foto',url:pub.publicUrl,path,visivel_cliente:true,criado_por:'MISU MOBILE'});
       }catch(_){}
     }
     G.ultimaOS={...os,fone};
@@ -693,7 +764,7 @@ async function finalizarVenda(){
   try{
     // 1) registra a venda primeiro (se falhar, NÃO baixa estoque)
     const venda={ empresa_id:G.empresaId, cliente_nome:($('cart-cli').value.trim()||'Consumidor Final'),
-      operador_id:G.operador?.id||null, operador_nome:G.operador?.nome||'MISU Campo', caixa_id:G.caixa?.id||null,
+      operador_id:G.operador?.id||null, operador_nome:G.operador?.nome||'MISU MOBILE', caixa_id:G.caixa?.id||null,
       itens:G.cart.map(c=>({id:c.id,nome:c.nome,preco:c.preco,qty:c.qty})),
       subtotal:total, desconto_pct:0, total, pagamento:forma, status:'concluida' };
     const {error:vErr}=await comTimeout(db.from('vendas').insert(venda),'registrar venda');
@@ -706,7 +777,7 @@ async function finalizarVenda(){
         const atual=srv?(Number(srv.estoque)||0):0;
         const ne=Math.max(0,atual-ci.qty);
         await db.from('produtos').update({estoque:ne}).eq('id',ci.id);
-        try{ await db.from('movimentacoes_estoque').insert({empresa_id:G.empresaId,produto_id:ci.id,produto_nome:ci.nome,tipo:'saida',quantidade:ci.qty,estoque_apos:ne,motivo:'Venda pelo app MISU Campo'}); }catch(_){}
+        try{ await db.from('movimentacoes_estoque').insert({empresa_id:G.empresaId,produto_id:ci.id,produto_nome:ci.nome,tipo:'saida',quantidade:ci.qty,estoque_apos:ne,motivo:'Venda pelo app MISU MOBILE'}); }catch(_){}
       }catch(_){}
     }
     // 3) pagamento por link/QR
