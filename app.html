@@ -9,6 +9,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <style>
 :root{--pri:#5B3FE8;--pri2:#7C5CFF;--pri-d:#3D2596;--bg:#F4F2FB;--card:#fff;--txt:#1A1533;--txt2:#5B5478;--txt3:#9A93B8;--border:#E6E1F2;--ok:#16A34A;--warn:#F59E0B;--danger:#DC2626;--sab:env(safe-area-inset-bottom,0px);--sat:env(safe-area-inset-top,0px)}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -77,6 +78,14 @@ input,select,textarea,button{font-family:inherit;font-size:16px}
 .tst{background:#1A1533;color:#fff;border-radius:12px;padding:13px 16px;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.3);animation:up .25s}
 .tst.ok{background:var(--ok)}.tst.err{background:var(--danger)}.tst.warn{background:var(--warn)}
 @keyframes up{from{transform:translateY(12px);opacity:0}}
+.pg{border:1.5px solid var(--border);background:#fff;color:var(--txt2);border-radius:99px;padding:9px 15px;font-size:13px;font-weight:600;cursor:pointer}
+.pg.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+.qty-b{width:30px;height:30px;border-radius:8px;border:1.5px solid var(--border);background:#fff;font-size:18px;font-weight:700;color:var(--pri);cursor:pointer;display:flex;align-items:center;justify-content:center}
+@media print{
+  body *{visibility:hidden!important}
+  #etq-label,#etq-label *{visibility:visible!important}
+  #etq-label{position:absolute;left:0;top:0;border:none!important;box-shadow:none!important}
+}
 </style>
 </head>
 <body>
@@ -247,7 +256,43 @@ input,select,textarea,button{font-family:inherit;font-size:16px}
     <button class="btn btn-out" style="margin-top:10px" onclick="copiarLinkVenda()"><i class="ti ti-copy"></i>Copiar link</button>
     <button class="btn" style="margin-top:10px;background:transparent;color:var(--txt2)" onclick="goHome()">Voltar ao início</button>
   </div>
+
+  <!-- CARRINHO -->
+  <div class="wrap hidden" id="scr-cart">
+    <div id="cart-itens"></div>
+    <div class="card">
+      <label class="lbl">Cliente</label>
+      <input class="inp" id="cart-cli" placeholder="Consumidor Final">
+      <label class="lbl">WhatsApp (para link)</label>
+      <input class="inp" id="cart-fone" type="tel" inputmode="numeric" placeholder="(DDD) 9 9999-9999">
+      <label class="lbl">Forma de pagamento</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+        <button class="pg on" data-f="dinheiro" onclick="setForma('dinheiro')">Dinheiro</button>
+        <button class="pg" data-f="pix" onclick="setForma('pix')">Pix</button>
+        <button class="pg" data-f="cartao" onclick="setForma('cartao')">Cartão</button>
+        <button class="pg" data-f="link" onclick="setForma('link')">Link/QR</button>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:6px 4px 14px"><span style="color:var(--txt2);font-weight:600">Total</span><span id="cart-tot-b" style="font-size:22px;font-weight:800;color:var(--pri);font-family:'Syne',sans-serif"></span></div>
+    <button class="btn btn-ok" id="cart-fin" onclick="finalizarVenda()"><i class="ti ti-check"></i>Finalizar venda</button>
+  </div>
+
+  <!-- ETIQUETA -->
+  <div class="wrap hidden" id="scr-etiqueta">
+    <div id="etq-label" style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center;max-width:300px;margin:8px auto">
+      <div id="etq-nome" style="font-weight:700;font-size:15px;margin-bottom:2px"></div>
+      <div id="etq-preco" style="font-size:22px;font-weight:800;margin:2px 0 6px"></div>
+      <svg id="etq-bc" style="max-width:100%"></svg>
+    </div>
+    <button class="btn" style="margin-top:16px" onclick="imprimirEtiqueta()"><i class="ti ti-printer"></i>Imprimir etiqueta</button>
+  </div>
 </div>
+
+  <!-- BARRA DO CARRINHO -->
+  <div id="cart-bar" class="hidden" onclick="abrir('cart')" style="position:fixed;left:12px;right:12px;bottom:calc(14px + var(--sab));background:var(--pri);color:#fff;border-radius:14px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 8px 28px rgba(91,63,232,.4);z-index:60;cursor:pointer">
+    <span style="font-weight:700"><i class="ti ti-shopping-cart"></i> <span id="cart-count"></span></span>
+    <span style="font-weight:800" id="cart-total"></span>
+  </div>
 
 <!-- SCANNER -->
 <div id="scan">
@@ -267,7 +312,7 @@ const db=supabase.createClient(SURL,SKEY,{auth:{autoRefreshToken:true,persistSes
 // polyfill randomUUID (iOS<15.4)
 try{ if(typeof crypto!=='undefined'&&typeof crypto.randomUUID!=='function'&&crypto.getRandomValues){ crypto.randomUUID=function(){return([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,c=>(c^crypto.getRandomValues(new Uint8Array(1))[0]&15>>c/4).toString(16));};} }catch(_){}
 
-const G={empresa:null,empresaId:null,fotos:[],osFotos:[],ultimaOS:null};
+const G={empresa:null,empresaId:null,fotos:[],osFotos:[],ultimaOS:null,caixa:null,operador:null,cart:[],formaPag:'dinheiro',estoqueCache:null,ultimaVenda:null};
 function comTimeout(p,nome,ms=12000){return Promise.race([p,new Promise((_,r)=>setTimeout(()=>r(new Error('Tempo esgotado: '+nome)),ms))]);}
 const $=id=>document.getElementById(id);
 function esc(s){return String(s==null?'':s).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));}
@@ -311,6 +356,20 @@ async function carregarEmpresa(user){
   goHome();
   carregarMarca(emp.id);
   carregarRecentes();
+  carregarContexto();
+}
+
+/* ── CONTEXTO DE VENDA (caixa aberto + operador) ── */
+async function carregarContexto(){
+  try{
+    const {data:cx}=await comTimeout(db.from('caixas').select('id').eq('empresa_id',G.empresaId).eq('status','aberto').order('criado_em',{ascending:false}).limit(1),'caixa');
+    G.caixa=(cx&&cx[0])||null;
+  }catch(_){ G.caixa=null; }
+  try{
+    const {data:us}=await comTimeout(db.from('usuarios').select('id,nome,role').eq('empresa_id',G.empresaId).order('nome').limit(30),'usuarios');
+    const arr=us||[];
+    G.operador=arr.find(u=>['admin','admin_master','gerente'].includes(u.role))||arr[0]||null;
+  }catch(_){ G.operador=null; }
 }
 
 /* ── SINCRONIZAÇÃO DE MARCA (cores + logo da empresa) ── */
@@ -350,14 +409,15 @@ async function carregarRecentes(){
 
 /* ── NAVEGAÇÃO ── */
 function abrir(scr){
-  ['home','produto','os','os-ok','venda','venda-ok','estoque'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
+  ['home','produto','os','os-ok','venda','venda-ok','estoque','cart','etiqueta'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
   $('scr-'+scr).classList.remove('hidden');
   $('btn-back').classList.remove('hidden');
-  $('scr-title').textContent = ({produto:'Cadastrar Produto',os:'OS Rápida',venda:'Venda Rápida',estoque:'Estoque'})[scr]||scr;
+  $('scr-title').textContent = ({produto:'Cadastrar Produto',os:'OS Rápida',venda:'Venda Rápida',estoque:'Estoque',cart:'Carrinho',etiqueta:'Etiqueta'})[scr]||scr;
   if(scr==='estoque') abrirEstoque();
+  if(scr==='cart') renderCart();
 }
 function goHome(){
-  ['produto','os','os-ok','venda','venda-ok','estoque'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
+  ['produto','os','os-ok','venda','venda-ok','estoque','cart','etiqueta'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
   $('scr-home').classList.remove('hidden');
   $('btn-back').classList.add('hidden');
   $('scr-title').textContent='Início';
@@ -576,13 +636,120 @@ function renderEstoque(q){
     const f=Array.isArray(p.fotos)&&p.fotos[0]?p.fotos[0]:null;
     const est=Number(p.estoque)||0, min=Number(p.estoque_minimo)||0;
     const cor=est<=0?'var(--danger)':(est<=min?'var(--warn)':'var(--ok)');
-    return `<div class="card" style="display:flex;align-items:center;gap:12px;padding:11px 13px">
-      ${f?`<img src="${f}" style="width:44px;height:44px;border-radius:10px;object-fit:cover;flex-shrink:0">`:`<div style="width:44px;height:44px;border-radius:10px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">📦</div>`}
-      <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.nome)}</div><div style="font-size:12px;color:var(--txt3)">R$ ${(Number(p.preco)||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>
-      <div style="text-align:center;flex-shrink:0"><div style="font-size:20px;font-weight:800;color:${cor};font-family:'Syne',sans-serif;line-height:1">${est}</div><div style="font-size:10px;color:var(--txt3)">em estoque</div></div>
+    return `<div class="card" style="padding:11px 13px">
+      <div style="display:flex;align-items:center;gap:12px">
+        ${f?`<img src="${f}" style="width:44px;height:44px;border-radius:10px;object-fit:cover;flex-shrink:0">`:`<div style="width:44px;height:44px;border-radius:10px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">📦</div>`}
+        <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.nome)}</div><div style="font-size:12px;color:var(--txt3)">R$ ${(Number(p.preco)||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>
+        <div style="text-align:center;flex-shrink:0"><div style="font-size:20px;font-weight:800;color:${cor};font-family:'Syne',sans-serif;line-height:1">${est}</div><div style="font-size:10px;color:var(--txt3)">em estoque</div></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn" style="flex:1;padding:9px;font-size:13px" onclick="addAoCarrinho('${p.id}')"><i class="ti ti-shopping-cart-plus"></i>Vender</button>
+        <button class="btn btn-out" style="flex:1;padding:9px;font-size:13px" onclick="abrirEtiqueta('${p.id}')"><i class="ti ti-tag"></i>Etiqueta</button>
+      </div>
     </div>`;
   }).join('');
 }
+
+/* ── VENDER DO ESTOQUE (carrinho) ── */
+function addAoCarrinho(id){
+  const p=(G.estoqueCache||[]).find(x=>x.id===id); if(!p) return;
+  const ex=G.cart.find(c=>c.id===id);
+  if(ex) ex.qty++; else G.cart.push({id:p.id,nome:p.nome,preco:Number(p.preco)||0,qty:1});
+  renderCartBar(); notify(p.nome+' no carrinho','ok');
+}
+function cartTotal(){ return G.cart.reduce((s,c)=>s+c.preco*c.qty,0); }
+function renderCartBar(){
+  const bar=$('cart-bar'); if(!bar) return;
+  const n=G.cart.reduce((s,c)=>s+c.qty,0);
+  if(!n){ bar.classList.add('hidden'); return; }
+  bar.classList.remove('hidden');
+  $('cart-count').textContent=n+' item'+(n>1?'s':'');
+  $('cart-total').textContent='R$ '+cartTotal().toLocaleString('pt-BR',{minimumFractionDigits:2});
+}
+function mudarQty(id,d){
+  const c=G.cart.find(x=>x.id===id); if(!c) return;
+  c.qty+=d; if(c.qty<=0) G.cart=G.cart.filter(x=>x.id!==id);
+  renderCart(); renderCartBar();
+}
+function renderCart(){
+  const c=$('cart-itens');
+  if(!G.cart.length){ c.innerHTML='<div style="text-align:center;padding:24px;color:var(--txt3)">Carrinho vazio.</div>'; $('cart-tot-b').textContent='R$ 0,00'; return; }
+  c.innerHTML=G.cart.map(it=>`<div class="card" style="display:flex;align-items:center;gap:10px;padding:11px 13px">
+    <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(it.nome)}</div><div style="font-size:12px;color:var(--txt3)">R$ ${it.preco.toLocaleString('pt-BR',{minimumFractionDigits:2})} un.</div></div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button class="qty-b" onclick="mudarQty('${it.id}',-1)">−</button>
+      <span style="font-weight:700;min-width:20px;text-align:center">${it.qty}</span>
+      <button class="qty-b" onclick="mudarQty('${it.id}',1)">+</button>
+    </div>
+  </div>`).join('');
+  $('cart-tot-b').textContent='R$ '+cartTotal().toLocaleString('pt-BR',{minimumFractionDigits:2});
+}
+function setForma(f){ G.formaPag=f; document.querySelectorAll('#scr-cart .pg').forEach(b=>b.classList.toggle('on', b.dataset.f===f)); }
+function limparCarrinho(){ G.cart=[]; G.estoqueCache=null; renderCartBar(); ['cart-cli','cart-fone'].forEach(id=>{const e=$(id); if(e)e.value='';}); }
+async function finalizarVenda(){
+  if(!G.cart.length){ notify('Carrinho vazio.','warn'); return; }
+  const total=cartTotal(), forma=G.formaPag||'dinheiro';
+  const btn=$('cart-fin'); btn.disabled=true; btn.innerHTML='<div class="spinner"></div>Finalizando...';
+  try{
+    // 1) registra a venda primeiro (se falhar, NÃO baixa estoque)
+    const venda={ empresa_id:G.empresaId, cliente_nome:($('cart-cli').value.trim()||'Consumidor Final'),
+      operador_id:G.operador?.id||null, operador_nome:G.operador?.nome||'MISU Campo', caixa_id:G.caixa?.id||null,
+      itens:G.cart.map(c=>({id:c.id,nome:c.nome,preco:c.preco,qty:c.qty})),
+      subtotal:total, desconto_pct:0, total, pagamento:forma, status:'concluida' };
+    const {error:vErr}=await comTimeout(db.from('vendas').insert(venda),'registrar venda');
+    if(vErr) throw new Error(vErr.message||'não foi possível registrar a venda');
+    // 2) baixa de estoque + movimentação
+    for(const ci of G.cart){
+      try{
+        const {data:srv}=await db.from('produtos').select('estoque,estoque_infinito').eq('id',ci.id).single();
+        if(srv && srv.estoque_infinito) continue;
+        const atual=srv?(Number(srv.estoque)||0):0;
+        const ne=Math.max(0,atual-ci.qty);
+        await db.from('produtos').update({estoque:ne}).eq('id',ci.id);
+        try{ await db.from('movimentacoes_estoque').insert({empresa_id:G.empresaId,produto_id:ci.id,produto_nome:ci.nome,tipo:'saida',quantidade:ci.qty,estoque_apos:ne,motivo:'Venda pelo app MISU Campo'}); }catch(_){}
+      }catch(_){}
+    }
+    // 3) pagamento por link/QR
+    const fone=$('cart-fone').value.replace(/\D/g,'');
+    if(forma==='link'){
+      try{
+        let cfg={}; try{ const {data}=await db.from('empresas').select('infinitepay_config').eq('id',G.empresaId).maybeSingle(); cfg=data?.infinitepay_config||{}; }catch(_){}
+        const order_nsu='APP-'+Date.now();
+        const {data,error}=await comTimeout(db.functions.invoke('infinitepay-link',{body:{empresa_id:G.empresaId,order_nsu,origem:'venda_rapida',origem_id:order_nsu,descricao:G.cart.map(c=>c.qty+'x '+c.nome).join(', '),itens:G.cart.map(c=>({descricao:c.nome,valor:c.preco,qtd:c.qty})),redirect_url:location.origin,max_parcelas:cfg.max_parcelas||12,taxa_por_conta:cfg.taxa_por_conta||'cliente',pix:cfg.pix!==false}}),'cobrança');
+        if(!error && data?.success){
+          G.ultimaVenda={url:data.checkout_url,valor:data.valor||total,fone};
+          limparCarrinho();
+          $('v-ok-valor').textContent='R$ '+(Number(G.ultimaVenda.valor)||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
+          const q=$('venda-qr'); q.innerHTML=''; try{ new QRCode(q,{text:G.ultimaVenda.url,width:210,height:210,correctLevel:QRCode.CorrectLevel.M}); }catch(_){}
+          abrir('venda-ok'); return;
+        }
+      }catch(_){}
+      notify('Venda registrada, mas não gerei o link (InfinitePay). Confira no sistema.','warn');
+    } else {
+      notify('✅ Venda registrada e estoque baixado!','ok');
+    }
+    limparCarrinho(); goHome();
+  }catch(e){ notify('Erro: '+(e?.message||'tente de novo'),'err'); }
+  finally{ btn.disabled=false; btn.innerHTML='<i class="ti ti-check"></i>Finalizar venda'; }
+}
+
+/* ── ETIQUETA (JsBarcode) ── */
+function abrirEtiqueta(id){
+  const p=(G.estoqueCache||[]).find(x=>x.id===id); if(!p) return;
+  $('etq-nome').textContent=p.nome;
+  $('etq-preco').textContent='R$ '+(Number(p.preco)||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
+  abrir('etiqueta');
+  const svg=$('etq-bc'); if(svg) svg.innerHTML='';
+  const cod=String(p.barcode||p.gtin||'').replace(/\D/g,'');
+  try{
+    if(typeof JsBarcode==='undefined') throw new Error('lib');
+    if(/^\d{13}$/.test(cod)) JsBarcode(svg,cod,{format:'EAN13',height:54,fontSize:14,margin:6});
+    else if(/^\d{12}$/.test(cod)) JsBarcode(svg,cod,{format:'UPC',height:54,fontSize:14,margin:6});
+    else if(cod) JsBarcode(svg,cod,{format:'CODE128',height:54,fontSize:14,margin:6});
+    else JsBarcode(svg,'S/CODIGO',{format:'CODE128',height:44,fontSize:12,margin:6});
+  }catch(_){ if($('etq-bc')) $('etq-bc').outerHTML='<div style="font-size:11px;color:#999;padding:8px">Sem código de barras válido para etiqueta</div>'; }
+}
+function imprimirEtiqueta(){ window.print(); }
 
 /* ── BOOT: restaura sessão (com timeout, sem travar) ── */
 (async()=>{
