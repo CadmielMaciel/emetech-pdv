@@ -6531,6 +6531,7 @@ try{
 function mostrarErroSafari(tipo, erro){
   const mensagem = typeof erro==='string' ? erro : (erro?.message || String(erro||'Erro desconhecido'));
   console.error('['+tipo+']', erro);
+  try{ if(!new URLSearchParams(location.search).has('debug')) return; }catch(_){ return; }
   try{
     const box=document.createElement('div');
     box.style.cssText='position:fixed;left:10px;right:10px;bottom:10px;z-index:9999999;padding:14px;border-radius:12px;background:#7f1d1d;color:#fff;font:12px/1.5 monospace;word-break:break-word;max-height:45vh;overflow:auto';
@@ -11082,7 +11083,7 @@ async function finalizeSale(){
     numero:'',
     marca:(G.cart&&G.cart[0]&&(G.cart[0].marca||''))||''
   };
-  _ultimaVendaId = vendaInserida?.id || null;
+  _ultimaVendaId = venda?.id || null;
   document.getElementById('vok-info').textContent=`${G.cart.length} item(s) · ${cliNome}`;
   document.getElementById('vok-total').textContent=fmt(total);
   document.getElementById('vok-troco').textContent=troco>0?`Troco: ${fmt(troco)}`:'';
@@ -14419,7 +14420,7 @@ async function cancelarOS(id){
 async function confirmarCancelarOS(id){
   const o=(G.os||[]).find(x=>x.id===id)||_detOSAtual;
   if(!o)return;
-  const motivo=document.getElementById('cancel-motivo')?.value?.trim();
+  const motivo=(document.getElementById('cancel-motivo')?.value?.trim())||(document.getElementById('cancel-os-motivo')?.value?.trim());
   if(!motivo){ notify('Descreva o motivo do cancelamento.','warn'); return; }
   const devolvePecas=document.getElementById('cancel-devolve-pecas')?.checked;
 
@@ -20037,7 +20038,7 @@ async function cobrarPdvInfinitePay(){
     const nsu='pdv_'+Date.now();
     const data=await gerarLinkInfinitePay({order_nsu:nsu, origem:'venda', origem_id:nsu, itens, descricao:'Venda no balcão'});
     mostrarQRInfinitePay(data.checkout_url, data.valor, 'Venda');
-  }catch(e){ notify(e.message||'Erro ao gerar cobrança.','error',6000); }
+  }catch(e){ console.error('InfinitePay:',e); const _m=e?.message||''; notify(/Conecte sua conta|InfinitePay em Configura/i.test(_m)?_m:'Não foi possível gerar o link de pagamento. Confira os dados da venda e tente novamente.','error',6000); }
   finally{ if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-qrcode"></i> Cobrar com QR (InfinitePay)'; } }
 }
 
@@ -20053,7 +20054,7 @@ async function cobrarOSInfinitePay(osId){
       descricao:`OS ${o.numero}`
     });
     mostrarQRInfinitePay(data.checkout_url, data.valor, `OS ${o.numero}`);
-  }catch(e){ notify(e.message||'Erro ao gerar cobrança.','error',6000); }
+  }catch(e){ console.error('InfinitePay:',e); const _m=e?.message||''; notify(/Conecte sua conta|InfinitePay em Configura/i.test(_m)?_m:'Não foi possível gerar o link de pagamento. Confira os dados da venda e tente novamente.','error',6000); }
 }
 
 async function cobrarPdvAsaas(){
@@ -20479,7 +20480,7 @@ async function carregarHandleInfinitePay(){
     const px=document.getElementById('ip-pix'); if(px)px.checked=cfg.pix!==false;
     if(box){
       box.innerHTML = h
-        ? `<div style="background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.3);border-radius:9px;padding:10px 12px;font-size:13px;color:#16a34a"><i class="ti ti-circle-check"></i> Conectado como <b>@${esc(h)}</b> — pronto para gerar cobranças.</div>`
+        ? `<div style="background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.3);border-radius:9px;padding:10px 12px;font-size:13px;color:#16a34a"><i class="ti ti-circle-check"></i> Conectado como <b>${esc(h)}</b> — pronto para gerar cobranças.</div>`
         : `<div style="background:rgba(100,116,139,.08);border:1px solid var(--border);border-radius:9px;padding:10px 12px;font-size:13px;color:var(--txt3)"><i class="ti ti-info-circle"></i> Ainda não conectado. Cole seu handle para ativar.</div>`;
     }
   }catch(e){
@@ -27098,5 +27099,69 @@ function gerarLaudoEntrega() {
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
 </script>
+<!-- ═══ WIDGET DE ACESSIBILIDADE (autônomo, aditivo) ═══ -->
+<style id="a11y-style">
+#a11y-btn{position:fixed;left:16px;bottom:16px;z-index:99998;width:54px;height:54px;border-radius:50%;border:none;background:#5B3FE8;color:#fff;font-size:27px;line-height:1;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 22px rgba(30,10,80,.35);cursor:pointer}
+#a11y-btn:focus-visible{outline:3px solid #fff;outline-offset:3px}
+#a11y-panel{position:fixed;left:16px;bottom:80px;z-index:99999;width:300px;max-width:calc(100vw - 32px);max-height:72vh;overflow:auto;background:#fff;color:#191338;border-radius:18px;box-shadow:0 16px 48px rgba(20,8,60,.32);padding:16px;display:none;font-family:'DM Sans',system-ui,Arial,sans-serif}
+#a11y-panel.open{display:block}
+#a11y-panel .a11y-h{font-size:15px;font-weight:800;margin:0 0 3px;display:flex;align-items:center;gap:8px}
+#a11y-panel .a11y-sub{font-size:12px;color:#6b6488;margin-bottom:13px}
+#a11y-close{margin-left:auto;background:none;border:none;font-size:22px;line-height:1;color:#9a93b8;cursor:pointer;padding:0 2px}
+.a11y-row{display:flex;align-items:center;justify-content:space-between;gap:8px;border:1.5px solid #e6e1f2;border-radius:12px;padding:11px 13px;margin-bottom:9px;font-size:13.5px;font-weight:600}
+.a11y-step{display:flex;gap:6px;align-items:center}
+.a11y-step button{width:36px;height:36px;border-radius:10px;border:1.5px solid #e6e1f2;background:#fff;font-size:15px;font-weight:800;color:#5B3FE8;cursor:pointer}
+.a11y-lvl{font-size:12px;color:#6b6488;min-width:38px;text-align:center}
+.a11y-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.a11y-item{border:1.5px solid #e6e1f2;border-radius:13px;padding:11px 8px;font-size:12px;font-weight:600;color:#3a3358;background:#fff;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;min-height:70px;justify-content:center;line-height:1.25}
+.a11y-item .em{font-size:22px}
+.a11y-item[aria-pressed="true"]{background:#5B3FE8;color:#fff;border-color:#5B3FE8}
+#a11y-reset{width:100%;margin-top:11px;border:none;background:#f1eefb;color:#5B3FE8;font-weight:700;border-radius:12px;padding:12px;cursor:pointer;font-size:13px}
+/* estados aplicados na raiz (opt-in, reversíveis) */
+html.ac-links a{text-decoration:underline !important;text-underline-offset:2px}
+html.ac-motion *,html.ac-motion *::before,html.ac-motion *::after{animation-duration:.001s !important;animation-iteration-count:1 !important;transition-duration:.001s !important;scroll-behavior:auto !important}
+html.ac-cursor,html.ac-cursor *{cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='38' height='38' viewBox='0 0 38 38'%3E%3Cpath d='M6 2l25 13-10 3-4 11z' fill='%23000' stroke='%23fff' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E") 5 2, auto !important}
+html.ac-readable p,html.ac-readable li,html.ac-readable td,html.ac-readable label,html.ac-readable a{line-height:1.7 !important;letter-spacing:.03em !important;word-spacing:.07em !important}
+</style>
+<button id="a11y-btn" aria-label="Abrir opções de acessibilidade" aria-haspopup="dialog" onclick="a11yToggle()">&#9855;</button>
+<div id="a11y-panel" role="dialog" aria-label="Opções de acessibilidade">
+  <div class="a11y-h">&#9855; Acessibilidade <button id="a11y-close" aria-label="Fechar" onclick="a11yToggle(false)">&times;</button></div>
+  <div class="a11y-sub">Ajuste o sistema ao seu conforto de leitura.</div>
+  <div class="a11y-row"><span>Tamanho do texto</span><span class="a11y-step"><button aria-label="Diminuir texto" onclick="a11yZoom(-1)">A&minus;</button><span class="a11y-lvl" id="a11y-lvl">100%</span><button aria-label="Aumentar texto" onclick="a11yZoom(1)">A+</button></span></div>
+  <div class="a11y-grid">
+    <button class="a11y-item" data-f="contrast" aria-pressed="false" onclick="a11yFeat('contrast')"><span class="em">&#127765;</span>Alto contraste</button>
+    <button class="a11y-item" data-f="gray" aria-pressed="false" onclick="a11yFeat('gray')"><span class="em">&#9681;</span>Tons de cinza</button>
+    <button class="a11y-item" data-f="links" aria-pressed="false" onclick="a11yFeat('links')"><span class="em">&#128279;</span>Destacar links</button>
+    <button class="a11y-item" data-f="motion" aria-pressed="false" onclick="a11yFeat('motion')"><span class="em">&#9208;</span>Reduzir anima&ccedil;&atilde;o</button>
+    <button class="a11y-item" data-f="cursor" aria-pressed="false" onclick="a11yFeat('cursor')"><span class="em">&#128070;</span>Cursor grande</button>
+    <button class="a11y-item" data-f="readable" aria-pressed="false" onclick="a11yFeat('readable')"><span class="em">&#128214;</span>Espa&ccedil;o leitura</button>
+  </div>
+  <button id="a11y-reset" onclick="a11yReset()">&#8635; Redefinir tudo</button>
+</div>
+<script>
+(function(){
+  var KEY='misu_a11y', ZOOMS=[0.9,1,1.1,1.25,1.4];
+  var st={zoom:1,feats:{}};
+  try{ var sv=JSON.parse(localStorage.getItem(KEY)||'{}'); st.zoom=(typeof sv.zoom==='number')?sv.zoom:1; st.feats=sv.feats||{}; }catch(e){}
+  function salvar(){ try{ localStorage.setItem(KEY, JSON.stringify(st)); }catch(e){} }
+  function filtro(){ var f=[]; if(st.feats.contrast)f.push('contrast(1.35)'); if(st.feats.gray)f.push('grayscale(1)'); try{document.documentElement.style.filter=f.join(' ');}catch(e){} }
+  function zoom(){ var z=ZOOMS[st.zoom]||1; try{document.documentElement.style.zoom=(z===1?'':z);}catch(e){} var l=document.getElementById('a11y-lvl'); if(l)l.textContent=Math.round(z*100)+'%'; }
+  function aplicar(){
+    filtro(); zoom();
+    var r=document.documentElement;
+    r.classList.toggle('ac-links',!!st.feats.links);
+    r.classList.toggle('ac-motion',!!st.feats.motion);
+    r.classList.toggle('ac-cursor',!!st.feats.cursor);
+    r.classList.toggle('ac-readable',!!st.feats.readable);
+    document.querySelectorAll('#a11y-panel .a11y-item').forEach(function(b){ b.setAttribute('aria-pressed', st.feats[b.dataset.f]?'true':'false'); });
+  }
+  window.a11yToggle=function(force){ var p=document.getElementById('a11y-panel'); p.classList.toggle('open', force===undefined?!p.classList.contains('open'):!!force); };
+  window.a11yFeat=function(f){ st.feats[f]=!st.feats[f]; salvar(); aplicar(); };
+  window.a11yZoom=function(d){ var i=st.zoom+d; if(i<0)i=0; if(i>ZOOMS.length-1)i=ZOOMS.length-1; st.zoom=i; salvar(); zoom(); };
+  window.a11yReset=function(){ st={zoom:1,feats:{}}; salvar(); aplicar(); };
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',aplicar); else aplicar();
+})();
+</script>
+<!-- ═══ FIM WIDGET DE ACESSIBILIDADE ═══ -->
 </body>
 </html>
