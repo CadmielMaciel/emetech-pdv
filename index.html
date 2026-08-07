@@ -2321,20 +2321,20 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
     </div>
     <nav class="nav" id="nav">
       <!-- Itens diretos (sempre visíveis) -->
-      <div class="ni active" onclick="go('dashboard')" data-p="admin,gerente"><i class="ti ti-layout-dashboard"></i><span class="ni-label">Dashboard</span><span class="ni-tip">Dashboard</span></div>
-      <div class="ni" onclick="go('pdv')" data-p="admin,gerente,operador"><i class="ti ti-shopping-cart"></i><span class="ni-label">PDV / Caixa</span><span class="ni-tip">PDV / Caixa</span></div>
+      <div class="ni active" onclick="go('dashboard')" data-p="admin,gerente"><i class="ti ti-layout-dashboard"></i><span class="ni-label">Início</span><span class="ni-tip">Dashboard</span></div>
+      <div class="ni" onclick="go('pdv')" data-p="admin,gerente,operador"><i class="ti ti-shopping-cart"></i><span class="ni-label">PDV / Venda</span><span class="ni-tip">PDV / Caixa</span></div>
 
       <!-- Grupos clicáveis -->
       <div class="nav-div-thin"></div>
       <div class="ni ni-group" onclick="goHub('vendas')" data-p="admin,gerente,operador" data-hub="vendas"><i class="ti ti-tag"></i><span class="ni-label">Vendas</span><span class="ni-tip">Vendas</span></div>
-      <div class="ni ni-group" onclick="goHub('servicos')" data-p="admin,gerente,tecnico" data-hub="servicos"><i class="ti ti-tools"></i><span class="ni-label">Serviços</span><span class="ni-tip">Serviços</span></div>
+      <div class="ni ni-group" onclick="goHub('servicos')" data-p="admin,gerente,tecnico" data-hub="servicos"><i class="ti ti-tools"></i><span class="ni-label">Assistência</span><span class="ni-tip">Serviços</span></div>
       <div class="ni ni-group" onclick="goHub('clientes')" data-p="admin,gerente,operador,tecnico" data-hub="clientes"><i class="ti ti-users"></i><span class="ni-label">Clientes</span><span class="ni-tip">Clientes</span></div>
-      <div class="ni ni-group" onclick="goHub('estoque')" data-p="admin,gerente" data-hub="estoque"><i class="ti ti-package"></i><span class="ni-label">Estoque & Produtos</span><span class="ni-tip">Estoque</span></div>
-      <div class="ni ni-group" onclick="goHub('financeiro')" data-p="admin,gerente" data-hub="financeiro"><i class="ti ti-wallet"></i><span class="ni-label">Financeiro & Gestão</span><span class="ni-tip">Financeiro</span></div>
+      <div class="ni ni-group" onclick="goHub('estoque')" data-p="admin,gerente" data-hub="estoque"><i class="ti ti-package"></i><span class="ni-label">Estoque</span><span class="ni-tip">Estoque</span></div>
+      <div class="ni ni-group" onclick="goHub('financeiro')" data-p="admin,gerente" data-hub="financeiro"><i class="ti ti-wallet"></i><span class="ni-label">Financeiro</span><span class="ni-tip">Financeiro</span></div>
 
       <div class="nav-div-thin"></div>
       <div class="ni ni-group" onclick="goHub('relatorios')" data-p="admin,gerente" data-hub="relatorios"><i class="ti ti-chart-bar"></i><span class="ni-label">Relatórios</span><span class="ni-tip">Relatórios</span></div>
-      <div class="ni ni-group nav-adm" onclick="goHub('admin')" data-p="admin" data-hub="admin"><i class="ti ti-settings"></i><span class="ni-label">Administração</span><span class="ni-tip">Administração</span></div>
+      <div class="ni ni-group nav-adm" onclick="goHub('admin')" data-p="admin" data-hub="admin"><i class="ti ti-settings"></i><span class="ni-label">Configurações</span><span class="ni-tip">Administração</span></div>
 
       <div class="nav-div-thin"></div>
       <div class="ni" onclick="abrirUpgrade()" data-p="admin,gerente"><i class="ti ti-rocket"></i><span class="ni-label">Fazer Upgrade</span><span class="ni-tip">Upgrade</span></div>
@@ -2357,8 +2357,8 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
       <div class="topbar-right">
         <div id="net-pill" class="net-pill online" onclick="syncOfflineQueue(true)" title="Status de conexão"><i class="ti ti-wifi" style="font-size:14px"></i><span id="net-pill-txt">Online</span><span id="net-pending" class="pending-badge" style="display:none">0</span></div>
         <div id="caixa-pill" class="caixa-pill caixa-fechado" style="cursor:pointer" onclick="go('pdv')"><i class="ti ti-cash" style="font-size:14px"></i><span id="caixa-pill-txt">Caixa Fechado</span></div>
-        <button class="tb-btn" id="som-pdv-btn" onclick="toggleSomPDV()" title="Som do PDV"><i class="ti ti-volume"></i></button>
-        <button class="tb-btn" onclick="openModal('modal-cupom-config')" title="Config. Cupom"><i class="ti ti-receipt"></i></button>
+        <button class="tb-btn" onclick="mhOpen()" title="Ajuda" aria-label="Ajuda"><i class="ti ti-help"></i></button>
+        <button class="tb-btn" onclick="a11yToggle()" title="Acessibilidade" aria-label="Acessibilidade" style="font-size:16px">♿</button>
         <span style="font-size:11.5px;color:var(--txt3)" id="tb-date"></span>
         <button class="tb-btn" onclick="toggleDark()" id="dark-btn"><i class="ti ti-moon"></i></button>
       </div>
@@ -4017,6 +4017,10 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
               <button class="btn btn-pri" onclick="salvarCupomConfigPg()"><i class="ti ti-device-floppy"></i> Salvar configurações</button>
               <button class="btn btn-out" onclick="openModal('modal-cupom-config')"><i class="ti ti-eye"></i> Pré-visualizar cupom</button>
             </div>
+          </div>
+          <div class="card" style="max-width:620px">
+            <div class="card-hdr" style="margin-bottom:14px"><div class="card-title"><i class="ti ti-volume" style="color:var(--pri)"></i> Preferências do PDV</div></div>
+            <div class="cupom-config-row"><div><div style="font-weight:600;font-size:13px">Som do PDV</div><div style="font-size:11px;color:var(--txt3)">Toca um bip ao adicionar item e ao finalizar a venda</div></div><label class="toggle"><input type="checkbox" id="som-pdv-switch" onchange="toggleSomPDV()"><span class="tslider"></span></label></div>
           </div>
         </div>
 
@@ -6923,6 +6927,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(navigator.onLine) syncOfflineQueue(false);
   const somBtn=document.getElementById('som-pdv-btn');
   if(somBtn)somBtn.innerHTML=G.somPDV?'<i class="ti ti-volume"></i>':'<i class="ti ti-volume-off"></i>';
+  const somSw=document.getElementById('som-pdv-switch'); if(somSw)somSw.checked=(G.somPDV!==false);
 
   // Restauração de sessão: dispara AQUI (no DOMContentLoaded) em vez do final do arquivo,
   // para que o getSession() — que pode fazer refresh do token no servidor — comece o quanto
@@ -27103,7 +27108,7 @@ function gerarLaudoEntrega() {
 <style id="a11y-style">
 #a11y-btn{position:fixed;left:16px;bottom:16px;z-index:99998;width:54px;height:54px;border-radius:50%;border:none;background:#5B3FE8;color:#fff;font-size:27px;line-height:1;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 22px rgba(30,10,80,.35);cursor:pointer}
 #a11y-btn:focus-visible{outline:3px solid #fff;outline-offset:3px}
-#a11y-panel{position:fixed;left:16px;bottom:80px;z-index:99999;width:300px;max-width:calc(100vw - 32px);max-height:72vh;overflow:auto;background:#fff;color:#191338;border-radius:18px;box-shadow:0 16px 48px rgba(20,8,60,.32);padding:16px;display:none;font-family:'DM Sans',system-ui,Arial,sans-serif}
+#a11y-panel{position:fixed;right:16px;top:60px;z-index:99999;width:300px;max-width:calc(100vw - 32px);max-height:72vh;overflow:auto;background:#fff;color:#191338;border-radius:18px;box-shadow:0 16px 48px rgba(20,8,60,.32);padding:16px;display:none;font-family:'DM Sans',system-ui,Arial,sans-serif}
 #a11y-panel.open{display:block}
 #a11y-panel .a11y-h{font-size:15px;font-weight:800;margin:0 0 3px;display:flex;align-items:center;gap:8px}
 #a11y-panel .a11y-sub{font-size:12px;color:#6b6488;margin-bottom:13px}
@@ -27123,7 +27128,6 @@ html.ac-motion *,html.ac-motion *::before,html.ac-motion *::after{animation-dura
 html.ac-cursor,html.ac-cursor *{cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='38' height='38' viewBox='0 0 38 38'%3E%3Cpath d='M6 2l25 13-10 3-4 11z' fill='%23000' stroke='%23fff' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E") 5 2, auto !important}
 html.ac-readable p,html.ac-readable li,html.ac-readable td,html.ac-readable label,html.ac-readable a{line-height:1.7 !important;letter-spacing:.03em !important;word-spacing:.07em !important}
 </style>
-<button id="a11y-btn" aria-label="Abrir opções de acessibilidade" aria-haspopup="dialog" onclick="a11yToggle()">&#9855;</button>
 <div id="a11y-panel" role="dialog" aria-label="Opções de acessibilidade">
   <div class="a11y-h">&#9855; Acessibilidade <button id="a11y-close" aria-label="Fechar" onclick="a11yToggle(false)">&times;</button></div>
   <div class="a11y-sub">Ajuste o sistema ao seu conforto de leitura.</div>
@@ -27163,5 +27167,66 @@ html.ac-readable p,html.ac-readable li,html.ac-readable td,html.ac-readable labe
 })();
 </script>
 <!-- ═══ FIM WIDGET DE ACESSIBILIDADE ═══ -->
+
+<!-- CENTRAL DE AJUDA + COMECE POR AQUI (autônomo) -->
+<style id="mh-style">
+#mh-ov{position:fixed;inset:0;background:rgba(15,10,40,.55);z-index:99990;display:none;align-items:center;justify-content:center;padding:16px}
+#mh-ov.open{display:flex}
+#mh-modal{background:#fff;color:#191338;width:560px;max-width:100%;max-height:88vh;overflow:auto;border-radius:18px;box-shadow:0 24px 60px rgba(10,4,40,.4);font-family:'DM Sans',system-ui,Arial,sans-serif}
+.mh-hd{display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:1px solid #eee;position:sticky;top:0;background:#fff;z-index:2}
+.mh-hd b{font-family:'Syne',sans-serif;font-size:17px;flex:1}
+.mh-x{background:none;border:none;font-size:22px;color:#9a93b8;cursor:pointer}
+.mh-tabs{display:flex;gap:8px;padding:12px 18px 0}
+.mh-tab{border:none;background:#f1eefb;color:#5B3FE8;font-weight:700;font-size:13px;border-radius:10px 10px 0 0;padding:9px 14px;cursor:pointer}
+.mh-tab.on{background:#5B3FE8;color:#fff}
+.mh-body{padding:16px 18px 22px}
+.mh-step{display:flex;align-items:center;gap:12px;border:1.5px solid #e6e1f2;border-radius:12px;padding:12px;margin-bottom:9px}
+.mh-step .mh-ck{width:24px;height:24px;border-radius:50%;border:2px solid #d9d2ee;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px}
+.mh-step.done .mh-ck{background:#16a34a;border-color:#16a34a}
+.mh-step .mh-t{flex:1;font-size:13.5px;font-weight:600}
+.mh-go{border:none;background:#5B3FE8;color:#fff;font-weight:700;font-size:12px;border-radius:9px;padding:9px 13px;cursor:pointer}
+.mh-prog{height:8px;background:#eee;border-radius:99px;overflow:hidden;margin:2px 0 14px}
+.mh-prog>div{height:100%;background:#5B3FE8;transition:width .3s}
+.mh-cat{border:1px solid #e6e1f2;border-radius:12px;margin-bottom:9px}
+.mh-cat>summary{padding:12px 14px;font-weight:700;font-size:13.5px;cursor:pointer;list-style:none}
+.mh-cat>summary::-webkit-details-marker{display:none}
+.mh-art{padding:0 14px 13px;font-size:13px;color:#4a4470;line-height:1.6}
+.mh-art b{color:#191338}
+</style>
+<div id="mh-ov" onclick="if(event.target===this)mhClose()">
+  <div id="mh-modal">
+    <div class="mh-hd"><i class="ti ti-help" style="color:#5B3FE8"></i><b>Ajuda</b><button class="mh-x" aria-label="Fechar" onclick="mhClose()">&times;</button></div>
+    <div class="mh-tabs"><button class="mh-tab on" id="mh-tab1" onclick="mhTab(1)">Comece por aqui</button><button class="mh-tab" id="mh-tab2" onclick="mhTab(2)">Central de Ajuda</button></div>
+    <div class="mh-body" id="mh-b1"><div class="mh-prog"><div id="mh-prog"></div></div><div id="mh-steps"></div><div style="font-size:12px;color:#9a93b8;margin-top:6px">Você pode fechar e voltar quando quiser.</div></div>
+    <div class="mh-body hidden" id="mh-b2">
+      <details class="mh-cat"><summary>Comecando</summary><div class="mh-art"><b>Configurar a loja:</b> abra Configuracoes e preencha os dados. <b>Primeiro produto:</b> Estoque &rsaquo; Produtos. <b>Abrir caixa:</b> PDV &rsaquo; Abrir caixa. <b>Primeira venda:</b> adicione produtos e finalize.</div></details>
+      <details class="mh-cat"><summary>PDV e vendas</summary><div class="mh-art">Busque o produto ou passe o codigo de barras para adicionar ao carrinho. Aplique desconto no resumo. Escolha dinheiro, Pix, cartao ou link e finalize. Para cancelar, use a acao de cancelar a venda.</div></details>
+      <details class="mh-cat"><summary>Caixa</summary><div class="mh-art">O caixa precisa estar <b>aberto</b> para vender. Faca sangria/reforco pelo Financeiro e feche o caixa ao fim do dia para conferir os valores.</div></details>
+      <details class="mh-cat"><summary>Produtos e estoque</summary><div class="mh-art">Cadastre produtos com preco e estoque. O sistema avisa <b>estoque baixo</b>. Ajuste quantidades pelas movimentacoes e imprima etiquetas com codigo de barras.</div></details>
+      <details class="mh-cat"><summary>Assistencia / OS</summary><div class="mh-art">Abra a OS com cliente, aparelho e defeito. Atualize o <b>status</b> conforme o reparo. O cliente acompanha pelo <b>portal</b> (link no WhatsApp) e o pagamento pode ser cobrado por link.</div></details>
+      <details class="mh-cat"><summary>Clientes</summary><div class="mh-art">Cadastre clientes para vincular vendas e OS, ver historico e falar por WhatsApp.</div></details>
+      <details class="mh-cat"><summary>Financeiro</summary><div class="mh-art">Controle contas a pagar/receber, fluxo de caixa e crediario. Fique atento aos <b>vencimentos</b> e ao resumo por forma de pagamento.</div></details>
+      <details class="mh-cat"><summary>Relatorios</summary><div class="mh-art">Use filtros por periodo e exporte quando disponivel. Relatorios ajudam a ver vendas, lucro e produtos parados.</div></details>
+      <details class="mh-cat"><summary>Configuracoes</summary><div class="mh-art">Ajuste dados da loja, usuarios, permissoes, aparencia, integracoes de pagamento e fiscal.</div></details>
+      <details class="mh-cat"><summary>Planos e pagamentos</summary><div class="mh-art">Veja seu plano atual e limites em Fazer Upgrade. Alguns recursos dependem do plano.</div></details>
+      <details class="mh-cat"><summary>Duvidas frequentes</summary><div class="mh-art"><b>Nao consigo vender:</b> confira se o caixa esta aberto. <b>Link de pagamento nao gera:</b> conecte a conta InfinitePay em Configuracoes. <b>Estoque errado:</b> confira movimentacoes.</div></details>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+ var KEY='misu_onboarding', done={};
+ try{done=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
+ var steps=[['loja','Conferir dados da loja','configuracoes'],['produto','Cadastrar primeiro produto','produtos'],['caixa','Abrir o caixa / PDV','pdv'],['cliente','Cadastrar primeiro cliente','clientes'],['pagamento','Configurar formas de pagamento','configuracoes'],['usuarios','Adicionar usuarios da equipe','usuarios'],['ajuda','Conhecer a Central de Ajuda','']];
+ function save(){try{localStorage.setItem(KEY,JSON.stringify(done))}catch(e){}}
+ function render(){var el=document.getElementById('mh-steps');if(!el)return;el.innerHTML=steps.map(function(s){var d=done[s[0]];var btn=s[2]?'<button class="mh-go" onclick="mhStep(\''+s[0]+'\',\''+s[2]+'\')">Ir</button>':'<button class="mh-go" onclick="mhStep(\''+s[0]+'\',\'\');mhTab(2)">Abrir</button>';return '<div class="mh-step'+(d?' done':'')+'"><div class="mh-ck">'+(d?'\u2713':'')+'</div><div class="mh-t">'+s[1]+'</div>'+btn+'</div>';}).join('');var n=steps.filter(function(s){return done[s[0]];}).length;var pr=document.getElementById('mh-prog');if(pr)pr.style.width=Math.round(n/steps.length*100)+'%';}
+ window.mhOpen=function(){var o=document.getElementById('mh-ov');if(o){o.classList.add('open');render();}};
+ window.mhClose=function(){var o=document.getElementById('mh-ov');if(o)o.classList.remove('open');};
+ window.mhTab=function(i){document.getElementById('mh-tab1').classList.toggle('on',i===1);document.getElementById('mh-tab2').classList.toggle('on',i===2);document.getElementById('mh-b1').classList.toggle('hidden',i!==1);document.getElementById('mh-b2').classList.toggle('hidden',i!==2);};
+ window.mhStep=function(id,rota){done[id]=true;save();render();if(rota&&typeof go==='function'){mhClose();try{go(rota);}catch(e){}}};
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',render);else render();
+})();
+</script>
+<!-- FIM CENTRAL DE AJUDA -->
 </body>
 </html>
