@@ -2384,6 +2384,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
         <div id="dash-metas-wrap" style="margin-bottom:14px"></div>
         <!-- Tarefas do dia (CRM) -->
         <div id="dash-tarefas-wrap" style="margin-bottom:14px"></div>
+        <div id="dash-acoes-wrap" style="margin-bottom:14px"></div>
         <!-- KPI cards estilo misu-store: ícone circular no canto -->
         <div class="sg">
           <div class="sc" style="cursor:pointer" onclick="go('pdv')">
@@ -2402,12 +2403,25 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
             <div class="sc-body"><div class="sc-lbl">Em Estoque</div><div class="sc-val" id="d-estoque">0</div></div>
             <div class="sc-icon" style="background:rgba(16,185,129,.1)"><i class="ti ti-package" style="color:var(--success)"></i></div>
           </div>
+          <div class="sc" style="cursor:pointer" onclick="go('hist-vendas')">
+            <div class="sc-body"><div class="sc-lbl">Ticket Médio (hoje)</div><div class="sc-val" id="d-ticket">R$ 0,00</div></div>
+            <div class="sc-icon" style="background:rgba(139,92,246,.12)"><i class="ti ti-receipt-2" style="color:#8b5cf6"></i></div>
+          </div>
+          <div class="sc" style="cursor:pointer" onclick="go('os')">
+            <div class="sc-body"><div class="sc-lbl">OS Aguardando Pagamento</div><div class="sc-val" id="d-os-pag">0</div></div>
+            <div class="sc-icon" style="background:rgba(245,158,11,.14)"><i class="ti ti-cash" style="color:var(--warn)"></i></div>
+          </div>
         </div>
         <div id="d-alerts"></div>
         <!-- Gráficos lado a lado -->
         <div class="gdash" style="margin-bottom:12px">
           <div class="card"><div class="card-hdr"><div class="card-title">Vendas — 7 dias</div></div><div class="chart-wrap"><canvas id="chart-v7"></canvas></div></div>
           <div class="card"><div class="card-hdr"><div class="card-title">Fluxo de Caixa</div></div><div class="chart-wrap"><canvas id="chart-fc"></canvas></div></div>
+        </div>
+        <!-- Produtos mais vendidos (Lote 2) -->
+        <div class="card" style="margin-bottom:12px">
+          <div class="card-hdr"><div class="card-title">Produtos Mais Vendidos <span style="font-weight:500;color:var(--txt3);font-size:12px">— últimos 30 dias</span></div><button class="btn btn-out btn-sm" onclick="go('relatorios')">Relatórios →</button></div>
+          <div id="d-maisvendidos"></div>
         </div>
         <!-- Últimas vendas + OS + Ações Rápidas -->
         <div class="gdash3">
@@ -2434,18 +2448,18 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
           <div class="hub-card" onclick="go('crediario')"><div class="hc-icon"><i class="ti ti-credit-card"></i></div><div><div class="hc-label">Crediário</div><div class="hc-desc">Controle vendas a prazo e parcelas</div></div></div>
           <div class="hub-card" onclick="go('devolucoes')"><div class="hc-icon"><i class="ti ti-arrow-back-up"></i></div><div><div class="hc-label">Devoluções</div><div class="hc-desc">Processe devoluções de produtos</div></div></div>
           <div class="hub-card" onclick="go('hist-vendas')" data-p="admin,gerente,operador"><div class="hc-icon"><i class="ti ti-receipt"></i></div><div><div class="hc-label">Histórico de Vendas</div><div class="hc-desc">Consulte todas as vendas realizadas</div></div></div>
-          <div class="hub-card" onclick="go('simulador')"><div class="hc-icon"><i class="ti ti-calculator"></i></div><div><div class="hc-label">Simulador Cartão</div><div class="hc-desc">Calcule taxas e parcelas de cartão</div></div></div>
+          <div class="hub-card" onclick="go('simulador')"><div class="hc-icon"><i class="ti ti-calculator"></i></div><div><div class="hc-label">Simulador de taxas</div><div class="hc-desc">Calcule taxas e parcelas de cartão</div></div></div>
         </div>
       </div>
 
       <!-- HUB: SERVIÇOS -->
       <div class="page hub-page" id="page-hub-servicos">
-        <div class="hub-title"><i class="ti ti-tools"></i>Serviços</div>
+        <div class="hub-title"><i class="ti ti-tools"></i>Assistência</div>
         <div class="hub-sub">Gerencie ordens de serviço, garantias, diagnósticos e contratos.</div>
         <div class="hub-grid">
           <div class="hub-card" onclick="go('os')"><div class="hc-icon"><i class="ti ti-tools"></i></div><div><div class="hc-label">Ordens de Serviço</div><div class="hc-desc">Crie e acompanhe OS em aberto</div></div></div>
-          <div class="hub-card" onclick="go('os-hist')"><div class="hc-icon"><i class="ti ti-history"></i></div><div><div class="hc-label">Histórico de OS</div><div class="hc-desc">Consulte OS entregues e arquivadas</div></div></div>
-          <div class="hub-card" onclick="go('diagnostico')"><div class="hc-icon"><i class="ti ti-stethoscope"></i></div><div><div class="hc-label">Diagnóstico</div><div class="hc-desc">Modo Panic — diagnóstico rápido do aparelho</div></div></div>
+          <div class="hub-card" onclick="go('os-hist')"><div class="hc-icon"><i class="ti ti-history"></i></div><div><div class="hc-label">OS finalizadas</div><div class="hc-desc">Consulte OS entregues e arquivadas</div></div></div>
+          <div class="hub-card" onclick="go('diagnostico')"><div class="hc-icon"><i class="ti ti-stethoscope"></i></div><div><div class="hc-label">Diagnóstico IA</div><div class="hc-desc">Modo Panic — diagnóstico rápido do aparelho</div></div></div>
           <div class="hub-card" onclick="go('garantias')"><div class="hc-icon"><i class="ti ti-shield-check"></i></div><div><div class="hc-label">Garantias</div><div class="hc-desc">Acompanhe garantias ativas e expiradas</div></div></div>
           <div class="hub-card" onclick="go('contratos')"><div class="hc-icon"><i class="ti ti-file-certificate"></i></div><div><div class="hc-label">Contratos & Termos</div><div class="hc-desc">Modelos de contratos e termos de entrada</div></div></div>
         </div>
@@ -2465,22 +2479,22 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
 
       <!-- HUB: ESTOQUE -->
       <div class="page hub-page" id="page-hub-estoque">
-        <div class="hub-title"><i class="ti ti-package"></i>Estoque & Produtos</div>
+        <div class="hub-title"><i class="ti ti-package"></i>Estoque</div>
         <div class="hub-sub">Controle produtos, movimentações, fornecedores e reposição.</div>
         <div class="hub-grid">
           <div class="hub-card" onclick="go('produtos')"><div class="hc-icon"><i class="ti ti-device-mobile"></i></div><div><div class="hc-label">Produtos</div><div class="hc-desc">Cadastro e preços de produtos</div></div></div>
           <div class="hub-card" onclick="go('estoque')"><div class="hc-icon"><i class="ti ti-package"></i></div><div><div class="hc-label">Movimentações</div><div class="hc-desc">Entradas, saídas e ajustes de estoque</div></div></div>
           <div class="hub-card" onclick="go('fornecedores')"><div class="hc-icon"><i class="ti ti-truck"></i></div><div><div class="hc-label">Fornecedores</div><div class="hc-desc">Cadastro e contatos de fornecedores</div></div></div>
-          <div class="hub-card" onclick="go('reposicao')"><div class="hc-icon"><i class="ti ti-shopping-cart-plus"></i></div><div><div class="hc-label">Reposição</div><div class="hc-desc">Central de reposição de estoque baixo</div></div></div>
+          <div class="hub-card" onclick="go('reposicao')"><div class="hc-icon"><i class="ti ti-shopping-cart-plus"></i></div><div><div class="hc-label">Reposição de estoque</div><div class="hc-desc">Central de reposição de estoque baixo</div></div></div>
         </div>
       </div>
 
       <!-- HUB: FINANCEIRO -->
       <div class="page hub-page" id="page-hub-financeiro">
-        <div class="hub-title"><i class="ti ti-wallet"></i>Financeiro & Gestão</div>
+        <div class="hub-title"><i class="ti ti-wallet"></i>Financeiro</div>
         <div class="hub-sub">Controle financeiro, caixas, comissões e catálogo online.</div>
         <div class="hub-grid">
-          <div class="hub-card" onclick="go('financeiro')"><div class="hc-icon"><i class="ti ti-wallet"></i></div><div><div class="hc-label">Contas & Fluxo</div><div class="hc-desc">Contas a pagar, receber e fluxo de caixa</div></div></div>
+          <div class="hub-card" onclick="go('financeiro')"><div class="hc-icon"><i class="ti ti-wallet"></i></div><div><div class="hc-label">Contas e fluxo de caixa</div><div class="hc-desc">Contas a pagar, receber e fluxo de caixa</div></div></div>
           <div class="hub-card" onclick="go('caixas')" id="nav-caixas"><div class="hc-icon"><i class="ti ti-device-desktop-analytics"></i></div><div><div class="hc-label">Gestão de Caixas</div><div class="hc-desc">Abertura, fechamento e operações de caixa</div></div></div>
           <div class="hub-card" onclick="go('comissoes')"><div class="hc-icon"><i class="ti ti-award"></i></div><div><div class="hc-label">Comissão Técnicos</div><div class="hc-desc">Cálculo de comissões por técnico</div></div></div>
           <div class="hub-card" onclick="go('catalogo')"><div class="hc-icon"><i class="ti ti-building-store"></i></div><div><div class="hc-label">Catálogo Online</div><div class="hc-desc">Vitrine pública de produtos da loja</div></div></div>
@@ -2493,18 +2507,18 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
         <div class="hub-sub">Análises, relatórios e inteligência operacional.</div>
         <div class="hub-grid">
           <div class="hub-card" onclick="go('relatorios')"><div class="hc-icon"><i class="ti ti-chart-bar"></i></div><div><div class="hc-label">Relatórios</div><div class="hc-desc">Relatórios de vendas, OS e estoque</div></div></div>
-          <div class="hub-card" onclick="go('inteligencia')"><div class="hc-icon"><i class="ti ti-brain"></i></div><div><div class="hc-label">Inteligência</div><div class="hc-desc">Alertas, metas e análise operacional</div></div></div>
+          <div class="hub-card" onclick="go('inteligencia')"><div class="hc-icon"><i class="ti ti-brain"></i></div><div><div class="hc-label">Inteligência / Alertas</div><div class="hc-desc">Alertas, metas e análise operacional</div></div></div>
         </div>
       </div>
 
       <!-- HUB: ADMINISTRAÇÃO -->
       <div class="page hub-page" id="page-hub-admin">
-        <div class="hub-title"><i class="ti ti-settings"></i>Administração</div>
+        <div class="hub-title"><i class="ti ti-settings"></i>Configurações</div>
         <div class="hub-sub">Usuários, permissões, aparência e configurações do sistema.</div>
         <div class="hub-grid">
           <div class="hub-card" onclick="go('usuarios')"><div class="hc-icon"><i class="ti ti-shield-lock"></i></div><div><div class="hc-label">Usuários</div><div class="hc-desc">Gestão de usuários e perfis de acesso</div></div></div>
           <div class="hub-card" onclick="go('permissoes')"><div class="hc-icon"><i class="ti ti-key"></i></div><div><div class="hc-label">Permissões</div><div class="hc-desc">Configure o que cada perfil pode acessar</div></div></div>
-          <div class="hub-card" onclick="go('aparencia')"><div class="hc-icon"><i class="ti ti-palette"></i></div><div><div class="hc-label">Aparência & Marca</div><div class="hc-desc">Logo, cores e identidade visual da loja</div></div></div>
+          <div class="hub-card" onclick="go('aparencia')"><div class="hc-icon"><i class="ti ti-palette"></i></div><div><div class="hc-label">Marca e aparência</div><div class="hc-desc">Logo, cores e identidade visual da loja</div></div></div>
           <div class="hub-card" onclick="go('configuracoes')"><div class="hc-icon"><i class="ti ti-adjustments-horizontal"></i></div><div><div class="hc-label">Configurações</div><div class="hc-desc">Gateway de pagamento, impressora térmica e integrações</div></div></div>
         </div>
       </div>
@@ -2594,10 +2608,11 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
                 <select id="cart-cli" style="flex:1;padding:4px 7px;font-size:12px;border-radius:6px"></select>
               </div>
             </div>
-            <div class="cart-items" id="cart-items"><div class="cart-empty"><i class="ti ti-shopping-cart"></i><p>Adicione produtos</p></div></div>
+            <div class="cart-items" id="cart-items"><div class="cart-empty"><i class="ti ti-shopping-cart"></i><p>Carrinho vazio</p><p style="font-size:12px">Busque um produto acima ou passe o código de barras.</p></div></div>
             <div class="cart-footer">
               <div class="cr"><span style="color:var(--txt2)">Subtotal</span><span id="c-sub" style="font-weight:600">R$ 0,00</span></div>
               <div class="cr"><span style="color:var(--txt2)">Desconto</span><div style="display:flex;align-items:center;gap:4px"><input type="number" id="c-desc" min="0" max="100" value="0" style="width:48px;padding:2px 6px;font-size:11.5px;text-align:center;border-radius:5px" oninput="renderCart()"><span style="font-size:11.5px;color:var(--txt3)">%</span></div></div>
+              <div class="cr" id="c-desc-val-row" style="display:none"><span style="color:var(--txt3);font-size:11.5px">Desconto aplicado</span><span id="c-desc-val" style="font-weight:600;color:var(--danger);font-size:12px">− R$ 0,00</span></div>
               <div class="cr"><span style="color:var(--txt2)">Acréscimo</span><div style="display:flex;align-items:center;gap:4px"><input type="number" id="c-acr" min="0" value="0" step="0.01" style="width:70px;padding:2px 6px;font-size:11.5px;border-radius:5px" oninput="renderCart()" placeholder="R$"></div></div>
               <div class="cr"><span style="color:var(--txt2)">Garantia</span><div style="display:flex;align-items:center;gap:4px"><input type="number" id="c-garantia" min="0" value="0" style="width:48px;padding:2px 6px;font-size:11.5px;text-align:center;border-radius:5px" title="Dias de garantia da venda" oninput="renderGarantiaTermoSel()"><span style="font-size:11.5px;color:var(--txt3)">dias</span></div></div>
               <!-- Termo de garantia vinculado -->
@@ -2655,7 +2670,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
                 <input type="number" id="c-recebido" min="0" step="0.01" placeholder="R$" oninput="renderCart()" style="flex:1;text-align:right;padding:6px 8px;border-radius:7px;border:1px solid var(--border);font-weight:700">
                 <button class="btn btn-pri btn-sm" onclick="confirmarPagamentoParcial()" title="Confirmar este pagamento"><i class="ti ti-check"></i> Confirmar</button>
               </div>
-              <div class="cr" id="troco-row" style="display:none"><span style="color:var(--txt2)">Troco</span><span id="c-troco" style="font-weight:700;color:var(--success)">R$ 0,00</span></div>
+              <div class="cr" id="troco-row" style="display:none;background:rgba(16,185,129,.08);border:1.5px solid rgba(16,185,129,.22);border-radius:9px;padding:8px 11px;margin-top:6px"><span style="color:var(--success);font-weight:700;font-size:12.5px"><i class="ti ti-cash" style="font-size:14px"></i> Troco</span><span id="c-troco" style="font-weight:800;font-size:18px;color:var(--success)">R$ 0,00</span></div>
               <!-- Botão crediário separado -->
               <button class="pb" id="btn-pay-crediario" onclick="irParaCrediarioPDV()" style="width:100%;margin-top:6px;background:linear-gradient(135deg,#3D8BFF,#1E5EFF);color:#fff;border:none;justify-content:center">
                 <i class="ti ti-file-invoice"></i> Crediário (parcelar)
@@ -2806,7 +2821,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
           <div class="card">
             <div class="card-hdr"><div class="card-title">Histórico de Cobranças Enviadas</div></div>
             <div id="cobrancas-hist-list">
-              <div class="empty-st"><i class="ti ti-send"></i><h3>Nenhuma cobrança enviada</h3></div>
+              <div class="empty-st"><i class="ti ti-send"></i><h3>Nenhuma cobrança enviada</h3><p style="font-size:12px">Quando você enviar uma cobrança, o histórico fica aqui.</p></div>
             </div>
           </div>
         </div>
@@ -6535,7 +6550,19 @@ try{
 function mostrarErroSafari(tipo, erro){
   const mensagem = typeof erro==='string' ? erro : (erro?.message || String(erro||'Erro desconhecido'));
   console.error('['+tipo+']', erro);
-  try{ if(!new URLSearchParams(location.search).has('debug')) return; }catch(_){ return; }
+  // LOTE 2 (microcopy): fora do modo ?debug, avisa o usuário de forma humana em vez de silêncio/erro cru
+  try{
+    if(!new URLSearchParams(location.search).has('debug')){
+      try{
+        var _ag = (window.__lastErrAviso||0);
+        if(Date.now()-_ag > 6000 && typeof notify==='function'){
+          window.__lastErrAviso = Date.now();
+          notify('Algo não saiu como esperado. Tente novamente — se continuar, recarregue a página.', 'error', 4200);
+        }
+      }catch(_x){}
+      return;
+    }
+  }catch(_){ return; }
   try{
     const box=document.createElement('div');
     box.style.cssText='position:fixed;left:10px;right:10px;bottom:10px;z-index:9999999;padding:14px;border-radius:12px;background:#7f1d1d;color:#fff;font:12px/1.5 monospace;word-break:break-word;max-height:45vh;overflow:auto';
@@ -7117,7 +7144,28 @@ const setLoad = v => document.getElementById('loading').classList.toggle('show',
   }, true);
 })();
 
+// LOTE 2 (microcopy): filtro central — o usuário nunca vê erro técnico cru; o detalhe vai pro console
+function humanizarMsg(msg, type){
+  try{
+    if(msg==null) return type==='error' ? 'Não foi possível concluir agora. Tente novamente.' : '';
+    var s=String(msg);
+    if(type!=='error') return s; // sucesso/aviso/info já são textos curados
+    var m=s.match(/^Erro(?:\s+ao\s+([^:]+?))?\s*[:.]/i);
+    if(m){
+      console.error('[erro tratado]', s);
+      if(m[1]) return 'Não foi possível '+m[1].trim()+' agora. Tente novamente — se continuar, recarregue a página.';
+      return 'Não foi possível concluir a ação agora. Tente novamente — se continuar, recarregue a página.';
+    }
+    var tech=/(undefined|is not defined|Cannot read|Cannot access|TypeError|ReferenceError|SyntaxError|Failed to fetch|NetworkError|duplicate key|violates|null value|permission denied|JWT|https?:\/\/|\bat [A-Z]\w+\.)/;
+    if(tech.test(s)){
+      console.error('[erro tratado]', s);
+      return 'Algo não saiu como esperado. Tente novamente — se continuar, recarregue a página.';
+    }
+    return s; // erro já é amigável (ex.: "Selecione um cliente")
+  }catch(_){ return 'Não foi possível concluir agora. Tente novamente.'; }
+}
 function notify(msg, type='success', dur=3200) {
+  msg = humanizarMsg(msg, type);
   const s=document.getElementById('nstack');
   const el=document.createElement('div');
   const ico={success:'check',error:'x',warn:'alert-triangle',info:'info-circle'}[type]||'check';
@@ -7127,6 +7175,13 @@ function notify(msg, type='success', dur=3200) {
   requestAnimationFrame(()=>el.classList.add('show'));
   setTimeout(()=>{el.classList.remove('show');setTimeout(()=>el.remove(),350)},dur);
 }
+// LOTE 2 (microcopy): atalhos padronizados de mensagem — texto humano e consistente
+function msgOk(m){ notify(m||'Tudo certo!', 'success'); }
+function msgErro(m){ notify(m||'Não foi possível concluir agora. Tente novamente.', 'error'); }
+function msgAlerta(m){ notify(m||'Atenção: confira os dados antes de continuar.', 'warn'); }
+function msgInfo(m){ notify(m||'', 'info'); }
+function msgCampoObrig(campo){ notify('Preencha o campo '+(campo||'obrigatório')+' para continuar.', 'warn'); }
+function msgIntegracao(nome){ notify('Não conseguimos falar com '+(nome||'a integração')+' agora. Verifique a conexão e tente de novo.', 'error', 4200); }
 
 function openModal(id){document.getElementById(id)?.classList.add('open')}
 function closeModal(id){
@@ -10363,7 +10418,7 @@ function renderPDVGrid(){
   const q=(document.getElementById('ps-field')?.value||'').toLowerCase();
   const iC={Celular:'device-mobile',Acessório:'headphones',Peça:'cpu',Serviço:'tools',Outro:'package'};
   const list=G.produtos.filter(p=>p.status==='ativo'&&(!q||p.nome.toLowerCase().includes(q)||(p.sku||'').toLowerCase().includes(q)||(p.barcode||'').toLowerCase().includes(q)||(Array.isArray(p.modelos_compat)&&p.modelos_compat.some(m=>String(m).toLowerCase().includes(q)))));
-  document.getElementById('pg').innerHTML=list.length===0?'<div class="empty-st" style="grid-column:1/-1"><i class="ti ti-search-off"></i><h3>Nenhum produto</h3></div>':list.map(p=>{
+  document.getElementById('pg').innerHTML=list.length===0?(q?'<div class="empty-st" style="grid-column:1/-1"><i class="ti ti-search-off"></i><h3>Nenhum produto encontrado</h3><p style="font-size:12px">Nada bate com essa busca. Confira o que digitou.</p></div>':'<div class="empty-st" style="grid-column:1/-1"><i class="ti ti-package"></i><h3>Nenhum produto ativo</h3><p style="font-size:12px">Cadastre produtos para começar a vender aqui.</p><button class="btn btn-out btn-sm" style="margin-top:8px" onclick="go(\'produtos\')"><i class="ti ti-plus"></i> Ir para Produtos</button></div>'):list.map(p=>{
     const foto=Array.isArray(p.fotos)&&p.fotos.length>0?p.fotos[0]:null;
     const sem=!p.estoque_infinito&&p.estoque===0;
     return`<div class="pc${sem?' out':''}" onclick="${!sem?`addToCart('${p.id}')`:''}" >
@@ -10373,7 +10428,7 @@ function renderPDVGrid(){
       <div class="pc-sku">${p.sku||''}</div>
       <div class="pc-price">${fmt(p.preco)}</div>
       <div class="pc-stock" style="color:${sem?'var(--danger)':!p.estoque_infinito&&p.estoque<=(p.estoque_minimo||3)?'var(--warn)':'var(--success)'}">
-        ${p.estoque_infinito?'♾️ Disponível':sem?'Sem estoque':p.estoque+' un.'}
+        ${p.estoque_infinito?'♾️ Disponível':sem?'Sem estoque':(p.estoque+' un.'+(!p.estoque_infinito&&p.estoque<=(p.estoque_minimo||3)?' · baixo':''))}
       </div>
     </div>`;
   }).join('');
@@ -10423,7 +10478,9 @@ function renderCart(){
   const total_qty=G.cart.reduce((s,i)=>s+i.qty,0);
   badge.textContent=total_qty;badge.style.display=total_qty>0?'':'none';
   if(G.cart.length===0){
-    cont.innerHTML='<div class="cart-empty"><i class="ti ti-shopping-cart"></i><p>Adicione produtos</p></div>';
+    cont.innerHTML = !G.caixaAtual
+      ? '<div class="cart-empty"><i class="ti ti-lock"></i><p><strong>Caixa fechado</strong></p><p style="font-size:12px">Abra o caixa para começar a vender.</p></div>'
+      : '<div class="cart-empty"><i class="ti ti-shopping-cart"></i><p>Carrinho vazio</p><p style="font-size:12px">Busque um produto acima ou passe o código de barras.</p></div>';
     document.getElementById('fin-btn').disabled=true;
   }else{
     cont.innerHTML=G.cart.map(i=>`<div class="ci">
@@ -10458,6 +10515,8 @@ function renderCart(){
     if(btnAddTroca)btnAddTroca.style.display=G.cart.length>0?'':'none';
   }
   document.getElementById('c-sub').textContent=fmt(sub);
+  // Fatia 3: mostra o desconto em R$ (apresentação; não altera o total)
+  try{ var _descVal=sub*(desc/100); var _dvR=document.getElementById('c-desc-val-row'); var _dvE=document.getElementById('c-desc-val'); if(_dvE)_dvE.textContent='− '+fmt(_descVal); if(_dvR)_dvR.style.display=(_descVal>0)?'flex':'none'; }catch(_){}
   document.getElementById('c-tot').textContent=fmt(total);
   // Fluxo incremental: o campo "Valor" + botão Confirmar fica SEMPRE visível
   // para todas as formas (dinheiro/pix/cartão). Vazio = paga o restante inteiro.
@@ -11970,7 +12029,7 @@ async function saveCliente(){
 function renderClientes(q=''){
   const f=q.toLowerCase();
   const list=G.clientes.filter(c=>!f||c.nome.toLowerCase().includes(f)||(c.telefone||'').includes(f));
-  document.getElementById('cli-table').innerHTML=list.length===0?'<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--txt3)">Nenhum cliente</td></tr>':list.map(c=>`<tr>
+  document.getElementById('cli-table').innerHTML=list.length===0?(f?'<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--txt3)">Nenhum cliente encontrado para essa busca.</td></tr>':'<tr><td colspan="6" style="text-align:center;padding:22px;color:var(--txt3)">Nenhum cliente cadastrado ainda.<br><button class="btn btn-out btn-sm" style="margin-top:10px" onclick="openModal(\'modal-cli\')"><i class="ti ti-user-plus"></i> Cadastrar cliente</button></td></tr>'):list.map(c=>`<tr>
     <td style="font-weight:600">${esc(c.nome)}</td>
     <td>${esc(c.cpf)||'—'}</td>
     <td>${esc(c.telefone)||'—'}</td>
@@ -13022,7 +13081,7 @@ async function verHistoricoPreco(id){
 
   const {data,error}=await db.from('historico_precos').select('*').eq('produto_id',id).order('criado_em',{ascending:false});
   if(error){
-    document.getElementById('os-det-content').innerHTML=`<div class="modal-title"><i class="ti ti-chart-line"></i>Histórico de Preços — ${p?.nome||''}</div><div class="empty-st"><i class="ti ti-alert-circle"></i><h3>Erro ao carregar</h3><p style="font-size:12px;color:var(--txt3)">${error.message}</p></div>`;
+    document.getElementById('os-det-content').innerHTML=`<div class="modal-title"><i class="ti ti-chart-line"></i>Histórico de Preços — ${p?.nome||''}</div><div class="empty-st"><i class="ti ti-alert-circle"></i><h3>Não foi possível carregar</h3><p style="font-size:12px;color:var(--txt3)">Tente novamente em instantes.</p></div>`; console.error('[hist preços]', error);
     return;
   }
   const list=data||[];
@@ -13341,7 +13400,7 @@ function renderOSList(q=''){
   const f=q.toLowerCase();
   const list=G.os.filter(o=>o.status!=='Entregue'&&o.status!=='Cancelada'&&(!f||o.numero.toLowerCase().includes(f)||o.cliente_nome.toLowerCase().includes(f)||o.aparelho.toLowerCase().includes(f)));
   document.getElementById('os-count').textContent='('+list.length+')';
-  document.getElementById('os-list').innerHTML=list.length===0?'<div class="empty-st"><i class="ti ti-tools"></i><h3>Nenhuma OS aberta</h3></div>':list.map(o=>`<div style="padding:11px 13px;border-bottom:1px solid var(--border);cursor:pointer;transition:var(--trans)" onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background=''" onclick="detOS('${o.id}')">
+  document.getElementById('os-list').innerHTML=list.length===0?(f?'<div class="empty-st"><i class="ti ti-search-off"></i><h3>Nenhuma OS encontrada</h3><p style="font-size:12px">Nada bate com essa busca.</p></div>':'<div class="empty-st"><i class="ti ti-tools"></i><h3>Nenhuma OS aberta</h3><p style="font-size:12px">Quando você abrir uma ordem, ela aparece aqui.</p><button class="btn btn-out btn-sm" style="margin-top:8px" onclick="go(\'os\');setTimeout(()=>openModal(\'modal-os\'),200)"><i class="ti ti-plus"></i> Nova OS</button></div>'):list.map(o=>`<div style="padding:11px 13px;border-bottom:1px solid var(--border);cursor:pointer;transition:var(--trans)" onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background=''" onclick="detOS('${o.id}')">
     <div style="display:flex;align-items:center;justify-content:space-between">
       <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:12px;color:var(--pri)">${o.numero}</div>
       <span class="tag ${OC[o.status]||'tag-gry'}" style="font-size:10px">${o.status}</span>
@@ -17476,7 +17535,7 @@ async function consultarDiagnosticoIA(forcar){
       });
     }catch(e){}
   }catch(e){
-    if(res) res.innerHTML=`<div class="card" style="border-left:3px solid var(--danger,#dc2626);padding:12px 14px;font-size:12.5px">Erro ao consultar: ${esc(e.message||'')}</div>`;
+    if(res) res.innerHTML=`<div class="card" style="border-left:3px solid var(--danger,#dc2626);padding:12px 14px;font-size:12.5px">Não foi possível consultar agora. Tente novamente.</div>`; console.error('[consulta]', e);
   }finally{
     if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-search"></i> Analisar'; }
   }
@@ -18145,8 +18204,35 @@ function renderRelEstoque(){
 }
 
 /* ── DASHBOARD ───────────────────────────────────────── */
+function renderAcoesHoje(){
+  var el=document.getElementById('dash-acoes-wrap'); if(!el) return;
+  try{
+    var hoje=new Date(), hojeStr=hoje.toISOString().split('T')[0];
+    var os=G.os||[], rec=G.receber||[], prod=G.produtos||[], vend=G.vendas||[];
+    var caixaFechado=!G.caixaAtual;
+    var osPag=os.filter(function(o){return o.status==='Ag. Pagamento';}).length;
+    var osAtras=os.filter(function(o){return o.status!=='Entregue'&&o.prazo&&o.prazo<hojeStr;}).length;
+    var contasVenc=rec.filter(function(r){return r.status!=='pago'&&new Date(r.data_vencimento+'T12:00')<hoje;}).length;
+    var estCrit=prod.filter(function(p){return !p.estoque_infinito&&(p.estoque===0||(p.estoque>0&&p.estoque<=(p.estoque_minimo||3)));}).length;
+    var vHoje=vend.filter(function(v){return new Date(v.criado_em).toDateString()===hoje.toDateString()&&v.status!=='cancelada';});
+    function card(pri,ic,tit,desc,cta,rota){return '<div class="ah-card ah-'+pri+'" onclick="go(\''+rota+'\')"><div class="ah-ic"><i class="ti ti-'+ic+'"></i></div><div class="ah-tx"><div class="ah-t">'+tit+'</div><div class="ah-d">'+desc+'</div></div><span class="ah-cta">'+cta+' <i class="ti ti-chevron-right"></i></span></div>';}
+    var cards=[];
+    if(caixaFechado) cards.push(card('urgente','lock-open','Caixa fechado','Abra o caixa para começar a vender','Abrir no PDV','pdv'));
+    if(osAtras>0) cards.push(card('urgente','clock-exclamation',osAtras+' OS passaram do prazo','Verifique as ordens atrasadas','Ver OS','os'));
+    if(osPag>0) cards.push(card('atencao','cash',osPag+' OS aguardando pagamento','Prontas para cobrar','Ver OS','os'));
+    if(contasVenc>0) cards.push(card('atencao','alert-triangle',contasVenc+' conta(s) vencida(s)','Contas a receber em atraso','Ver financeiro','financeiro'));
+    if(estCrit>0) cards.push(card('atencao','package',estCrit+' produto(s) em estoque crítico','Repor para não perder venda','Ver reposição','reposicao'));
+    cards.push(card('normal','shopping-cart',vHoje.length+' venda(s) hoje','Faturamento: '+(typeof fmt==='function'?fmt(vHoje.reduce(function(s,v){return s+(v.total||0);},0)):''),'Ver vendas','hist-vendas'));
+    var acion=caixaFechado||osAtras||osPag||contasVenc||estCrit;
+    var html='<div class="ah-title"><i class="ti ti-checklist"></i> Ações de hoje</div>';
+    if(!acion) html+='<div class="ah-ok"><i class="ti ti-circle-check"></i> Tudo certo por aqui. Nenhuma pendência.</div>';
+    html+='<div class="ah-list">'+cards.join('')+'</div>';
+    el.innerHTML=html;
+  }catch(e){ el.innerHTML=''; }
+}
 function renderDashboard(){
   if(typeof renderDashTarefas==='function') renderDashTarefas();
+  if(typeof renderAcoesHoje==='function') renderAcoesHoje();
   const hoje=G.vendas.filter(v=>new Date(v.criado_em).toDateString()===new Date().toDateString()&&v.status!=='cancelada');
   const fat=hoje.reduce((s,v)=>s+v.total,0);
   const lucro=hoje.reduce((s,v)=>s+(v.lucro||0),0);
@@ -18159,6 +18245,45 @@ function renderDashboard(){
   document.getElementById('d-os').textContent=osAb;
   document.getElementById('d-venc').textContent=recVenc;
   const estEl=document.getElementById('d-estoque');if(estEl)estEl.textContent=totalEstoque;
+  // ── LOTE 2: Ticket médio, OS aguardando pagamento e mais vendidos ──
+  try{
+    const ticket = hoje.length ? (fat/hoje.length) : 0;
+    const tkEl=document.getElementById('d-ticket'); if(tkEl) tkEl.textContent=fmt(ticket);
+    const osPag = G.os.filter(o=>o.status==='Ag. Pagamento').length;
+    const opEl=document.getElementById('d-os-pag'); if(opEl) opEl.textContent=osPag;
+    const mvEl=document.getElementById('d-maisvendidos');
+    if(mvEl){
+      const lim=new Date(); lim.setDate(lim.getDate()-30);
+      const cont={};
+      G.vendas.forEach(v=>{
+        if(v.status==='cancelada') return;
+        if(new Date(v.criado_em) < lim) return;
+        let itens=v.itens;
+        if(typeof itens==='string'){ try{ itens=JSON.parse(itens); }catch(_){ itens=[]; } }
+        if(!Array.isArray(itens)) return;
+        itens.forEach(it=>{
+          const nome=it.nome||it.produto_nome||'Produto';
+          const q=Number(it.qty!=null?it.qty:(it.quantidade!=null?it.quantidade:1))||0;
+          if(q<=0) return;
+          cont[nome]=(cont[nome]||0)+q;
+        });
+      });
+      const ranking=Object.keys(cont).map(k=>[k,cont[k]]).sort((a,b)=>b[1]-a[1]).slice(0,5);
+      if(ranking.length===0){
+        mvEl.innerHTML='<div class="empty-st" style="padding:16px"><i class="ti ti-chart-bar-off"></i><p>Sem vendas nos últimos 30 dias</p></div>';
+      } else {
+        const maxQ=ranking[0][1]||1;
+        mvEl.innerHTML=ranking.map((r,i)=>{
+          const pct=Math.round((r[1]/maxQ)*100);
+          return '<div style="display:flex;align-items:center;gap:10px;padding:7px 2px">'+
+            '<span style="width:20px;height:20px;border-radius:6px;background:rgba(30,94,255,.12);color:var(--pri);font-weight:700;font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+(i+1)+'</span>'+
+            '<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(r[0])+'</div>'+
+            '<div style="height:5px;background:var(--border,#eee);border-radius:99px;margin-top:4px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:rgba(30,94,255,.75);border-radius:99px"></div></div></div>'+
+            '<span style="font-weight:700;font-size:13px;color:var(--txt2);flex-shrink:0">'+r[1]+' un</span></div>';
+        }).join('');
+      }
+    }
+  }catch(_e){ console.error('[dash mais vendidos]', _e); }
   const nomeEl=document.getElementById('d-empresa-nome');if(nomeEl)nomeEl.textContent=G.empresa?.nome||'';
   // ── ALERTAS INTELIGENTES ──────────────────────────────
   let alertsHtml='';
@@ -18192,10 +18317,10 @@ function renderDashboard(){
   }
   document.getElementById('d-alerts').innerHTML=alertsHtml;
   // Últimas vendas
-  document.getElementById('d-ult-v').innerHTML=G.vendas.length===0?'<div class="empty-st" style="padding:16px"><i class="ti ti-shopping-cart-off"></i><p>Nenhuma venda</p></div>':`<div class="tw"><table><thead><tr><th>Cliente</th><th>Total</th><th>Lucro</th></tr></thead><tbody>${G.vendas.slice(0,5).map(v=>`<tr><td>${esc(v.cliente_nome)}</td><td style="font-weight:700">${fmt(v.total)}</td><td style="color:var(--success);font-weight:700">${fmt(v.lucro||0)}</td></tr>`).join('')}</tbody></table></div>`;
+  document.getElementById('d-ult-v').innerHTML=G.vendas.length===0?'<div class="empty-st" style="padding:16px"><i class="ti ti-shopping-cart-off"></i><p>Nenhuma venda ainda</p><button class="btn btn-out btn-sm" style="margin-top:6px" onclick="go(\'pdv\')"><i class="ti ti-arrow-right"></i> Ir para o PDV</button></div>':`<div class="tw"><table><thead><tr><th>Cliente</th><th>Total</th><th>Lucro</th></tr></thead><tbody>${G.vendas.slice(0,5).map(v=>`<tr><td>${esc(v.cliente_nome)}</td><td style="font-weight:700">${fmt(v.total)}</td><td style="color:var(--success);font-weight:700">${fmt(v.lucro||0)}</td></tr>`).join('')}</tbody></table></div>`;
   // OS abertas
   const openOS=G.os.filter(o=>o.status!=='Entregue').slice(0,5);
-  document.getElementById('d-ult-os').innerHTML=openOS.length===0?'<div class="empty-st" style="padding:16px"><i class="ti ti-tools"></i><p>Nenhuma OS</p></div>':`<div class="tw"><table><thead><tr><th>OS</th><th>Aparelho</th><th>Status</th></tr></thead><tbody>${openOS.map(o=>`<tr><td style="font-weight:700;color:var(--pri)">${esc(o.numero)}</td><td>${esc(o.aparelho)}</td><td><span class="tag ${OC[o.status]||'tag-gry'}" style="font-size:10px">${o.status}</span></td></tr>`).join('')}</tbody></table></div>`;
+  document.getElementById('d-ult-os').innerHTML=openOS.length===0?'<div class="empty-st" style="padding:16px"><i class="ti ti-tools"></i><p>Nenhuma OS aberta</p><button class="btn btn-out btn-sm" style="margin-top:6px" onclick="go(\'os\');setTimeout(()=>openModal(\'modal-os\'),200)"><i class="ti ti-plus"></i> Abrir OS</button></div>':`<div class="tw"><table><thead><tr><th>OS</th><th>Aparelho</th><th>Status</th></tr></thead><tbody>${openOS.map(o=>`<tr><td style="font-weight:700;color:var(--pri)">${esc(o.numero)}</td><td>${esc(o.aparelho)}</td><td><span class="tag ${OC[o.status]||'tag-gry'}" style="font-size:10px">${o.status}</span></td></tr>`).join('')}</tbody></table></div>`;
   // Gráfico 7 dias
   const labels=[],vals=[];
   for(let i=6;i>=0;i--){
@@ -19886,7 +20011,7 @@ function renderContratosCred(q = '') {
   );
   const cont = document.getElementById('contratos-grid'); if (!cont) return;
   cont.innerHTML = list.length === 0
-    ? '<div class="empty-st" style="grid-column:1/-1"><i class="ti ti-credit-card"></i><h3>Nenhum contrato</h3></div>'
+    ? '<div class="empty-st" style="grid-column:1/-1"><i class="ti ti-credit-card"></i><h3>Nenhum contrato ainda</h3><p style="font-size:12px">Os contratos que você gerar aparecem aqui.</p></div>'
     : list.map(c => {
       const pagas  = c.parcelas.filter(p => p.status === 'paga').length;
       const total  = c.parcelas.length;
@@ -20190,7 +20315,7 @@ function renderInadimplentes() {
   document.getElementById('inad-cob').textContent = cobEnviadas;
   const cont = document.getElementById('inadimplentes-list');
   cont.innerHTML = inadimplentes.length === 0
-    ? '<div class="empty-st"><i class="ti ti-check" style="opacity:.3"></i><h3>Nenhum inadimplente!</h3></div>'
+    ? '<div class="empty-st"><i class="ti ti-mood-happy" style="color:var(--success)"></i><h3>Nenhum inadimplente!</h3><p style="font-size:12px">Está tudo em dia por aqui. 👏</p></div>'
     : inadimplentes.map(c => {
       const parc = c.parcelas.filter(p=>p.status==='aberta'&&p.vencimento<hoje);
       const valAtrasado = parc.reduce((s,p)=>s+p.valor,0);
@@ -20419,7 +20544,7 @@ function gerarEmailCobTexto(c, vencidas, valAtrasado, emp, msg) {
 function renderHistoricoCobrancas() {
   const cont = document.getElementById('cobrancas-hist-list'); if (!cont) return;
   cont.innerHTML = G_COBRANCAS.length === 0
-    ? '<div class="empty-st"><i class="ti ti-send"></i><h3>Nenhuma cobrança enviada</h3></div>'
+    ? '<div class="empty-st"><i class="ti ti-send"></i><h3>Nenhuma cobrança enviada</h3><p style="font-size:12px">Quando você enviar uma cobrança, o histórico fica aqui.</p></div>'
     : G_COBRANCAS.map(cob => `<div class="cob-hist-row">
       <div class="cob-icon"><i class="ti ti-send"></i></div>
       <div style="flex:1">
@@ -27192,6 +27317,22 @@ html.ac-readable p,html.ac-readable li,html.ac-readable td,html.ac-readable labe
 .mh-cat>summary::-webkit-details-marker{display:none}
 .mh-art{padding:0 14px 13px;font-size:13px;color:#4a4470;line-height:1.6}
 .mh-art b{color:#191338}
+
+.ah-title{font-family:'Syne',sans-serif;font-weight:800;font-size:14px;margin-bottom:10px;display:flex;align-items:center;gap:7px;color:var(--txt)}
+.ah-title i{color:var(--pri)}
+.ah-list{display:flex;flex-direction:column;gap:9px}
+.ah-card{display:flex;align-items:center;gap:12px;background:rgba(127,92,255,.06);border:1px solid var(--border);border-left:4px solid var(--pri);border-radius:12px;padding:12px 14px;cursor:pointer;transition:transform .1s}
+.ah-card:active{transform:scale(.99)}
+.ah-urgente{border-left-color:#DC2626}
+.ah-atencao{border-left-color:#F59E0B}
+.ah-ic{width:38px;height:38px;border-radius:10px;background:rgba(91,63,232,.12);display:flex;align-items:center;justify-content:center;font-size:19px;color:var(--pri);flex-shrink:0}
+.ah-urgente .ah-ic{background:rgba(220,38,38,.12);color:#DC2626}
+.ah-atencao .ah-ic{background:rgba(245,158,11,.14);color:#F59E0B}
+.ah-tx{flex:1;min-width:0}
+.ah-t{font-weight:700;font-size:13.5px;color:var(--txt)}
+.ah-d{font-size:12px;color:var(--txt3)}
+.ah-cta{font-size:12px;font-weight:700;color:var(--pri);white-space:nowrap;display:flex;align-items:center;gap:2px}
+.ah-ok{background:rgba(22,163,74,.10);border:1px solid rgba(22,163,74,.25);color:#16a34a;border-radius:12px;padding:12px 14px;font-size:13px;font-weight:600;margin-bottom:9px;display:flex;align-items:center;gap:8px}
 </style>
 <div id="mh-ov" onclick="if(event.target===this)mhClose()">
   <div id="mh-modal">
@@ -27199,6 +27340,12 @@ html.ac-readable p,html.ac-readable li,html.ac-readable td,html.ac-readable labe
     <div class="mh-tabs"><button class="mh-tab on" id="mh-tab1" onclick="mhTab(1)">Comece por aqui</button><button class="mh-tab" id="mh-tab2" onclick="mhTab(2)">Central de Ajuda</button></div>
     <div class="mh-body" id="mh-b1"><div class="mh-prog"><div id="mh-prog"></div></div><div id="mh-steps"></div><div style="font-size:12px;color:#9a93b8;margin-top:6px">Você pode fechar e voltar quando quiser.</div></div>
     <div class="mh-body hidden" id="mh-b2">
+      <div style="position:relative;margin-bottom:10px">
+        <input id="mh-busca" type="search" placeholder="Buscar na ajuda..." oninput="if(window.mhFiltraAjuda)window.mhFiltraAjuda(this.value)" style="width:100%;padding:10px 12px 10px 34px;border:1.5px solid #e6e1f2;border-radius:10px;font-size:13px;font-family:inherit;color:#191338;background:#fff;box-sizing:border-box">
+        <i class="ti ti-search" style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:#9a93b8;font-size:15px"></i>
+      </div>
+      <div id="mh-busca-vazio" style="display:none;font-size:13px;color:#9a93b8;padding:8px 2px">Nada encontrado. Tente outra palavra.</div>
+      <div style="text-align:right;margin:-4px 0 6px"><button type="button" onclick="if(window.l2ReverDicas)window.l2ReverDicas()" style="background:none;border:none;color:#5B3FE8;font-size:12px;font-weight:600;cursor:pointer;padding:2px 0">↺ Rever dicas das telas</button></div>
       <details class="mh-cat"><summary>Comecando</summary><div class="mh-art"><b>Configurar a loja:</b> abra Configuracoes e preencha os dados. <b>Primeiro produto:</b> Estoque &rsaquo; Produtos. <b>Abrir caixa:</b> PDV &rsaquo; Abrir caixa. <b>Primeira venda:</b> adicione produtos e finalize.</div></details>
       <details class="mh-cat"><summary>PDV e vendas</summary><div class="mh-art">Busque o produto ou passe o codigo de barras para adicionar ao carrinho. Aplique desconto no resumo. Escolha dinheiro, Pix, cartao ou link e finalize. Para cancelar, use a acao de cancelar a venda.</div></details>
       <details class="mh-cat"><summary>Caixa</summary><div class="mh-art">O caixa precisa estar <b>aberto</b> para vender. Faca sangria/reforco pelo Financeiro e feche o caixa ao fim do dia para conferir os valores.</div></details>
@@ -27228,5 +27375,213 @@ html.ac-readable p,html.ac-readable li,html.ac-readable td,html.ac-readable labe
 })();
 </script>
 <!-- FIM CENTRAL DE AJUDA -->
+<!-- ═══ LOTE 2: AJUDA CONTEXTUAL POR TELA + MODO TREINAMENTO (autônomo) ═══ -->
+<style id="l2-style">
+#l2-fab{position:fixed;right:18px;bottom:18px;z-index:99980;width:46px;height:46px;border-radius:50%;background:#5B3FE8;color:#fff;border:none;box-shadow:0 8px 22px rgba(91,63,232,.4);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .12s}
+#l2-fab:active{transform:scale(.94)}
+#l2-pop{position:fixed;right:18px;bottom:74px;z-index:99981;width:300px;max-width:calc(100vw - 36px);background:#fff;color:#191338;border-radius:16px;box-shadow:0 18px 48px rgba(10,4,40,.28);font-family:'DM Sans',system-ui,Arial,sans-serif;overflow:hidden;display:none}
+#l2-pop.open{display:block}
+.l2-ph{display:flex;align-items:center;gap:8px;padding:13px 15px;background:#f6f3ff;border-bottom:1px solid #ece7fb}
+.l2-ph i{color:#5B3FE8}
+.l2-ph b{font-family:'Syne',sans-serif;font-size:14px;flex:1}
+.l2-ph .l2-x{background:none;border:none;font-size:20px;color:#9a93b8;cursor:pointer;line-height:1}
+.l2-pb{padding:13px 15px}
+.l2-dica{font-size:13px;line-height:1.55;color:#4a4470;margin-bottom:12px}
+.l2-btn{width:100%;border:none;border-radius:10px;padding:10px 12px;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:8px;justify-content:center;margin-top:8px}
+.l2-btn.pri{background:#5B3FE8;color:#fff}
+.l2-btn.out{background:#f1eefb;color:#5B3FE8}
+#l2-banner{position:fixed;left:50%;transform:translateX(-50%);bottom:16px;z-index:99999;background:#0f7b3d;color:#fff;border-radius:99px;padding:9px 16px;font:600 13px/1.2 'DM Sans',system-ui,Arial;box-shadow:0 10px 30px rgba(4,60,25,.4);display:none;align-items:center;gap:12px;max-width:calc(100vw - 24px)}
+#l2-banner.on{display:flex}
+#l2-banner button{background:rgba(255,255,255,.22);border:none;color:#fff;font-weight:700;border-radius:99px;padding:5px 12px;cursor:pointer;font-size:12px;white-space:nowrap}
+@media (max-width:768px){#l2-fab{display:none}}
+</style>
+<button id="l2-fab" title="Ajuda desta tela" aria-label="Ajuda desta tela" onclick="l2TogglePop()">?</button>
+<div id="l2-pop" role="dialog" aria-label="Ajuda da tela atual">
+  <div class="l2-ph"><i class="ti ti-info-circle"></i><b id="l2-pop-titulo">Ajuda</b><button class="l2-x" aria-label="Fechar" onclick="l2ClosePop()">&times;</button></div>
+  <div class="l2-pb">
+    <div class="l2-dica" id="l2-pop-dica">—</div>
+    <button class="l2-btn out" onclick="l2ClosePop();if(typeof mhOpen==='function')mhOpen()"><i class="ti ti-book"></i>Abrir Central de Ajuda</button>
+    <button class="l2-btn pri" id="l2-treino-btn" onclick="l2ToggleTreino()"><i class="ti ti-school"></i>Ativar Modo Treinamento</button>
+  </div>
+</div>
+<div id="l2-banner"><span>🎓 Modo Treinamento — dados de exemplo. Nada é salvo de verdade.</span><button onclick="l2SairTreino()">Sair</button></div>
+<script>
+(function(){
+  // Dica curta por tela (rota = document.body.dataset.route, definida por go())
+  window.AJUDA_TELA = {
+    dashboard:'Aqui você vê o resumo do dia: faturamento, lucro, OS abertas, estoque e alertas. Clique nos cards para ir direto ao módulo.',
+    pdv:'Para vender, o caixa precisa estar aberto. Busque o produto ou passe o código de barras, escolha a forma de pagamento e finalize.',
+    orcamentos:'Monte um orçamento para o cliente e depois transforme em venda quando ele aprovar.',
+    crediario:'Controle as vendas a prazo. Fique de olho nas parcelas vencidas destacadas em vermelho.',
+    devolucoes:'Registre a devolução de um produto vendido para acertar estoque e financeiro.',
+    'hist-vendas':'Consulte todas as vendas feitas. Use os filtros por período e vendedor.',
+    simulador:'Calcule taxas e parcelas de cartão antes de fechar a venda.',
+    os:'Abra a OS com cliente, aparelho e defeito. Vá atualizando o status até "Ag. Pagamento" e depois "Entregue".',
+    'os-hist':'Veja as OS já finalizadas e reimprima documentos quando precisar.',
+    diagnostico:'Registre o diagnóstico técnico do aparelho.',
+    garantias:'Acompanhe as garantias ativas e o prazo de cada uma.',
+    contratos:'Modelos de termos e contratos usados nas OS.',
+    produtos:'Cadastre produtos com preço, custo e estoque. O sistema avisa quando o estoque fica baixo.',
+    estoque:'Ajuste quantidades pelas movimentações. Toda entrada e saída fica registrada.',
+    fornecedores:'Cadastre seus fornecedores para vincular às compras e reposições.',
+    reposicao:'Veja o que está acabando e gere a lista de reposição para comprar.',
+    clientes:'Cadastre clientes para vincular vendas e OS, ver histórico e falar no WhatsApp.',
+    crm:'Acompanhe tarefas, aniversariantes e clientes para dar retorno.',
+    troca:'Avalie um aparelho usado na troca e envie para estoque ou abra uma OS.',
+    agenda:'Organize entregas e compromissos por data.',
+    financeiro:'Controle contas a pagar e a receber, fluxo de caixa e vencimentos.',
+    caixas:'Abra, feche e confira os caixas. Faça sangria e reforço quando precisar.',
+    comissoes:'Acompanhe as comissões por vendedor e por período.',
+    catalogo:'Publique seus produtos num catálogo online para o cliente ver.',
+    relatorios:'Filtre por período e exporte. Bons relatórios mostram lucro, produtos parados e vendas por vendedor.',
+    inteligencia:'Sugestões e alertas automáticos do sistema para ajudar a decidir.',
+    usuarios:'Adicione a equipe e defina quem é dono, gerente, vendedor ou técnico.',
+    permissoes:'Escolha o que cada perfil pode ver e fazer.',
+    aparencia:'Personalize cores e logo do sistema.',
+    configuracoes:'Ajuste dados da loja, formas de pagamento, integrações e fiscal.'
+  };
+  function rotaAtual(){ return (document.body && document.body.dataset && document.body.dataset.route) || 'dashboard'; }
+  var PTsafe = (typeof PT!=='undefined') ? PT : {};
+
+  window.l2TogglePop=function(){ var p=document.getElementById('l2-pop'); if(!p)return; if(p.classList.contains('open')){l2ClosePop();return;} l2AbrePop(); };
+  window.l2AbrePop=function(){
+    var p=document.getElementById('l2-pop'); if(!p)return;
+    var r=rotaAtual();
+    var tit=document.getElementById('l2-pop-titulo'); if(tit) tit.textContent = 'Ajuda: '+(PTsafe[r]||'esta tela');
+    var d=document.getElementById('l2-pop-dica'); if(d) d.textContent = (window.AJUDA_TELA[r]||'Use o botão abaixo para abrir a Central de Ajuda completa.');
+    p.classList.add('open');
+  };
+  window.l2ClosePop=function(){ var p=document.getElementById('l2-pop'); if(p)p.classList.remove('open'); };
+
+  // ── MODO TREINAMENTO ────────────────────────────────────────────────
+  var TREINO=false, avisou=false;
+  function aviso(){ if(!avisou && typeof notify==='function'){ avisou=true; notify('Modo treinamento: essa ação não é salva de verdade.','info',3000); setTimeout(function(){avisou=false;},4000); } }
+  window.__treinoAviso=aviso;
+
+  function demoData(){
+    var hoje=new Date();
+    function d(n){ var x=new Date(); x.setDate(x.getDate()-n); return x.toISOString(); }
+    function dia(n){ var x=new Date(); x.setDate(x.getDate()+n); return x.toISOString().split('T')[0]; }
+    return {
+      produtos:[
+        {id:'demo-p1',nome:'Película 3D (exemplo)',preco:25,custo:8,estoque:40,estoque_minimo:10,categoria:'Acessórios'},
+        {id:'demo-p2',nome:'Capa Silicone (exemplo)',preco:35,custo:12,estoque:6,estoque_minimo:8,categoria:'Acessórios'},
+        {id:'demo-p3',nome:'Cabo USB-C (exemplo)',preco:29,custo:9,estoque:0,estoque_minimo:5,categoria:'Acessórios'},
+        {id:'demo-p4',nome:'Fone Bluetooth (exemplo)',preco:120,custo:70,estoque:15,estoque_minimo:4,categoria:'Áudio'},
+        {id:'demo-p5',nome:'Carregador 20W (exemplo)',preco:60,custo:28,estoque:22,estoque_minimo:6,categoria:'Carregadores'}
+      ],
+      clientes:[
+        {id:'demo-c1',nome:'Maria Souza (exemplo)',telefone:'75999990001'},
+        {id:'demo-c2',nome:'João Pereira (exemplo)',telefone:'75999990002'},
+        {id:'demo-c3',nome:'Ana Lima (exemplo)',telefone:'75999990003'}
+      ],
+      vendas:[
+        {id:'demo-v1',cliente_nome:'Maria Souza (exemplo)',total:85,lucro:40,status:'concluida',criado_em:d(0),itens:[{nome:'Película 3D (exemplo)',qty:2},{nome:'Capa Silicone (exemplo)',qty:1}]},
+        {id:'demo-v2',cliente_nome:'João Pereira (exemplo)',total:120,lucro:50,status:'concluida',criado_em:d(0),itens:[{nome:'Fone Bluetooth (exemplo)',qty:1}]},
+        {id:'demo-v3',cliente_nome:'Ana Lima (exemplo)',total:60,lucro:32,status:'concluida',criado_em:d(1),itens:[{nome:'Carregador 20W (exemplo)',qty:1}]},
+        {id:'demo-v4',cliente_nome:'Consumidor Final',total:29,lucro:20,status:'concluida',criado_em:d(3),itens:[{nome:'Cabo USB-C (exemplo)',qty:1}]},
+        {id:'demo-v5',cliente_nome:'Maria Souza (exemplo)',total:50,lucro:26,status:'concluida',criado_em:d(6),itens:[{nome:'Película 3D (exemplo)',qty:2}]}
+      ],
+      os:[
+        {id:'demo-o1',numero:'OS-EX01',cliente_nome:'João Pereira (exemplo)',aparelho:'iPhone 11 (exemplo)',status:'Em Reparo',total:180,prazo:dia(2),timeline:[]},
+        {id:'demo-o2',numero:'OS-EX02',cliente_nome:'Ana Lima (exemplo)',aparelho:'Galaxy S20 (exemplo)',status:'Ag. Pagamento',total:250,prazo:dia(-1),timeline:[]},
+        {id:'demo-o3',numero:'OS-EX03',cliente_nome:'Maria Souza (exemplo)',aparelho:'Moto G (exemplo)',status:'Pronto',total:90,prazo:dia(1),timeline:[]}
+      ],
+      receber:[
+        {id:'demo-r1',cliente_nome:'João Pereira (exemplo)',valor_original:150,valor:150,status:'aberto',data_vencimento:dia(-2)},
+        {id:'demo-r2',cliente_nome:'Ana Lima (exemplo)',valor_original:80,valor:80,status:'aberto',data_vencimento:dia(5)}
+      ]
+    };
+  }
+
+  var snap=null;
+  window.l2ToggleTreino=function(){ if(TREINO) l2SairTreino(); else l2EntrarTreino(); };
+
+  window.l2EntrarTreino=function(){
+    if(TREINO) return;
+    if(typeof G==='undefined'){ if(typeof notify==='function') notify('Aguarde o sistema carregar para usar o treinamento.','warn'); return; }
+    // 1) Bloqueia gravações no banco (reversível ao recarregar a página)
+    try{
+      if(typeof db!=='undefined' && db && typeof db.from==='function'){
+        if(!db._fromReal) db._fromReal = db.from.bind(db);
+        db.from = function(table){
+          var real = db._fromReal(table);
+          return new Proxy(real, { get:function(t,prop){
+            if(prop==='insert'||prop==='update'||prop==='delete'||prop==='upsert'){
+              return function(){ aviso(); return _stub(); };
+            }
+            var v=t[prop];
+            return (typeof v==='function') ? v.bind(t) : v;
+          }});
+        };
+      }
+    }catch(_e){ console.error('[treino guard]',_e); }
+    // 2) Substitui dados reais por dados de exemplo (guarda os reais)
+    var dd=demoData();
+    snap={};
+    ['produtos','clientes','vendas','os','receber'].forEach(function(k){ snap[k]=G[k]; G[k]=dd[k]; });
+    TREINO=true; G._treino=true;
+    // 3) Banner + botão + re-render
+    var b=document.getElementById('l2-banner'); if(b)b.classList.add('on');
+    var tb=document.getElementById('l2-treino-btn'); if(tb){ tb.innerHTML='<i class="ti ti-logout"></i>Sair do Modo Treinamento'; }
+    l2ClosePop();
+    try{ if(typeof go==='function') go('dashboard'); else if(typeof renderDashboard==='function') renderDashboard(); }catch(_e){}
+    if(typeof notify==='function') notify('Modo Treinamento ativado. Explore à vontade — nada é salvo.','success',3500);
+  };
+
+  window.l2SairTreino=function(){
+    // Restaura o banco e recarrega para voltar aos dados reais com segurança
+    try{ if(typeof db!=='undefined' && db && db._fromReal){ db.from = db._fromReal; } }catch(_e){}
+    TREINO=false;
+    try{ if(typeof G!=='undefined'){ G._treino=false; if(snap){ ['produtos','clientes','vendas','os','receber'].forEach(function(k){ if(snap[k]!==undefined) G[k]=snap[k]; }); } } }catch(_e){}
+    try{ location.reload(); }catch(_e){ var b=document.getElementById('l2-banner'); if(b)b.classList.remove('on'); }
+  };
+
+  function _stub(){
+    var s={};
+    var self=function(){ return s; };
+    ['insert','update','delete','upsert','select','order','eq','neq','gt','gte','lt','lte','like','ilike','in','is','range','limit','single','maybeSingle','filter','match','or','not'].forEach(function(m){ s[m]=self; });
+    s.then=function(res){ res({data:[],error:null}); return Promise.resolve({data:[],error:null}); };
+    s.catch=function(){ return s; };
+    return s;
+  }
+})();
+</script>
+<script>
+(function(){
+  // Busca na Central de Ajuda (filtra os cartões por texto, ignorando acentos)
+  function norm(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+  window.mhFiltraAjuda=function(termo){
+    var b2=document.getElementById('mh-b2'); if(!b2) return;
+    var t=norm(termo).trim();
+    var cats=b2.querySelectorAll('details.mh-cat'); var achou=0;
+    cats.forEach(function(d){
+      var vis = !t || norm(d.textContent).indexOf(t)>=0;
+      d.style.display = vis ? '' : 'none';
+      d.open = !!t && vis;
+      if(vis) achou++;
+    });
+    var vazio=document.getElementById('mh-busca-vazio'); if(vazio) vazio.style.display=(t && achou===0)?'':'none';
+  };
+  // Dica automática (uma vez por tela) nas telas mais importantes p/ funcionário novo
+  var HINT_KEY='misu_dica_tela';
+  var TELAS_HINT={pdv:1,os:1,estoque:1,produtos:1,financeiro:1,clientes:1};
+  function autoDica(page){
+    if(!page || !TELAS_HINT[page]) return;
+    var seen={}; try{seen=JSON.parse(localStorage.getItem(HINT_KEY)||'{}')}catch(_){}
+    if(seen[page]) return;
+    var dica=(window.AJUDA_TELA||{})[page]; if(!dica) return;
+    seen[page]=1; try{localStorage.setItem(HINT_KEY,JSON.stringify(seen))}catch(_){}
+    setTimeout(function(){ if(typeof notify==='function') notify('💡 Dica: '+dica,'info',6500); }, 800);
+  }
+  try{
+    var mo=new MutationObserver(function(muts){ muts.forEach(function(m){ if(m.attributeName==='data-route') autoDica(document.body.dataset.route); }); });
+    if(document.body) mo.observe(document.body,{attributes:true,attributeFilter:['data-route']});
+  }catch(_e){}
+  // Rever as dicas automáticas de tela (reexibe as que já foram vistas)
+  window.l2ReverDicas=function(){ try{ localStorage.removeItem('misu_dica_tela'); }catch(_){} if(typeof notify==='function') notify('Pronto! As dicas de cada tela vão aparecer de novo quando você visitá-las.','success',4000); };
+})();
+</script>
+<!-- ═══ FIM LOTE 2 ═══ -->
 </body>
 </html>
