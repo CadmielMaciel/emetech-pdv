@@ -2591,7 +2591,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
             </div>
             <div class="pdv-tb">
               <div class="bc-wrap"><i class="ti ti-barcode"></i><input type="text" id="bc-field" placeholder="qtd*codigo ou código de barras [Enter]" onkeydown="handleBC(event)"></div>
-              <div class="ps-wrap"><i class="ti ti-search"></i><input type="text" id="ps-field" placeholder="Buscar produto…" oninput="renderPDVGrid()"></div>
+              <div class="ps-wrap"><i class="ti ti-search"></i><input type="text" id="ps-field" placeholder="Busque por nome, SKU, código ou escaneie" oninput="renderPDVGrid()"></div>
               <button class="btn btn-out btn-sm" onclick="abrirScannerPDV()" title="Escanear etiqueta QR ou código de barras pela câmera (F7)" style="flex-shrink:0"><i class="ti ti-scan"></i> Scanner</button>
             </div>
             <div style="font-size:11px;color:var(--txt3)">💡 <code style="background:var(--surface);border:1px solid var(--border);padding:1px 4px;border-radius:3px">2*SKU-001</code> adiciona 2 unidades · <code style="background:var(--surface);border:1px solid var(--border);padding:1px 4px;border-radius:3px">Esc</code> limpa busca</div>
@@ -2601,7 +2601,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
             <div class="cart-hdr">
               <div style="display:flex;align-items:center;justify-content:space-between">
                 <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13.5px;color:var(--txt);display:flex;align-items:center;gap:6px"><i class="ti ti-shopping-cart" style="color:var(--pri)"></i>Carrinho <span id="cart-badge" style="background:var(--pri);color:#fff;font-size:9.5px;font-weight:700;border-radius:99px;padding:1px 6px;display:none">0</span></div>
-                <button class="btn-ghost" onclick="clearCart()"><i class="ti ti-trash" style="color:var(--danger)"></i></button>
+                <button class="btn-ghost" onclick="clearCartConfirm()" title="Limpar carrinho"><i class="ti ti-trash" style="color:var(--danger)"></i></button>
               </div>
               <div style="margin-top:7px;display:flex;align-items:center;gap:7px">
                 <i class="ti ti-user" style="color:var(--txt3);font-size:14px"></i>
@@ -2675,6 +2675,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
               <button class="pb" id="btn-pay-crediario" onclick="irParaCrediarioPDV()" style="width:100%;margin-top:6px;background:linear-gradient(135deg,#3D8BFF,#1E5EFF);color:#fff;border:none;justify-content:center">
                 <i class="ti ti-file-invoice"></i> Crediário (parcelar)
               </button>
+              <div id="pdv-falta"></div>
               <button class="fin-btn" id="fin-btn" onclick="finalizeSale()" disabled><i class="ti ti-check"></i>Finalizar Venda</button>
               <div id="qr-cobranca-area" style="display:none;margin-top:6px"></div>
             </div>
@@ -2988,6 +2989,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
                 <div class="fg"><label class="lbl">Valor R$</label><input type="number" id="os-val" placeholder="0,00" step="0.01"></div>
                 <div class="fg"><label class="lbl">Garantia (dias)</label><input type="number" id="os-gar" value="90"></div>
                 <div class="fg"><label class="lbl">Prazo</label><input type="date" id="os-prazo"></div>
+                <div class="fg"><label class="lbl">Prioridade</label><select id="os-prioridade"><option value="Baixa">Baixa</option><option value="Normal" selected>Normal</option><option value="Alta">Alta</option><option value="Urgente">Urgente</option></select></div>
               </div>
               <div class="g2">
                 <div class="fg" style="position:relative">
@@ -3009,7 +3011,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
           </div>
           <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;display:flex;flex-direction:column">
             <div style="padding:11px 13px;border-bottom:1px solid var(--border);background:var(--surface)">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px"><div class="card-title">Abertas <span id="os-count" style="font-size:11.5px;font-weight:400;color:var(--txt3)"></span></div></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px"><div class="card-title">Abertas <span id="os-count" style="font-size:11.5px;font-weight:400;color:var(--txt3)"></span></div><div id="os-view-toggle" style="display:flex;gap:2px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:2px"><button id="os-vw-lista" onclick="osSetView('lista')" style="border:none;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:600;cursor:pointer;background:var(--pri);color:#fff"><i class="ti ti-list" style="font-size:12px"></i> Lista</button><button id="os-vw-esteira" onclick="osSetView('esteira')" style="border:none;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:var(--txt2)"><i class="ti ti-layout-kanban" style="font-size:12px"></i> Esteira</button></div></div>
               <div class="ig"><i class="ti ti-search"></i><input type="text" placeholder="Buscar..." style="font-size:12.5px" oninput="renderOSList(this.value)"></div>
             </div>
             <div style="overflow-y:auto;flex:1" id="os-list"></div>
@@ -5229,6 +5231,8 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
   <div class="modal-footer" style="justify-content:center;margin-top:18px;flex-wrap:wrap">
     <button class="btn btn-pri" onclick="emitirNFCeVenda()"><i class="ti ti-file-invoice"></i>Emitir NFC-e</button>
     <button class="btn btn-out" onclick="gerarContratoVenda()"><i class="ti ti-file-certificate"></i>Gerar contrato</button>
+    <button class="btn btn-out" onclick="reimprimirUltimaVenda()"><i class="ti ti-printer"></i>Imprimir comprovante</button>
+    <button class="btn btn-out" onclick="closeModal('modal-venda-ok');go('hist-vendas')"><i class="ti ti-receipt"></i>Ver no histórico</button>
     <button class="btn btn-out" onclick="closeModal('modal-venda-ok')"><i class="ti ti-plus"></i>Nova Venda</button>
   </div>
 </div></div>
@@ -8965,7 +8969,7 @@ function _pdvKeyHandler(e){
       // Só limpa carrinho se não estiver digitando em um input
       if(document.activeElement?.tagName!=='INPUT'&&document.activeElement?.tagName!=='TEXTAREA'){
         e.preventDefault();
-        if(G.cart.length>0) clearCart();
+        if(G.cart.length>0) clearCartConfirm();
       }
       break;
     case 'Escape':
@@ -10407,7 +10411,7 @@ function handleBC(e){
   const p=parseBC(raw);if(!p){e.target.value='';return;}
   const {qty,code}=p;
   const prod=G.produtos.find(x=>x.barcode===code||x.sku===code||(x.sku||'').toLowerCase()===code.toLowerCase());
-  if(!prod){notify(`Produto não encontrado: "${code}"`,'error');e.target.value='';return;}
+  if(!prod){notify(`Produto não encontrado: "${code}". Confira o código ou cadastre o produto.`,'error',4000);e.target.value='';return;}
   if(!prod.estoque_infinito&&prod.estoque===0){notify(`${prod.nome} sem estoque!`,'warn');e.target.value='';return;}
   for(let i=0;i<qty;i++)addToCart(prod.id);
   notify(`${qty}x ${prod.nome} adicionado(s)`,'success',1400);
@@ -10472,6 +10476,48 @@ function atualizarDisplayUltimoItem(p){
   box.style.display='flex';
 }
 
+// ═══ FATIA 3 — Validação central da venda (o que falta para finalizar) ═══
+// Só LEITURA do estado atual; não altera finalizeSale nem cálculos. Retorna {ok, erros, avisos}.
+function validarVenda(){
+  var erros=[], avisos=[];
+  try{
+    if(!G.caixaAtual) erros.push('Abra o caixa para vender');
+    if(!G.cart || G.cart.length===0){ erros.push('Adicione pelo menos um produto'); }
+    else{
+      var sub=G.cart.reduce(function(s,i){return s+i.preco*i.qty;},0);
+      var desc=parseFloat((document.getElementById('c-desc')||{}).value)||0;
+      var acr=parseFloat((document.getElementById('c-acr')||{}).value)||0;
+      var trocaVal=G.trocaPDV?(G.trocaPDV.valor_oferecido||0):0;
+      var total=Math.max(0, sub*(1-desc/100)+acr - trocaVal);
+      var confirmados=G.pagamentosPDV||[];
+      if(confirmados.length>0){
+        var soma=confirmados.reduce(function(s,p){return s+(p.valor||0);},0);
+        if(soma+0.01<total) erros.push('Faltam '+fmt(total-soma)+' para cobrir o total');
+      }
+      if(desc>=30) avisos.push('Desconto alto ('+desc+'%) — confira antes de finalizar');
+    }
+  }catch(_e){}
+  return {ok: erros.length===0, erros:erros, avisos:avisos};
+}
+window.validarVenda=validarVenda;
+function renderPdvFalta(){
+  var el=document.getElementById('pdv-falta'); if(!el) return;
+  if(!G.cart || G.cart.length===0){ el.innerHTML=''; return; } // carrinho vazio já tem seu próprio estado
+  var v=validarVenda(); var html='';
+  if(v.erros.length){
+    html+='<div style="background:rgba(239,68,68,.06);border:1.5px solid rgba(239,68,68,.18);border-radius:9px;padding:8px 11px;margin-bottom:6px">'
+      +'<div style="font-size:10.5px;font-weight:700;color:var(--danger);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Falta para finalizar</div>'
+      +v.erros.map(function(e){return '<div style="font-size:12.5px;color:var(--txt2);display:flex;align-items:center;gap:6px;padding:1px 0"><i class="ti ti-point-filled" style="color:var(--danger);font-size:10px"></i>'+e+'</div>';}).join('')
+      +'</div>';
+  }
+  if(v.avisos.length){
+    html+=v.avisos.map(function(a){return '<div style="background:rgba(245,158,11,.08);border:1.5px solid rgba(245,158,11,.2);border-radius:9px;padding:7px 11px;margin-bottom:6px;font-size:12.5px;color:var(--txt2);display:flex;align-items:center;gap:7px"><i class="ti ti-alert-triangle" style="color:var(--warn);font-size:13px;flex-shrink:0"></i>'+a+'</div>';}).join('');
+  }
+  if(v.ok && !v.avisos.length){
+    html='<div style="background:rgba(16,185,129,.07);border:1.5px solid rgba(16,185,129,.2);border-radius:9px;padding:7px 11px;margin-bottom:6px;font-size:12.5px;color:var(--success);font-weight:600;display:flex;align-items:center;gap:6px"><i class="ti ti-circle-check"></i>Pronto para finalizar</div>';
+  }
+  el.innerHTML=html;
+}
 function renderCart(){
   const cont=document.getElementById('cart-items');
   const badge=document.getElementById('cart-badge');
@@ -10535,11 +10581,19 @@ function renderCart(){
   }
   // Atualiza lista de pagamentos confirmados e "falta pagar"
   renderPagamentosPDV();
+  if(typeof renderPdvFalta==='function') renderPdvFalta();
 }
 
 function cQty(id,d){const p=G.produtos.find(x=>x.id===id);const ci=G.cart.find(x=>x.id===id);if(!ci)return;ci.qty+=d;if(!ci.inf&&p&&ci.qty>p.estoque){ci.qty=p.estoque;notify('Limite!','warn');return;}if(ci.qty<1)G.cart=G.cart.filter(x=>x.id!==id);renderCart();salvarCarrinhoSessao();}
 function rmCart(id){G.cart=G.cart.filter(x=>x.id!==id);renderCart();salvarCarrinhoSessao();}
 function clearCart(){G.cart=[];G.trocaPDV=null;G.pagamentosPDV=[];G._trocoConfirmado=0;document.getElementById('c-desc').value=0;document.getElementById('c-acr').value=0;var r=document.getElementById('c-recebido');if(r)r.value='';var g=document.getElementById('c-garantia');if(g)g.value=0;var li=document.getElementById('pdv-last-item');if(li)li.style.display='none';renderCart();renderPagamentosPDV();limparEstadoSessao();resetPainelPagamento();}
+// Fatia 3 (prevenção de erro): confirma antes de esvaziar o carrinho (só quando há itens)
+function clearCartConfirm(){
+  if(!G.cart || G.cart.length===0){ clearCart(); return; }
+  var n=G.cart.length;
+  confirmAct('Limpar carrinho','Isso remove '+n+' item(ns) do carrinho. Deseja continuar?',function(){ clearCart(); notify('Carrinho limpo.','info',1800); });
+}
+window.clearCartConfirm=clearCartConfirm;
 
 // Reseta completamente o painel de pagamento ao começar uma nova venda, garantindo que
 // nenhuma seleção (forma do restante, valores confirmados, maquininha) "vaze" de uma
@@ -12668,7 +12722,7 @@ function renderReceber(q=''){
   const fs=document.getElementById('rec-filter')?.value||'';
   let list=G.receber.filter(r=>(!f||r.descricao.toLowerCase().includes(f)||(r.cliente_nome||'').toLowerCase().includes(f))&&(!fs||r.status===fs||(fs==='vencido'&&r.status!=='pago'&&new Date(r.data_vencimento+'T12:00')<new Date())));
   const total=list.filter(r=>r.status!=='pago').reduce((s,r)=>s+(r.valor_original||0),0);
-  document.getElementById('rec-table').innerHTML=list.length===0?'<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--txt3)">Nenhum lançamento</td></tr>':list.map(r=>{
+  document.getElementById('rec-table').innerHTML=list.length===0?((f||fs)?'<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--txt3)">Nenhum lançamento encontrado com esse filtro.</td></tr>':'<tr><td colspan="7" style="text-align:center;padding:22px;color:var(--txt3)">Nenhuma conta a receber cadastrada ainda.<br><button class="btn btn-out btn-sm" style="margin-top:10px" onclick="openModal(\'modal-lanc-rec\')"><i class="ti ti-plus"></i> Lançar conta</button></td></tr>'):list.map(r=>{
     const [cls,lbl]=vencStatus(r.data_vencimento,r.status);
     return`<tr>
       <td><div style="font-weight:600;font-size:13px">${r.descricao}</div>${r.parcela_total>1?`<div style="font-size:10.5px;color:var(--txt3)">Parcela ${r.parcela_numero}/${r.parcela_total}</div>`:''}  </td>
@@ -12686,7 +12740,7 @@ function renderPagar(q=''){
   const f=q.toLowerCase();
   const fs=document.getElementById('pag-filter')?.value||'';
   let list=G.pagar.filter(p=>(!f||p.descricao.toLowerCase().includes(f))&&(!fs||p.status===fs||(fs==='vencido'&&p.status!=='pago'&&new Date(p.data_vencimento+'T12:00')<new Date())));
-  document.getElementById('pag-table').innerHTML=list.length===0?'<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--txt3)">Nenhum lançamento</td></tr>':list.map(p=>{
+  document.getElementById('pag-table').innerHTML=list.length===0?((f||fs)?'<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--txt3)">Nenhum lançamento encontrado com esse filtro.</td></tr>':'<tr><td colspan="7" style="text-align:center;padding:22px;color:var(--txt3)">Nenhuma conta a pagar cadastrada ainda.<br><button class="btn btn-out btn-sm" style="margin-top:10px" onclick="openModal(\'modal-lanc-pag\')"><i class="ti ti-plus"></i> Lançar conta</button></td></tr>'):list.map(p=>{
     const [cls,lbl]=vencStatus(p.data_vencimento,p.status);
     return`<tr>
       <td style="font-weight:600;font-size:13px">${esc(p.descricao)}
@@ -13310,7 +13364,8 @@ async function createOS(){
   if(_bloqueadoSuporteLeitura())return;
   const ap=document.getElementById('os-ap').value.trim();
   const def=document.getElementById('os-def').value.trim();
-  if(!ap||!def){notify('Aparelho e defeito obrigatórios!','error');return;}
+  if(!ap){ notify('Informe o aparelho para abrir a OS.','warn'); var _a=document.getElementById('os-ap'); if(_a)_a.focus(); return; }
+  if(!def){ notify('Descreva o defeito relatado para abrir a OS.','warn'); var _d=document.getElementById('os-def'); if(_d)_d.focus(); return; }
   const cliSel=document.getElementById('os-cli');
   const tecSel=document.getElementById('os-tec');
   const num='OS-'+pad(G.osCounter++);
@@ -13332,7 +13387,7 @@ async function createOS(){
     token_publico:(crypto.randomUUID()+crypto.randomUUID()).replace(/-/g,''),
     garantia_produto:document.getElementById('os-garantia-produto')?.value?.trim()||null,
     garantia_termo_id:document.getElementById('os-garantia-termo')?.value||null};
-    const payload={...base, checklist_entrada};
+    const payload={...base, checklist_entrada, prioridade:(document.getElementById('os-prioridade')?document.getElementById('os-prioridade').value:'Normal')||'Normal'};
     ({data,error}=await db.from('ordens_servico').insert(payload).select().single());
     // coluna checklist_entrada ainda não existe (migração S01 não rodada)
     if(error && /checklist_entrada|token_publico|column|schema/i.test(error.message||'')){
@@ -13396,7 +13451,102 @@ function popOSChecklist(){
   }
 }
 
+// ═══ FATIA 4 — indicador de prazo/atraso da OS (lê os dois campos existentes: prazo | prazo_entrega) ═══
+function _osPrazoBadge(o){
+  try{
+    var raw=o.prazo||o.prazo_entrega; if(!raw) return '';
+    if(o.status==='Entregue'||o.status==='Cancelada') return '';
+    var pz=new Date(String(raw).length<=10 ? raw+'T00:00:00' : raw); if(isNaN(pz)) return '';
+    pz.setHours(0,0,0,0);
+    var hoje=new Date(); hoje.setHours(0,0,0,0);
+    var dias=Math.round((pz-hoje)/86400000), inner;
+    if(dias<0) inner='<span style="font-weight:700;color:var(--danger)"><i class="ti ti-alert-triangle" style="font-size:12px"></i> Atrasada '+Math.abs(dias)+'d</span>';
+    else if(dias===0) inner='<span style="font-weight:700;color:var(--warn)"><i class="ti ti-clock" style="font-size:12px"></i> Vence hoje</span>';
+    else if(dias===1) inner='<span style="font-weight:600;color:var(--warn)">Vence amanhã</span>';
+    else if(dias<=3) inner='<span style="color:var(--txt3)">Prazo em '+dias+' dias</span>';
+    else inner='<span style="color:var(--txt3)">Prazo: '+String(pz.getDate()).padStart(2,"0")+"/"+String(pz.getMonth()+1).padStart(2,"0")+'</span>';
+    return '<div style="font-size:10.5px;margin:3px 0 0">'+inner+'</div>';
+  }catch(_){ return ''; }
+}
+// Prazo normalizado (só a data) lendo os dois campos; e teste de atraso (ignora Entregue/Cancelada)
+function _osPrazoStr(o){ var p=o.prazo||o.prazo_entrega; return p?String(p).slice(0,10):''; }
+function _osAtrasada(o, hojeStr){ if(!o||o.status==='Entregue'||o.status==='Cancelada') return false; var p=_osPrazoStr(o); return !!p && p<hojeStr; }
+// OS parada = dias desde a última atualização (fallback criado_em). Ignora Entregue/Cancelada.
+function _osDiasParado(o){ try{ if(!o||o.status==='Entregue'||o.status==='Cancelada') return 0; var raw=o.atualizado_em||o.updated_at||o.criado_em; if(!raw) return 0; var d=new Date(raw); if(isNaN(d)) return 0; return Math.floor((new Date()-d)/86400000); }catch(_){ return 0; } }
+function _osParadaBadge(o){ try{ var dias=_osDiasParado(o); if(dias<3) return ''; var cor=dias>=7?'var(--danger)':(dias>=4?'#c2410c':'var(--warn)'); var txt=dias>=4?('Parada há '+dias+' dias'):('Sem atualização há '+dias+' dias'); return '<div style="font-size:10.5px;margin:3px 0 0;font-weight:600;color:'+cor+'"><i class="ti ti-player-pause" style="font-size:11px"></i> '+txt+'</div>'; }catch(_){ return ''; } }
+// ═══ FATIA 4 — Esteira / Kanban de OS por status (visão aditiva; a lista continua) ═══
+function osSetView(v){
+  G._osView=v;
+  var bl=document.getElementById('os-vw-lista'), be=document.getElementById('os-vw-esteira');
+  function st(btn,on){ if(!btn)return; btn.style.background=on?'var(--pri)':'transparent'; btn.style.color=on?'#fff':'var(--txt2)'; }
+  st(bl, v!=='esteira'); st(be, v==='esteira');
+  var inp=document.querySelector('#os-view-toggle'); // re-render mantendo a busca atual, se houver
+  renderOSList((window._osBusca||''));
+}
+// Próxima ação sugerida por status (texto-guia; não é botão) e badge de garantia
+var OS_PROX={'Aguardando':'Fazer diagnóstico','Em Análise':'Concluir diagnóstico e enviar orçamento','Em Reparo':'Concluir o reparo','Aguardando Peça':'Registrar/aguardar a peça','Pronto':'Enviar para pagamento (cobrar no caixa)','Ag. Pagamento':'Receber pagamento no caixa'};
+function _osProxBadge(o){ var a=(o&&OS_PROX[o.status])||''; if(!a) return ''; return '<div style="font-size:10.5px;margin:4px 0 0;color:var(--pri);font-weight:600;display:flex;align-items:center;gap:4px"><i class="ti ti-arrow-right" style="font-size:11px"></i> '+a+'</div>'; }
+function _osGarantiaBadge(o){ if(!o||!o.usa_garantia) return ''; return '<span style="display:inline-flex;align-items:center;gap:3px;font-size:9.5px;font-weight:700;color:var(--success);background:rgba(16,185,129,.1);border-radius:99px;padding:1px 7px;margin-top:4px"><i class="ti ti-shield-check" style="font-size:11px"></i> Garantia</span>'; }
+// Prioridade da OS: badge (Alta/Urgente/Baixa) e seletor rápido
+function _osPrioridadeBadge(o){
+  var p=o&&o.prioridade; if(!p||p==='Normal') return '';
+  var map={'Urgente':['var(--danger)','rgba(239,68,68,.12)','ti-flame'],'Alta':['#c2410c','rgba(245,158,11,.14)','ti-arrow-up'],'Baixa':['var(--txt3)','var(--bg)','ti-arrow-down']};
+  var m=map[p]; if(!m) return '';
+  return '<div><span style="display:inline-flex;align-items:center;gap:3px;font-size:9.5px;font-weight:700;color:'+m[0]+';background:'+m[1]+';border-radius:99px;padding:1px 7px;margin:2px 0"><i class="ti '+m[2]+'" style="font-size:11px"></i> '+p+'</span></div>';
+}
+function _osPrioridadeSelector(o){
+  var cur=(o&&o.prioridade)||'Normal';
+  var cores={'Baixa':'var(--txt3)','Normal':'var(--txt2)','Alta':'#c2410c','Urgente':'var(--danger)'};
+  return '<div style="display:flex;align-items:center;gap:5px;margin:7px 0 0;flex-wrap:wrap"><span style="font-size:10.5px;color:var(--txt3)">Prioridade:</span>'
+    +['Baixa','Normal','Alta','Urgente'].map(function(p){ var on=p===cur; return '<button onclick="setPrioridadeOS(\''+o.id+'\',\''+p+'\')" style="border:1px solid '+(on?cores[p]:'var(--border)')+';background:'+(on?cores[p]:'transparent')+';color:'+(on?'#fff':'var(--txt2)')+';border-radius:99px;padding:2px 9px;font-size:10.5px;font-weight:600;cursor:pointer">'+p+'</button>'; }).join('')
+    +'</div>';
+}
+async function setPrioridadeOS(id,val){
+  var o=(G.os||[]).find(function(x){return x.id===id;}); if(!o) return;
+  o.prioridade=val;
+  try{ renderOSList(); }catch(_){}
+  try{ if(typeof detOS==='function') detOS(id); }catch(_){}
+  try{
+    var r=await db.from('ordens_servico').update({prioridade:val}).eq('id',id);
+    if(r&&r.error) throw r.error;
+    if(typeof notify==='function') notify('Prioridade: '+val,'success',1500);
+  }catch(e){
+    console.error('[prioridade]', e);
+    if(typeof notify==='function') notify('Prioridade alterada só nesta sessão. Rode o SQL para salvar de vez.','warn',4500);
+  }
+}
+function _osKanbanCard(o){
+  var val = o.total ? fmt(o.total) : '';
+  var def = String(o.defeito||o.sintoma||''); if(def.length>48) def=def.slice(0,48)+'…';
+  var tec = o.tecnico_nome ? '<div style="font-size:10.5px;color:var(--txt3);margin-top:3px"><i class="ti ti-user" style="font-size:11px"></i> '+esc(o.tecnico_nome)+'</div>' : '';
+  return '<div class="osk-card" onclick="detOS(\''+o.id+'\');openModal(\'modal-os-det\')" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:9px 10px;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.04)">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;gap:6px"><span style="font-family:\'DM Mono\',monospace;font-size:10.5px;color:var(--txt3)">'+esc(o.numero||'')+'</span>'+(val?'<span style="font-size:11px;font-weight:700;color:var(--success)">'+val+'</span>':'')+'</div>'
+    +_osPrioridadeBadge(o)+'<div style="font-weight:700;font-size:12.5px;margin-top:2px">'+esc(o.aparelho||'')+'</div>'
+    +'<div style="font-size:11px;color:var(--txt2)"><i class="ti ti-user" style="font-size:11px"></i> '+esc(o.cliente_nome||'')+'</div>'
+    +(def?'<div style="font-size:11px;color:var(--txt3);margin-top:3px">'+esc(def)+'</div>':'')
+    +tec + _osPrazoBadge(o) + _osParadaBadge(o) + _osGarantiaBadge(o) + _osProxBadge(o)
+    +'</div>';
+}
+function renderOSKanban(q=''){
+  var el=document.getElementById('os-list'); if(!el) return;
+  var f=String(q||'').toLowerCase(); window._osBusca=q||'';
+  var list=(G.os||[]).filter(function(o){ return o.status!=='Entregue'&&o.status!=='Cancelada'&&(!f||(o.numero||'').toLowerCase().includes(f)||(o.cliente_nome||'').toLowerCase().includes(f)||(o.aparelho||'').toLowerCase().includes(f)); });
+  var cnt=document.getElementById('os-count'); if(cnt) cnt.textContent = list.length ? '· '+list.length : '';
+  var cols=['Aguardando','Em Análise','Em Reparo','Aguardando Peça','Pronto','Ag. Pagamento'];
+  var by={}; cols.forEach(function(c){ by[c]=[]; });
+  list.forEach(function(o){ if(!by[o.status]) by[o.status]=[]; by[o.status].push(o); });
+  var board=cols.map(function(c){
+    var items=by[c]||[];
+    var cards=items.length ? items.map(_osKanbanCard).join('') : '<div style="font-size:11px;color:var(--txt3);padding:12px 4px;text-align:center;opacity:.6">—</div>';
+    return '<div class="osk-col" style="min-width:172px;max-width:200px;flex:0 0 auto;display:flex;flex-direction:column;gap:7px">'
+      +'<div style="position:sticky;top:0;background:var(--bg2);padding:6px 4px;z-index:1;font-size:11px;font-weight:700;color:var(--txt2);display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid var(--border)"><span>'+c+'</span><span style="background:var(--surface);border-radius:99px;padding:1px 7px;font-size:10.5px">'+items.length+'</span></div>'
+      +cards+'</div>';
+  }).join('');
+  el.innerHTML='<div class="osk-board" style="display:flex;gap:10px;overflow-x:auto;padding:8px 8px 12px;height:100%;align-items:flex-start">'+board+'</div>';
+}
 function renderOSList(q=''){
+  if(G._osView==='esteira'){ return renderOSKanban(q); }
+  window._osBusca=q||'';
   const f=q.toLowerCase();
   const list=G.os.filter(o=>o.status!=='Entregue'&&o.status!=='Cancelada'&&(!f||o.numero.toLowerCase().includes(f)||o.cliente_nome.toLowerCase().includes(f)||o.aparelho.toLowerCase().includes(f)));
   document.getElementById('os-count').textContent='('+list.length+')';
@@ -13407,6 +13557,7 @@ function renderOSList(q=''){
     </div>
     <div style="font-size:13px;font-weight:600;color:var(--txt);margin:2px 0">${esc(o.cliente_nome)}</div>
     <div style="font-size:11.5px;color:var(--txt3)">${esc(o.aparelho)}</div>
+    ${_osPrazoBadge(o)}${_osParadaBadge(o)}
     <div class="prog-bar"><div class="prog-fill" style="width:${o.progresso}%"></div></div>
     <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:1px">
       <span style="color:var(--txt3)">${fmtDT(o.criado_em)}</span>
@@ -13536,6 +13687,7 @@ function detOS(id){
           </div>
           <span class="tag ${OC[o.status]}" style="font-size:12px;padding:5px 10px">${o.status}</span>
         </div>
+        ${_osPrazoBadge(o)}${_osParadaBadge(o)}${_osGarantiaBadge(o)}${_osProxBadge(o)}${_osPrioridadeSelector(o)}
         <!-- Timeline horizontal -->
         <div class="tl-mobile">${tlH}</div>
       </div>
@@ -13545,7 +13697,7 @@ function detOS(id){
 
         <!-- Ações rápidas -->
         <div class="os-quick-actions" style="margin-bottom:16px">
-          ${next?`<div class="os-qa-btn pri" onclick="advOS('${o.id}','${next}');closeModal('modal-os-det')">
+          ${next?`<div class="os-qa-btn pri" onclick="closeModal('modal-os-det');advOSConfirm('${o.id}','${next}')">
             <i class="ti ti-arrow-right"></i>
             <span>Avançar: ${next}</span>
           </div>`:'<div></div>'}
@@ -13604,7 +13756,7 @@ function detOS(id){
             ['IMEI/Série', o.imei,       'ti-fingerprint'],
             ['Defeito',    o.defeito,    'ti-alert-triangle'],
             ['Diagnóstico',o.diagnostico,'ti-stethoscope'],
-            ['Prazo',      o.prazo_entrega ? new Date(o.prazo_entrega).toLocaleDateString('pt-BR') : null, 'ti-calendar'],
+            ['Prazo',      (o.prazo_entrega||o.prazo) ? new Date(String(o.prazo_entrega||o.prazo).length<=10 ? (o.prazo_entrega||o.prazo)+'T00:00:00' : (o.prazo_entrega||o.prazo)).toLocaleDateString('pt-BR') : null, 'ti-calendar'],
             ['Obs.',       o.observacoes, 'ti-notes'],
           ].filter(r=>r[1]).map(r=>`
             <div style="background:var(--surface);border-radius:10px;padding:12px 14px">
@@ -13750,7 +13902,7 @@ function detOS(id){
   const voltarBtn=(prev&&podeEditar)
     ? `<button class="btn btn-out btn-sm" onclick="voltarOS('${id}','${prev.replace(/'/g,"\\'")}')" title="Voltar para a etapa anterior"><i class="ti ti-arrow-left"></i> Voltar: ${prev}</button>` : '';
   const avancarBtn=(next&&podeEditar)
-    ? `<button class="btn btn-pri btn-sm" onclick="advOS('${id}','${next}')"><i class="ti ti-arrow-right"></i> Avançar: ${next}</button>` : '';
+    ? `<button class="btn btn-pri btn-sm" onclick="advOSConfirm('${id}','${next}')"><i class="ti ti-arrow-right"></i> Avançar: ${next}</button>` : '';
   footer.innerHTML=`
     <button class="btn btn-out btn-sm" onclick="closeModal('modal-os-det')">Fechar</button>
     ${voltarBtn}
@@ -14562,6 +14714,17 @@ async function confirmarVoltarOS(id, prev){
   notify(`${o.numero} voltou para ${prev}.`,'info',4000);
 }
 
+// Fatia 4 (prevenção de erro): confirma transições críticas (Entregue finaliza a OS)
+function advOSConfirm(id,next){
+  if(next==='Entregue'){
+    var o=(G.os||[]).find(function(x){return x.id===id;});
+    var ref=o?(o.numero+(o.cliente_nome?' · '+o.cliente_nome:'')):'';
+    confirmAct('Marcar como Entregue?','Confirme que o aparelho da OS '+ref+' foi entregue ao cliente. Isso finaliza a ordem.',function(){ advOS(id,next); });
+  } else {
+    advOS(id,next);
+  }
+}
+window.advOSConfirm=advOSConfirm;
 async function advOS(id,next){
   const o=G.os.find(x=>x.id===id);if(!o)return;
   // Bloqueia avanço direto de 'Ag. Pagamento' → 'Entregue' pelo técnico
@@ -18211,7 +18374,8 @@ function renderAcoesHoje(){
     var os=G.os||[], rec=G.receber||[], prod=G.produtos||[], vend=G.vendas||[];
     var caixaFechado=!G.caixaAtual;
     var osPag=os.filter(function(o){return o.status==='Ag. Pagamento';}).length;
-    var osAtras=os.filter(function(o){return o.status!=='Entregue'&&o.prazo&&o.prazo<hojeStr;}).length;
+    var osAtras=os.filter(function(o){return _osAtrasada(o,hojeStr);}).length;
+    var osParadas=os.filter(function(o){return _osDiasParado(o)>=4;}).length;
     var contasVenc=rec.filter(function(r){return r.status!=='pago'&&new Date(r.data_vencimento+'T12:00')<hoje;}).length;
     var estCrit=prod.filter(function(p){return !p.estoque_infinito&&(p.estoque===0||(p.estoque>0&&p.estoque<=(p.estoque_minimo||3)));}).length;
     var vHoje=vend.filter(function(v){return new Date(v.criado_em).toDateString()===hoje.toDateString()&&v.status!=='cancelada';});
@@ -18219,11 +18383,12 @@ function renderAcoesHoje(){
     var cards=[];
     if(caixaFechado) cards.push(card('urgente','lock-open','Caixa fechado','Abra o caixa para começar a vender','Abrir no PDV','pdv'));
     if(osAtras>0) cards.push(card('urgente','clock-exclamation',osAtras+' OS passaram do prazo','Verifique as ordens atrasadas','Ver OS','os'));
+    if(osParadas>0) cards.push(card('atencao','player-pause',osParadas+' OS parada(s) há 4+ dias','Sem atualização — verifique ou avise o cliente','Ver OS','os'));
     if(osPag>0) cards.push(card('atencao','cash',osPag+' OS aguardando pagamento','Prontas para cobrar','Ver OS','os'));
     if(contasVenc>0) cards.push(card('atencao','alert-triangle',contasVenc+' conta(s) vencida(s)','Contas a receber em atraso','Ver financeiro','financeiro'));
     if(estCrit>0) cards.push(card('atencao','package',estCrit+' produto(s) em estoque crítico','Repor para não perder venda','Ver reposição','reposicao'));
     cards.push(card('normal','shopping-cart',vHoje.length+' venda(s) hoje','Faturamento: '+(typeof fmt==='function'?fmt(vHoje.reduce(function(s,v){return s+(v.total||0);},0)):''),'Ver vendas','hist-vendas'));
-    var acion=caixaFechado||osAtras||osPag||contasVenc||estCrit;
+    var acion=caixaFechado||osAtras||osPag||contasVenc||estCrit||osParadas;
     var html='<div class="ah-title"><i class="ti ti-checklist"></i> Ações de hoje</div>';
     if(!acion) html+='<div class="ah-ok"><i class="ti ti-circle-check"></i> Tudo certo por aqui. Nenhuma pendência.</div>';
     html+='<div class="ah-list">'+cards.join('')+'</div>';
@@ -18289,7 +18454,7 @@ function renderDashboard(){
   let alertsHtml='';
   // 1) OS com prazo vencido (não entregues)
   const hojeStr=new Date().toISOString().split('T')[0];
-  const osAtrasadas=G.os.filter(o=>o.status!=='Entregue'&&o.prazo&&o.prazo<hojeStr);
+  const osAtrasadas=G.os.filter(o=>_osAtrasada(o,hojeStr));
   if(osAtrasadas.length>0){
     alertsHtml+=`<div class="alert-box alert-danger" style="margin-bottom:12px;cursor:pointer" onclick="go('os')"><i class="ti ti-clock-exclamation" style="font-size:16px"></i><div><strong>${osAtrasadas.length} OS passaram do prazo:</strong> ${osAtrasadas.slice(0,4).map(o=>o.numero).join(', ')}${osAtrasadas.length>4?'...':''}</div></div>`;
   }
@@ -21054,6 +21219,13 @@ function reimprimir(vendaId) {
   document.getElementById('cupom-view-content').innerHTML = `<pre style="font-family:'Courier New',monospace;font-size:11px;line-height:1.5;background:#fff;color:#000;padding:8px;border-radius:6px;border:1px dashed #ccc;max-height:400px;overflow-y:auto">${html.replace(/<!DOCTYPE.*?<body>/s,'').replace(/<\/body>.*?$/s,'').replace(/<style>.*?<\/style>/s,'').replace(/<[^>]+>/g,'')}</pre>`;
   openModal('modal-ver-cupom');
 }
+
+// Fatia 3 (pós-venda): imprime o comprovante da última venda concluída
+function reimprimirUltimaVenda(){
+  if(typeof _ultimaVendaId==='undefined' || !_ultimaVendaId){ notify('O comprovante fica disponível no histórico assim que a venda sincronizar.','info',4200); return; }
+  reimprimir(_ultimaVendaId);
+}
+window.reimprimirUltimaVenda=reimprimirUltimaVenda;
 
 // Estado local de caixas cadastrados e permissões
 let G_CAIXAS = [];      // [{id,nome,codigo,local,saldoInicial,status,operadorId,operadorNome,saldoAtual}]
@@ -24231,6 +24403,18 @@ async function abrirWppOS(osId) {
   }
 
   openModal('modal-wpp-os');
+  // Fatia 4 (#10): sugere o template certo para o status atual da OS
+  try{
+    var _tplKey=({'Aguardando':'recebida','Em Análise':'analise','Em Reparo':'reparo','Aguardando Peça':'peca','Pronto':'pronta','Ag. Pagamento':'pronta'})[os.status];
+    var _bar=document.getElementById('wpp-templates-bar');
+    if(_bar){
+      _bar.querySelectorAll('.wpp-tpl-btn').forEach(function(b){ b.style.outline=''; b.removeAttribute('data-sugerido'); });
+      if(_tplKey){
+        var _alvo=Array.prototype.slice.call(_bar.querySelectorAll('.wpp-tpl-btn')).find(function(b){ return (b.getAttribute('onclick')||'').indexOf("'"+_tplKey+"'")>=0; });
+        if(_alvo){ _alvo.style.outline='2px solid var(--pri)'; _alvo.style.outlineOffset='1px'; _alvo.title='Sugerido para o status atual ('+os.status+')'; _alvo.setAttribute('data-sugerido','1'); try{_alvo.scrollIntoView({inline:'center',block:'nearest'});}catch(_e){} }
+      }
+    }
+  }catch(_e){}
 
   // Atualizar status da API
   const cfg = await getWppConfig();
@@ -24677,10 +24861,11 @@ function renderOSMobile() {
   container.innerHTML = lista.map(o => {
     const sc = statusClass[o.status] || '';
     const stag = statusCor[o.status] || 'tag-gry';
-    const prazo = o.prazo_entrega
-      ? new Date(o.prazo_entrega).toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit'})
+    const _pzRaw = o.prazo_entrega || o.prazo;
+    const prazo = _pzRaw
+      ? new Date(String(_pzRaw).length<=10 ? _pzRaw+'T00:00:00' : _pzRaw).toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit'})
       : '';
-    const vencido = o.prazo_entrega && new Date(o.prazo_entrega) < new Date() && o.status !== 'Entregue';
+    const vencido = _pzRaw && new Date(String(_pzRaw).length<=10 ? _pzRaw+'T00:00:00' : _pzRaw) < new Date() && o.status !== 'Entregue' && o.status !== 'Cancelada';
 
     return `<div class="os-card-mobile ${sc}" onclick="detOS('${o.id}');openModal('modal-os-det')">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
