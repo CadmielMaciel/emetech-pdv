@@ -4069,6 +4069,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
             </label>
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
               <button class="btn btn-pri" onclick="salvarHandleInfinitePay()"><i class="ti ti-device-floppy"></i> Salvar</button>
+              <button class="btn btn-out" id="ip-btn-testar" onclick="testarInfinitePay()" style="border-color:#7c3aed;color:#7c3aed"><i class="ti ti-plug-connected"></i> Testar cobrança</button>
               <a class="btn btn-out" href="https://app.infinitepay.io" target="_blank"><i class="ti ti-external-link"></i> Abrir InfinitePay</a>
             </div>
             <div style="font-size:11.5px;color:var(--txt3);margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
@@ -12158,6 +12159,10 @@ function verDetalheVenda(id){
   const _st=v.nfce_status||'nao_emitida';
   const _stLbl={nao_emitida:'Não emitida',autorizada:'Autorizada ✓',cancelada:'Cancelada',processando_autorizacao:'Processando',erro:'Erro'}[_st]||_st;
   const _emit=_st==='autorizada';
+  // Status de pagamento por link (só aparece quando houve cobrança por link/QR)
+  const pagHTML = v.pagamento_status
+    ? `<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:11.5px;color:var(--txt3)">Pagamento:</span>${badgeStatusPagamento(v.pagamento_status)}</div>`
+    : '';
   const fiscalHTML=`<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
       <div style="font-size:11.5px;color:var(--txt3);margin-bottom:7px">NFC-e: <b style="color:${_emit?'var(--success)':'var(--txt2)'}">${_stLbl}</b>${v.nfce_numero?(' · nº '+v.nfce_numero):''}</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
@@ -12176,6 +12181,7 @@ function verDetalheVenda(id){
       <div style="display:flex;justify-content:space-between;font-weight:700"><span>Total</span><span>${fmt(v.total)}</span></div>
       ${v.troco>0?`<div style="display:flex;justify-content:space-between;color:var(--success)"><span>Troco</span><span>${fmt(v.troco)}</span></div>`:''}
       ${v.garantia_dias>0?`<div style="color:var(--txt3);font-size:11px;margin-top:6px"><i class="ti ti-shield"></i> Garantia: ${v.garantia_dias} dias</div>`:''}
+      ${pagHTML}
       ${fiscalHTML}
     </div>`,
     ()=>imprimirCupomVenda(id)
@@ -20714,7 +20720,48 @@ async function gerarLinkInfinitePay({order_nsu, origem, origem_id, itens, descri
     if(code==='SEM_HANDLE') throw new Error('Conecte sua conta InfinitePay em Configurações → Gateway de Pagamento.');
     throw new Error(msg);
   }
+  // Rastreabilidade (Fatia 7): registra a cobrança localmente vinculada à
+  // venda/OS. Aditivo e tolerante — se a migração PAG01 ainda não rodou, só
+  // ignora (não quebra a geração do link). Não registra o teste de conexão.
+  if(origem!=='teste'){
+    try{ await registrarCobrancaLocal('infinitepay', {order_nsu, origem, origem_id, descricao, valor:data.valor, checkout_url:data.checkout_url}); }
+    catch(_){ /* silencioso: rastreabilidade não pode travar a cobrança */ }
+  }
   return data; // { checkout_url, order_nsu, valor }
+}
+
+/* ── Rastreabilidade de cobranças (Fatia 7) ──────────────────────────────
+   Insere uma linha em `cobrancas` para acompanhar o ciclo do pagamento.
+   O webhook (Edge Function infinitepay-webhook) atualiza o status para 'pago'. */
+async function registrarCobrancaLocal(gateway, {order_nsu, origem, origem_id, descricao, valor, checkout_url}){
+  if(!order_nsu) return;
+  const row={ empresa_id:EID(), gateway, origem:origem||null, origem_id:origem_id!=null?String(origem_id):null,
+    order_nsu, descricao:descricao||null, valor:valor!=null?valor:null,
+    status:'link_gerado', checkout_url:checkout_url||null,
+    criado_por:(G.profile&&(G.profile.nome||G.profile.id))||null };
+  // upsert por (gateway, order_nsu): não duplica se o operador reabrir o QR
+  const {error}=await db.from('cobrancas').upsert(row,{onConflict:'gateway,order_nsu',ignoreDuplicates:true});
+  if(error && !/column|does not exist|schema cache|relation .*cobrancas/i.test(error.message||'')) throw error;
+}
+
+/* Rótulo visual padronizado de status de pagamento (Fatia 7). */
+function labelStatusPagamento(st){
+  const m={
+    nao_iniciado:            {t:'Não iniciado',            c:'var(--txt3)',  bg:'rgba(100,116,139,.10)', i:'ti-minus'},
+    aguardando_pagamento:    {t:'Aguardando pagamento',    c:'#B45309',      bg:'#FFF7ED',               i:'ti-clock'},
+    link_gerado:             {t:'Link gerado',             c:'#7c3aed',      bg:'rgba(124,58,237,.10)',  i:'ti-link'},
+    aguardando_confirmacao:  {t:'Aguardando confirmação',  c:'#B45309',      bg:'#FFF7ED',               i:'ti-hourglass'},
+    pago:                    {t:'Pago',                    c:'#16a34a',      bg:'rgba(22,163,74,.10)',   i:'ti-circle-check'},
+    falhou:                  {t:'Falhou',                  c:'#dc2626',      bg:'rgba(220,38,38,.08)',   i:'ti-alert-triangle'},
+    cancelado:               {t:'Cancelado',               c:'var(--txt2)',  bg:'rgba(100,116,139,.10)', i:'ti-ban'},
+    estornado:               {t:'Estornado',               c:'#dc2626',      bg:'rgba(220,38,38,.08)',   i:'ti-arrow-back-up'},
+    expirado:                {t:'Expirado',                c:'var(--txt2)',  bg:'rgba(100,116,139,.10)', i:'ti-clock-off'}
+  };
+  return m[st] || null;
+}
+function badgeStatusPagamento(st){
+  const d=labelStatusPagamento(st); if(!d) return '';
+  return `<span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:${d.c};background:${d.bg};padding:3px 9px;border-radius:999px"><i class="ti ${d.i}" style="font-size:12px"></i>${d.t}</span>`;
 }
 
 function mostrarQRInfinitePay(url, valor, contexto){
@@ -21192,9 +21239,15 @@ async function carregarHandleInfinitePay(){
     const tx=document.getElementById('ip-taxa'); if(tx&&cfg.taxa_por_conta)tx.value=cfg.taxa_por_conta;
     const px=document.getElementById('ip-pix'); if(px)px.checked=cfg.pix!==false;
     if(box){
-      box.innerHTML = h
-        ? `<div style="background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.3);border-radius:9px;padding:10px 12px;font-size:13px;color:#16a34a"><i class="ti ti-circle-check"></i> Conectado como <b>${esc(h)}</b> — pronto para gerar cobranças.</div>`
-        : `<div style="background:rgba(100,116,139,.08);border:1px solid var(--border);border-radius:9px;padding:10px 12px;font-size:13px;color:var(--txt3)"><i class="ti ti-info-circle"></i> Ainda não conectado. Cole seu handle para ativar.</div>`;
+      const _validado = h && (localStorage.getItem('misu_ip_ok_'+EID())==='1');
+      if(!h){
+        box.innerHTML = `<div style="background:rgba(100,116,139,.08);border:1px solid var(--border);border-radius:9px;padding:10px 12px;font-size:13px;color:var(--txt3)"><i class="ti ti-info-circle"></i> Ainda não conectado. Cole seu handle e salve para ativar.</div>`;
+      } else if(_validado){
+        box.innerHTML = `<div style="background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.3);border-radius:9px;padding:10px 12px;font-size:13px;color:#16a34a"><i class="ti ti-circle-check"></i> Handle <b>@${esc(h)}</b> validado — pronto para gerar cobranças.</div>`;
+      } else {
+        box.innerHTML = `<div style="background:#FFF7ED;border:1px solid #FED7AA;border-radius:9px;padding:10px 12px;font-size:13px;color:#9A3412"><i class="ti ti-shield-check"></i> Handle <b>@${esc(h)}</b> salvo. Clique em <b>Testar cobrança</b> para confirmar que gera link antes de usar no balcão.</div>`;
+      }
+      const _bt=document.getElementById('ip-btn-testar'); if(_bt) _bt.style.display = h ? '' : 'none';
     }
   }catch(e){
     if(box)box.innerHTML='<div style="background:#FFF7ED;border:1px solid #FED7AA;border-radius:9px;padding:10px 12px;font-size:13px;color:#9A3412"><i class="ti ti-alert-circle"></i> Rode a migração IP01 para ativar a InfinitePay.</div>';
@@ -21220,8 +21273,40 @@ async function salvarHandleInfinitePay(){
     return;
   }
   G._ipConfig=cfg; G._gateways=null;
-  notify('✅ InfinitePay conectada como @'+handle,'success');
+  localStorage.removeItem('misu_ip_ok_'+EID());   // handle/config novos → precisa validar de novo
+  notify('Handle InfinitePay salvo. Clique em "Testar cobrança" para validar.','success');
   carregarHandleInfinitePay();
+}
+
+// Validação real: gera um link de teste pela Edge Function. Gerar o link NÃO
+// cobra ninguém (só o cliente pagando movimenta dinheiro) e não cria venda nem
+// baixa estoque. Se retornar checkout_url, o handle está apto a gerar cobranças.
+async function testarInfinitePay(){
+  const btn=document.getElementById('ip-btn-testar');
+  const orig=btn?btn.innerHTML:'';
+  if(btn){ btn.disabled=true; btn.innerHTML='<i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Testando...'; }
+  try{
+    const data=await gerarLinkInfinitePay({
+      order_nsu:'teste_'+Date.now(), origem:'teste', origem_id:'teste',
+      itens:[{nome:'Teste de conexão InfinitePay', quantidade:1, preco:1}],
+      descricao:'Teste de conexão (não cobra ninguém)'
+    });
+    if(data && data.checkout_url){
+      localStorage.setItem('misu_ip_ok_'+EID(),'1');
+      notify('Conexão InfinitePay validada — pronto para gerar cobranças.','success',5000);
+    } else {
+      localStorage.removeItem('misu_ip_ok_'+EID());
+      notify('Não foi possível validar a conexão. Confira o handle no app da InfinitePay.','warn',6000);
+    }
+  }catch(e){
+    console.error('InfinitePay teste:',e);
+    localStorage.removeItem('misu_ip_ok_'+EID());
+    const _m=e?.message||'';
+    notify(/Conecte sua conta|InfinitePay em Configura/i.test(_m)?_m:'Não foi possível validar a conexão InfinitePay agora. Tente novamente em instantes.','error',6000);
+  }finally{
+    if(btn){ btn.disabled=false; btn.innerHTML=orig||'<i class="ti ti-plug-connected"></i> Testar cobrança'; }
+    if(typeof carregarHandleInfinitePay==='function') carregarHandleInfinitePay();
+  }
 }
 
 async function salvarChaveAsaas(){
