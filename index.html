@@ -4740,8 +4740,19 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
             <select id="audit-filter-user" onchange="renderAuditLog()" style="padding:7px 10px;font-size:12.5px;border-radius:8px;width:auto;min-width:150px">
               <option value="">Todos usuários</option>
             </select>
+            <select id="audit-filter-risco" onchange="renderAuditLog()" style="padding:7px 10px;font-size:12.5px;border-radius:8px;width:auto">
+              <option value="">Todos os níveis</option>
+              <option value="critico">🔴 Crítico</option>
+              <option value="atencao">🟡 Atenção</option>
+              <option value="normal">⚪ Normal</option>
+            </select>
+            <input type="date" id="audit-filter-de" onchange="renderAuditLog()" style="padding:7px 10px;font-size:12.5px;border-radius:8px;width:auto" title="De">
+            <input type="date" id="audit-filter-ate" onchange="renderAuditLog()" style="padding:7px 10px;font-size:12.5px;border-radius:8px;width:auto" title="Até">
+            <input type="text" id="audit-filter-busca" oninput="renderAuditLog()" placeholder="Buscar na descrição..." style="padding:7px 10px;font-size:12.5px;border-radius:8px;width:auto;min-width:170px">
             <button class="btn btn-out btn-sm" onclick="limparAuditFiltros()"><i class="ti ti-x"></i>Limpar</button>
+            <button class="btn btn-out btn-sm" onclick="carregarAuditLog(true)"><i class="ti ti-refresh"></i>Atualizar</button>
           </div>
+          <div style="font-size:11px;color:var(--txt3);margin-bottom:8px" id="audit-fonte-info"></div>
           <div class="card" style="padding:14px" id="audit-log-list">
             <div class="empty-st"><i class="ti ti-shield-check"></i><h3>Nenhum log</h3><p>As ações protegidas aparecerão aqui</p></div>
           </div>
@@ -5178,6 +5189,19 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
   <div class="modal-footer">
     <button class="btn btn-out" onclick="closeModal('modal-sangria')">Cancelar</button>
     <button class="btn btn-danger" onclick="confirmarSangria()"><i class="ti ti-check"></i>Confirmar</button>
+  </div>
+</div></div>
+
+<!-- SEGURANÇA (Fatia 8): autorização de supervisor para ações protegidas -->
+<div class="modal-overlay" id="modal-exigir-admin"><div class="modal sm">
+  <div class="modal-title"><i class="ti ti-shield-lock"></i>Autorização necessária</div>
+  <div id="ea-descricao" style="font-size:12.5px;color:var(--txt2);margin-bottom:10px">Ação protegida</div>
+  <div class="fg"><label class="lbl">PIN de um Admin ou Gerente *</label><input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="ea-pin" placeholder="••••" onkeydown="if(event.key==='Enter')confirmarExigirAdmin()"></div>
+  <div class="fg"><label class="lbl">Motivo</label><input type="text" id="ea-motivo" placeholder="Explique o motivo desta ação..."></div>
+  <div id="ea-erro" style="color:var(--danger,#e5484d);font-size:12px;min-height:16px;margin-bottom:4px"></div>
+  <div class="modal-footer">
+    <button class="btn btn-out" onclick="cancelarExigirAdmin()">Cancelar</button>
+    <button class="btn btn-pri" onclick="confirmarExigirAdmin()"><i class="ti ti-check"></i>Autorizar</button>
   </div>
 </div></div>
 
@@ -7460,6 +7484,7 @@ async function salvarPermissoes(){
   ROLE_PERMS=data.role_permissions||novo;
   applyRoleUI();
   notify('✅ Permissões salvas! Os funcionários verão as mudanças no próximo login.','success',5000);
+  try{ registrarAuditoria('permissao_alterada', 'Permissões por perfil alteradas', 'success', 'critico'); }catch(_){}
 }
 
 function restaurarPermissoesPadrao(){
@@ -7563,13 +7588,16 @@ async function doLogin(){
     await loadProfile(data.user);   // se o boot falhar aqui, cai no catch (não trava o botão)
     loginConcluido=true;
     _loginFails=0;
+    try{ registrarAuditoria('login', 'Login realizado', 'success', 'normal', {operador: G.profile?.nome}); }catch(_){}
   }catch(error){
     console.error('Falha durante o login ou inicialização:', error);
     const msg=error?.message||'';
+    // SEGURANÇA (Fatia 8): nunca expor mensagem técnica bruta (erro de rede/API/SQL)
+    // na tela de login — só as duas mensagens conhecidas e amigáveis abaixo.
     err.textContent = (msg==='Invalid login credentials')
       ? 'E-mail ou senha incorretos.'
       : (msg==='Confirme que você não é um robô.' ? msg
-        : `Não foi possível abrir o sistema: ${msg||'erro desconhecido'}`);
+        : 'Não foi possível concluir o login. Tente novamente em instantes.');
     err.style.display='block';
     // erro pós-autenticação: desloga pra não ficar em estado meio-logado
     try{ await db.auth.signOut(); }catch(_){}
@@ -8639,7 +8667,26 @@ function solicitarUpgradeWhatsApp(){
   window.open(`https://wa.me/${WHATSAPP_SUPORTE}?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
+// SEGURANÇA (Fatia 8): remove do localStorage os dados operacionais/sensíveis
+// da empresa/sessão atual (carrinho, auditoria local, caixa, cobranças etc.),
+// preservando preferências de dispositivo (tema, som, fullscreen) que não são
+// dados de negócio. Chamado no logout para não deixar dado antigo acessível
+// em dispositivo compartilhado.
+function limparDadosSensiveisLocais(){
+  try{
+    const prefixosSensiveis = ['emetech_sessao_'];
+    const chavesSensiveis = ['emetech_audit','emetech_perms','emetech_caixas','emetech_cx_ops','emetech_cobrancas','emetech_intel'];
+    Object.keys(localStorage).forEach(k=>{
+      if(chavesSensiveis.includes(k) || prefixosSensiveis.some(p=>k.startsWith(p))) {
+        try{ localStorage.removeItem(k); }catch(_){}
+      }
+    });
+  }catch(e){ console.error('Falha ao limpar dados locais no logout:', e); }
+}
+
 async function doLogout(){
+  try{ registrarAuditoria && registrarAuditoria('logout','Logout realizado','info'); }catch(_){}
+  limparDadosSensiveisLocais();
   await db.auth.signOut();
   location.reload();
 }
@@ -8671,28 +8718,31 @@ async function loadAll(){
 
 async function carregarDadosSecundarios(){
   try{
+    // SEGURANÇA (Fatia 8): filtro explícito por empresa_id em toda leitura em massa,
+    // como defesa em profundidade — não depender só de RLS no banco. Ver PENDÊNCIAS_FATIA9.md.
+    const _eid = EID();
     const [pr,cl,os,ve] = await Promise.all([
-      consultaSegura('produtos', db.from('produtos').select('*').neq('status','vendido').order('nome')),
-      consultaSegura('clientes', db.from('clientes').select('*').order('nome')),
-      consultaSegura('ordens de serviço', db.from('ordens_servico').select('*').not('status','in','("Entregue","Cancelada")').order('criado_em',{ascending:false})),
-      consultaSegura('vendas', db.from('vendas').select('*').order('criado_em',{ascending:false}).limit(150)),
+      consultaSegura('produtos', db.from('produtos').select('*').eq('empresa_id',_eid).neq('status','vendido').order('nome')),
+      consultaSegura('clientes', db.from('clientes').select('*').eq('empresa_id',_eid).order('nome')),
+      consultaSegura('ordens de serviço', db.from('ordens_servico').select('*').eq('empresa_id',_eid).not('status','in','("Entregue","Cancelada")').order('criado_em',{ascending:false})),
+      consultaSegura('vendas', db.from('vendas').select('*').eq('empresa_id',_eid).order('criado_em',{ascending:false}).limit(150)),
     ]);
     G.produtos=pr; G.clientes=cl; G.os=os; G.vendas=ve;
 
     const [mv,fo,oc,dv] = await Promise.all([
-      consultaSegura('movimentações', db.from('movimentacoes_estoque').select('*').order('criado_em',{ascending:false}).limit(200)),
-      consultaSegura('fornecedores', db.from('fornecedores').select('*').order('razao_social')),
-      consultaSegura('orçamentos', db.from('orcamentos').select('*').order('criado_em',{ascending:false}).limit(50)),
-      consultaSegura('devoluções', db.from('devolucoes').select('*').order('criado_em',{ascending:false}).limit(100)),
+      consultaSegura('movimentações', db.from('movimentacoes_estoque').select('*').eq('empresa_id',_eid).order('criado_em',{ascending:false}).limit(200)),
+      consultaSegura('fornecedores', db.from('fornecedores').select('*').eq('empresa_id',_eid).order('razao_social')),
+      consultaSegura('orçamentos', db.from('orcamentos').select('*').eq('empresa_id',_eid).order('criado_em',{ascending:false}).limit(50)),
+      consultaSegura('devoluções', db.from('devolucoes').select('*').eq('empresa_id',_eid).order('criado_em',{ascending:false}).limit(100)),
     ]);
     G.movs=mv; G.fornecedores=fo; G.orcamentos=oc; G.devolucoes=dv;
 
     const [re,pa,cx,en,mq] = await Promise.all([
-      consultaSegura('contas a receber', db.from('contas_receber').select('*').order('data_vencimento').limit(200)),
-      consultaSegura('contas a pagar', db.from('contas_pagar').select('*').order('data_vencimento').limit(200)),
-      consultaSegura('caixas', db.from('caixas').select('*').order('criado_em',{ascending:false}).limit(10)),
-      consultaSegura('entregas', db.from('entregas_avulsas').select('*').neq('status','cancelado').order('data').limit(100)),
-      consultaSegura('maquininhas', db.from('maquininhas_cartao').select('*').order('criado_em')),
+      consultaSegura('contas a receber', db.from('contas_receber').select('*').eq('empresa_id',_eid).order('data_vencimento').limit(200)),
+      consultaSegura('contas a pagar', db.from('contas_pagar').select('*').eq('empresa_id',_eid).order('data_vencimento').limit(200)),
+      consultaSegura('caixas', db.from('caixas').select('*').eq('empresa_id',_eid).order('criado_em',{ascending:false}).limit(10)),
+      consultaSegura('entregas', db.from('entregas_avulsas').select('*').eq('empresa_id',_eid).neq('status','cancelado').order('data').limit(100)),
+      consultaSegura('maquininhas', db.from('maquininhas_cartao').select('*').eq('empresa_id',_eid).order('criado_em')),
     ]);
     G.receber=re; G.pagar=pa; G.caixas=cx; G.entregasAvulsas=en; G_MAQUINAS=mq;
 
@@ -8930,7 +8980,7 @@ function go(page){
     relatorios:renderRelatorios,
     aparencia:renderAparencia,
     configuracoes:renderConfiguracoes,
-    usuarios:()=>{renderUsuarios();carregarAuditLog();renderAuditLog();},
+    usuarios:()=>{renderUsuarios();renderAuditLog();carregarAuditLog().then(renderAuditLog);},
     permissoes:renderPermissoes,
     garantias:()=>{_garCache=[];renderGarantias();},
     contratos:renderContratos,
@@ -9334,6 +9384,7 @@ async function confirmarAbertura(){
   G.caixaAtual=data;G.caixas.unshift(data);
   setLoad(false);closeModal('modal-abre-caixa');checkCaixaStatus();updateCaixaPill();
   notify('Caixa aberto com sucesso!');
+  try{ registrarAuditoria('caixa_aberto', `Caixa aberto com ${fmt(val)}`, 'success'); }catch(_){}
 }
 
 async function fecharCaixa(){
@@ -9425,6 +9476,10 @@ async function confirmarFecharCaixa(){
   var snapshot={caixa:Object.assign({},G.caixaAtual,payload),vendas:p.vendasCx,totalVendas:p.totalVendas,porForma:p.porForma,totalDinheiro:p.totalDinheiro,totalSangrias:p.totalSangrias,totalReforcos:p.totalReforcos,movs:p.movs,valorSistema:p.valorSistema,servicosOS:p.servicosOS,totalServicos:p.totalServicos,valorInformado:contado,diferenca:diferenca,observacaoFechamento:obs,operador:(G.profile&&G.profile.nome)||G.caixaAtual.operador_nome,dataFechamento:dataFechamento};
   G.caixaAtual=null;
   setLoad(false); checkCaixaStatus(); updateCaixaPill(); notify('Caixa fechado!','success');
+  try{
+    const temDiferenca = diferenca!==null && Math.abs(diferenca)>=0.01;
+    registrarAuditoria('caixa_fechado', temDiferenca ? `Caixa fechado com diferença de ${fmt(Math.abs(diferenca))} — ${obs}` : 'Caixa fechado sem diferença', 'success', temDiferenca?'critico':'normal');
+  }catch(_){}
   _ultimoFechamentoCaixa=snapshot; G._fechamentoPend=null;
   if(typeof abrirRelatorioFechamentoCaixa==='function') abrirRelatorioFechamentoCaixa(snapshot);
 }
@@ -12106,6 +12161,13 @@ function abrirDevOS(osId){
   },120);
 }
 
+// SEGURANÇA (Fatia 8): lucro/custo não deve aparecer para quem não tem
+// permissão (ex.: operador de PDV), mesmo em telas às quais ele tem acesso.
+function podeVerLucro(){
+  const role = _operadorAtual?.role || G.role;
+  return ['admin','admin_master','gerente'].includes(role);
+}
+
 function renderHistoricoVendas(){
   const q=(document.getElementById('hv-busca')?.value||'').toLowerCase();
   const de=document.getElementById('hv-de')?.value||'';
@@ -12121,11 +12183,12 @@ function renderHistoricoVendas(){
   // Stats rápidos
   const totVen=list.reduce((s,v)=>s+(v.total||0),0);
   const totLuc=list.reduce((s,v)=>s+(v.lucro||0),0);
+  const _vLuc=podeVerLucro();
   const statsEl=document.getElementById('hv-stats');
   if(statsEl) statsEl.innerHTML=`
     <div class="sc"><div class="sc-body"><div class="sc-lbl">Total de vendas</div><div class="sc-val">${list.length}</div></div></div>
     <div class="sc"><div class="sc-body"><div class="sc-lbl">Faturamento</div><div class="sc-val" style="font-size:16px">${fmt(totVen)}</div></div></div>
-    <div class="sc"><div class="sc-body"><div class="sc-lbl">Lucro estimado</div><div class="sc-val" style="font-size:16px;color:var(--success)">${fmt(totLuc)}</div></div></div>
+    <div class="sc"><div class="sc-body"><div class="sc-lbl">Lucro estimado</div><div class="sc-val" style="font-size:16px;color:var(--success)">${_vLuc?fmt(totLuc):'<i class="ti ti-lock" style="font-size:13px"></i>'}</div></div></div>
     <div class="sc"><div class="sc-body"><div class="sc-lbl">Ticket médio</div><div class="sc-val" style="font-size:16px">${list.length?fmt(totVen/list.length):'—'}</div></div></div>`;
   const el=document.getElementById('hv-table');
   if(!el)return;
@@ -12140,7 +12203,7 @@ function renderHistoricoVendas(){
       <td style="font-size:11.5px;color:var(--txt2)">${esc(itensTxt||'—')}</td>
       <td><span class="tag ${fmTags[v.pagamento]||'tag-gry'}">${fmLabels[v.pagamento]||v.pagamento||'—'}</span></td>
       <td style="font-weight:700">${fmt(v.total||0)}</td>
-      <td style="font-weight:600;color:var(--success)">${fmt(v.lucro||0)}</td>
+      <td style="font-weight:600;color:var(--success)">${_vLuc?fmt(v.lucro||0):'<i class="ti ti-lock" style="font-size:12px;color:var(--txt3)"></i>'}</td>
       <td><div style="display:flex;gap:3px">
         <button class="btn btn-out btn-xs" onclick="imprimirCupomVenda('${v.id}')" title="Imprimir cupom"><i class="ti ti-printer"></i></button>
         <button class="btn btn-out btn-xs" onclick="verDetalheVenda('${v.id}')" title="Ver detalhes"><i class="ti ti-eye"></i></button>
@@ -13235,6 +13298,7 @@ async function salvarAjuste(){
   setLoad(false);
   closeModal('modal-ajuste');notify(`Estoque: ${p.nome} → ${ne} un.`);
   renderMov();renderProdTable();renderPDVGrid();
+  try{ registrarAuditoria('estoque_ajustado', `${p.nome}: ${tipo} de ${qty} → estoque ${ne}${mot?' — '+mot:''}`, 'success', tipo==='ajuste'?'critico':'atencao'); }catch(_){}
 }
 
 function renderMov(){
@@ -22569,19 +22633,76 @@ function renderAparencia() {
    BLOCO B — CONTROLE DE ACESSO AVANÇADO
    ══════════════════════════════════════════════════════ */
 
-let G_AUDIT_LOG = []; // log em memória (salvo no localStorage)
+let G_AUDIT_LOG = []; // log em memória (salvo no localStorage + Supabase)
 let _adminAuthCallback = null;
 let _operadorAtual = null; // operador identificado no PDV
+let _exigirAdminPendente = null; // {descricao, callback, tipoLog}
 
-// ── AÇÕES PROTEGIDAS — sem modal, só log ───────────────
+// ── AÇÕES PROTEGIDAS (Fatia 8) ──────────────────────────
+// Antes: exigirAdmin executava o callback direto e só registrava no log —
+// ou seja, não protegia nada, qualquer operador conseguia sangria/devolução/
+// remoção de produto. Agora exige o PIN de um Admin/Gerente ATIVO da mesma
+// empresa antes de liberar a ação (mesmo mecanismo de PIN já usado na troca
+// de perfil — ver PENDÊNCIAS_FATIA9.md sobre exposição do PIN no client).
 function exigirAdmin(descricao, callback, tipoLog = 'acao_protegida') {
-  // Executa diretamente e registra no log de auditoria
-  registrarAudit(tipoLog, descricao, _operadorAtual?.nome || G.profile?.nome, '', 'success');
-  if (callback) callback('');
+  _exigirAdminPendente = { descricao, callback, tipoLog };
+  const descEl = document.getElementById('ea-descricao');
+  const pinEl = document.getElementById('ea-pin');
+  const motEl = document.getElementById('ea-motivo');
+  const errEl = document.getElementById('ea-erro');
+  if (descEl) descEl.textContent = descricao;
+  if (pinEl) pinEl.value = '';
+  if (motEl) motEl.value = '';
+  if (errEl) errEl.textContent = '';
+  openModal('modal-exigir-admin');
+  setTimeout(() => pinEl?.focus(), 150);
+}
+
+function cancelarExigirAdmin() {
+  const pend = _exigirAdminPendente;
+  if (pend) {
+    registrarAudit(pend.tipoLog, pend.descricao + ' — cancelado pelo operador', _operadorAtual?.nome || G.profile?.nome, '', 'error');
+  }
+  _exigirAdminPendente = null;
+  closeModal('modal-exigir-admin');
+}
+
+function confirmarExigirAdmin() {
+  const pend = _exigirAdminPendente;
+  if (!pend) return;
+  const pin = (document.getElementById('ea-pin')?.value || '').trim();
+  const motivo = (document.getElementById('ea-motivo')?.value || '').trim();
+  const errEl = document.getElementById('ea-erro');
+  if (!/^\d{4}$/.test(pin)) {
+    if (errEl) errEl.textContent = 'Digite o PIN de 4 dígitos de um Admin ou Gerente.';
+    return;
+  }
+  const supervisores = (G.usuarios || []).filter(u => u.ativo && ['admin', 'gerente'].includes(u.role) && hasPin(u.id));
+  if (supervisores.length === 0) {
+    if (errEl) errEl.textContent = 'Nenhum Admin/Gerente com PIN configurado. Peça para um administrador criar um PIN em Usuários.';
+    registrarAudit(pend.tipoLog, pend.descricao + ' — sem supervisor com PIN configurado', _operadorAtual?.nome || G.profile?.nome, '', 'error');
+    return;
+  }
+  const autorizador = supervisores.find(u => getPin(u.id) === pin);
+  if (!autorizador) {
+    if (errEl) errEl.textContent = 'PIN inválido ou sem permissão para autorizar esta ação.';
+    registrarAudit(pend.tipoLog, pend.descricao + ' — tentativa de autorização negada (PIN inválido)', _operadorAtual?.nome || G.profile?.nome, '', 'error');
+    const pinEl = document.getElementById('ea-pin');
+    if (pinEl) { pinEl.value = ''; pinEl.focus(); }
+    return;
+  }
+  closeModal('modal-exigir-admin');
+  _exigirAdminPendente = null;
+  registrarAudit(pend.tipoLog, pend.descricao, _operadorAtual?.nome || G.profile?.nome, autorizador.nome, 'success');
+  if (pend.callback) pend.callback(motivo);
 }
 
 // ── REGISTRO DE AUDITORIA ──────────────────────────────
-function registrarAudit(tipo, descricao, operador, autorizadoPor, resultado = 'success') {
+// Persiste local (rápido, cache de exibição) e no Supabase (fonte de verdade,
+// sobrevive a troca de dispositivo/limpeza de navegador). Se a tabela
+// logs_auditoria ainda não existir (migração não rodada), falha em silêncio
+// no envio remoto e mantém só o log local — ver PENDÊNCIAS_FATIA9.md.
+function registrarAudit(tipo, descricao, operador, autorizadoPor, resultado = 'success', nivelRisco) {
   const entry = {
     id: Date.now(),
     tipo, descricao, operador,
@@ -22590,27 +22711,105 @@ function registrarAudit(tipo, descricao, operador, autorizadoPor, resultado = 's
     criado_em: new Date().toISOString()
   };
   G_AUDIT_LOG.unshift(entry);
-  // Persiste os últimos 200
+  // Persiste os últimos 200 localmente (cache/fallback)
   try { localStorage.setItem('emetech_audit', JSON.stringify(G_AUDIT_LOG.slice(0, 200))); } catch(e) {}
+  // Persiste no Supabase (fonte de verdade da auditoria)
+  try { registrarAuditoria(tipo, descricao, resultado, nivelRisco, { operador, autorizadoPor }); } catch(e) {}
 }
 
-function carregarAuditLog() {
+// ── LOG DE AUDITORIA NO SUPABASE (Fatia 8) ─────────────
+// Grava em logs_auditoria (empresa_id, usuário, ação, módulo, registro,
+// data/hora, nível de risco). Nunca envia senha/token/secret. Falha em
+// silêncio (não pode travar a ação de negócio por causa do log) e cai para
+// o log local se a tabela/RPC ainda não existir no banco.
+const NIVEIS_RISCO_CRITICO = new Set(['permissao_alterada','caixa_fechado_diferenca','venda_cancelada','estoque_ajustado','remocao_produto','config_gateway_alterada','os_cancelada']);
+const NIVEIS_RISCO_ATENCAO = new Set(['desconto_alto','sangria','devolucao','conta_marcada_paga_manual']);
+function nivelDeRisco(tipo){
+  if (NIVEIS_RISCO_CRITICO.has(tipo)) return 'critico';
+  if (NIVEIS_RISCO_ATENCAO.has(tipo)) return 'atencao';
+  return 'normal';
+}
+async function registrarAuditoria(tipo, descricao, resultado = 'success', nivelRisco, extra = {}) {
+  try {
+    const empId = EID() || G.empresa?.id;
+    if (!empId || !db) return;
+    await db.from('logs_auditoria').insert({
+      empresa_id: empId,
+      usuario_id: G.profile?.id || null,
+      usuario_nome: (extra.operador || _operadorAtual?.nome || G.profile?.nome || '—'),
+      perfil: _operadorAtual?.role || G.role || null,
+      autorizado_por: extra.autorizadoPor && extra.autorizadoPor !== '—' ? extra.autorizadoPor : null,
+      acao: tipo,
+      resumo: String(descricao || '').slice(0, 500),
+      resultado,
+      nivel_risco: nivelRisco || nivelDeRisco(tipo),
+      origem: (typeof navigator !== 'undefined' && navigator.userAgent && navigator.userAgent.includes('Mobi')) ? 'mobile' : 'web',
+      criado_em: new Date().toISOString()
+    });
+  } catch (e) {
+    // Tabela ainda não migrada ou offline — o log local (localStorage) já cobre a UI.
+    console.warn('[auditoria] não foi possível gravar no servidor:', e?.message || e);
+  }
+}
+
+let _auditFonte = 'local'; // 'local' | 'servidor' — de onde veio o log exibido
+
+// SEGURANÇA (Fatia 8): busca o log de auditoria no Supabase (fonte de
+// verdade, sobrevive a troca de dispositivo) — cai para o cache local
+// (localStorage) se a tabela logs_auditoria ainda não existir ou estiver
+// offline. Passe forcar=true para ignorar o cache e buscar de novo.
+async function carregarAuditLog(forcar) {
   try { G_AUDIT_LOG = JSON.parse(localStorage.getItem('emetech_audit') || '[]'); } catch(e) { G_AUDIT_LOG = []; }
+  _auditFonte = 'local';
+  try {
+    const empId = EID() || G.empresa?.id;
+    if (!empId || !db) return;
+    const { data, error } = await db.from('logs_auditoria')
+      .select('*').eq('empresa_id', empId)
+      .order('criado_em', { ascending: false }).limit(500);
+    if (error) throw error;
+    if (data) {
+      G_AUDIT_LOG = data.map(l => ({
+        id: l.id, tipo: l.acao, descricao: l.resumo, operador: l.usuario_nome,
+        autorizadoPor: l.autorizado_por || '—', resultado: l.resultado,
+        nivelRisco: l.nivel_risco, criado_em: l.criado_em
+      }));
+      _auditFonte = 'servidor';
+    }
+  } catch (e) {
+    console.warn('[auditoria] usando log local — tabela logs_auditoria indisponível:', e?.message || e);
+  }
 }
 
 function renderAuditLog() {
   const filtTipo = document.getElementById('audit-filter-tipo')?.value || '';
   const filtUser = document.getElementById('audit-filter-user')?.value || '';
+  const filtRisco = document.getElementById('audit-filter-risco')?.value || '';
+  const filtDe = document.getElementById('audit-filter-de')?.value || '';
+  const filtAte = document.getElementById('audit-filter-ate')?.value || '';
+  const filtBusca = (document.getElementById('audit-filter-busca')?.value || '').toLowerCase().trim();
   const list = G_AUDIT_LOG.filter(l =>
     (!filtTipo || l.tipo === filtTipo) &&
-    (!filtUser || l.operador === filtUser)
+    (!filtUser || l.operador === filtUser) &&
+    (!filtRisco || l.nivelRisco === filtRisco) &&
+    (!filtDe || (l.criado_em||'') >= filtDe+'T00:00:00') &&
+    (!filtAte || (l.criado_em||'') <= filtAte+'T23:59:59') &&
+    (!filtBusca || (l.descricao||'').toLowerCase().includes(filtBusca) || (l.operador||'').toLowerCase().includes(filtBusca))
   );
   const tipoIcon = {
     sangria: {i:'ti-arrow-down-left',c:'warn'}, reforco: {i:'ti-arrow-up-right',c:'success'},
     devolucao: {i:'ti-arrow-back-up',c:'danger'}, desconto: {i:'ti-percentage',c:'warn'},
     edicao_produto: {i:'ti-edit',c:''}, remocao_produto: {i:'ti-trash',c:'danger'},
-    login_pdv: {i:'ti-login',c:'success'}, acao_protegida: {i:'ti-shield-lock',c:''}
+    login_pdv: {i:'ti-login',c:'success'}, login: {i:'ti-login',c:'success'}, logout: {i:'ti-logout',c:''},
+    permissao_alterada: {i:'ti-shield-lock',c:'danger'}, estoque_ajustado: {i:'ti-adjustments',c:'warn'},
+    caixa_aberto: {i:'ti-cash-register',c:'success'}, caixa_fechado: {i:'ti-cash-register',c:''},
+    acao_protegida: {i:'ti-shield-lock',c:''}
   };
+  const riscoTag = { critico:'<span class="tag tag-red" style="font-size:9.5px">🔴 crítico</span>', atencao:'<span class="tag tag-amb" style="font-size:9.5px">🟡 atenção</span>' };
+  const fonteEl = document.getElementById('audit-fonte-info');
+  if (fonteEl) fonteEl.textContent = _auditFonte==='servidor'
+    ? `Fonte: servidor (${G_AUDIT_LOG.length} registros) — sobrevive a troca de dispositivo/navegador.`
+    : 'Fonte: apenas cache local deste navegador — rode a migração da Fatia 8 (logs_auditoria) para auditoria persistente e confiável.';
   const container = document.getElementById('audit-log-list');
   if (list.length === 0) {
     container.innerHTML = '<div class="empty-st"><i class="ti ti-shield-check"></i><h3>Nenhum log</h3><p>As ações protegidas aparecerão aqui</p></div>';
@@ -22621,13 +22820,14 @@ function renderAuditLog() {
     return `<div class="audit-log-row">
       <div class="audit-log-icon ${ic.c}"><i class="ti ${ic.i}"></i></div>
       <div style="flex:1">
-        <div style="font-weight:600;color:var(--txt)">${l.descricao}</div>
+        <div style="font-weight:600;color:var(--txt)">${esc(l.descricao||'')}</div>
         <div style="font-size:11px;color:var(--txt3);margin-top:2px;display:flex;gap:10px;flex-wrap:wrap">
-          <span><i class="ti ti-user" style="font-size:10px"></i> ${l.operador}</span>
-          ${l.autorizadoPor && l.autorizadoPor !== '—' ? `<span><i class="ti ti-shield" style="font-size:10px"></i> Auth: ${l.autorizadoPor}</span>` : ''}
+          <span><i class="ti ti-user" style="font-size:10px"></i> ${esc(l.operador||'—')}</span>
+          ${l.autorizadoPor && l.autorizadoPor !== '—' ? `<span><i class="ti ti-shield" style="font-size:10px"></i> Auth: ${esc(l.autorizadoPor)}</span>` : ''}
           <span><i class="ti ti-clock" style="font-size:10px"></i> ${fmtDT(l.criado_em)}</span>
         </div>
       </div>
+      ${riscoTag[l.nivelRisco] || ''}
       <span class="tag ${l.resultado==='success'?'tag-grn':l.resultado==='error'?'tag-red':'tag-amb'}" style="font-size:10px">${l.resultado}</span>
     </div>`;
   }).join('');
@@ -22640,10 +22840,14 @@ function usrTab(tab, btn) {
     const el = document.getElementById('usr-tab-' + t); if (el) el.style.display = t === tab ? '' : 'none';
   });
   if (tab === 'audit') {
-    const sel = document.getElementById('audit-filter-user');
-    const nomes = [...new Set(G_AUDIT_LOG.map(l => l.operador))];
-    sel.innerHTML = '<option value="">Todos usuários</option>' + nomes.map(n => `<option>${n}</option>`).join('');
-    renderAuditLog();
+    // SEGURANÇA (Fatia 8): tab só é alcançável a partir da página "usuarios",
+    // já restrita a admin/gerente pelo canAccess/_canAccessLegado.
+    carregarAuditLog().then(() => {
+      const sel = document.getElementById('audit-filter-user');
+      const nomes = [...new Set(G_AUDIT_LOG.map(l => l.operador))];
+      sel.innerHTML = '<option value="">Todos usuários</option>' + nomes.map(n => `<option>${esc(n)}</option>`).join('');
+      renderAuditLog();
+    });
   }
   if (tab === 'slots') renderSlotsPreview();
   if (tab === 'master') renderAdminMasterList();
@@ -22997,6 +23201,10 @@ function mostrarTelaNetflixPreview() {
 function limparAuditFiltros() {
   document.getElementById('audit-filter-tipo').value = '';
   document.getElementById('audit-filter-user').value = '';
+  const risco=document.getElementById('audit-filter-risco'); if(risco) risco.value='';
+  const de=document.getElementById('audit-filter-de'); if(de) de.value='';
+  const ate=document.getElementById('audit-filter-ate'); if(ate) ate.value='';
+  const busca=document.getElementById('audit-filter-busca'); if(busca) busca.value='';
   renderAuditLog();
 }
 
@@ -23021,6 +23229,25 @@ confirmarSangria = async function() {
   } else {
     await _confirmarSangriaOriginal();
     registrarAudit('sangria', 'Sangria registrada', _operadorAtual?.nome||G.profile?.nome, '', 'success');
+  }
+};
+
+// Reforço protegido (Fatia 8 — antes não tinha nenhuma proteção)
+const _confirmarReforcoOriginal = confirmarReforco;
+confirmarReforco = async function() {
+  const role = _operadorAtual?.role || G.role;
+  if (role === 'operador') {
+    const val = parseFloat(document.getElementById('ref-val').value) || 0;
+    closeModal('modal-reforco');
+    exigirAdmin(`Reforço de ${fmt(val)}`, async (motivo) => {
+      document.getElementById('ref-desc').value = motivo;
+      openModal('modal-reforco');
+      await _confirmarReforcoOriginal();
+      registrarAudit('reforco', `Reforço de ${fmt(val)} — ${motivo}`, _operadorAtual?.nome||G.profile?.nome, '', 'success');
+    }, 'reforco');
+  } else {
+    await _confirmarReforcoOriginal();
+    registrarAudit('reforco', 'Reforço registrado', _operadorAtual?.nome||G.profile?.nome, '', 'success');
   }
 };
 
