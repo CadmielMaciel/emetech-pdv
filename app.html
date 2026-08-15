@@ -4,6 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>MISU MOBILE</title>
+<script>
+/* Fatia 9: aplica o tema salvo ANTES de renderizar, igual ao index.html —
+   evita "piscada" de tela clara e mantém o tema consistente com o desktop
+   (mesma chave localStorage 'misu_tema'). */
+try{
+  var _temaSalvoApp = localStorage.getItem('misu_tema');
+  if(_temaSalvoApp==='dark'||_temaSalvoApp==='light') document.documentElement.setAttribute('data-theme',_temaSalvoApp);
+}catch(e){}
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -23,7 +32,21 @@
   --glow:0 10px 26px -8px rgba(91,63,232,.45);
   --ring:0 0 0 4px rgba(91,63,232,.12);
   --r:16px;
+  --navh:64px;
 }
+/* Fatia 9: tema escuro — mesma paleta e mesma chave (misu_tema) do sistema desktop */
+[data-theme="dark"]{
+  --bg:#070B1A;--bg2:#0B1228;--card:#101A38;
+  --txt:#EAF0FF;--txt2:#A8BAE8;--txt3:#6B7FB8;
+  --border:#1B2A55;--border2:#25376B;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.35);
+  --shadow:0 2px 6px rgba(0,0,0,.35),0 10px 30px -12px rgba(0,0,0,.55);
+}
+[data-theme="dark"] .login-card,[data-theme="dark"] .success-ic{background:var(--card)}
+[data-theme="dark"] .inp{background:var(--card);color:var(--txt)}
+[data-theme="dark"] .btn-out{background:var(--card)}
+[data-theme="dark"] .topbar{background:var(--bg2)}
+[data-theme="dark"] body{background:linear-gradient(180deg,#0B1330,var(--bg) 240px) no-repeat,var(--bg)}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{max-width:100%;overflow-x:hidden}
 body{font-family:'DM Sans',sans-serif;background:linear-gradient(180deg,#EEE9FB,var(--bg) 240px) no-repeat,var(--bg);color:var(--txt);min-height:100vh;min-height:100dvh;-webkit-font-smoothing:antialiased}
@@ -156,6 +179,48 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
   #etq-label,#etq-label *{visibility:visible!important}
   #etq-label{position:absolute;left:0;top:0;border:none!important;box-shadow:none!important}
 }
+
+/* ── Fatia 9: BOTTOM NAVIGATION ── */
+#app{padding-bottom:calc(var(--navh) + var(--sab))}
+#bottom-nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--border2);padding:6px 4px calc(6px + var(--sab));z-index:55;box-shadow:0 -4px 20px -8px rgba(24,16,56,.12)}
+#bottom-nav .bn-it{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:52px;border:none;background:none;color:var(--txt3);font-size:10.5px;font-weight:700;cursor:pointer;border-radius:12px;padding:4px}
+#bottom-nav .bn-it i{font-size:21px}
+#bottom-nav .bn-it.on{color:var(--pri)}
+#bottom-nav .bn-it:active{background:var(--bg2)}
+/* esconde a barra do carrinho por cima do bottom-nav quando ambos aparecem */
+#cart-bar{bottom:calc(var(--navh) + 10px + var(--sab))!important}
+
+/* ── Fatia 9: FOLHA "MAIS" (bottom sheet) ── */
+#sheet-overlay{position:fixed;inset:0;background:rgba(10,6,30,.45);z-index:150;display:none}
+#sheet-mais{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-radius:22px 22px 0 0;padding:10px 16px calc(18px + var(--sab));z-index:151;display:none;box-shadow:0 -10px 40px rgba(0,0,0,.25);max-height:80vh;overflow-y:auto}
+#sheet-mais .sheet-handle{width:38px;height:4px;background:var(--border);border-radius:99px;margin:6px auto 14px}
+#sheet-mais .sheet-it{display:flex;align-items:center;gap:14px;padding:13px 6px;border-radius:14px;cursor:pointer;color:var(--txt);font-weight:600;font-size:15px}
+#sheet-mais .sheet-it:active{background:var(--bg2)}
+#sheet-mais .sheet-it i{font-size:20px;color:var(--pri);width:24px;text-align:center}
+#sheet-mais .sheet-it.danger i,#sheet-mais .sheet-it.danger{color:var(--danger)}
+#sheet-mais hr{border:none;border-top:1px solid var(--border2);margin:6px 0}
+
+/* ── Fatia 9: banner de instalação PWA ── */
+#install-banner{display:none;align-items:center;gap:12px;background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;border-radius:16px;padding:13px 15px;margin-bottom:16px;box-shadow:var(--glow)}
+#install-banner i{font-size:24px;flex-shrink:0}
+#install-banner .ib-txt{flex:1;font-size:12.5px;font-weight:600;line-height:1.35}
+#install-banner button{background:rgba(255,255,255,.18);border:1.5px solid rgba(255,255,255,.4);color:#fff;border-radius:10px;padding:8px 12px;font-size:12.5px;font-weight:700;cursor:pointer;flex-shrink:0}
+
+/* ── Fatia 9: cards de resumo do dia ── */
+.resumo-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:22px}
+.rc{background:var(--card);border:1px solid var(--border2);border-radius:16px;padding:13px;box-shadow:var(--shadow-sm)}
+.rc-lbl{font-size:10.5px;color:var(--txt3);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
+.rc-val{font-family:'Syne',sans-serif;font-size:19px;font-weight:800;color:var(--txt)}
+.rc-val.locked{font-size:15px;color:var(--txt3);display:flex;align-items:center;gap:5px;cursor:pointer}
+.rc.warn .rc-val{color:var(--warn)}
+.rc.danger .rc-val{color:var(--danger)}
+.rc.ok .rc-val{color:var(--ok)}
+
+/* ── Fatia 9: modal simples de PIN (autorização) ── */
+#modal-pin-overlay{position:fixed;inset:0;background:rgba(10,6,30,.5);z-index:160;display:none;align-items:flex-end;justify-content:center}
+#modal-pin{background:var(--card);border-radius:22px 22px 0 0;padding:22px 20px calc(22px + var(--sab));width:100%;max-width:460px;animation:up .25s ease}
+#modal-pin .mp-title{font-weight:800;font-size:16px;margin-bottom:4px}
+#modal-pin .mp-sub{font-size:12.5px;color:var(--txt3);margin-bottom:14px}
 </style>
 </head>
 <body>
@@ -187,6 +252,25 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
   <div class="wrap" id="scr-home">
     <div class="home-hi" id="hi">Olá 👋</div>
     <div class="home-sub">O que você quer fazer?</div>
+
+    <div id="install-banner">
+      <i class="ti ti-download"></i>
+      <div class="ib-txt">Instale o MISU MOBILE na tela inicial pra abrir mais rápido.</div>
+      <button onclick="instalarPWA()">Instalar</button>
+    </div>
+
+    <!-- Fatia 9: resumo do dia — só contagens/status não sensíveis; lucro fica atrás de PIN -->
+    <div class="resumo-grid" id="resumo-grid">
+      <div class="rc"><div class="rc-lbl">Vendas hoje</div><div class="rc-val" id="rc-vendas">—</div></div>
+      <div class="rc" id="rc-caixa-box"><div class="rc-lbl">Caixa</div><div class="rc-val" id="rc-caixa">—</div></div>
+      <div class="rc" id="rc-os-box"><div class="rc-lbl">OS em aberto</div><div class="rc-val" id="rc-os">—</div></div>
+      <div class="rc" id="rc-estoque-box"><div class="rc-lbl">Estoque baixo</div><div class="rc-val" id="rc-estbaixo">—</div></div>
+      <div class="rc" style="grid-column:1/-1" id="rc-lucro-box">
+        <div class="rc-lbl">Lucro estimado hoje</div>
+        <div class="rc-val locked" id="rc-lucro" onclick="pedirPinParaLucro()"><i class="ti ti-lock"></i> Toque para ver (PIN de Admin/Gerente)</div>
+      </div>
+    </div>
+
     <div class="mod" onclick="abrir('produto')">
       <div class="mod-ic" style="background:#ede9fe;color:#5B3FE8">📦</div>
       <div><div class="mod-t">Cadastrar Produto</div><div class="mod-d">Foto, código de barras e salvar na loja</div></div>
@@ -294,7 +378,10 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 
   <!-- ESTOQUE -->
   <div class="wrap hidden" id="scr-estoque">
-    <input class="inp" id="est-busca" placeholder="🔍 Buscar produto..." oninput="renderEstoque(this.value)" style="margin-bottom:14px">
+    <div class="bc-row" style="margin-bottom:14px">
+      <input class="inp" id="est-busca" placeholder="🔍 Buscar produto..." oninput="renderEstoque(this.value)">
+      <button class="icon-btn" onclick="abrirScanner('estoque')" title="Escanear para vender"><i class="ti ti-scan"></i></button>
+    </div>
     <div id="estoque-list"></div>
   </div>
   <div class="wrap hidden" id="scr-venda">
@@ -365,6 +452,39 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
     <span style="font-weight:800" id="cart-total"></span>
   </div>
 
+<!-- Fatia 9: NAVEGAÇÃO INFERIOR (máx. 5 itens, sempre com "Mais" p/ tema/instalar/sair) -->
+<div id="bottom-nav" class="hidden">
+  <button class="bn-it on" id="bn-inicio" onclick="goHome()"><i class="ti ti-home"></i>Início</button>
+  <button class="bn-it" id="bn-vender" onclick="abrir('estoque')"><i class="ti ti-shopping-cart"></i>Vender</button>
+  <button class="bn-it" id="bn-os" onclick="abrir('os')"><i class="ti ti-tool"></i>OS</button>
+  <button class="bn-it" id="bn-produto" onclick="abrir('produto')"><i class="ti ti-package"></i>Produto</button>
+  <button class="bn-it" id="bn-mais" onclick="abrirMais()"><i class="ti ti-dots"></i>Mais</button>
+</div>
+
+<!-- Fatia 9: FOLHA "MAIS" -->
+<div id="sheet-overlay" onclick="fecharMais()"></div>
+<div id="sheet-mais">
+  <div class="sheet-handle"></div>
+  <div class="sheet-it" onclick="fecharMais();abrir('venda')"><i class="ti ti-qrcode"></i>Venda rápida (link/QR)</div>
+  <div class="sheet-it" onclick="toggleTemaApp()"><i class="ti ti-moon" id="tema-ic"></i><span id="tema-lbl">Tema escuro</span></div>
+  <div class="sheet-it" id="sheet-instalar" style="display:none" onclick="instalarPWA()"><i class="ti ti-download"></i>Instalar aplicativo</div>
+  <div class="sheet-it" id="sheet-suporte" style="display:none" onclick="abrirSuporte()"><i class="ti ti-headset"></i>Suporte</div>
+  <hr>
+  <div class="sheet-it danger" onclick="doLogout()"><i class="ti ti-logout"></i>Sair</div>
+</div>
+
+<!-- Fatia 9: modal de PIN (Admin/Gerente) p/ liberar lucro do dia -->
+<div id="modal-pin-overlay" onclick="if(event.target===this)fecharPinModal()">
+  <div id="modal-pin">
+    <div class="mp-title">Autorização necessária</div>
+    <div class="mp-sub">Digite o PIN de um Admin ou Gerente para ver o lucro estimado.</div>
+    <input class="inp" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="pin-lucro-input" placeholder="••••" onkeydown="if(event.key==='Enter')confirmarPinLucro()">
+    <div id="pin-lucro-erro" style="color:var(--danger);font-size:12.5px;margin-top:8px;min-height:16px"></div>
+    <button class="btn" style="margin-top:10px" onclick="confirmarPinLucro()"><i class="ti ti-check"></i>Confirmar</button>
+    <button class="btn btn-ghost" style="margin-top:6px" onclick="fecharPinModal()">Cancelar</button>
+  </div>
+</div>
+
 <!-- SCANNER -->
 <div id="scan">
   <div class="scan-top"><div></div><button class="scan-close" onclick="fecharScanner()"><i class="ti ti-x"></i></button></div>
@@ -393,6 +513,17 @@ function notify(msg,tipo){
   $('toast').appendChild(t); setTimeout(()=>t.remove(),3500);
 }
 
+// Fatia 9: nunca mostrar erro técnico bruto (stack, "TypeError", erro de
+// rede/Postgres) na tela — só as mensagens que o próprio app escreveu pro
+// usuário. O erro completo continua indo pro console para investigação.
+function msgAmigavel(e,fallback){
+  const m=String(e?.message||'');
+  const conhecidas=[/^Conecte sua conta InfinitePay/,/^Não foi possível gerar a cobrança\.?$/,/^Informe /,/^Esta conta não é de uma empresa/,/^Empresa bloqueada/,/^E-mail ou senha incorretos/,/^Já existe um produto/];
+  if(conhecidas.some(rx=>rx.test(m))) return m;
+  if(e) console.error('[MISU MOBILE]', e);
+  return fallback||'Não foi possível concluir esta ação. Tente novamente.';
+}
+
 /* ── LOGIN ── */
 async function doLogin(){
   const em=$('l-email').value.trim(), pw=$('l-pass').value, err=$('l-err'), btn=$('l-btn');
@@ -407,7 +538,7 @@ async function doLogin(){
     await carregarEmpresa(data.user);
     ok=true;
   }catch(e){
-    err.textContent = (e?.message==='Invalid login credentials') ? 'E-mail ou senha incorretos.' : ('Não foi possível entrar: '+(e?.message||'erro'));
+    err.textContent = (e?.message==='Invalid login credentials') ? 'E-mail ou senha incorretos.' : msgAmigavel(e,'Não foi possível entrar. Tente novamente em instantes.');
     err.style.display='block';
     try{ await db.auth.signOut(); }catch(_){}
   }finally{
@@ -424,10 +555,14 @@ async function carregarEmpresa(user){
   $('hi').textContent='Olá 👋';
   $('login').classList.add('hidden');
   $('app').classList.remove('hidden');
+  $('bottom-nav').classList.remove('hidden');
   goHome();
   carregarMarca(emp.id);
   carregarRecentes();
   carregarContexto();
+  carregarResumoDia();
+  carregarConfigSuporte();
+  _atualizarIconeTema();
 }
 
 /* ── CONTEXTO DE VENDA (caixa aberto + operador) ── */
@@ -437,10 +572,118 @@ async function carregarContexto(){
     G.caixa=(cx&&cx[0])||null;
   }catch(_){ G.caixa=null; }
   try{
-    const {data:us}=await comTimeout(db.from('usuarios').select('id,nome,role').eq('empresa_id',G.empresaId).order('nome').limit(30),'usuarios');
+    // Fatia 9: também traz o pin (só id/role/pin/ativo, nada sensível além do
+    // próprio PIN de 4 dígitos, já usado no desktop pra troca de perfil) —
+    // usado no gate de PIN pra revelar o lucro estimado do dia.
+    const {data:us}=await comTimeout(db.from('usuarios').select('id,nome,role,pin,ativo').eq('empresa_id',G.empresaId).order('nome').limit(60),'usuarios');
     const arr=us||[];
+    G.usuarios=arr;
     G.operador=arr.find(u=>['admin','admin_master','gerente'].includes(u.role))||arr[0]||null;
-  }catch(_){ G.operador=null; }
+  }catch(_){ G.operador=null; G.usuarios=[]; }
+}
+
+/* ── Fatia 9: RESUMO DO DIA (tela inicial) ──
+   Só mostra contagens/status que não são sensíveis (vendas do dia, caixa,
+   OS em aberto, estoque baixo). Lucro fica escondido atrás do PIN de um
+   Admin/Gerente — ver pedirPinParaLucro()/confirmarPinLucro(). */
+let _lucroHojeCache=null;
+async function carregarResumoDia(){
+  const hoje=new Date(); hoje.setHours(0,0,0,0);
+  try{
+    const {data}=await comTimeout(db.from('vendas').select('total,lucro,criado_em').eq('empresa_id',G.empresaId).gte('criado_em',hoje.toISOString()).limit(500),'vendas hoje');
+    const list=data||[];
+    const tot=list.reduce((s,v)=>s+(Number(v.total)||0),0);
+    _lucroHojeCache=list.reduce((s,v)=>s+(Number(v.lucro)||0),0);
+    $('rc-vendas').textContent=list.length+' · R$ '+tot.toLocaleString('pt-BR',{minimumFractionDigits:2});
+  }catch(_){ $('rc-vendas').textContent='—'; }
+  const caixaEl=$('rc-caixa'), caixaBox=$('rc-caixa-box');
+  if(G.caixa){ caixaEl.textContent='Aberto'; caixaBox.className='rc ok'; }
+  else { caixaEl.textContent='Fechado'; caixaBox.className='rc'; }
+  try{
+    const {count}=await comTimeout(db.from('ordens_servico').select('id',{count:'exact',head:true}).eq('empresa_id',G.empresaId).not('status','in','("Entregue","Cancelada")'),'os abertas');
+    $('rc-os').textContent = (count==null?'—':count);
+  }catch(_){ $('rc-os').textContent='—'; }
+  try{
+    const {data:prods}=await comTimeout(db.from('produtos').select('estoque,estoque_minimo').eq('empresa_id',G.empresaId).eq('status','ativo').limit(1000),'estoque baixo');
+    const baixo=(prods||[]).filter(p=>(Number(p.estoque)||0) <= (Number(p.estoque_minimo)||0)).length;
+    const box=$('rc-estoque-box'); $('rc-estbaixo').textContent=baixo;
+    box.className = baixo>0 ? 'rc warn' : 'rc';
+  }catch(_){ $('rc-estbaixo').textContent='—'; }
+}
+
+/* ── Fatia 9: PIN de Admin/Gerente pra revelar o lucro do dia (mesmo
+   mecanismo de PIN já usado no desktop pra trocar de perfil) ── */
+function pedirPinParaLucro(){
+  $('pin-lucro-input').value=''; $('pin-lucro-erro').textContent='';
+  $('modal-pin-overlay').style.display='flex';
+  setTimeout(()=>$('pin-lucro-input')?.focus(),150);
+}
+function fecharPinModal(){ $('modal-pin-overlay').style.display='none'; }
+function confirmarPinLucro(){
+  const pin=($('pin-lucro-input').value||'').trim();
+  if(!/^\d{4}$/.test(pin)){ $('pin-lucro-erro').textContent='Digite o PIN de 4 dígitos.'; return; }
+  const autorizador=(G.usuarios||[]).find(u=>u.ativo && ['admin','admin_master','gerente'].includes(u.role) && u.pin===pin);
+  if(!autorizador){ $('pin-lucro-erro').textContent='PIN inválido ou sem permissão.'; return; }
+  fecharPinModal();
+  const el=$('rc-lucro');
+  el.classList.remove('locked');
+  el.textContent='R$ '+(Number(_lucroHojeCache)||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
+  el.onclick=null;
+}
+
+/* ── Fatia 9: SUPORTE (mesma fonte usada no sistema desktop: app_config) ── */
+let SUPORTE_WPP='5575999999999';
+async function carregarConfigSuporte(){
+  try{
+    const {data}=await comTimeout(db.from('app_config').select('suporte_whatsapp').eq('id',1).maybeSingle(),'suporte');
+    if(data?.suporte_whatsapp) SUPORTE_WPP=String(data.suporte_whatsapp).replace(/\D/g,'');
+    $('sheet-suporte').style.display='flex';
+  }catch(_){ $('sheet-suporte').style.display='flex'; }
+}
+function abrirSuporte(){
+  fecharMais();
+  const msg='Olá! Preciso de suporte com o MISU SYS (app mobile).';
+  window.open(`https://wa.me/${SUPORTE_WPP}?text=${encodeURIComponent(msg)}`,'_blank');
+}
+
+/* ── Fatia 9: INSTALAR COMO APP (PWA) ──
+   Espelha o fluxo já existente no index.html — botão custom porque o
+   Android/Chrome não mostra o prompt nativo automaticamente, e iOS não
+   dispara beforeinstallprompt (precisa de instrução manual). */
+let _deferredInstallPrompt=null;
+const _isIOSApp=/iPhone|iPad|iPod/i.test(navigator.userAgent) && !window.MSStream;
+const _jaInstaladoApp = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true;
+window.addEventListener('beforeinstallprompt',(e)=>{
+  e.preventDefault();
+  _deferredInstallPrompt=e;
+  if(!_jaInstaladoApp){ $('install-banner').style.display='flex'; $('sheet-instalar').style.display='flex'; }
+});
+window.addEventListener('appinstalled',()=>{
+  _deferredInstallPrompt=null;
+  $('install-banner').style.display='none';
+  $('sheet-instalar').style.display='none';
+});
+async function instalarPWA(){
+  if(_deferredInstallPrompt){
+    _deferredInstallPrompt.prompt();
+    try{ await _deferredInstallPrompt.userChoice; }catch(_){}
+    _deferredInstallPrompt=null;
+    $('install-banner').style.display='none';
+    return;
+  }
+  if(_isIOSApp && !_jaInstaladoApp){
+    notify('No iPhone: toque no ícone de compartilhar (□↑) e depois em "Adicionar à Tela de Início".','info');
+    return;
+  }
+  notify('Abra o menu do navegador (⋮) e toque em "Instalar aplicativo".','info');
+}
+// No iPhone/iPad, mostra o banner de instalação com instrução direta (não
+// existe beforeinstallprompt no Safari). Este <script> já está no fim do
+// <body>, então o DOM acima já existe — não precisa esperar DOMContentLoaded.
+if(_isIOSApp && !_jaInstaladoApp){
+  const ib=$('install-banner');
+  if(ib){ ib.style.display='flex'; ib.querySelector('.ib-txt').textContent='No iPhone: toque em compartilhar (□↑) e "Adicionar à Tela de Início".'; }
+  const si=$('sheet-instalar'); if(si) si.style.display='flex';
 }
 
 /* ── SINCRONIZAÇÃO DE MARCA (cores + logo da empresa) ── */
@@ -479,6 +722,15 @@ async function carregarRecentes(){
 }
 
 /* ── NAVEGAÇÃO ── */
+// Fatia 9: marca o item ativo na navegação inferior (Início/Vender/OS/Produto);
+// telas sem item correspondente (carrinho, sucesso, etiqueta, venda rápida)
+// simplesmente não destacam nada — o usuário volta pela seta ou pelo próprio nav.
+function _marcarNavAtivo(scr){
+  const mapa={home:'inicio',estoque:'vender',cart:'vender',os:'os',produto:'produto'};
+  const alvo=mapa[scr]||null;
+  document.querySelectorAll('#bottom-nav .bn-it').forEach(b=>b.classList.remove('on'));
+  if(alvo) $('bn-'+alvo)?.classList.add('on');
+}
 function abrir(scr){
   ['home','produto','os','os-ok','venda','venda-ok','estoque','cart','etiqueta'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
   $('scr-'+scr).classList.remove('hidden');
@@ -486,12 +738,54 @@ function abrir(scr){
   $('scr-title').textContent = ({produto:'Cadastrar Produto',os:'OS Rápida',venda:'Venda Rápida',estoque:'Estoque',cart:'Carrinho',etiqueta:'Etiqueta'})[scr]||scr;
   if(scr==='estoque') abrirEstoque();
   if(scr==='cart') renderCart();
+  _marcarNavAtivo(scr);
 }
 function goHome(){
   ['produto','os','os-ok','venda','venda-ok','estoque','cart','etiqueta'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
   $('scr-home').classList.remove('hidden');
   $('btn-back').classList.add('hidden');
   $('scr-title').textContent='Início';
+  _marcarNavAtivo('home');
+}
+
+/* ── Fatia 9: FOLHA "MAIS" ── */
+function abrirMais(){
+  $('sheet-overlay').style.display='block';
+  $('sheet-mais').style.display='block';
+}
+function fecharMais(){
+  $('sheet-overlay').style.display='none';
+  $('sheet-mais').style.display='none';
+}
+
+/* ── Fatia 9: TEMA CLARO/ESCURO (mesma chave 'misu_tema' do sistema desktop) ── */
+function _atualizarIconeTema(){
+  const dark=document.documentElement.getAttribute('data-theme')==='dark';
+  const ic=$('tema-ic'), lbl=$('tema-lbl');
+  if(ic) ic.className='ti '+(dark?'ti-sun':'ti-moon');
+  if(lbl) lbl.textContent=dark?'Tema claro':'Tema escuro';
+}
+function toggleTemaApp(){
+  const dark=document.documentElement.getAttribute('data-theme')==='dark';
+  const novo=dark?'light':'dark';
+  document.documentElement.setAttribute('data-theme',novo);
+  try{ localStorage.setItem('misu_tema',novo); }catch(_){}
+  _atualizarIconeTema();
+}
+
+/* ── Fatia 9: LOGOUT SEGURO ──
+   O app leve não guarda dado sensível próprio no localStorage (confirmado
+   no diagnóstico da Fatia 9) — a sessão fica só no storage interno do
+   supabase-js, que o signOut() já limpa. Mesmo assim, zera o estado em
+   memória (carrinho, fotos, cache de estoque) antes de recarregar, pra
+   nenhuma tela ficar reaproveitando dado da sessão anterior. */
+async function doLogout(){
+  fecharMais();
+  try{
+    G.cart=[]; G.fotos=[]; G.osFotos=[]; G.estoqueCache=null; G.ultimaOS=null; G.ultimaVenda=null;
+    await db.auth.signOut();
+  }catch(_){}
+  location.reload();
 }
 
 /* ── FOTOS (base64 → produtos.fotos) ── */
@@ -509,12 +803,17 @@ function renderThumbs(){
   $('p-thumbs').innerHTML=G.fotos.map((s,i)=>`<div class="thumb"><img src="${s}"><button class="del" onclick="G.fotos.splice(${i},1);renderThumbs()">✕</button></div>`).join('');
 }
 
-/* ── SCANNER (ZXing — funciona no Safari; só câmera traseira) ── */
+/* ── SCANNER (ZXing — funciona no Safari; só câmera traseira) ──
+   Fatia 9: agora aceita um "modo" — 'produto' (padrão, preenche o campo de
+   código de barras do cadastro) ou 'estoque' (busca o produto no estoque e
+   já joga no carrinho, pra agilizar a venda pelo PDV mobile). */
 let _zxReader=null;
-async function abrirScanner(){
+let _scanModo='produto';
+async function abrirScanner(modo){
+  _scanModo=modo||'produto';
   if(typeof ZXing==='undefined'){ notify('Scanner ainda carregando, tente de novo em 1s.','warn'); return; }
   $('scan').style.display='flex';
-  $('scan-hint').textContent='Permita a câmera e aponte para o código';
+  $('scan-hint').textContent='Aponte para o código de barras';
   try{
     _zxReader=new ZXing.BrowserMultiFormatReader();
     // facingMode environment = câmera TRASEIRA; getUserMedia pede a permissão ao dono
@@ -524,22 +823,31 @@ async function abrirScanner(){
       (result)=>{
         if(result){
           const cod=result.getText();
-          $('p-bc').value=cod;
-          notify('Código lido: '+cod,'ok');
           fecharScanner();
+          if(_scanModo==='estoque') buscarPorCodigoEstoque(cod);
+          else { $('p-bc').value=cod; notify('Código lido com sucesso.','ok'); }
         }
       }
     );
   }catch(e){
     const nm=e?.name||'';
-    if(nm==='NotAllowedError') notify('Permissão da câmera negada. Libere nos ajustes do navegador.','err');
-    else notify('Não foi possível abrir a câmera.','err');
+    if(nm==='NotAllowedError') notify('Não foi possível acessar a câmera. Digite o código manualmente.','err');
+    else notify('Não foi possível acessar a câmera. Digite o código manualmente.','err');
     fecharScanner();
   }
 }
 function fecharScanner(){
   try{ if(_zxReader){ _zxReader.reset(); _zxReader=null; } }catch(_){}
   $('scan').style.display='none';
+}
+// Busca por código de barras no estoque já carregado; se achar, manda direto pro carrinho.
+async function buscarPorCodigoEstoque(cod){
+  let lista=G.estoqueCache;
+  if(!lista){ try{ await abrirEstoque(); lista=G.estoqueCache; }catch(_){} }
+  const p=(lista||[]).find(x=>String(x.barcode||'').trim()===String(cod).trim());
+  if(!p){ notify('Produto não encontrado.','warn'); if($('est-busca')) $('est-busca').value=cod; renderEstoque(cod); return; }
+  notify('Código lido com sucesso.','ok');
+  addAoCarrinho(p.id);
 }
 
 /* ── SALVAR PRODUTO ── */
@@ -579,7 +887,7 @@ async function salvarProduto(){
     $('p-est').value='1'; G.fotos=[]; renderThumbs();
     goHome(); carregarRecentes();
   }catch(e){
-    notify('Erro ao salvar: '+(e?.message||'tente de novo'),'err');
+    notify(msgAmigavel(e,'Não foi possível salvar o produto.'),'err');
   }finally{
     btn.disabled=false; btn.innerHTML='<i class="ti ti-device-floppy"></i>Salvar na loja';
   }
@@ -633,7 +941,7 @@ async function criarOSRapida(){
     ['os','produto'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
     $('scr-os-ok').classList.remove('hidden');
     $('scr-title').textContent='OS criada';
-  }catch(e){ notify('Erro: '+(e?.message||'tente de novo'),'err'); }
+  }catch(e){ notify(msgAmigavel(e,'Não foi possível criar a OS.'),'err'); }
   finally{ btn.disabled=false; btn.innerHTML='<i class="ti ti-plus"></i>Criar OS e gerar link'; }
 }
 function linkOS(){ return G.ultimaOS?.token_publico ? (location.origin+'/os.html?t='+G.ultimaOS.token_publico) : null; }
@@ -675,7 +983,7 @@ async function gerarVendaRapida(){
     ['venda','produto','os'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
     $('scr-venda-ok').classList.remove('hidden');
     $('scr-title').textContent='Cobrança';
-  }catch(e){ notify(e?.message||'Erro ao gerar cobrança.','err'); }
+  }catch(e){ notify(msgAmigavel(e,'Não foi possível gerar a cobrança.'),'err'); }
   finally{ btn.disabled=false; btn.innerHTML='<i class="ti ti-qrcode"></i>Gerar link de pagamento'; }
 }
 function enviarLinkVenda(){
@@ -692,7 +1000,7 @@ async function abrirEstoque(){
   const c=$('estoque-list');
   c.innerHTML='<div style="text-align:center;padding:30px"><div class="spinner" style="border-color:rgba(0,0,0,.12);border-top-color:var(--pri);margin:0 auto"></div></div>';
   try{
-    const {data}=await comTimeout(db.from('produtos').select('id,nome,preco,estoque,estoque_minimo,fotos').eq('empresa_id',G.empresaId).eq('status','ativo').order('nome').limit(500),'estoque');
+    const {data}=await comTimeout(db.from('produtos').select('id,nome,preco,estoque,estoque_minimo,fotos,barcode').eq('empresa_id',G.empresaId).eq('status','ativo').order('nome').limit(500),'estoque');
     G.estoqueCache=data||[];
     renderEstoque($('est-busca')?.value||'');
   }catch(e){ c.innerHTML='<div style="text-align:center;padding:22px;color:var(--danger)">Erro ao carregar estoque.</div>'; }
@@ -800,7 +1108,7 @@ async function finalizarVenda(){
       notify('✅ Venda registrada e estoque baixado!','ok');
     }
     limparCarrinho(); goHome();
-  }catch(e){ notify('Erro: '+(e?.message||'tente de novo'),'err'); }
+  }catch(e){ notify(msgAmigavel(e,'Não foi possível finalizar a venda.'),'err'); }
   finally{ btn.disabled=false; btn.innerHTML='<i class="ti ti-check"></i>Finalizar venda'; }
 }
 
