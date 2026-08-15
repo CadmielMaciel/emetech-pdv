@@ -221,6 +221,17 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 #modal-pin{background:var(--card);border-radius:22px 22px 0 0;padding:22px 20px calc(22px + var(--sab));width:100%;max-width:460px;animation:up .25s ease}
 #modal-pin .mp-title{font-weight:800;font-size:16px;margin-bottom:4px}
 #modal-pin .mp-sub{font-size:12.5px;color:var(--txt3);margin-bottom:14px}
+
+/* ── Fatia 9: passo a passo de instalação no iPhone ── */
+#modal-ios-overlay{position:fixed;inset:0;background:rgba(10,6,30,.55);z-index:170;display:none;align-items:flex-end;justify-content:center}
+#modal-ios{background:var(--card);border-radius:22px 22px 0 0;padding:22px 20px calc(22px + var(--sab));width:100%;max-width:460px;animation:up .25s ease;max-height:85vh;overflow-y:auto}
+#modal-ios .mp-title{font-weight:800;font-size:17px;margin-bottom:4px}
+#modal-ios .mp-sub{font-size:13px;color:var(--txt3);margin-bottom:16px;line-height:1.4}
+.ios-passo{display:flex;gap:13px;align-items:flex-start;margin-bottom:16px}
+.ios-passo-n{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ios-passo-t{font-size:14px;font-weight:600;line-height:1.4;padding-top:3px}
+.ios-passo-ic{font-size:20px;color:var(--pri);margin:0 3px}
+.ios-aviso{background:linear-gradient(135deg,#FEF6DA,#FEF3C7);border:1px solid #FCE38A;border-radius:12px;padding:11px 13px;font-size:12px;color:#8A5B00;margin-bottom:14px;line-height:1.4}
 </style>
 </head>
 <body>
@@ -473,6 +484,16 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
   <div class="sheet-it danger" onclick="doLogout()"><i class="ti ti-logout"></i>Sair</div>
 </div>
 
+<!-- Fatia 9: passo a passo de instalação no iPhone/iPad (fica na tela até fechar) -->
+<div id="modal-ios-overlay" onclick="if(event.target===this)fecharInstrucaoIOS()">
+  <div id="modal-ios">
+    <div class="mp-title" id="ios-titulo">Como instalar no iPhone</div>
+    <div class="mp-sub" id="ios-sub">O iPhone não deixa nenhum app instalar sozinho — são só 3 toques no Safari:</div>
+    <div id="ios-passos"></div>
+    <button class="btn" style="margin-top:14px" onclick="fecharInstrucaoIOS()"><i class="ti ti-check"></i>Entendi</button>
+  </div>
+</div>
+
 <!-- Fatia 9: modal de PIN (Admin/Gerente) p/ liberar lucro do dia -->
 <div id="modal-pin-overlay" onclick="if(event.target===this)fecharPinModal()">
   <div id="modal-pin">
@@ -651,7 +672,14 @@ function abrirSuporte(){
    Android/Chrome não mostra o prompt nativo automaticamente, e iOS não
    dispara beforeinstallprompt (precisa de instrução manual). */
 let _deferredInstallPrompt=null;
-const _isIOSApp=/iPhone|iPad|iPod/i.test(navigator.userAgent) && !window.MSStream;
+const _uaApp=navigator.userAgent||'';
+const _isIOSApp=/iPhone|iPad|iPod/i.test(_uaApp) && !window.MSStream;
+const _isIPadApp=/iPad/i.test(_uaApp) || (/Macintosh/i.test(_uaApp) && navigator.maxTouchPoints>1); // iPadOS 13+ finge ser Mac
+// Fora do Safari (Chrome/Firefox iOS, ou navegador embutido de Instagram/
+// WhatsApp/Facebook), o iOS não mostra "Adicionar à Tela de Início" —
+// precisa abrir o link no Safari de verdade primeiro.
+const _dentroDeAppEmbutido=/FBAN|FBAV|Instagram|Line\/|MicroMessenger|TikTok|; ?wv\)/i.test(_uaApp);
+const _isSafariRealApp=_isIOSApp && !/CriOS|FxiOS|EdgiOS|OPiOS/i.test(_uaApp) && !_dentroDeAppEmbutido;
 const _jaInstaladoApp = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true;
 window.addEventListener('beforeinstallprompt',(e)=>{
   e.preventDefault();
@@ -671,18 +699,38 @@ async function instalarPWA(){
     $('install-banner').style.display='none';
     return;
   }
-  if(_isIOSApp && !_jaInstaladoApp){
-    notify('No iPhone: toque no ícone de compartilhar (□↑) e depois em "Adicionar à Tela de Início".','info');
-    return;
-  }
+  if(_isIOSApp && !_jaInstaladoApp){ abrirInstrucaoIOS(); return; }
   notify('Abra o menu do navegador (⋮) e toque em "Instalar aplicativo".','info');
 }
-// No iPhone/iPad, mostra o banner de instalação com instrução direta (não
-// existe beforeinstallprompt no Safari). Este <script> já está no fim do
-// <body>, então o DOM acima já existe — não precisa esperar DOMContentLoaded.
+
+/* ── Fatia 9: passo a passo de instalação no iPhone/iPad ──
+   Fica na tela até o usuário tocar em "Entendi" — antes era um toast de
+   3,5s que sumia rápido demais pra dar tempo de seguir o passo a passo. */
+function abrirInstrucaoIOS(){
+  const passosEl=$('ios-passos'); const subEl=$('ios-sub');
+  if(!_isSafariRealApp){
+    subEl.innerHTML='';
+    passosEl.innerHTML=`<div class="ios-aviso"><i class="ti ti-alert-triangle"></i> Esse navegador não deixa instalar. Toque nos <b>···</b> (ou no ícone de compartilhar) e escolha <b>"Abrir no Safari"</b> — depois volte aqui e toque em Instalar de novo.</div>`;
+  } else {
+    subEl.textContent='O iPhone não deixa nenhum app instalar sozinho — são só 3 toques no Safari:';
+    const passo1 = _isIPadApp
+      ? 'Toque no ícone de compartilhar <i class="ti ti-square-arrow-up ios-passo-ic"></i> no canto superior direito da tela.'
+      : 'Toque no ícone de compartilhar <i class="ti ti-square-arrow-up ios-passo-ic"></i> na barra de baixo do Safari (o quadrado com a seta pra cima).';
+    passosEl.innerHTML = `
+      <div class="ios-passo"><div class="ios-passo-n">1</div><div class="ios-passo-t">${passo1}</div></div>
+      <div class="ios-passo"><div class="ios-passo-n">2</div><div class="ios-passo-t">Role a lista de opções e toque em <b>"Adicionar à Tela de Início"</b>.</div></div>
+      <div class="ios-passo"><div class="ios-passo-n">3</div><div class="ios-passo-t">Toque em <b>"Adicionar"</b> no canto superior. Pronto — o ícone do MISU aparece na tela como um app normal.</div></div>`;
+  }
+  $('modal-ios-overlay').style.display='flex';
+}
+function fecharInstrucaoIOS(){ $('modal-ios-overlay').style.display='none'; }
+
+// No iPhone/iPad, mostra o banner de instalação com instrução (não existe
+// beforeinstallprompt no Safari). Este <script> já está no fim do <body>,
+// então o DOM acima já existe — não precisa esperar DOMContentLoaded.
 if(_isIOSApp && !_jaInstaladoApp){
   const ib=$('install-banner');
-  if(ib){ ib.style.display='flex'; ib.querySelector('.ib-txt').textContent='No iPhone: toque em compartilhar (□↑) e "Adicionar à Tela de Início".'; }
+  if(ib){ ib.style.display='flex'; ib.querySelector('.ib-txt').textContent = _isSafariRealApp ? 'Instale o MISU MOBILE na tela inicial pra abrir mais rápido.' : 'Pra instalar, abra este link no Safari.'; }
   const si=$('sheet-instalar'); if(si) si.style.display='flex';
 }
 
