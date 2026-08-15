@@ -4211,6 +4211,36 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
               <div class="fg"><label class="lbl">Série NFC-e</label><input type="text" id="fisc-serie-nfce" value="001"></div>
               <div class="fg"><label class="lbl">Próximo número NFC-e</label><input type="number" id="fisc-num-nfce" value="1" min="1"></div>
             </div>
+            <div class="g2">
+              <div class="fg"><label class="lbl">Série NF-e</label><input type="text" id="fisc-serie-nfe" value="001"></div>
+              <div class="fg"><label class="lbl">Próximo número NF-e</label><input type="number" id="fisc-num-nfe" value="1" min="1"></div>
+            </div>
+          </div>
+
+          <div class="card" style="max-width:640px;margin-top:16px">
+            <div class="card-hdr" style="margin-bottom:6px"><div class="card-title"><i class="ti ti-receipt-2" style="color:var(--pri)"></i> NFS-e (nota de serviço)</div></div>
+            <div style="font-size:12px;color:var(--txt2);margin-bottom:12px">Emitida a partir de OS entregues. Regras variam <b>por município</b> — confirme código de serviço e alíquota com seu contador.</div>
+            <div class="g2">
+              <div class="fg"><label class="lbl">Código do serviço (lista LC116)</label><input type="text" id="fisc-nfse-codigo" placeholder="Ex: 14.01"></div>
+              <div class="fg"><label class="lbl">Alíquota ISS (%)</label><input type="number" id="fisc-nfse-aliquota" placeholder="Ex: 2" min="0" max="100" step="0.01"></div>
+            </div>
+            <div class="g2">
+              <div class="fg"><label class="lbl">Série RPS</label><input type="text" id="fisc-nfse-serie" value="001"></div>
+              <div class="fg"><label class="lbl">Próximo número RPS</label><input type="number" id="fisc-nfse-num" value="1" min="1"></div>
+            </div>
+            <label style="display:flex;align-items:center;gap:9px;cursor:pointer;margin:6px 0 2px">
+              <input type="checkbox" id="fisc-nfse-habilitado">
+              <span style="font-size:13px">Habilitar emissão de NFS-e nesta loja</span>
+            </label>
+          </div>
+
+          <div class="card" style="max-width:640px;margin-top:16px">
+            <div class="card-hdr" style="margin-bottom:6px"><div class="card-title"><i class="ti ti-building" style="color:var(--pri)"></i> NF-e (venda p/ empresa, devolução, transferência)</div></div>
+            <div style="font-size:12px;color:var(--txt2);margin-bottom:12px">Para venda ao consumidor final use NFC-e. Use NF-e apenas quando o destinatário tiver CNPJ.</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-pri" onclick="abrirEmitirNFe()"><i class="ti ti-file-invoice"></i> Emitir NF-e</button>
+              <button class="btn btn-out" onclick="verHistoricoNFeEmitidas()"><i class="ti ti-history"></i> Histórico</button>
+            </div>
           </div>
 
           <div class="card" style="max-width:640px;margin-top:16px">
@@ -5334,6 +5364,61 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
   <div class="modal-footer" style="margin-top:16px"><button class="btn btn-out" onclick="closeModal('modal-nfce-result')">Fechar</button></div>
 </div></div>
 
+<!-- Emitir NF-e avulsa (venda p/ outra empresa, devolução, transferência) -->
+<div class="modal-overlay" id="modal-nfe-emitir"><div class="modal" style="max-width:720px">
+  <div class="modal-title" style="font-size:17px"><i class="ti ti-file-invoice" style="color:var(--pri)"></i> Emitir NF-e</div>
+  <div class="alert-box alert-info" style="font-size:12px;margin:8px 0"><i class="ti ti-info-circle" style="font-size:14px"></i><div>Emissão de nota para <b>outra empresa</b> (CNPJ), devolução a fornecedor ou transferência entre filiais. Para venda ao consumidor final, use <b>NFC-e</b> (na tela de Venda).</div></div>
+  <div class="g2">
+    <div class="fg"><label class="lbl">Natureza da operação *</label>
+      <select id="nfe-em-natureza" onchange="_nfeEmSugerirCfop()">
+        <option value="venda">Venda</option>
+        <option value="devolucao">Devolução (a fornecedor)</option>
+        <option value="transferencia">Transferência (entre filiais/estoques)</option>
+      </select>
+    </div>
+    <div class="fg"><label class="lbl">CFOP</label><input type="text" id="nfe-em-cfop" placeholder="5102"></div>
+  </div>
+  <div class="card-hdr" style="margin:10px 0 6px"><div class="card-title" style="font-size:13px"><i class="ti ti-building" style="color:var(--pri)"></i> Destinatário</div></div>
+  <div class="g2">
+    <div class="fg"><label class="lbl">CNPJ *</label><input type="text" id="nfe-em-cnpj" placeholder="00.000.000/0000-00"></div>
+    <div class="fg"><label class="lbl">Razão social *</label><input type="text" id="nfe-em-razao"></div>
+  </div>
+  <div class="g2">
+    <div class="fg"><label class="lbl">Inscrição Estadual</label><input type="text" id="nfe-em-ie" placeholder="ISENTO se não tiver"></div>
+    <div class="fg"><label class="lbl">UF</label><input type="text" id="nfe-em-uf" maxlength="2" style="text-transform:uppercase"></div>
+  </div>
+  <div class="fg"><label class="lbl">Endereço</label><input type="text" id="nfe-em-endereco" placeholder="Rua, nº, bairro, cidade"></div>
+  <div class="card-hdr" style="margin:10px 0 6px"><div class="card-title" style="font-size:13px"><i class="ti ti-package" style="color:var(--pri)"></i> Itens</div></div>
+  <div style="display:flex;gap:6px;margin-bottom:8px">
+    <select id="nfe-em-item-prod" style="flex:1" onchange="_nfeEmPreencherItem(this)">
+      <option value="">— Selecionar produto do estoque (opcional) —</option>
+    </select>
+  </div>
+  <div class="g2" style="gap:6px">
+    <div class="fg"><label class="lbl">Descrição *</label><input type="text" id="nfe-em-item-nome"></div>
+    <div class="fg"><label class="lbl">NCM</label><input type="text" id="nfe-em-item-ncm" placeholder="00000000"></div>
+  </div>
+  <div class="g2" style="gap:6px">
+    <div class="fg"><label class="lbl">Qtd *</label><input type="number" id="nfe-em-item-qty" value="1" min="1" step="1"></div>
+    <div class="fg"><label class="lbl">Valor unit. (R$) *</label><input type="number" id="nfe-em-item-valor" value="0" min="0" step="0.01"></div>
+  </div>
+  <button class="btn btn-out btn-sm" onclick="_nfeEmAdicionarItem()" style="margin-bottom:10px"><i class="ti ti-plus"></i> Adicionar item</button>
+  <div id="nfe-em-itens-list" style="margin-bottom:10px"></div>
+  <div style="display:flex;justify-content:flex-end;font-weight:800;font-size:15px;color:var(--pri);margin-bottom:6px">Total: <span id="nfe-em-total" style="margin-left:6px">R$ 0,00</span></div>
+  <div class="fg"><label class="lbl">Observações</label><textarea id="nfe-em-obs" rows="2" placeholder="Opcional"></textarea></div>
+  <div class="modal-footer">
+    <button class="btn btn-out" onclick="closeModal('modal-nfe-emitir')">Cancelar</button>
+    <button class="btn btn-pri" onclick="confirmarEmitirNFe()"><i class="ti ti-check"></i> Emitir NF-e</button>
+  </div>
+</div></div>
+
+<!-- Resultado da NF-e -->
+<div class="modal-overlay" id="modal-nfe-result"><div class="modal sm">
+  <div class="modal-title" style="font-size:17px"><i class="ti ti-file-invoice" style="color:var(--pri)"></i> Nota Fiscal (NF-e)</div>
+  <div id="nfe-em-res-body" style="margin-top:12px"></div>
+  <div class="modal-footer" style="margin-top:16px"><button class="btn btn-out" onclick="closeModal('modal-nfe-result')">Fechar</button></div>
+</div></div>
+
 <!-- Importar NF-e -->
 <div class="modal-overlay" id="modal-nfe-import"><div class="modal sm">
   <div class="modal-title" style="font-size:17px"><i class="ti ti-file-import" style="color:var(--pri)"></i> Importar NF-e</div>
@@ -5701,11 +5786,9 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
   <div class="fg"><label class="lbl">Tipo padrão de comprovante</label>
     <select id="cup-tipo">
       <option value="nao_fiscal">Cupom Não Fiscal</option>
-      <option value="nfce" disabled>NFC-e (em breve)</option>
-      <option value="sat" disabled>SAT Fiscal (em breve)</option>
     </select>
   </div>
-  <div class="alert-box alert-info" style="font-size:12px;margin-top:8px"><i class="ti ti-info-circle" style="font-size:14px"></i><div><strong>NFC-e e SAT</strong> estão preparados na arquitetura e serão ativados em atualização futura com integração à SEFAZ.</div></div>
+  <div class="alert-box alert-info" style="font-size:12px;margin-top:8px"><i class="ti ti-info-circle" style="font-size:14px"></i><div>Emissão de <strong>NFC-e</strong> é feita em <b>Configurações → Fiscal</b> (uma vez configurada) e pelo botão "Emitir NFC-e" na tela de Venda Concluída ou no Histórico de Vendas — não depende desta opção.</div></div>
   <div class="modal-footer">
     <button class="btn btn-out" onclick="closeModal('modal-cupom-config')">Cancelar</button>
     <button class="btn btn-pri" onclick="salvarConfigCupom()"><i class="ti ti-check"></i>Salvar</button>
@@ -13965,6 +14048,7 @@ function detOS(id){
           </div>
           <span class="tag ${OC[o.status]}" style="font-size:12px;padding:5px 10px">${o.status}</span>
         </div>
+        ${_nfseBadgeOS(o)}
         ${_osPrazoBadge(o)}${_osParadaBadge(o)}${_osGarantiaBadge(o)}${_osProxBadge(o)}${_osPrioridadeSelector(o)}
         <!-- Timeline horizontal -->
         <div class="tl-mobile">${tlH}</div>
@@ -14067,6 +14151,7 @@ function detOS(id){
       <span class="tag tag-gry"><i class="ti ti-user" style="font-size:10px"></i>${o.cliente_nome}</span>
       ${o.tecnico_nome?`<span class="tag tag-blu"><i class="ti ti-badge" style="font-size:10px"></i>${o.tecnico_nome}</span>`:''}
     </div>
+    ${_nfseBadgeOS(o)}
     <!-- Abas: Dados | Peças | Checklist | Fotos | Autorizações -->
     <div class="fin-tabs" style="margin-bottom:14px">
       <button class="fin-tab active" onclick="osDTab('dados',this)"><i class="ti ti-info-circle" style="font-size:12px"></i> Dados</button>
@@ -14192,6 +14277,10 @@ function detOS(id){
         <button class="menu-acao-item" onclick="_fecharMenuAcoesOS();gerarPdfOS('${id}')"><i class="ti ti-file-download"></i> Gerar PDF</button>
         <button class="menu-acao-item" onclick="_fecharMenuAcoesOS();abrirWppOS('${id}')" style="color:#25D366"><i class="ti ti-brand-whatsapp"></i> WhatsApp</button>
         <button class="menu-acao-item" onclick="_fecharMenuAcoesOS();copiarLinkClienteOS('${id}')"><i class="ti ti-link"></i> Link do Cliente</button>
+        ${o.status==='Entregue'?`<div style="height:1px;background:var(--border);margin:5px 0"></div>
+        ${(!o.nfse_status||o.nfse_status==='nao_emitida'||o.nfse_status==='erro'||o.nfse_status==='rejeitada')?`<button class="menu-acao-item" onclick="_fecharMenuAcoesOS();emitirNFSePorId('${id}')"><i class="ti ti-file-invoice"></i> Emitir NFS-e</button>`:''}
+        ${(o.nfse_status&&o.nfse_status!=='nao_emitida')?`<button class="menu-acao-item" onclick="_fecharMenuAcoesOS();consultarNFSePorId('${id}')"><i class="ti ti-refresh"></i> Consultar NFS-e</button>`:''}
+        ${o.nfse_status==='autorizada'?`<button class="menu-acao-item" onclick="_fecharMenuAcoesOS();cancelarNFSePorId('${id}')" style="color:var(--danger)"><i class="ti ti-ban"></i> Cancelar NFS-e</button>`:''}`:''}
         ${(podeEditar && !['Entregue','Cancelada'].includes(o.status))?`<div style="height:1px;background:var(--border);margin:5px 0"></div>
         <button class="menu-acao-item" onclick="_fecharMenuAcoesOS();cancelarOS('${id}')" style="color:var(--danger)"><i class="ti ti-ban"></i> Cancelar OS</button>`:''}
       </div>
@@ -15382,7 +15471,7 @@ async function carregarConfigFiscal(){
   const set = (id,v) => { const el=g(id); if(el && v!=null) el.value=v; };
   try{
     const { data, error } = await db.from('config_fiscal')
-      .select('razao_social,nome_fantasia,cnpj,ie,im,cnae,endereco,cidade,estado,cep,regime_tributario,ambiente,serie_nfce,proximo_numero_nfce,csc_id,fiscal_habilitado,focus_token_homologacao,focus_token_producao,csc,cfop_padrao,csosn_padrao,cst_padrao,pis_cst,cofins_cst')
+      .select('razao_social,nome_fantasia,cnpj,ie,im,cnae,endereco,cidade,estado,cep,regime_tributario,ambiente,serie_nfce,proximo_numero_nfce,csc_id,fiscal_habilitado,focus_token_homologacao,focus_token_producao,csc,cfop_padrao,csosn_padrao,cst_padrao,pis_cst,cofins_cst,serie_nfe,proximo_numero_nfe,nfse_codigo_servico,nfse_aliquota_iss,nfse_serie_rps,nfse_proximo_numero_rps,nfse_habilitado')
       .eq('empresa_id', empId).maybeSingle();
     if(error){ console.warn('config_fiscal load:', error.message); return; }
     const c = data || {};
@@ -15400,6 +15489,13 @@ async function carregarConfigFiscal(){
     set('fisc-pis-cst', c.pis_cst || '07');
     set('fisc-cofins-cst', c.cofins_cst || '07');
     if(g('fisc-habilitado')) g('fisc-habilitado').checked = !!c.fiscal_habilitado;
+    set('fisc-serie-nfe', c.serie_nfe || '001');
+    if(g('fisc-num-nfe')) g('fisc-num-nfe').value = (c.proximo_numero_nfe != null ? c.proximo_numero_nfe : 1);
+    set('fisc-nfse-codigo', c.nfse_codigo_servico);
+    if(g('fisc-nfse-aliquota') && c.nfse_aliquota_iss!=null) g('fisc-nfse-aliquota').value = c.nfse_aliquota_iss;
+    set('fisc-nfse-serie', c.nfse_serie_rps || '001');
+    if(g('fisc-nfse-num')) g('fisc-nfse-num').value = (c.nfse_proximo_numero_rps != null ? c.nfse_proximo_numero_rps : 1);
+    if(g('fisc-nfse-habilitado')) g('fisc-nfse-habilitado').checked = !!c.nfse_habilitado;
     // segredos: apenas status, valor nunca vai para o input
     if(g('fisc-token-h-st')) g('fisc-token-h-st').textContent = c.focus_token_homologacao ? '✓ Token de homologação configurado (em branco = mantém).' : 'Nenhum token de homologação salvo ainda.';
     if(g('fisc-token-p-st')) g('fisc-token-p-st').textContent = c.focus_token_producao ? '✓ Token de produção configurado (em branco = mantém).' : 'Nenhum token de produção salvo ainda.';
@@ -15433,7 +15529,14 @@ async function salvarConfigFiscal(){
     cst_padrao: val('fisc-cst-padrao') || '102',
     pis_cst: val('fisc-pis-cst') || '07',
     cofins_cst: val('fisc-cofins-cst') || '07',
-    fiscal_habilitado: !!(g('fisc-habilitado') && g('fisc-habilitado').checked)
+    fiscal_habilitado: !!(g('fisc-habilitado') && g('fisc-habilitado').checked),
+    serie_nfe: val('fisc-serie-nfe') || '001',
+    proximo_numero_nfe: parseInt(val('fisc-num-nfe') || '1', 10),
+    nfse_codigo_servico: val('fisc-nfse-codigo') || null,
+    nfse_aliquota_iss: val('fisc-nfse-aliquota') ? parseFloat(val('fisc-nfse-aliquota')) : null,
+    nfse_serie_rps: val('fisc-nfse-serie') || '001',
+    nfse_proximo_numero_rps: parseInt(val('fisc-nfse-num') || '1', 10),
+    nfse_habilitado: !!(g('fisc-nfse-habilitado') && g('fisc-nfse-habilitado').checked)
   };
   const th = val('fisc-token-h'), tp = val('fisc-token-p'), csc = val('fisc-csc');
   if(th) payload.focus_token_homologacao = th;   // em branco = mantém
@@ -26393,6 +26496,21 @@ function _atualizaVendaNFCe(id, data){
   if(data.numero) v.nfce_numero=String(data.numero);
   if(data.chave) v.nfce_chave=data.chave;
   if(typeof renderHistoricoVendas==='function'){ try{ renderHistoricoVendas(); }catch(e){} }
+  _persistirNFCeStatus(id, { nfce_status:v.nfce_status, nfce_numero:v.nfce_numero||null, nfce_chave:v.nfce_chave||null });
+}
+/* Reforço protegido — a emissão roda no servidor (Edge Function) e é ela que
+   deveria gravar o status definitivo; esta chamada é defesa em profundidade
+   para o caso da função não persistir por conta própria (não confirmável
+   pelo código-fonte deste repo — assunção técnica, precisa validar). Erros
+   aqui não interrompem o fluxo: o resultado já foi mostrado ao usuário. */
+async function _persistirNFCeStatus(id, patch){
+  try{
+    const empId = (typeof EID==='function' ? EID() : null);
+    let q = db.from('vendas').update(patch).eq('id', id);
+    if(empId) q = q.eq('empresa_id', empId);
+    const { error } = await q;
+    if(error) console.warn('Persistência de status NFC-e (defesa em profundidade) falhou:', error.message);
+  }catch(e){ console.warn('Persistência de status NFC-e (defesa em profundidade) falhou:', e); }
 }
 async function consultarNFCePorId(id){
   if(!id) return; _nfceVendaId=id; notify('Consultando NFC-e…','info',1500);
@@ -26410,7 +26528,7 @@ async function cancelarNFCePorId(id){
   try{
     const { data, error } = await db.functions.invoke('cancelar-nfce', { body:{ venda_id:id, justificativa:just.trim() } });
     if(error||(data&&data.erro)){ notify('Falha ao cancelar: '+((error&&error.message)||(data&&data.erro)||''),'error',6000); return; }
-    if(data&&data.ok){ const v=(G.vendas||[]).find(x=>x.id===id); if(v)v.nfce_status='cancelada'; if(typeof renderHistoricoVendas==='function'){try{renderHistoricoVendas();}catch(e){}} notify('NFC-e cancelada com sucesso.','success'); }
+    if(data&&data.ok){ const v=(G.vendas||[]).find(x=>x.id===id); if(v)v.nfce_status='cancelada'; if(typeof renderHistoricoVendas==='function'){try{renderHistoricoVendas();}catch(e){}} _persistirNFCeStatus(id,{nfce_status:'cancelada'}); notify('NFC-e cancelada com sucesso.','success'); }
     else notify('Não cancelada: '+((data&&(data.mensagem||data.status))||'verifique a janela de 30 minutos'),'warn',7000);
   }catch(e){ notify('Erro ao cancelar NFC-e.','error'); }
 }
@@ -26450,6 +26568,265 @@ async function enviarNFCeEmailPorId(id){
   }catch(e){ notify('Erro ao enviar email.','error'); }
 }
 async function enviarNFCeEmail(){ await enviarNFCeEmailPorId(_nfceVendaId||_ultimaVendaId); }
+
+/* ═══ NFS-e (Fatia "NF-e/NFS-e/NFC-e") — emissão a partir de uma OS entregue ═══
+   Segue o mesmo padrão do NFC-e acima: a emissão de verdade roda numa Edge
+   Function no Supabase (nunca no navegador — token nunca fica exposto).
+   ⚠️ ASSUNÇÃO TÉCNICA — PRECISA VALIDAR: as regras de NFS-e variam por
+   MUNICÍPIO (cada prefeitura tem seu próprio provedor/layout — Focus NFe
+   abstrai isso, mas exige o "código do serviço" (lista LC116) e alíquota de
+   ISS corretos, configurados em Configurações → Fiscal, e confirmados com o
+   contador para a cidade da empresa. O valor sugerido para emissão é o
+   VALOR DO SERVIÇO da OS (mão de obra) — se a OS também vendeu peças, o
+   tratamento fiscal delas (ICMS/NFC-e) é separado e não é feito aqui;
+   revise com seu contador antes de emitir em produção. */
+let _nfseOSId = null;   // OS em foco nas ações de NFS-e
+let _nfseResult = null; // último retorno de NFS-e
+
+function _nfseBadgeOS(o){
+  if(!o || !o.nfse_status || o.nfse_status==='nao_emitida') return '';
+  const map = { autorizada:['var(--success)','NFS-e autorizada'], processando:['var(--warn)','NFS-e em processamento'], erro:['var(--danger)','NFS-e com erro'], rejeitada:['var(--danger)','NFS-e rejeitada'], cancelada:['var(--txt3)','NFS-e cancelada'] };
+  const [cor,lbl] = map[o.nfse_status] || ['var(--txt3)','NFS-e: '+o.nfse_status];
+  return `<div style="margin:6px 0"><span class="tag" style="background:${cor};color:#fff;font-size:11px"><i class="ti ti-file-invoice" style="font-size:10px"></i> ${lbl}${o.nfse_numero?(' · nº '+o.nfse_numero):''}</span></div>`;
+}
+
+function emitirNFSePorId(id){
+  const o=(G.os||[]).find(x=>x.id===id); if(!o){ notify('OS não identificada.','warn'); return; }
+  _nfseOSId=id;
+  const valorSugerido=(o.valor_servico!=null? o.valor_servico : (o.total||0));
+  document.getElementById('modal-generic-content').innerHTML=`
+    <div class="modal-title"><i class="ti ti-file-invoice" style="color:var(--pri)"></i> Emitir NFS-e — ${o.numero||''}</div>
+    <div class="alert-box alert-info" style="font-size:12px;margin:10px 0"><i class="ti ti-info-circle" style="font-size:14px"></i><div>Confirme o valor do <b>serviço</b> (mão de obra). Peças/materiais da OS têm tratamento fiscal separado — confirme com seu contador.</div></div>
+    <div class="fg"><label class="lbl">Descrição do serviço</label><input type="text" id="nfse-desc" value="${(o.defeito? 'Reparo/serviço técnico: '+o.defeito.replace(/"/g,'&quot;') : 'Serviço técnico prestado')}" maxlength="255"></div>
+    <div class="fg"><label class="lbl">Valor do serviço (R$) *</label><input type="number" id="nfse-valor" value="${valorSugerido.toFixed?valorSugerido.toFixed(2):valorSugerido}" min="0" step="0.01"></div>
+  `;
+  document.getElementById('modal-generic-footer').innerHTML=`
+    <button class="btn btn-out" onclick="closeModal('modal-generic')">Cancelar</button>
+    <button class="btn btn-pri" onclick="confirmarEmitirNFSe('${id}')"><i class="ti ti-check"></i> Emitir NFS-e</button>`;
+  openModal('modal-generic');
+}
+
+async function confirmarEmitirNFSe(id){
+  const o=(G.os||[]).find(x=>x.id===id); if(!o) return;
+  const valor=parseFloat(document.getElementById('nfse-valor')?.value)||0;
+  const descricao=(document.getElementById('nfse-desc')?.value||'').trim();
+  if(valor<=0){ notify('Informe um valor de serviço maior que zero.','warn'); return; }
+  closeModal('modal-generic');
+  notify('Emitindo NFS-e…','info',2500);
+  try{
+    const { data, error } = await db.functions.invoke('emitir-nfse', { body:{ os_id:id, valor, descricao } });
+    if(error){ notify('Falha na emissão: '+(error.message||'erro'),'error',6000); return; }
+    if(data && data.erro){ notify('NFS-e: '+data.erro,'error',7000); return; }
+    _nfseResult = data || null;
+    _atualizaOSNFSe(id, data);
+    mostrarResultadoNFSe(data||{});
+  }catch(e){ notify('Erro ao emitir NFS-e.','error'); console.warn(e); }
+}
+
+function _atualizaOSNFSe(id, data){
+  if(!data) return;
+  const o=(G.os||[]).find(x=>x.id===id); if(!o) return;
+  o.nfse_status = data.ok ? 'autorizada' : (data.status || o.nfse_status || 'processando');
+  if(data.numero) o.nfse_numero=String(data.numero);
+  if(data.codigo_verificacao) o.nfse_codigo_verificacao=data.codigo_verificacao;
+  _persistirNFSeStatus(id, { nfse_status:o.nfse_status, nfse_numero:o.nfse_numero||null, nfse_codigo_verificacao:o.nfse_codigo_verificacao||null });
+  if(typeof renderOSList==='function'){ try{ renderOSList(); }catch(e){} }
+}
+/* Reforço protegido — mesma lógica de defesa em profundidade do NFC-e:
+   a Edge Function deveria persistir o status; isto cobre o caso dela não
+   gravar por conta própria (assunção técnica, não confirmável pelo repo). */
+async function _persistirNFSeStatus(id, patch){
+  try{
+    const empId = (typeof EID==='function' ? EID() : null);
+    let q = db.from('ordens_servico').update(patch).eq('id', id);
+    if(empId) q = q.eq('empresa_id', empId);
+    const { error } = await q;
+    if(error) console.warn('Persistência de status NFS-e (defesa em profundidade) falhou:', error.message);
+  }catch(e){ console.warn('Persistência de status NFS-e (defesa em profundidade) falhou:', e); }
+}
+
+async function consultarNFSePorId(id){
+  if(!id) return; _nfseOSId=id; notify('Consultando NFS-e…','info',1500);
+  try{
+    const { data, error } = await db.functions.invoke('consultar-nfse', { body:{ os_id:id } });
+    if(error||(data&&data.erro)){ notify('Falha: '+((error&&error.message)||(data&&data.erro)||''),'error',6000); return; }
+    _nfseResult=data||null; _atualizaOSNFSe(id,data); mostrarResultadoNFSe(data||{});
+  }catch(e){ notify('Erro ao consultar NFS-e.','error'); }
+}
+
+async function cancelarNFSePorId(id){
+  if(!id) return;
+  const just=prompt('Motivo do cancelamento da NFS-e:');
+  if(just===null) return;
+  if(just.trim().length<15){ notify('Descreva o motivo com ao menos 15 caracteres.','warn'); return; }
+  try{
+    const { data, error } = await db.functions.invoke('cancelar-nfse', { body:{ os_id:id, justificativa:just.trim() } });
+    if(error||(data&&data.erro)){ notify('Falha ao cancelar: '+((error&&error.message)||(data&&data.erro)||''),'error',6000); return; }
+    if(data&&data.ok){ const o=(G.os||[]).find(x=>x.id===id); if(o)o.nfse_status='cancelada'; _persistirNFSeStatus(id,{nfse_status:'cancelada'}); if(typeof renderOSList==='function'){try{renderOSList();}catch(e){}} notify('NFS-e cancelada com sucesso.','success'); }
+    else notify('Não cancelada: '+((data&&(data.mensagem||data.status))||'consulte o prazo do seu município'),'warn',7000);
+  }catch(e){ notify('Erro ao cancelar NFS-e.','error'); }
+}
+
+function mostrarResultadoNFSe(d){
+  const ok=!!d.ok;
+  const box=document.getElementById('modal-generic-content');
+  const foot=document.getElementById('modal-generic-footer');
+  if(!box) return;
+  box.innerHTML =
+    `<div class="modal-title"><i class="ti ti-file-invoice" style="color:var(--pri)"></i> Nota Fiscal de Serviço (NFS-e)</div>`+
+    `<div style="font-weight:700;color:${ok?'var(--success)':'var(--warn)'};margin:10px 0 6px">${ok?'NFS-e autorizada ✓':'Status: '+(d.status||'—')}</div>`+
+    (d.numero?`<div style="font-size:12.5px">Número: <b>${d.numero}</b></div>`:'')+
+    (d.codigo_verificacao?`<div style="font-size:11px;color:var(--txt3);word-break:break-all;margin-top:2px">Código de verificação: ${d.codigo_verificacao}</div>`:'')+
+    (d.mensagem?`<div style="font-size:12px;color:var(--txt2);margin-top:6px">${d.mensagem}</div>`:'')+
+    `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">`+
+      (d.pdf?`<a class="btn btn-pri" target="_blank" rel="noopener" href="${d.pdf}"><i class="ti ti-printer"></i>PDF</a>`:'')+
+      (d.xml?`<a class="btn btn-out" target="_blank" rel="noopener" href="${d.xml}"><i class="ti ti-file-code"></i>XML</a>`:'')+
+    `</div>`;
+  if(foot) foot.innerHTML = `<button class="btn btn-out" onclick="closeModal('modal-generic')">Fechar</button>`;
+  openModal('modal-generic');
+}
+
+/* ═══ NF-e avulsa (venda p/ empresa com CNPJ, devolução, transferência) ═══
+   ⚠️ ASSUNÇÃO TÉCNICA — PRECISA VALIDAR: cálculo de impostos (ICMS/IPI/ICMS-ST
+   etc.) desta nota depende do regime tributário e da operação; os campos
+   abaixo enviam o essencial (CFOP, itens, destinatário) para a Edge Function,
+   que deve aplicar as regras tributárias antes de chamar o Focus NFe — igual
+   ao que já acontece hoje com NFC-e. Confirme com seu contador antes de usar
+   em produção, especialmente para devolução/transferência (CFOPs específicos,
+   ex: 5202/6202 devolução, 5152/6152 transferência — ajuste conforme o caso). */
+let _nfeEmItens = [];
+
+function abrirEmitirNFe(){
+  _nfeEmItens = [];
+  const g = id => document.getElementById(id);
+  ['nfe-em-cnpj','nfe-em-razao','nfe-em-ie','nfe-em-uf','nfe-em-endereco','nfe-em-obs','nfe-em-item-nome','nfe-em-item-ncm'].forEach(id=>{ if(g(id)) g(id).value=''; });
+  if(g('nfe-em-item-qty')) g('nfe-em-item-qty').value=1;
+  if(g('nfe-em-item-valor')) g('nfe-em-item-valor').value=0;
+  if(g('nfe-em-natureza')) g('nfe-em-natureza').value='venda';
+  _nfeEmSugerirCfop();
+  const sel=g('nfe-em-item-prod');
+  if(sel){
+    const opts=(G.produtos||[]).filter(p=>p.status==='ativo').map(p=>`<option value="${p.id}" data-nome="${(p.nome||'').replace(/"/g,'&quot;')}" data-ncm="${p.ncm||''}" data-preco="${p.preco||0}">${p.nome} — ${fmt(p.preco||0)}</option>`).join('');
+    sel.innerHTML = '<option value="">— Selecionar produto do estoque (opcional) —</option>'+opts;
+  }
+  _nfeEmRenderItens();
+  openModal('modal-nfe-emitir');
+}
+
+function _nfeEmSugerirCfop(){
+  const nat=document.getElementById('nfe-em-natureza')?.value||'venda';
+  const cfopEl=document.getElementById('nfe-em-cfop');
+  if(!cfopEl || cfopEl.value) { if(cfopEl && !cfopEl.value){ /* segue abaixo */ } }
+  const sugestao = { venda:'5102', devolucao:'5202', transferencia:'5152' }[nat] || '5102';
+  if(cfopEl) cfopEl.value = sugestao;
+}
+
+function _nfeEmPreencherItem(sel){
+  const opt=sel.options[sel.selectedIndex]; if(!opt.value) return;
+  document.getElementById('nfe-em-item-nome').value = opt.dataset.nome||'';
+  document.getElementById('nfe-em-item-ncm').value = opt.dataset.ncm||'';
+  document.getElementById('nfe-em-item-valor').value = opt.dataset.preco||0;
+}
+
+function _nfeEmAdicionarItem(){
+  const nome=(document.getElementById('nfe-em-item-nome')?.value||'').trim();
+  const ncm=(document.getElementById('nfe-em-item-ncm')?.value||'').trim();
+  const qty=parseFloat(document.getElementById('nfe-em-item-qty')?.value)||0;
+  const valor=parseFloat(document.getElementById('nfe-em-item-valor')?.value)||0;
+  if(!nome){ notify('Informe a descrição do item.','warn'); return; }
+  if(qty<=0){ notify('Quantidade precisa ser maior que zero.','warn'); return; }
+  _nfeEmItens.push({ nome, ncm, qty, valor });
+  document.getElementById('nfe-em-item-nome').value='';
+  document.getElementById('nfe-em-item-ncm').value='';
+  document.getElementById('nfe-em-item-qty').value=1;
+  document.getElementById('nfe-em-item-valor').value=0;
+  _nfeEmRenderItens();
+}
+
+function _nfeEmRemoverItem(i){
+  _nfeEmItens.splice(i,1);
+  _nfeEmRenderItens();
+}
+
+function _nfeEmRenderItens(){
+  const box=document.getElementById('nfe-em-itens-list'); if(!box) return;
+  if(_nfeEmItens.length===0){
+    box.innerHTML = `<div style="font-size:12px;color:var(--txt3);padding:8px 0">Nenhum item adicionado ainda.</div>`;
+  } else {
+    box.innerHTML = `<div class="tw"><table style="font-size:12px"><thead><tr><th>Item</th><th style="text-align:center">Qtd</th><th style="text-align:right">Unit.</th><th style="text-align:right">Subtotal</th><th></th></tr></thead><tbody>${
+      _nfeEmItens.map((it,i)=>`<tr>
+        <td>${esc(it.nome)}${it.ncm?`<br><span style="font-size:10px;color:var(--txt3)">NCM ${esc(it.ncm)}</span>`:''}</td>
+        <td style="text-align:center;font-weight:700">${it.qty}</td>
+        <td style="text-align:right">${fmt(it.valor)}</td>
+        <td style="text-align:right;font-weight:800;color:var(--pri)">${fmt(it.valor*it.qty)}</td>
+        <td><button class="btn btn-out btn-sm" style="color:var(--danger);border-color:var(--danger)" onclick="_nfeEmRemoverItem(${i})"><i class="ti ti-trash"></i></button></td>
+      </tr>`).join('')
+    }</tbody></table></div>`;
+  }
+  const total=_nfeEmItens.reduce((s,it)=>s+it.valor*it.qty,0);
+  const totEl=document.getElementById('nfe-em-total'); if(totEl) totEl.textContent=fmt(total);
+}
+
+async function confirmarEmitirNFe(){
+  const g = id => document.getElementById(id);
+  const val = id => (g(id)?.value||'').trim();
+  if(_nfeEmItens.length===0){ notify('Adicione ao menos um item.','warn'); return; }
+  const cnpj=val('nfe-em-cnpj'), razao=val('nfe-em-razao');
+  if(!cnpj || !razao){ notify('CNPJ e razão social do destinatário são obrigatórios.','warn'); return; }
+  const payload = {
+    natureza_operacao: val('nfe-em-natureza')||'venda',
+    cfop: val('nfe-em-cfop')||'5102',
+    destinatario: { cnpj, razao_social:razao, ie: val('nfe-em-ie')||null, uf: val('nfe-em-uf').toUpperCase()||null, endereco: val('nfe-em-endereco')||null },
+    itens: _nfeEmItens,
+    observacoes: val('nfe-em-obs')||null
+  };
+  closeModal('modal-nfe-emitir');
+  notify('Emitindo NF-e…','info',2500);
+  try{
+    const { data, error } = await db.functions.invoke('emitir-nfe', { body: payload });
+    if(error){ notify('Falha na emissão: '+(error.message||'erro'),'error',6000); return; }
+    if(data && data.erro){ notify('NF-e: '+data.erro,'error',7000); return; }
+    // Reforço protegido — histórico local (defesa em profundidade; a Edge
+    // Function deveria ser a fonte da verdade, mas garantimos que a nota
+    // fique visível na tela de Histórico mesmo se a função não persistir).
+    try{
+      await db.from('notas_fiscais_avulsas').insert({
+        empresa_id: EID(), natureza_operacao: payload.natureza_operacao, cfop: payload.cfop,
+        destinatario: payload.destinatario, itens: payload.itens, observacoes: payload.observacoes,
+        valor_total: _nfeEmItens.reduce((s,it)=>s+it.valor*it.qty,0),
+        status: (data&&data.ok)?'autorizada':((data&&data.status)||'processando'),
+        numero: (data&&data.numero)?String(data.numero):null, chave: (data&&data.chave)||null,
+        usuario_id: G.profile?.id||null, usuario_nome: G.profile?.nome||null
+      });
+    }catch(e){ console.warn('Histórico de NF-e (defesa em profundidade) falhou:', e); }
+    mostrarResultadoNFe(data||{});
+  }catch(e){ notify('Erro ao emitir NF-e.','error'); console.warn(e); }
+}
+
+async function verHistoricoNFeEmitidas(){
+  try{
+    const { data } = await db.from('notas_fiscais_avulsas').select('*').eq('empresa_id',EID()).order('criado_em',{ascending:false}).limit(50);
+    const rows=(data||[]).map(n=>`<tr><td>${fmtD(n.criado_em)}</td><td>${esc(n.numero||'—')}</td><td>${esc((n.destinatario&&n.destinatario.razao_social)||'')}</td><td>${esc(n.natureza_operacao||'')}</td><td style="text-align:right">${fmt(n.valor_total||0)}</td><td>${esc(n.status||'—')}</td></tr>`).join('');
+    confirmAct('Histórico de NF-e emitidas',
+      (data&&data.length)?`<div class="tw" style="max-height:50vh;overflow:auto"><table style="font-size:12px"><thead><tr><th>Data</th><th>Número</th><th>Destinatário</th><th>Natureza</th><th style="text-align:right">Valor</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div>`:'<div style="color:var(--txt3);padding:16px;text-align:center">Nenhuma NF-e emitida ainda.</div>',
+      null);
+  }catch(e){ notify('Erro ao carregar histórico.','error'); }
+}
+
+function mostrarResultadoNFe(d){
+  const ok=!!d.ok;
+  const box=document.getElementById('nfe-em-res-body'); if(!box) return;
+  box.innerHTML =
+    `<div style="font-weight:700;color:${ok?'var(--success)':'var(--warn)'};margin-bottom:6px">${ok?'NF-e autorizada ✓':'Status: '+(d.status||'—')}</div>`+
+    (d.numero?`<div style="font-size:12.5px">Número: <b>${d.numero}</b>${d.serie?(' · Série '+d.serie):''}</div>`:'')+
+    (d.chave?`<div style="font-size:11px;color:var(--txt3);word-break:break-all;margin-top:2px">Chave: ${d.chave}</div>`:'')+
+    (d.mensagem?`<div style="font-size:12px;color:var(--txt2);margin-top:6px">${d.mensagem}</div>`:'')+
+    `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">`+
+      (d.danfe?`<a class="btn btn-pri" target="_blank" rel="noopener" href="${d.danfe}"><i class="ti ti-printer"></i>DANFE</a>`:'')+
+      (d.xml?`<a class="btn btn-out" target="_blank" rel="noopener" href="${d.xml}"><i class="ti ti-file-code"></i>XML</a>`:'')+
+    `</div>`;
+  openModal('modal-nfe-result');
+}
 
 function gerarContratoVenda(){
   if(!_ultimaVendaContrato){ notify('Faça uma venda primeiro.','info'); return; }
