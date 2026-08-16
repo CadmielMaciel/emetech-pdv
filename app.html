@@ -232,6 +232,53 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 .ios-passo-t{font-size:14px;font-weight:600;line-height:1.4;padding-top:3px}
 .ios-passo-ic{font-size:20px;color:var(--pri);margin:0 3px}
 .ios-aviso{background:linear-gradient(135deg,#FEF6DA,#FEF3C7);border:1px solid #FCE38A;border-radius:12px;padding:11px 13px;font-size:12px;color:#8A5B00;margin-bottom:14px;line-height:1.4}
+
+/* ── Fatia 11A: linha de ações rápidas na Home (Scanner / Minhas OS) ── */
+.qa-row{display:flex;gap:10px;margin-bottom:18px}
+.qa-btn{flex:1;background:var(--card);border:1px solid var(--border2);border-radius:15px;padding:12px 10px;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;box-shadow:var(--shadow-sm);font-size:11.5px;font-weight:700;color:var(--txt2);transition:transform .12s}
+.qa-btn:active{transform:scale(.96);background:var(--bg2)}
+.qa-btn i{font-size:20px;color:var(--pri)}
+
+/* ── Fatia 11A: alertas reais na Home (reaproveita .aviso já existente) ── */
+#home-alertas .aviso{margin-bottom:11px;cursor:default}
+#home-alertas .aviso.click{cursor:pointer}
+
+/* ── Fatia 11A: skeleton loading (mesmo padrão do catalogo.html) ── */
+.skel{background:linear-gradient(90deg,var(--bg2) 25%,var(--border) 37%,var(--bg2) 63%);background-size:400% 100%;animation:skel 1.4s ease infinite;border-radius:14px}
+@keyframes skel{0%{background-position:100% 50%}100%{background-position:0 50%}}
+.skel-card{height:72px;margin-bottom:11px}
+
+/* ── Fatia 11A: entrada suave só nos cards de módulo da Home (lista estável,
+   renderizada uma vez). Listas que re-renderizam a cada tecla digitada
+   (estoque, minhas OS) ficam de fora de propósito — senão a animação
+   dispara a cada busca, o que é exatamente o "animar tudo" que o spec pediu
+   pra evitar. O kill-switch de prefers-reduced-motion global do arquivo já
+   desativa isso sozinho. ── */
+.mod{animation:pop .3s ease backwards}
+.mod:nth-child(1){animation-delay:.02s}.mod:nth-child(2){animation-delay:.06s}.mod:nth-child(3){animation-delay:.1s}.mod:nth-child(4){animation-delay:.14s}
+
+/* ── Fatia 11A: rodapé fixo do carrinho (total + finalizar sempre visíveis) ── */
+.cart-footer-sticky{position:sticky;bottom:calc(var(--navh) + 8px + var(--sab));background:linear-gradient(180deg,transparent,var(--bg) 22%);padding-top:14px;margin-top:4px;z-index:10}
+
+/* ── Fatia 11A: chip de filtro (reaproveita .pg) ── */
+.filtro-row{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+
+/* ── Fatia 11A: tela Minhas OS ── */
+.os-card{cursor:pointer}
+.os-badge{font-size:10.5px;font-weight:800;padding:4px 9px;border-radius:8px;letter-spacing:.2px;flex-shrink:0}
+.os-badge.st-aguardando{background:#FEF3C7;color:#92600A}
+.os-badge.st-entregue{background:#DCFCE7;color:#166534}
+.os-badge.st-cancelada{background:#FEE2E2;color:#991B1B}
+.os-badge.st-outro{background:var(--bg2);color:var(--txt2)}
+
+/* ── Fatia 11A: bottom sheet de detalhe da OS (mesmo padrão do #sheet-mais) ── */
+#sheet-os-overlay{position:fixed;inset:0;background:rgba(10,6,30,.45);z-index:150;display:none}
+#sheet-os{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-radius:22px 22px 0 0;padding:10px 18px calc(20px + var(--sab));z-index:151;display:none;box-shadow:0 -10px 40px rgba(0,0,0,.25);max-height:86vh;overflow-y:auto}
+#sheet-os .sheet-handle{width:38px;height:4px;background:var(--border);border-radius:99px;margin:6px auto 14px}
+#sheet-os .osd-tit{font-size:18px;font-weight:800;margin-bottom:2px}
+#sheet-os .osd-sub{font-size:12.5px;color:var(--txt3);margin-bottom:14px}
+#sheet-os .osd-lbl{font-size:10.5px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 4px}
+#sheet-os .osd-val{font-size:14px;color:var(--txt);line-height:1.4}
 </style>
 </head>
 <body>
@@ -280,6 +327,15 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
         <div class="rc-lbl">Lucro estimado hoje</div>
         <div class="rc-val locked" id="rc-lucro" onclick="pedirPinParaLucro()"><i class="ti ti-lock"></i> Toque para ver (PIN de Admin/Gerente)</div>
       </div>
+    </div>
+
+    <!-- Fatia 11A: alertas reais (só aparece o que for verdade — nada inventado) -->
+    <div id="home-alertas"></div>
+
+    <!-- Fatia 11A: ações rápidas que não cabiam nos 4 cards grandes -->
+    <div class="qa-row">
+      <div class="qa-btn" onclick="abrirScanner('estoque')"><i class="ti ti-scan"></i>Scanner</div>
+      <div class="qa-btn" onclick="abrir('os-lista')"><i class="ti ti-list-details"></i>Minhas OS</div>
     </div>
 
     <div class="mod" onclick="abrir('produto')">
@@ -387,11 +443,22 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
     <button class="btn btn-ghost" style="margin-top:10px" onclick="goHome()">Voltar ao início</button>
   </div>
 
+  <!-- Fatia 11A: MINHAS OS (lista + busca) -->
+  <div class="wrap hidden" id="scr-os-lista">
+    <div class="bc-row" style="margin-bottom:14px">
+      <input class="inp" id="osl-busca" placeholder="🔍 Buscar por cliente, número ou aparelho..." oninput="renderOsLista(this.value)">
+    </div>
+    <div id="os-lista-list"></div>
+  </div>
+
   <!-- ESTOQUE -->
   <div class="wrap hidden" id="scr-estoque">
     <div class="bc-row" style="margin-bottom:14px">
       <input class="inp" id="est-busca" placeholder="🔍 Buscar produto..." oninput="renderEstoque(this.value)">
       <button class="icon-btn" onclick="abrirScanner('estoque')" title="Escanear para vender"><i class="ti ti-scan"></i></button>
+    </div>
+    <div class="filtro-row">
+      <button class="pg" id="chip-est-baixo" onclick="toggleFiltroEstoqueBaixo()"><i class="ti ti-alert-triangle" style="font-size:13px;margin-right:4px"></i>Só estoque baixo</button>
     </div>
     <div id="estoque-list"></div>
   </div>
@@ -428,6 +495,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 
   <!-- CARRINHO -->
   <div class="wrap hidden" id="scr-cart">
+    <div id="cart-caixa-aviso"></div>
     <div id="cart-itens"></div>
     <div class="card">
       <label class="lbl">Cliente</label>
@@ -442,8 +510,10 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
         <button class="pg" data-f="link" onclick="setForma('link')">Link/QR</button>
       </div>
     </div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin:6px 4px 14px"><span style="color:var(--txt2);font-weight:600">Total</span><span id="cart-tot-b" style="font-size:22px;font-weight:800;color:var(--pri);font-family:'Syne',sans-serif"></span></div>
-    <button class="btn btn-ok" id="cart-fin" onclick="finalizarVenda()"><i class="ti ti-check"></i>Finalizar venda</button>
+    <div class="cart-footer-sticky">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin:6px 4px 14px"><span style="color:var(--txt2);font-weight:600">Total</span><span id="cart-tot-b" style="font-size:22px;font-weight:800;color:var(--pri);font-family:'Syne',sans-serif"></span></div>
+      <button class="btn btn-ok" id="cart-fin" onclick="finalizarVenda()"><i class="ti ti-check"></i>Finalizar venda</button>
+    </div>
   </div>
 
   <!-- ETIQUETA -->
@@ -477,6 +547,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 <div id="sheet-mais">
   <div class="sheet-handle"></div>
   <div class="sheet-it" onclick="fecharMais();abrir('venda')"><i class="ti ti-qrcode"></i>Venda rápida (link/QR)</div>
+  <div class="sheet-it" onclick="fecharMais();abrir('os-lista')"><i class="ti ti-list-details"></i>Minhas OS</div>
   <div class="sheet-it" onclick="toggleTemaApp()"><i class="ti ti-moon" id="tema-ic"></i><span id="tema-lbl">Tema escuro</span></div>
   <div class="sheet-it" id="sheet-instalar" style="display:none" onclick="instalarPWA()"><i class="ti ti-download"></i>Instalar aplicativo</div>
   <div class="sheet-it" id="sheet-suporte" style="display:none" onclick="abrirSuporte()"><i class="ti ti-headset"></i>Suporte</div>
@@ -506,12 +577,36 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
   </div>
 </div>
 
+<!-- Fatia 11A: bottom sheet de detalhe de uma OS existente (Minhas OS) -->
+<div id="sheet-os-overlay" onclick="fecharDetalheOS()"></div>
+<div id="sheet-os">
+  <div class="sheet-handle"></div>
+  <div class="osd-tit" id="osd-titulo">OS</div>
+  <div class="osd-sub" id="osd-sub"></div>
+
+  <div class="osd-lbl">Cliente</div>
+  <div class="osd-val" id="osd-cliente">—</div>
+
+  <div class="osd-lbl">Aparelho</div>
+  <div class="osd-val" id="osd-aparelho">—</div>
+
+  <div class="osd-lbl">Defeito relatado</div>
+  <div class="osd-val" id="osd-defeito">—</div>
+
+  <div class="osd-lbl">Fotos</div>
+  <div class="thumbs" id="osd-thumbs"></div>
+  <label class="foto-add" for="osd-foto" style="margin-top:9px"><i class="ti ti-camera"></i>Adicionar foto</label>
+  <input type="file" id="osd-foto" accept="image/*" capture="environment" multiple class="hidden" onchange="addFotoOsExistente(event)">
+
+  <div id="osd-acoes" style="margin-top:16px"></div>
+</div>
+
 <!-- SCANNER -->
 <div id="scan">
   <div class="scan-top"><div></div><button class="scan-close" onclick="fecharScanner()"><i class="ti ti-x"></i></button></div>
   <video id="scan-video" playsinline muted></video>
   <div class="scan-frame"></div>
-  <div class="scan-hint" id="scan-hint">Aponte para o código de barras</div>
+  <div class="scan-hint" id="scan-hint">Aponte a câmera para o código.</div>
 </div>
 
 <div id="toast"></div>
@@ -524,7 +619,7 @@ const db=supabase.createClient(SURL,SKEY,{auth:{autoRefreshToken:true,persistSes
 // polyfill randomUUID (iOS<15.4)
 try{ if(typeof crypto!=='undefined'&&typeof crypto.randomUUID!=='function'&&crypto.getRandomValues){ crypto.randomUUID=function(){return([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,c=>(c^crypto.getRandomValues(new Uint8Array(1))[0]&15>>c/4).toString(16));};} }catch(_){}
 
-const G={empresa:null,empresaId:null,fotos:[],osFotos:[],ultimaOS:null,caixa:null,operador:null,cart:[],formaPag:'dinheiro',estoqueCache:null,ultimaVenda:null};
+const G={empresa:null,empresaId:null,fotos:[],osFotos:[],ultimaOS:null,caixa:null,operador:null,cart:[],formaPag:'dinheiro',estoqueCache:null,ultimaVenda:null,osCache:null,_estFiltroBaixo:false,_estoqueBaixoCount:null};
 function comTimeout(p,nome,ms=12000){return Promise.race([p,new Promise((_,r)=>setTimeout(()=>r(new Error('Tempo esgotado: '+nome)),ms))]);}
 const $=id=>document.getElementById(id);
 function esc(s){return String(s==null?'':s).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));}
@@ -629,7 +724,25 @@ async function carregarResumoDia(){
     const baixo=(prods||[]).filter(p=>(Number(p.estoque)||0) <= (Number(p.estoque_minimo)||0)).length;
     const box=$('rc-estoque-box'); $('rc-estbaixo').textContent=baixo;
     box.className = baixo>0 ? 'rc warn' : 'rc';
-  }catch(_){ $('rc-estbaixo').textContent='—'; }
+    G._estoqueBaixoCount=baixo;
+  }catch(_){ $('rc-estbaixo').textContent='—'; G._estoqueBaixoCount=null; }
+  carregarAlertasHome();
+}
+
+/* ── Fatia 11A: alertas reais na Home — só mostra o que já foi confirmado
+   pelas próprias consultas do resumo do dia (nada inventado, nada calculado
+   à parte). Se não houver nada relevante, a área fica vazia (sem poluir). ── */
+function carregarAlertasHome(){
+  const el=$('home-alertas'); if(!el) return;
+  let html='';
+  if(!G.caixa){
+    html+=`<div class="aviso"><i class="ti ti-lock-open"></i><div><b>Nenhum caixa aberto.</b> Abra o caixa no sistema principal para começar a vender.</div></div>`;
+  }
+  if(typeof G._estoqueBaixoCount==='number' && G._estoqueBaixoCount>0){
+    const n=G._estoqueBaixoCount;
+    html+=`<div class="aviso click" onclick="G._estFiltroBaixo=true;abrir('estoque')"><i class="ti ti-alert-triangle"></i><div><b>${n} produto${n>1?'s':''}</b> com estoque baixo. Toque para ver.</div></div>`;
+  }
+  el.innerHTML=html;
 }
 
 /* ── Fatia 9: PIN de Admin/Gerente pra revelar o lucro do dia (mesmo
@@ -774,22 +887,23 @@ async function carregarRecentes(){
 // telas sem item correspondente (carrinho, sucesso, etiqueta, venda rápida)
 // simplesmente não destacam nada — o usuário volta pela seta ou pelo próprio nav.
 function _marcarNavAtivo(scr){
-  const mapa={home:'inicio',estoque:'vender',cart:'vender',os:'os',produto:'produto'};
+  const mapa={home:'inicio',estoque:'vender',cart:'vender',os:'os','os-lista':'os',produto:'produto'};
   const alvo=mapa[scr]||null;
   document.querySelectorAll('#bottom-nav .bn-it').forEach(b=>b.classList.remove('on'));
   if(alvo) $('bn-'+alvo)?.classList.add('on');
 }
 function abrir(scr){
-  ['home','produto','os','os-ok','venda','venda-ok','estoque','cart','etiqueta'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
+  ['home','produto','os','os-ok','os-lista','venda','venda-ok','estoque','cart','etiqueta'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
   $('scr-'+scr).classList.remove('hidden');
   $('btn-back').classList.remove('hidden');
-  $('scr-title').textContent = ({produto:'Cadastrar Produto',os:'OS Rápida',venda:'Venda Rápida',estoque:'Estoque',cart:'Carrinho',etiqueta:'Etiqueta'})[scr]||scr;
+  $('scr-title').textContent = ({produto:'Cadastrar Produto',os:'OS Rápida','os-lista':'Minhas OS',venda:'Venda Rápida',estoque:'Estoque',cart:'Carrinho',etiqueta:'Etiqueta'})[scr]||scr;
   if(scr==='estoque') abrirEstoque();
   if(scr==='cart') renderCart();
+  if(scr==='os-lista') abrirOsLista();
   _marcarNavAtivo(scr);
 }
 function goHome(){
-  ['produto','os','os-ok','venda','venda-ok','estoque','cart','etiqueta'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
+  ['produto','os','os-ok','os-lista','venda','venda-ok','estoque','cart','etiqueta'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
   $('scr-home').classList.remove('hidden');
   $('btn-back').classList.add('hidden');
   $('scr-title').textContent='Início';
@@ -861,7 +975,7 @@ async function abrirScanner(modo){
   _scanModo=modo||'produto';
   if(typeof ZXing==='undefined'){ notify('Scanner ainda carregando, tente de novo em 1s.','warn'); return; }
   $('scan').style.display='flex';
-  $('scan-hint').textContent='Aponte para o código de barras';
+  $('scan-hint').textContent='Aponte a câmera para o código.';
   try{
     _zxReader=new ZXing.BrowserMultiFormatReader();
     // facingMode environment = câmera TRASEIRA; getUserMedia pede a permissão ao dono
@@ -945,6 +1059,18 @@ async function salvarProduto(){
 function pad(n){ return String(n).padStart(4,'0'); }
 function addOsFotos(ev){ [...(ev.target.files||[])].forEach(f=>{ if(f.type&&f.type.startsWith('image/')) G.osFotos.push(f); }); renderOsThumbs(); ev.target.value=''; }
 function renderOsThumbs(){ $('os-thumbs').innerHTML=G.osFotos.map((f,i)=>`<div class="thumb"><img src="${URL.createObjectURL(f)}"><button class="del" onclick="G.osFotos.splice(${i},1);renderOsThumbs()">✕</button></div>`).join(''); }
+// Fatia 11A: extraída de dentro de criarOSRapida() pra poder ser reaproveitada
+// também ao anexar foto numa OS já existente (tela Minhas OS) — mesmo bucket,
+// mesma tabela, mesmo formato de path, sem mudar nada do que já funcionava.
+async function uploadFotoParaOS(osId,f){
+  const ext=(String(f.name||'').split('.').pop()||'jpg').toLowerCase();
+  const path=`${G.empresaId}/${osId}/${Date.now()}_${Math.random().toString(36).slice(2,8)}.${ext}`;
+  const {error:up}=await db.storage.from('os-midias').upload(path,f,{contentType:f.type,upsert:false});
+  if(up) throw up;
+  const {data:pub}=db.storage.from('os-midias').getPublicUrl(path);
+  await db.from('os_midias').insert({empresa_id:G.empresaId,os_id:osId,tipo:'foto',url:pub.publicUrl,path,visivel_cliente:true,criado_por:'MISU MOBILE'});
+  return pub.publicUrl;
+}
 async function proximoNumeroOS(){
   try{
     const {data}=await comTimeout(db.from('ordens_servico').select('numero').eq('empresa_id',G.empresaId).order('criado_em',{ascending:false}).limit(60),'numero OS');
@@ -974,14 +1100,7 @@ async function criarOSRapida(){
     if(!os) throw new Error('Não foi possível gerar o número da OS.');
     // upload das fotos pro bucket os-midias
     for(const f of G.osFotos){
-      try{
-        const ext=(String(f.name||'').split('.').pop()||'jpg').toLowerCase();
-        const path=`${G.empresaId}/${os.id}/${Date.now()}_${Math.random().toString(36).slice(2,8)}.${ext}`;
-        const {error:up}=await db.storage.from('os-midias').upload(path,f,{contentType:f.type,upsert:false});
-        if(up) continue;
-        const {data:pub}=db.storage.from('os-midias').getPublicUrl(path);
-        await db.from('os_midias').insert({empresa_id:G.empresaId,os_id:os.id,tipo:'foto',url:pub.publicUrl,path,visivel_cliente:true,criado_por:'MISU MOBILE'});
-      }catch(_){}
+      try{ await uploadFotoParaOS(os.id,f); }catch(_){}
     }
     G.ultimaOS={...os,fone};
     $('os-ok-num').textContent=(os.numero||'OS')+' criada!';
@@ -1001,6 +1120,117 @@ function enviarLinkOS(){
   window.open(url,'_blank');
 }
 async function copiarLinkOS(){ const l=linkOS(); if(!l)return; try{ await navigator.clipboard.writeText(l); notify('Link copiado!','ok'); }catch(_){ notify(l); } }
+
+/* ── Fatia 11A: MINHAS OS (buscar/ver OS já existentes) ──
+   Leitura + compartilhamento + anexar foto, apenas. Não mexe em status/
+   diagnóstico/cobrança — ver PENDENCIAS (fica pro próximo arquivo, os.html,
+   onde dá pra confirmar com segurança o fluxo real de status). */
+async function abrirOsLista(){
+  const c=$('os-lista-list'); if(!c) return;
+  c.innerHTML='<div class="skel skel-card"></div><div class="skel skel-card"></div><div class="skel skel-card"></div><div class="skel skel-card"></div>';
+  try{
+    const {data}=await comTimeout(db.from('ordens_servico').select('id,numero,cliente_nome,aparelho,status,criado_em,token_publico').eq('empresa_id',G.empresaId).order('criado_em',{ascending:false}).limit(200),'minhas OS');
+    G.osCache=data||[];
+    renderOsLista($('osl-busca')?.value||'');
+  }catch(e){ c.innerHTML='<div style="text-align:center;padding:22px;color:var(--danger)">Não foi possível carregar as OS.</div>'; }
+}
+// Só colore de forma específica os status que já confirmei no código
+// (Aguardando/Entregue/Cancelada) — qualquer outro valor real do sistema
+// aparece com um badge neutro, sem inventar cor/significado.
+function _osBadge(status){
+  const s=String(status||'');
+  const mapa={'Aguardando':'st-aguardando','Entregue':'st-entregue','Cancelada':'st-cancelada'};
+  return `<span class="os-badge ${mapa[s]||'st-outro'}">${esc(s||'—')}</span>`;
+}
+function renderOsLista(q){
+  const c=$('os-lista-list'); if(!c) return;
+  const busca=(q||'').toLowerCase();
+  let list=(G.osCache||[]);
+  if(busca) list=list.filter(o=>((o.cliente_nome||'')+' '+(o.numero||'')+' '+(o.aparelho||'')).toLowerCase().includes(busca));
+  if(!list.length){
+    c.innerHTML = busca
+      ? '<div style="text-align:center;padding:24px;color:var(--txt3)">Nenhuma OS encontrada com esse termo.</div>'
+      : `<div style="text-align:center;padding:30px 20px"><div style="color:var(--txt3);margin-bottom:14px">Nenhuma OS aberta ainda.</div><button class="btn" style="width:auto;padding:11px 22px;margin:0 auto" onclick="abrir('os')"><i class="ti ti-plus"></i>Criar OS rápida</button></div>`;
+    return;
+  }
+  c.innerHTML=list.map(o=>{
+    const data=o.criado_em?new Date(o.criado_em).toLocaleDateString('pt-BR'):'';
+    return `<div class="card os-card" onclick="abrirDetalheOS('${o.id}')">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <div style="min-width:0"><div style="font-weight:700;font-size:14.5px">${esc(o.numero||'OS')}</div><div style="font-size:12.5px;color:var(--txt3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(o.cliente_nome||'—')} · ${esc(o.aparelho||'—')}</div></div>
+        ${_osBadge(o.status)}
+      </div>
+      <div style="font-size:11px;color:var(--txt3);margin-top:8px">${data}</div>
+    </div>`;
+  }).join('');
+}
+
+let _osDetalheAtual=null;
+async function abrirDetalheOS(id){
+  const base=(G.osCache||[]).find(x=>x.id===id); if(!base) return;
+  _osDetalheAtual=base;
+  try{
+    const {data:full}=await comTimeout(db.from('ordens_servico').select('*').eq('id',id).eq('empresa_id',G.empresaId).maybeSingle(),'detalhe OS');
+    if(full) _osDetalheAtual=full;
+  }catch(_){}
+  const d=_osDetalheAtual;
+  $('osd-titulo').textContent=d.numero||'OS';
+  $('osd-sub').innerHTML=_osBadge(d.status)+(d.criado_em?(' · '+new Date(d.criado_em).toLocaleDateString('pt-BR')):'');
+  $('osd-cliente').textContent=d.cliente_nome||'—';
+  $('osd-aparelho').textContent=d.aparelho||'—';
+  $('osd-defeito').textContent=d.defeito||'—';
+  await carregarFotosOS(id);
+  renderAcoesOS(d);
+  $('sheet-os-overlay').style.display='block';
+  $('sheet-os').style.display='block';
+}
+function fecharDetalheOS(){
+  $('sheet-os-overlay').style.display='none';
+  $('sheet-os').style.display='none';
+}
+async function carregarFotosOS(osId){
+  const el=$('osd-thumbs'); if(!el) return;
+  el.innerHTML='<div style="font-size:12.5px;color:var(--txt3)">Carregando fotos...</div>';
+  try{
+    const {data}=await comTimeout(db.from('os_midias').select('id,url').eq('os_id',osId).eq('empresa_id',G.empresaId).eq('tipo','foto').limit(30),'fotos OS');
+    const list=data||[];
+    el.innerHTML = list.length ? list.map(f=>`<div class="thumb"><img src="${esc(f.url)}"></div>`).join('') : '<div style="font-size:12.5px;color:var(--txt3)">Nenhuma foto ainda.</div>';
+  }catch(_){ el.innerHTML='<div style="font-size:12.5px;color:var(--txt3)">Não foi possível carregar as fotos.</div>'; }
+}
+// Fatia 11A: WhatsApp/link só aparecem se o dado necessário realmente existir
+// no registro — nada de inventar telefone/token. O nome exato da coluna de
+// telefone do cliente em ordens_servico não foi confirmado neste arquivo
+// (assunção técnica — tenta os candidatos mais prováveis).
+function renderAcoesOS(d){
+  const fone=String(d.cliente_telefone||d.telefone||d.whatsapp||d.fone||'').replace(/\D/g,'');
+  const link = d.token_publico ? (location.origin+'/os.html?t='+d.token_publico) : null;
+  let html='';
+  if(link){
+    const msg=`Olá! 🔧 Acompanhe sua ordem de serviço (${d.aparelho||''}) por aqui:\n\n${link}`;
+    const url = fone ? `https://api.whatsapp.com/send?phone=55${fone}&text=${encodeURIComponent(msg)}` : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+    html += `<a class="btn btn-ok" href="${url}" target="_blank" style="text-decoration:none;margin-bottom:10px"><i class="ti ti-brand-whatsapp"></i>Enviar link no WhatsApp</a>`;
+    html += `<button class="btn btn-out" style="margin-bottom:10px" onclick="copiarLinkDetalheOS()"><i class="ti ti-copy"></i>Copiar link</button>`;
+  } else {
+    html += `<div class="aviso" style="margin-bottom:10px"><i class="ti ti-info-circle"></i><div>Link de acompanhamento não disponível para esta OS.</div></div>`;
+  }
+  html += `<button class="btn btn-ghost" onclick="fecharDetalheOS()">Fechar</button>`;
+  $('osd-acoes').innerHTML=html;
+}
+async function copiarLinkDetalheOS(){
+  const d=_osDetalheAtual; if(!d?.token_publico) return;
+  const link=location.origin+'/os.html?t='+d.token_publico;
+  try{ await navigator.clipboard.writeText(link); notify('Link copiado!','ok'); }catch(_){ notify(link); }
+}
+async function addFotoOsExistente(ev){
+  const files=[...(ev.target.files||[])].filter(f=>f.type&&f.type.startsWith('image/'));
+  ev.target.value='';
+  const d=_osDetalheAtual; if(!d||!files.length) return;
+  notify('Enviando foto...','info');
+  let ok=0;
+  for(const f of files){ try{ await uploadFotoParaOS(d.id,f); ok++; }catch(_){} }
+  notify(ok ? (ok+' foto(s) adicionada(s).') : 'Não foi possível enviar a foto.', ok?'ok':'err');
+  await carregarFotosOS(d.id);
+}
 
 /* ── VENDA RÁPIDA (InfinitePay + QR) ── */
 async function gerarVendaRapida(){
@@ -1046,19 +1276,33 @@ async function copiarLinkVenda(){ const v=G.ultimaVenda; if(!v?.url)return; try{
 /* ── VER ESTOQUE ── */
 async function abrirEstoque(){
   const c=$('estoque-list');
-  c.innerHTML='<div style="text-align:center;padding:30px"><div class="spinner" style="border-color:rgba(0,0,0,.12);border-top-color:var(--pri);margin:0 auto"></div></div>';
+  c.innerHTML='<div class="skel skel-card"></div><div class="skel skel-card"></div><div class="skel skel-card"></div><div class="skel skel-card"></div>';
+  $('chip-est-baixo')?.classList.toggle('on',!!G._estFiltroBaixo);
   try{
     const {data}=await comTimeout(db.from('produtos').select('id,nome,preco,estoque,estoque_minimo,fotos,barcode').eq('empresa_id',G.empresaId).eq('status','ativo').order('nome').limit(500),'estoque');
     G.estoqueCache=data||[];
     renderEstoque($('est-busca')?.value||'');
   }catch(e){ c.innerHTML='<div style="text-align:center;padding:22px;color:var(--danger)">Erro ao carregar estoque.</div>'; }
 }
+// Fatia 11A: filtro "Só estoque baixo" — puramente client-side sobre o que
+// já está em G.estoqueCache, sem nenhuma consulta nova.
+function toggleFiltroEstoqueBaixo(){
+  G._estFiltroBaixo=!G._estFiltroBaixo;
+  $('chip-est-baixo')?.classList.toggle('on',G._estFiltroBaixo);
+  renderEstoque($('est-busca')?.value||'');
+}
 function renderEstoque(q){
   const c=$('estoque-list'); if(!c) return;
   const busca=(q||'').toLowerCase();
   let list=(G.estoqueCache||[]);
+  if(G._estFiltroBaixo) list=list.filter(p=>(Number(p.estoque)||0) <= (Number(p.estoque_minimo)||0));
   if(busca) list=list.filter(p=>(p.nome||'').toLowerCase().includes(busca));
-  if(!list.length){ c.innerHTML='<div style="text-align:center;padding:24px;color:var(--txt3)">Nenhum produto encontrado.</div>'; return; }
+  if(!list.length){
+    c.innerHTML = G._estFiltroBaixo
+      ? '<div style="text-align:center;padding:24px;color:var(--txt3)">Nenhum produto com estoque baixo. 🎉</div>'
+      : '<div style="text-align:center;padding:24px;color:var(--txt3)">Nenhum produto encontrado.</div>';
+    return;
+  }
   c.innerHTML=list.map(p=>{
     const f=Array.isArray(p.fotos)&&p.fotos[0]?p.fotos[0]:null;
     const est=Number(p.estoque)||0, min=Number(p.estoque_minimo)||0;
@@ -1099,6 +1343,8 @@ function mudarQty(id,d){
   renderCart(); renderCartBar();
 }
 function renderCart(){
+  const av=$('cart-caixa-aviso');
+  if(av) av.innerHTML = G.caixa ? '' : '<div class="aviso"><i class="ti ti-lock-open"></i><div><b>Nenhum caixa aberto.</b> Você ainda pode finalizar a venda, mas o ideal é abrir o caixa no sistema antes de vender.</div></div>';
   const c=$('cart-itens');
   if(!G.cart.length){ c.innerHTML='<div style="text-align:center;padding:24px;color:var(--txt3)">Carrinho vazio.</div>'; $('cart-tot-b').textContent='R$ 0,00'; return; }
   c.innerHTML=G.cart.map(it=>`<div class="card" style="display:flex;align-items:center;gap:10px;padding:11px 13px">
