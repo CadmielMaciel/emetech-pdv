@@ -28,32 +28,90 @@ input:focus,textarea:focus{outline:none;border-color:var(--pri)}
 .btn{width:100%;padding:14px;border:none;border-radius:13px;background:var(--pri);color:#fff;font-weight:700;font-size:15px;cursor:pointer;margin-top:8px}
 .btn:disabled{opacity:.5}
 .hide{display:none}
-.msg{text-align:center;padding:34px 10px;font-size:15px;line-height:1.6}
+.msg{text-align:center;padding:34px 10px;font-size:15px;line-height:1.6;white-space:pre-line}
+.msg .sub2{display:block;font-size:12.5px;color:var(--txt3);margin-top:6px}
 .store{font-size:12.5px;color:var(--txt2);background:#f7f4ef;border-radius:12px;padding:12px;margin:12px 0}
+
+/* ── Fatia 14: motion leve — mesmo kill-switch já usado em app.html/
+   catalogo.html/os.html/orcamento.html (faltava aqui) ── */
+@media (prefers-reduced-motion:reduce){*{animation-duration:.001s!important;transition-duration:.001s!important}}
+
+/* ── Fatia 14: entrada suave do card ── */
+@keyframes cardIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.card{animation:cardIn .35s ease}
+
+/* ── Fatia 14: status da entrega (mapeado do enum real da tabela `entregas`) ── */
+.st-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:999px;font-size:12.5px;font-weight:700;margin-bottom:10px}
+.st-pill.pulse{animation:stPulse 2s ease-in-out infinite}
+@keyframes stPulse{0%,100%{opacity:1}50%{opacity:.55}}
+.previsto{font-size:12px;color:var(--txt2);margin:-4px 0 12px}
+
+/* ── Fatia 14: linha do tempo (só aparece se a RPC devolver eventos reais) ── */
+.tl{margin:14px 0 4px}
+.tl-item{display:flex;gap:10px;padding:6px 0;font-size:12.5px}
+.tl-item .dot{width:9px;height:9px;border-radius:50%;background:var(--border);margin-top:4px;flex-shrink:0}
+.tl-item.atual .dot{background:var(--pri);animation:stPulse 2s ease-in-out infinite}
+.tl-item b{display:block;color:var(--txt)}
+.tl-item span{color:var(--txt3);font-size:11px}
+.tl-vazio{font-size:12px;color:var(--txt3);text-align:center;padding:10px 0}
+
+/* ── Fatia 14: botão de WhatsApp (não existia neste arquivo) ── */
+.btn-wpp{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;border-radius:13px;background:#25D366;color:#fff;font-weight:700;font-size:14.5px;text-decoration:none;font-family:'DM Sans',sans-serif;border:none;cursor:pointer;margin-top:10px;transition:transform .12s ease}
+.btn-wpp:active{transform:scale(.98)}
+
+/* ── Fatia 14: skeleton loading ── */
+.skel{background:linear-gradient(90deg,#efe9de 25%,#f7f4ef 37%,#efe9de 63%);background-size:400% 100%;animation:skel 1.4s ease infinite;border-radius:12px}
+@keyframes skel{0%{background-position:100% 50%}100%{background-position:0 50%}}
+
+/* ── Fatia 14: copiar link ── */
+.copiar-link{display:inline-flex;align-items:center;gap:5px;color:var(--txt3);font-size:11px;background:none;border:none;cursor:pointer;margin-top:10px;font-family:inherit;padding:4px}
+.copiar-link:active{color:var(--pri)}
+#copia-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(14px);background:#1A1230;color:#fff;border:none;padding:10px 18px;border-radius:12px;font-size:13px;font-weight:600;box-shadow:0 12px 30px rgba(0,0,0,.25);z-index:400;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none}
+#copia-toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 </head>
 <body>
-<div class="wrap" id="app"><div class="card"><div class="msg">Carregando…</div></div></div>
+<div class="wrap" id="app">
+  <div class="card">
+    <div class="skel" style="height:20px;width:60%;margin:0 auto 18px"></div>
+    <div class="skel" style="height:14px;width:40%;margin:0 auto 20px"></div>
+    <div class="skel" style="height:80px;margin-bottom:12px"></div>
+    <div class="skel" style="height:44px"></div>
+  </div>
+</div>
+<div id="copia-toast"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SURL='https://icgfpfwcnhkjglrmnuca.supabase.co';
 const SKEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljZ2ZwZndjbmhramdscm1udWNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwODA2OTEsImV4cCI6MjA5NTY1NjY5MX0.xDGiGCIlqXaqdWhWo0NoNi_XUdlw5raCogO_Jnc0ezw';
 const db=supabase.createClient(SURL,SKEY);
 const token=new URLSearchParams(location.search).get('t');
-let E=null, forma='entrega';
+let E=null, forma='entrega', _wppBtnHtml='';
+
+// Fatia 14: enum real de status da tabela `entregas` (confirmado em index.html —
+// sincronizarEntregas()/_cardEntrega()): para_agendar, agendada, em_rota, entregue,
+// cancelada. Não existe "Em separação"/"Não entregue" no sistema — não inventei.
+// "Aguardando pagamento" também não é um status aqui, é o campo separado `pago`.
+const ENTREGA_STATUS = {
+  para_agendar:{label:'Pedido recebido',cor:'#d97706',bg:'#fdf0e0'},
+  agendada:{label:'Entrega agendada',cor:'#1E5EFF',bg:'#eef3ff'},
+  em_rota:{label:'Saiu para entrega',cor:'#1E5EFF',bg:'#eef3ff'},
+  entregue:{label:'Entregue',cor:'#16a34a',bg:'#e7f6ec'},
+  cancelada:{label:'Cancelada',cor:'#8A8296',bg:'#efe9de'}
+};
 
 function esc(s){ return String(s==null?'':s).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
 function erro(m){ document.getElementById('app').innerHTML=`<div class="card"><div class="msg">⚠️<br>${esc(m)}</div></div>`; }
 
 async function load(){
-  if(!token){ return erro('Link inválido.'); }
+  if(!token || token.length < 32){ return erro('Link inválido ou incompleto.\nConfira se o link está correto.'); }
   try{
     const { data, error } = await db.rpc('entrega_publica', { tok: token });
-    if(error){ return erro('Não foi possível carregar. Tente novamente mais tarde.'); }
-    if(!data){ return erro('Link inválido ou expirado.'); }
-    if(data.ok===false){ return erro(data.expirado?'Este link expirou. Peça um novo à loja.':'Link indisponível.'); }
+    if(error){ return erro('Não foi possível carregar agora.\nTente novamente em alguns instantes.'); }
+    if(!data){ return erro('Não encontramos esta entrega.\nConfira se o link está correto.'); }
+    if(data.ok===false){ return erro(data.expirado?'Este link expirou. Peça um novo à loja.':'Esta entrega não está mais disponível.'); }
     E=data; forma=data.forma||'entrega'; render();
-  }catch(e){ erro('Erro ao carregar.'); }
+  }catch(e){ erro('Não foi possível carregar agora.\nTente novamente em alguns instantes.'); }
 }
 
 function render(){
@@ -62,12 +120,51 @@ function render(){
     ? '<span class="badge ok">✓ Pagamento confirmado</span>'
     : '<span class="badge warn">⚠ Pagamento pendente</span>';
   const jaFeito = E.dados_preenchidos ? '<div class="store">✓ Você já enviou seus dados. Pode reenviar para atualizar.</div>' : '';
+
+  // Fatia 14: status real da entrega — só aparece se a RPC devolver o campo
+  // `status` (assunção técnica — não confirmei se `entrega_publica` já
+  // devolve isso hoje). Status desconhecido mostra o valor bruto, sem
+  // inventar rótulo nem herdar cor de outro status.
+  const stKey = E.status;
+  const st = stKey ? (ENTREGA_STATUS[stKey] || {label:stKey,cor:'#8A8296',bg:'#efe9de'}) : null;
+  const stPill = st ? `<span class="st-pill${stKey==='em_rota'?' pulse':''}" style="color:${st.cor};background:${st.bg}">${esc(st.label)}</span>` : '';
+
+  // Fatia 14: "previsto para" — só mostro se já existir uma data definida
+  // (não é uma previsão inventada, é o próprio campo data_agendada/janela
+  // que já existia no arquivo, só que antes só aparecia dentro do formulário).
+  const previsto = E.data_agendada ? `<div class="previsto">📅 Previsto para ${esc(E.data_agendada.split('-').reverse().join('/'))}${E.janela?' · '+esc(E.janela):''}</div>` : '';
+
+  // Fatia 14: linha do tempo — só renderiza se a RPC realmente devolver uma
+  // lista de eventos. Não encontrei essa função no projeto (entrega.html
+  // não lia nenhum campo de histórico antes desta fatia) — assunção técnica.
+  const eventos = Array.isArray(E.timeline) ? E.timeline : (Array.isArray(E.historico) ? E.historico : (Array.isArray(E.eventos) ? E.eventos : null));
+  const timelineHtml = eventos ? `<div class="tl">
+      ${eventos.length ? eventos.map((ev,i)=>`<div class="tl-item${i===eventos.length-1?' atual':''}"><div class="dot"></div><div><b>${esc(ev.status||ev.titulo||'')}</b><span>${ev.data?esc(new Date(ev.data).toLocaleString('pt-BR')):''}${ev.descricao?' · '+esc(ev.descricao):''}</span></div></div>`).join('') : '<div class="tl-vazio">As atualizações da entrega aparecerão aqui.</div>'}
+    </div>` : '';
+
+  // Fatia 14: WhatsApp — não existia nenhum botão neste arquivo antes.
+  // Telefone da loja: assunção técnica sobre o nome do campo (tentei vários).
+  const wppNum = (E.loja_whatsapp||E.whatsapp||E.empresa_whatsapp||E.telefone_loja||'').replace(/\D/g,'');
+  const numEntrega = E.numero||E.numero_entrega||E.pedido_numero||null; // não encontrei campo "número" na entrega — uso se existir
+  const msgWpp = numEntrega
+    ? (stKey==='em_rota'
+        ? `Olá, estou aguardando minha entrega nº ${numEntrega}. Pode me passar uma atualização?`
+        : `Olá, estou acompanhando minha entrega nº ${numEntrega}. Pode me informar a situação?`)
+    : (stKey==='em_rota'
+        ? `Olá, estou aguardando minha entrega${E.descricao?(' ('+E.descricao+')'):''}. Pode me passar uma atualização?`
+        : `Olá, estou acompanhando minha entrega${E.descricao?(' ('+E.descricao+')'):''}. Pode me informar a situação?`);
+  const wppBtn = wppNum ? `<a class="btn-wpp" target="_blank" href="https://wa.me/${wppNum}?text=${encodeURIComponent(msgWpp)}">💬 Falar com a loja</a>` : '';
+  _wppBtnHtml = wppBtn;
+
   document.getElementById('app').innerHTML=`<div class="card">
     <div class="logo">${esc(E.loja_nome||'Portal de Entrega')}</div>
+    ${stPill?`<div>${stPill}</div>`:''}
     <h1>Como você prefere receber?</h1>
     <div class="sub">${esc(E.descricao||'')}</div>
+    ${previsto}
     <div>${pago}</div>
     ${jaFeito}
+    ${timelineHtml}
     <div class="opt">
       <button id="op-e" onclick="setForma('entrega')">🚚 Receber no endereço</button>
       <button id="op-r" onclick="setForma('retirada')">🏬 Retirar na loja</button>
@@ -89,6 +186,8 @@ function render(){
     <label>Observações</label><textarea id="f-obs" rows="2">${esc(d.observacoes)}</textarea>
     <div class="chk"><input type="checkbox" id="f-conf"><label for="f-conf" style="margin:0">Confirmo que os dados acima estão corretos.</label></div>
     <button class="btn" id="btn-conf" onclick="confirmar()">CONFIRMAR ${forma==='retirada'?'RETIRADA':'ENTREGA'}</button>
+    ${wppBtn}
+    <div style="text-align:center"><button class="copiar-link" onclick="copiarLinkPagina()">🔗 Copiar link desta entrega</button></div>
   </div>`;
   setForma(forma);
 }
@@ -118,8 +217,34 @@ async function confirmar(){
   try{
     const { data, error } = await db.rpc('entrega_publica_confirmar', { tok:token, p, ua:navigator.userAgent });
     if(error||!data||data.ok===false){ throw new Error(); }
-    document.getElementById('app').innerHTML=`<div class="card"><div class="msg">✅<br><b>${forma==='retirada'?'Retirada':'Entrega'} confirmada!</b><br><span style="color:var(--txt2);font-size:13px">A loja recebeu seus dados. Obrigado!</span></div></div>`;
+    document.getElementById('app').innerHTML=`<div class="card"><div class="msg">✅<br><b>${forma==='retirada'?'Retirada':'Entrega'} confirmada!</b><br><span style="color:var(--txt2);font-size:13px">A loja recebeu seus dados. Obrigado!</span></div>${_wppBtnHtml}</div>`;
   }catch(e){ btn.disabled=false; btn.textContent='Tentar novamente'; alert('Não foi possível confirmar. Verifique os dados e tente de novo.'); }
+}
+
+// Fatia 14: copiar link — mesmo padrão de os.html/orcamento.html/catalogo.html.
+function copiarLinkPagina(){
+  const url = location.href;
+  const done = () => _toastCopia('Link copiado!');
+  const fail = () => _toastCopia('Não foi possível copiar.');
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url).then(done).catch(fail);
+  }else{
+    try{
+      const ta = document.createElement('textarea');
+      ta.value = url; ta.style.position='fixed'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      done();
+    }catch(e){ fail(); }
+  }
+}
+function _toastCopia(msg){
+  const t = document.getElementById('copia-toast');
+  if(!t) return;
+  t.textContent = msg;
+  t.classList.add('on');
+  setTimeout(()=>t.classList.remove('on'), 2200);
 }
 
 load();
