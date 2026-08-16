@@ -60,6 +60,32 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);min-
 .lightbox.open{display:flex}
 .lightbox img,.lightbox video{max-width:100%;max-height:90vh;border-radius:10px}
 .lightbox-close{position:absolute;top:16px;right:20px;color:#fff;font-size:32px;cursor:pointer}
+
+/* ── Fatia 12: motion leve — faltava esse kill-switch global neste arquivo
+   (já existe em app.html/catalogo.html) ── */
+@media (prefers-reduced-motion:reduce){*{animation-duration:.001s!important;transition-duration:.001s!important}}
+
+/* ── Fatia 12: destaque suave no evento mais recente da timeline ── */
+@keyframes tlPulse{0%,100%{box-shadow:0 0 0 4px rgba(30,94,255,.22)}50%{box-shadow:0 0 0 7px rgba(30,94,255,.1)}}
+.tl-item.atual .tl-dot{animation:tlPulse 2s ease-in-out infinite}
+
+/* ── Fatia 12: microinteração no botão de WhatsApp/CTAs ── */
+.btn-wpp{transition:transform .12s ease,filter .15s}
+.btn-wpp:active{transform:scale(.98)}
+.btn-avisar{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;border-radius:14px;background:transparent;border:1.5px solid var(--pri2);color:var(--pri2);font-weight:700;font-size:14px;text-decoration:none;font-family:'DM Sans',sans-serif;cursor:pointer;margin-top:10px;transition:transform .12s ease,background .15s}
+.btn-avisar:active{transform:scale(.98);background:rgba(61,139,255,.1)}
+
+/* ── Fatia 12: skeleton loading (mesmo padrão visual do resto do MISU SYS) ── */
+.skel{background:linear-gradient(90deg,var(--card) 25%,var(--card2) 37%,var(--card) 63%);background-size:400% 100%;animation:skel 1.4s ease infinite;border-radius:14px}
+@keyframes skel{0%{background-position:100% 50%}100%{background-position:0 50%}}
+.skel-card{height:120px;margin-bottom:14px}
+.skel-card.sm{height:64px}
+
+/* ── Fatia 12: copiar link (rodapé) ── */
+.copiar-link{display:inline-flex;align-items:center;gap:5px;color:var(--txt3);font-size:11px;background:none;border:none;cursor:pointer;margin-top:8px;font-family:inherit;padding:4px}
+.copiar-link:active{color:var(--pri2)}
+#copia-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(14px);background:#0E1730;color:#EAF0FF;border:1px solid var(--border);padding:10px 18px;border-radius:12px;font-size:13px;font-weight:600;box-shadow:0 12px 30px rgba(0,0,0,.4);z-index:400;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none}
+#copia-toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 </head>
 <body>
@@ -70,14 +96,20 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);min-
     <div class="emp-sub" id="emp-sub"></div>
   </div>
   <div id="conteudo">
-    <div class="center loading"><i class="ti ti-loader-2"></i><p>Buscando sua ordem de serviço…</p></div>
+    <div class="skel skel-card"></div>
+    <div class="skel skel-card sm"></div>
+    <div class="skel skel-card sm"></div>
   </div>
-  <div class="footer">Acompanhamento em tempo real · Sistema <b>MISU SYS</b></div>
+  <div class="footer">
+    Acompanhamento em tempo real · Sistema <b>MISU SYS</b><br>
+    <button type="button" class="copiar-link" onclick="copiarLinkPagina()"><i class="ti ti-link"></i> Copiar link desta OS</button>
+  </div>
 </div>
 <div class="lightbox" id="lightbox" onclick="fecharLightbox(event)">
   <span class="lightbox-close" onclick="fecharLightbox()">&times;</span>
   <div id="lightbox-content"></div>
 </div>
+<div id="copia-toast"></div>
 
 <script>
 const SURL = 'https://icgfpfwcnhkjglrmnuca.supabase.co';
@@ -90,36 +122,40 @@ const fmt = v => 'R$ ' + (parseFloat(v)||0).toLocaleString('pt-BR',{minimumFract
 const fmtDT = d => d ? new Date(d).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
 const fmtD = d => d ? new Date(d+(d.length===10?'T12:00':'')).toLocaleDateString('pt-BR') : null;
 
+// Fatia 12: campo "label" é só o texto público mais humano mostrado na pill —
+// não muda em nada o valor interno do status (a chave do objeto continua
+// sendo exatamente o texto que já vinha do banco, usada como sempre pra
+// buscar cor/ícone/mensagem). Nada foi renomeado, só ganhou um rótulo melhor.
 const STATUS_INFO = {
-  'Aguardando':      { cor:'#F59E0B', bg:'rgba(245,158,11,.14)', icone:'ti-clock',        msg:'Recebemos seu aparelho e ele está na fila de análise.' },
-  'Em Análise':      { cor:'#3D8BFF', bg:'rgba(61,139,255,.14)', icone:'ti-search',       msg:'Nosso técnico está diagnosticando o problema.' },
-  'Em Reparo':       { cor:'#8B5CF6', bg:'rgba(139,92,246,.14)', icone:'ti-tool',         msg:'Seu aparelho está sendo reparado agora.' },
-  'Aguardando Peça': { cor:'#EF4444', bg:'rgba(239,68,68,.14)',  icone:'ti-package',      msg:'Aguardando a chegada de uma peça necessária.' },
-  'Pronto':          { cor:'#10B981', bg:'rgba(16,185,129,.14)', icone:'ti-circle-check', msg:'Reparo concluído! Estamos preparando a entrega.' },
-  'Ag. Pagamento':   { cor:'#F59E0B', bg:'rgba(245,158,11,.14)', icone:'ti-cash',         msg:'Pronto! Retire seu aparelho e finalize o pagamento no balcão.' },
-  'Entregue':        { cor:'#10B981', bg:'rgba(16,185,129,.14)', icone:'ti-check',        msg:'Aparelho entregue. Obrigado pela confiança!' },
-  'Cancelada':       { cor:'#6B7280', bg:'rgba(107,114,128,.14)',icone:'ti-ban',          msg:'Esta ordem de serviço foi cancelada.' }
+  'Aguardando':      { cor:'#F59E0B', bg:'rgba(245,158,11,.14)', icone:'ti-clock',        label:'Recebido',              msg:'Recebemos seu aparelho e ele está na fila de análise.' },
+  'Em Análise':      { cor:'#3D8BFF', bg:'rgba(61,139,255,.14)', icone:'ti-search',       label:'Em diagnóstico',        msg:'Nosso técnico está diagnosticando o problema.' },
+  'Em Reparo':       { cor:'#8B5CF6', bg:'rgba(139,92,246,.14)', icone:'ti-tool',         label:'Em manutenção',         msg:'Seu aparelho está sendo reparado agora.' },
+  'Aguardando Peça': { cor:'#EF4444', bg:'rgba(239,68,68,.14)',  icone:'ti-package',      label:'Aguardando peça',       msg:'Aguardando a chegada de uma peça necessária.' },
+  'Pronto':          { cor:'#10B981', bg:'rgba(16,185,129,.14)', icone:'ti-circle-check', label:'Pronto para retirada',  msg:'Reparo concluído! Estamos preparando a entrega.' },
+  'Ag. Pagamento':   { cor:'#F59E0B', bg:'rgba(245,158,11,.14)', icone:'ti-cash',         label:'Aguardando pagamento',  msg:'Pronto! Retire seu aparelho e finalize o pagamento no balcão.' },
+  'Entregue':        { cor:'#10B981', bg:'rgba(16,185,129,.14)', icone:'ti-check',        label:'Entregue',              msg:'Aparelho entregue. Obrigado pela confiança!' },
+  'Cancelada':       { cor:'#6B7280', bg:'rgba(107,114,128,.14)',icone:'ti-ban',          label:'Cancelado',             msg:'Esta ordem de serviço foi cancelada.' }
 };
 
 async function carregar(primeira){
   if(!token || token.length < 32){
     document.getElementById('conteudo').innerHTML =
-      '<div class="center"><i class="ti ti-link-off"></i><p>Link inválido ou incompleto.<br>Solicite o link de acompanhamento à loja.</p></div>';
+      '<div class="center"><i class="ti ti-link-off"></i><p>Não encontramos essa OS.<br>Confira se o link está correto ou solicite o link de acompanhamento à loja.</p></div>';
     return;
   }
   try{
     const { data, error } = await db.rpc('os_publica', { tok: token });
     if(error) throw error;
-    if(!data){ 
+    if(!data){
       document.getElementById('conteudo').innerHTML =
-        '<div class="center"><i class="ti ti-file-off"></i><p>Ordem de serviço não encontrada.<br>Verifique o link com a loja.</p></div>';
+        '<div class="center"><i class="ti ti-file-off"></i><p>Não encontramos essa OS.<br>Confira se o link está correto. Se precisar, fale com a loja.</p></div>';
       return;
     }
     render(data);
     carregarGarantia(token);
   }catch(e){
     if(primeira) document.getElementById('conteudo').innerHTML =
-      `<div class="center"><i class="ti ti-wifi-off"></i><p>Não foi possível carregar agora.<br>Tente novamente em instantes.</p></div>`;
+      `<div class="center"><i class="ti ti-wifi-off"></i><p>Tente novamente em alguns instantes.<br>Se persistir, fale com a loja.</p></div>`;
   }
 }
 
@@ -179,6 +215,8 @@ async function carregarGarantia(token){
         </div>
       </div>
 
+      <div style="font-size:11.5px;color:var(--txt3);margin-top:12px;line-height:1.5">Esta garantia cobre apenas o serviço realizado, conforme as condições informadas pela loja.</div>
+
       ${g.termo?`
       <button onclick="verTermoGarantiaCliente()" style="margin-top:14px;width:100%;padding:10px;border-radius:9px;border:1px solid var(--pri2,#3b5eff);background:transparent;color:var(--pri2,#3b5eff);font-weight:600;font-size:13px;cursor:pointer;font-family:inherit">
         <i class="ti ti-file-certificate"></i> Ver termo de garantia
@@ -214,12 +252,33 @@ function render(o){
   document.getElementById('emp-sub').textContent = emp.cidade || '';
   document.title = `OS ${o.numero} — ${emp.nome||''}`;
 
-  const st = STATUS_INFO[o.status] || STATUS_INFO['Aguardando'];
+  // Fatia 12: se aparecer um status que não conhecemos (novo valor interno
+  // criado no sistema principal), não inventamos rótulo/mensagem pra ele —
+  // caímos num visual neutro mostrando o próprio texto do status, em vez de
+  // emprestar a cor/mensagem de "Aguardando" (o que ficaria enganoso).
+  const st = STATUS_INFO[o.status] || { cor:'#6B7280', bg:'rgba(107,114,128,.14)', icone:'ti-info-circle', label:o.status, msg:'' };
   const tel = String(emp.whatsapp || emp.telefone || '').replace(/\D/g,'');
   const prazo = fmtD(o.prazo_entrega);
 
   // Timeline: mais recente por último (ordem cronológica)
   const tl = (o.timeline||[]).slice(-8);
+
+  // Fatia 12: valor só é mostrado se realmente existir (número > 0) — evita
+  // o card mostrar "R$ 0,00" pra OS que ainda nem foi orçada.
+  const temValor = Number(o.total)>0;
+  // Fatia 12: campos opcionais — só aparecem se o dado vier de verdade da
+  // RPC. Não encontrei confirmação de que esses campos existem hoje
+  // (assunção técnica — precisa validar); o código não quebra nem inventa
+  // nada se eles não vierem, simplesmente não renderiza o bloco.
+  const acessorios = o.acessorios_entregues || o.acessorios || null;
+  const acessoriosTxt = Array.isArray(acessorios) ? acessorios.filter(Boolean).join(', ') : acessorios;
+  const obsPublica = o.observacoes_publicas || o.obs_publicas || null;
+  const linkPagamento = o.link_pagamento || o.checkout_url || o.url_pagamento || null;
+  const temDetalhes = !!(o.diagnostico || prazo || temValor);
+  // Fatia 12: mensagem exata pedida no spec
+  const msgWpp = `Olá, estou acompanhando minha OS nº ${o.numero} referente ao aparelho ${o.aparelho||''}. Pode me ajudar?`;
+  const msgAvisar = `Olá! Sou da OS nº ${o.numero} (${o.aparelho||''}) e vou até a loja retirar o aparelho.`;
+  const pronto = o.status==='Pronto' || o.status==='Ag. Pagamento';
 
   document.getElementById('conteudo').innerHTML = `
     <div class="card">
@@ -229,14 +288,14 @@ function render(o){
           <div style="font-size:12px;color:var(--txt3)">Aberta em ${fmtDT(o.criado_em)}</div>
         </div>
         <span class="status-pill" style="color:${st.cor};background:${st.bg};border:1.5px solid ${st.cor}44">
-          <i class="ti ${st.icone}"></i> ${esc(o.status)}
+          <i class="ti ${st.icone}"></i> ${esc(st.label||o.status)}
         </span>
       </div>
       <div class="aparelho"><i class="ti ti-device-mobile" style="color:var(--pri2)"></i> ${esc(o.aparelho||'')}</div>
       ${o.defeito?`<div class="defeito">${esc(o.defeito)}</div>`:''}
-      <div style="margin-top:12px;padding:12px 14px;background:${st.bg};border-radius:11px;font-size:13px;color:${st.cor};font-weight:600">
-        ${st.msg}
-      </div>
+      ${st.msg?`<div style="margin-top:12px;padding:12px 14px;background:${st.bg};border-radius:11px;font-size:13px;color:${st.cor};font-weight:600">
+        ${esc(st.msg)}
+      </div>`:''}
       <div class="prog-bar"><div class="prog-fill" style="width:${o.progresso||0}%"></div></div>
       <div class="prog-txt">${o.progresso||0}% concluído</div>
     </div>
@@ -244,18 +303,26 @@ function render(o){
     <div class="card">
       <div class="sec-lbl"><i class="ti ti-timeline"></i> Histórico</div>
       ${tl.length? tl.map((t,i)=>`
-        <div class="tl-item ${i<tl.length?'done':''}">
+        <div class="tl-item done ${i===tl.length-1?'atual':''}">
           <div class="tl-dot"></div>
           <div><div class="tl-status">${esc(t.status||'')}</div><div class="tl-data">${fmtDT(t.data)}</div></div>
-        </div>`).join('') : '<div style="color:var(--txt3);font-size:13px">Sem movimentações ainda.</div>'}
+        </div>`).join('') : '<div style="color:var(--txt3);font-size:13px">Assim que houver movimentações, elas aparecerão aqui.</div>'}
     </div>
 
+    ${temDetalhes?`
     <div class="card">
       <div class="sec-lbl"><i class="ti ti-file-invoice"></i> Detalhes</div>
       ${o.diagnostico?`<div class="info-row"><span style="color:var(--txt2)">Diagnóstico</span><span style="max-width:60%;text-align:right;font-size:12.5px">${esc(o.diagnostico)}</span></div>`:''}
       ${prazo?`<div class="info-row"><span style="color:var(--txt2)">Previsão de entrega</span><b>${prazo}</b></div>`:''}
-      <div class="info-row"><span style="color:var(--txt2)">Valor do serviço</span><b style="color:var(--pri2)">${fmt(o.total)}</b></div>
-    </div>
+      ${temValor?`<div class="info-row"><span style="color:var(--txt2)">Valor do serviço</span><b style="color:var(--pri2)">${fmt(o.total)}</b></div>`:''}
+    </div>`:''}
+
+    ${(acessoriosTxt||obsPublica)?`
+    <div class="card">
+      <div class="sec-lbl"><i class="ti ti-list-details"></i> Informações adicionais</div>
+      ${acessoriosTxt?`<div class="info-row"><span style="color:var(--txt2)">Acessórios entregues</span><span style="max-width:60%;text-align:right;font-size:12.5px">${esc(acessoriosTxt)}</span></div>`:''}
+      ${obsPublica?`<div class="defeito" style="margin-top:${acessoriosTxt?'8px':'0'}">${esc(obsPublica)}</div>`:''}
+    </div>`:''}
 
     <div id="card-garantia"></div>
 
@@ -275,8 +342,15 @@ function render(o){
       ${o.autorizacoes.map(a=>renderAutorizacao(a)).join('')}
     </div>`:''}
 
-    ${tel?`<a class="btn-wpp" href="https://api.whatsapp.com/send?phone=55${tel}&text=${encodeURIComponent('Olá! Estou acompanhando a OS '+o.numero+' e gostaria de mais informações.')}" target="_blank">
+    ${linkPagamento?`<a class="btn-wpp" style="background:linear-gradient(135deg,var(--pri),var(--pri2));box-shadow:0 6px 20px rgba(30,94,255,.35)" href="${esc(linkPagamento)}" target="_blank">
+      <i class="ti ti-credit-card" style="font-size:19px"></i> Pagar agora
+    </a>`:''}
+
+    ${tel?`<a class="btn-wpp" href="https://api.whatsapp.com/send?phone=55${tel}&text=${encodeURIComponent(msgWpp)}" target="_blank">
       <i class="ti ti-brand-whatsapp" style="font-size:19px"></i> Falar com a loja
+    </a>`:''}
+    ${(tel&&pronto)?`<a class="btn-avisar" href="https://api.whatsapp.com/send?phone=55${tel}&text=${encodeURIComponent(msgAvisar)}" target="_blank">
+      <i class="ti ti-walk"></i> Avisar que vou retirar
     </a>`:''}
     <div class="atualizado"><i class="ti ti-refresh"></i> Atualiza automaticamente · último: ${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</div>
   `;
@@ -373,6 +447,22 @@ function fecharLightbox(e){
   if(e && e.target.tagName==='VIDEO') return;
   document.getElementById('lightbox').classList.remove('open');
   document.getElementById('lightbox-content').innerHTML='';
+}
+
+// Fatia 12: copiar o link desta própria página — útil pro cliente repassar
+// pra outra pessoa (ex.: quem vai buscar o aparelho na loja).
+async function copiarLinkPagina(){
+  const url = location.href;
+  try{
+    if(navigator.clipboard && navigator.clipboard.writeText){ await navigator.clipboard.writeText(url); }
+    else{ const ta=document.createElement('textarea'); ta.value=url; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); }
+    _toastCopia('Link copiado!');
+  }catch(_){ _toastCopia('Não foi possível copiar o link.'); }
+}
+function _toastCopia(msg){
+  const t=document.getElementById('copia-toast'); if(!t) return;
+  t.textContent=msg; t.classList.add('on');
+  clearTimeout(t._tm); t._tm=setTimeout(()=>t.classList.remove('on'), 2000);
 }
 
 // Web Push (opcional) — pede permissão e registra a inscrição
