@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Catálogo</title>
+<meta id="meta-description" name="description" content="Confira o catálogo de produtos e fale direto pelo WhatsApp.">
+<meta id="og-title" property="og:title" content="Catálogo">
+<meta id="og-description" property="og:description" content="Confira o catálogo de produtos e fale direto pelo WhatsApp.">
+<meta property="og:type" content="website">
+<meta id="og-url" property="og:url" content="">
+<meta id="theme-color-meta" name="theme-color" content="#5B47E0">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -114,11 +120,64 @@
   .pm-note{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:11px;padding:11px 13px;font-size:12.5px;color:#92500a;line-height:1.5;margin-bottom:14px}
   .pm-wa{display:flex;align-items:center;justify-content:center;gap:8px;background:#25D366;color:#fff;border-radius:13px;padding:14px;font-size:15px;font-weight:700;text-decoration:none;transition:filter .15s}
   .pm-wa:hover{filter:brightness(.95)}
+  .pm-actions{display:flex;gap:8px;margin-top:8px}
+  .pm-actions .pm-sec{flex:0 0 auto;width:46px;height:46px;border-radius:12px;background:var(--bg);border:1px solid var(--border);color:var(--txt2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:17px;transition:background .15s}
+  .pm-actions .pm-sec:hover{background:var(--border)}
+
+  /* Ações rápidas no hero */
+  .btn-icon{padding:13px;width:46px;justify-content:center}
+
+  /* Chip com contador */
+  .chip-count{opacity:.65;font-size:11px;margin-left:4px}
+
+  /* Busca sem resultado */
+  .btn-clear{margin-top:14px;background:var(--surface);border:1px solid var(--border);color:var(--txt2);border-radius:11px;padding:10px 18px;font-size:13.5px;font-weight:600;cursor:pointer}
+  .btn-clear:hover{border-color:var(--pri);color:var(--pri)}
+
+  /* Botão rápido de WhatsApp no card */
+  .pbtn-row{display:flex;gap:7px;margin-top:auto}
+  .pbtn-row .pbtn{margin-top:0;flex:1}
+  .pbtn-quick{flex:0 0 40px;width:40px;background:#e8fbf0;color:#0a9d4e;border:1px solid #cdf3dd;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer;text-decoration:none;transition:filter .15s}
+  .pbtn-quick:hover{filter:brightness(.95)}
+
+  /* Badge status sob encomenda no card (topo direito) */
+  .badge-enc{position:absolute;top:10px;right:10px;left:auto;z-index:2;background:#E8915B}
+
+  /* Skeleton loading */
+  .skel{background:linear-gradient(90deg,#eeecf6 25%,#e4e1f2 37%,#eeecf6 63%);background-size:400% 100%;animation:skel 1.4s ease infinite}
+  @keyframes skel{0%{background-position:100% 50%}100%{background-position:0 50%}}
+  .skel-hero{height:180px;border-radius:0 0 20px 20px}
+  .skel-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px;padding:20px 18px}
+  .skel-card{height:280px;border-radius:var(--radius)}
+
+  /* Entrada suave dos cards */
+  .card{animation:cardIn .35s ease backwards}
+  .card:nth-child(1){animation-delay:.02s}.card:nth-child(2){animation-delay:.05s}.card:nth-child(3){animation-delay:.08s}
+  .card:nth-child(4){animation-delay:.11s}.card:nth-child(5){animation-delay:.14s}.card:nth-child(6){animation-delay:.17s}
+  @keyframes cardIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+  /* Toast de feedback (link copiado etc.) */
+  .toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(20px);background:#15103a;color:#fff;padding:11px 20px;border-radius:11px;font-size:13.5px;font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,.25);z-index:300;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none}
+  .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  @media(prefers-reduced-motion: reduce){
+    *{animation-duration:.001s!important;animation-delay:0s!important;transition-duration:.001s!important;scroll-behavior:auto!important}
+    .card:hover{transform:none}
+    .card:hover .pimg img{transform:none}
+    .fab:hover{transform:none}
+  }
 </style>
 </head>
 <body>
-  <div id="app"><div class="loading"><div class="spin"></div>Carregando catálogo...</div></div>
+  <div id="app">
+    <div class="skel skel-hero"></div>
+    <div class="skel-grid">
+      <div class="skel skel-card"></div><div class="skel skel-card"></div><div class="skel skel-card"></div>
+      <div class="skel skel-card"></div><div class="skel skel-card"></div><div class="skel skel-card"></div>
+    </div>
+  </div>
   <div class="pm-overlay" id="modalProduto" onclick="fecharProduto()"></div>
+  <div class="toast" id="toast"></div>
 
 <script>
 const SURL='https://icgfpfwcnhkjglrmnuca.supabase.co';
@@ -132,29 +191,78 @@ let PRODUTOS=[], LOJA=null, CAT_ATUAL='', BUSCA='';
 const fmt=v=>'R$ '+(Number(v)||0).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function waNum(){ const t=(LOJA&&LOJA.whatsapp)||''; return t?(t.length<=11?'55'+t:t):''; }
+const _reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+// mostrarPreco: assunção técnica — se vier explicitamente "false" do banco, escondemos o preço de todos os produtos (permissão da loja); se vier ausente/null, mantém o comportamento antigo (mostra o preço quando o produto tem preço).
+function precoVisivel(p){ return !!(LOJA && LOJA.mostrarPreco!==false && p.preco!=null); }
+function prodKey(p){ return p.id!=null ? String(p.id) : 'i'+p._i; }
+function toast(msg){
+  const t=document.getElementById('toast'); if(!t) return;
+  t.textContent=msg; t.classList.add('on');
+  clearTimeout(t._tm); t._tm=setTimeout(()=>t.classList.remove('on'), _reduceMotion?900:2000);
+}
 
 async function init(){
   if(!slug){ render(`<div class="empty"><i class="ti ti-link-off"></i><p style="margin-top:10px">Link de catálogo inválido.<br>Use: ...catalogo.html?loja=<b>nome-da-loja</b></p></div>`); return; }
   try{
     const {data,error}=await db.from('catalogo_publico').select('*').eq('loja_slug',slug);
     if(error)throw error;
-    if(!data||!data.length){ render(`<div class="empty"><i class="ti ti-shopping-bag-x"></i><p style="margin-top:10px">Catálogo não encontrado ou indisponível.</p></div>`); return; }
+    if(!data||!data.length){ render(`<div class="empty"><i class="ti ti-shopping-bag-x"></i><p style="margin-top:10px">Não encontramos esse catálogo, ou ele ainda não tem produtos publicados.</p></div>`); return; }
     PRODUTOS=data;
     PRODUTOS.forEach((p,i)=>{ p._i=i; });
     LOJA={ nome:data[0].loja_nome||'Loja', descricao:data[0].loja_descricao||'', whatsapp:(data[0].loja_whatsapp||'').replace(/\D/g,''), instagram:data[0].loja_instagram||'', cor:data[0].loja_cor||'#5B47E0', mostrarPreco:data[0].mostrar_preco };
     document.documentElement.style.setProperty('--pri',LOJA.cor);
     document.documentElement.style.setProperty('--pri-2',shade(LOJA.cor,-18));
     document.title=LOJA.nome+' — Catálogo';
+    atualizarSEO();
     desenhar();
+    abrirProdutoPorHash();
   }catch(e){ render(`<div class="empty"><i class="ti ti-alert-triangle"></i><p style="margin-top:10px">Erro ao carregar o catálogo.</p></div>`); }
+}
+function atualizarSEO(){
+  try{
+    const desc=(LOJA.descricao||('Confira os produtos de '+LOJA.nome+' e fale direto pelo WhatsApp.')).slice(0,160);
+    const md=document.getElementById('meta-description'); if(md)md.setAttribute('content',desc);
+    const ot=document.getElementById('og-title'); if(ot)ot.setAttribute('content',LOJA.nome+' — Catálogo');
+    const od=document.getElementById('og-description'); if(od)od.setAttribute('content',desc);
+    const ou=document.getElementById('og-url'); if(ou)ou.setAttribute('content',location.href);
+    const tc=document.getElementById('theme-color-meta'); if(tc)tc.setAttribute('content',LOJA.cor);
+  }catch(e){}
+}
+function abrirProdutoPorHash(){
+  const h=(location.hash||'').replace('#produto-','');
+  if(!h) return;
+  const p=PRODUTOS.find(x=>prodKey(x)===h);
+  if(p) abrirProduto(p._i);
 }
 function shade(hex,p){ try{ let n=parseInt(hex.slice(1),16); let r=(n>>16)+p, g=((n>>8)&255)+p, b=(n&255)+p; r=Math.max(0,Math.min(255,r));g=Math.max(0,Math.min(255,g));b=Math.max(0,Math.min(255,b)); return '#'+((r<<16)|(g<<8)|b).toString(16).padStart(6,'0'); }catch(e){ return hex; } }
 function render(html){ document.getElementById('app').innerHTML=html; }
 
+async function copiarLink(url,msgOk){
+  try{
+    if(navigator.clipboard&&navigator.clipboard.writeText){ await navigator.clipboard.writeText(url); toast(msgOk||'Link copiado!'); }
+    else{ const ta=document.createElement('textarea'); ta.value=url; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); toast(msgOk||'Link copiado!'); }
+  }catch(e){ toast('Não foi possível copiar o link.'); }
+}
+async function compartilharCatalogo(){
+  const url=location.origin+location.pathname+'?loja='+encodeURIComponent(slug);
+  const title=(LOJA&&LOJA.nome)?LOJA.nome+' — Catálogo':'Catálogo';
+  if(navigator.share){ try{ await navigator.share({title,url}); return; }catch(e){ return; } }
+  copiarLink(url,'Link do catálogo copiado!');
+}
+async function compartilharProduto(i){
+  const p=PRODUTOS[i]; if(!p) return;
+  const url=location.origin+location.pathname+'?loja='+encodeURIComponent(slug)+'#produto-'+prodKey(p);
+  const title=p.nome+((LOJA&&LOJA.nome)?' — '+LOJA.nome:'');
+  if(navigator.share){ try{ await navigator.share({title,url}); return; }catch(e){ return; } }
+  copiarLink(url,'Link do produto copiado!');
+}
+
 function desenhar(){
   const cats=[...new Set(PRODUTOS.map(p=>p.categoria).filter(Boolean))].sort();
+  const catCount=c=>PRODUTOS.filter(p=>p.categoria===c).length;
   const num=waNum();
   const insta=LOJA.instagram?(LOJA.instagram.startsWith('http')?LOJA.instagram:'https://instagram.com/'+LOJA.instagram.replace('@','')):'';
+  const temOfertas=PRODUTOS.some(p=>p.destaque);
   render(`
     <header class="hero">
       <div class="wrap hero-inner">
@@ -164,22 +272,24 @@ function desenhar(){
           ${LOJA.descricao?`<p>${esc(LOJA.descricao)}</p>`:`<p>Confira nossos produtos e fale com a gente pelo WhatsApp.</p>`}
           <div class="hero-cta">
             ${num?`<a class="btn btn-wa" target="_blank" href="https://wa.me/${num}?text=${encodeURIComponent('Olá! Vi o catálogo de '+LOJA.nome+' e gostaria de mais informações.')}"><i class="ti ti-brand-whatsapp"></i> Falar no WhatsApp</a>`:''}
-            <a class="btn btn-ghost" href="#ofertas"><i class="ti ti-flame"></i> Ver ofertas</a>
-            ${insta?`<a class="btn btn-ghost" target="_blank" href="${esc(insta)}"><i class="ti ti-brand-instagram"></i></a>`:''}
+            <a class="btn btn-ghost" href="#produtos"><i class="ti ti-shopping-bag"></i> Ver produtos</a>
+            ${temOfertas?`<a class="btn btn-ghost" href="#ofertas"><i class="ti ti-flame"></i> Ofertas</a>`:''}
+            <button type="button" class="btn btn-ghost" onclick="compartilharCatalogo()"><i class="ti ti-share"></i> Compartilhar</button>
+            ${insta?`<a class="btn btn-ghost btn-icon" target="_blank" href="${esc(insta)}" title="Instagram"><i class="ti ti-brand-instagram"></i></a>`:''}
           </div>
         </div>
       </div>
     </header>
 
-    <div class="wrap">
+    <div class="wrap" id="produtos">
       <div class="toolbar">
         <div class="toolbar-inner">
           <div class="search"><i class="ti ti-search" style="color:var(--txt3)"></i><input id="q" placeholder="Buscar produto..." oninput="onBusca(this.value)"></div>
         </div>
       </div>
       <div class="cats" id="cats">
-        <span class="chip on" onclick="setCat('',this)">Todos</span>
-        ${cats.map(c=>`<span class="chip" onclick="setCat('${esc(c)}',this)">${esc(c)}</span>`).join('')}
+        <span class="chip on" onclick="setCat('',this)">Todos <span class="chip-count">${PRODUTOS.length}</span></span>
+        ${cats.map(c=>`<span class="chip" onclick="setCat('${esc(c)}',this)">${esc(c)} <span class="chip-count">${catCount(c)}</span></span>`).join('')}
       </div>
       <div id="lista"></div>
     </div>
@@ -195,28 +305,35 @@ function setCat(c,el){ CAT_ATUAL=c; document.querySelectorAll('.chip').forEach(c
 
 function cardHtml(p,hot){
   const foto=(p.fotos&&p.fotos.length)?`<img src="${esc(p.fotos[0])}" alt="${esc(p.nome)}" loading="lazy">`:'<i class="ti ti-device-mobile"></i>';
+  const num=waNum();
+  const quickWa=num?`<a class="pbtn-quick" href="https://wa.me/${num}?text=${encodeURIComponent(msgProduto(p))}" target="_blank" onclick="event.stopPropagation()" title="Falar sobre este produto"><i class="ti ti-brand-whatsapp"></i></a>`:'';
   return `<div class="card ${hot?'hot':''}" onclick="abrirProduto(${p._i})">
     ${hot?'<span class="badge badge-hot"><i class="ti ti-flame" style="font-size:12px"></i> Oferta</span>':''}
+    ${p.disponivel===false?'<span class="badge badge-enc"><i class="ti ti-truck-delivery" style="font-size:12px"></i> Sob encomenda</span>':''}
     <div class="pimg">${foto}</div>
     <div class="pbody">
       <div class="pcat">${esc(p.categoria||'Produto')}</div>
       <div class="pnome">${esc(p.nome)}</div>
       <div class="pprice-row">
-        ${p.preco!=null?`<span class="preco">${fmt(p.preco)}</span>`:'<span class="consulte">Consulte o preço</span>'}
-        ${p.disponivel===false?'<span class="indisp">Sob encomenda</span>':''}
+        ${precoVisivel(p)?`<span class="preco">${fmt(p.preco)}</span>`:'<span class="consulte">Consulte o preço</span>'}
       </div>
-      <div class="pbtn"><i class="ti ti-eye"></i> Ver detalhes</div>
+      <div class="pbtn-row">
+        <div class="pbtn"><i class="ti ti-eye"></i> Ver detalhes</div>
+        ${quickWa}
+      </div>
     </div>
   </div>`;
 }
 
-// Mensagem pronta de WhatsApp: em estoque = interesse; sem estoque = pedido sob encomenda
+// Mensagem pronta de WhatsApp — 3 cenários pedidos: disponível (com preço), sob encomenda, sem preço
 function msgProduto(p){
-  const preco = p.preco!=null ? ' ('+fmt(p.preco)+')' : '';
   if(p.disponivel===false){
-    return `Olá, ${LOJA.nome}! Gostaria de fazer um *pedido sob encomenda* do produto: ${p.nome}${preco}. Vocês conseguem providenciar? Qual o prazo e a forma de pagamento?`;
+    return `Olá, vi no catálogo da ${LOJA.nome} o produto ${p.nome}. Gostaria de solicitar sob encomenda. Qual o prazo e forma de pagamento?`;
   }
-  return `Olá, ${LOJA.nome}! Tenho interesse no produto: ${p.nome}${preco}. Ainda está disponível? Como faço para comprar?`;
+  if(precoVisivel(p)){
+    return `Olá, vi no catálogo da ${LOJA.nome} o produto ${p.nome} por ${fmt(p.preco)}. Ainda está disponível? Quero mais informações.`;
+  }
+  return `Olá, vi no catálogo da ${LOJA.nome} o produto ${p.nome}. Pode me informar o valor e disponibilidade?`;
 }
 function abrirProduto(i){
   const p=PRODUTOS[i]; if(!p) return;
@@ -234,24 +351,36 @@ function abrirProduto(i){
     <div class="pm-body">
       <div class="pm-cat">${esc(p.categoria||'Produto')}${p.marca?(' · '+esc(p.marca)):''}</div>
       <h2 class="pm-nome">${esc(p.nome)}</h2>
-      <div class="pm-price">${p.preco!=null?fmt(p.preco):'<span class="consulte">Consulte o preço</span>'}</div>
+      <div class="pm-price">${precoVisivel(p)?fmt(p.preco):'<span class="consulte">Consulte o preço</span>'}</div>
       <div class="pm-status ${enc?'enc':'ok'}">${enc?'<i class="ti ti-truck-delivery"></i> Sob encomenda':'<i class="ti ti-circle-check"></i> Disponível em estoque'}</div>
       ${p.descricao?`<p class="pm-desc">${esc(p.descricao)}</p>`:''}
       ${enc?'<div class="pm-note"><b>Este item não está em estoque no momento.</b> Você pode solicitá-lo como <b>pedido sob encomenda</b> pelo WhatsApp — a loja confirma o prazo e a forma de pagamento com você.</div>':''}
       ${num?`<a class="pm-wa" target="_blank" href="https://wa.me/${num}?text=${msg}"><i class="ti ti-brand-whatsapp"></i> ${enc?'Solicitar pedido no WhatsApp':'Solicitar no WhatsApp'}</a>`:'<div class="pm-note">A loja ainda não cadastrou um WhatsApp para contato.</div>'}
+      <div class="pm-actions">
+        <div class="pm-sec" onclick="compartilharProduto(${p._i})" title="Compartilhar produto"><i class="ti ti-share"></i></div>
+        <div class="pm-sec" onclick="copiarLink(location.origin+location.pathname+'?loja='+encodeURIComponent(slug)+'#produto-${prodKey(p)}','Link do produto copiado!')" title="Copiar link do produto"><i class="ti ti-link"></i></div>
+      </div>
     </div>
   </div>`;
   m.classList.add('on');
+  history.replaceState(null,'',location.pathname+location.search+'#produto-'+prodKey(p));
 }
-function fecharProduto(){ document.getElementById('modalProduto').classList.remove('on'); }
+function fecharProduto(){ document.getElementById('modalProduto').classList.remove('on'); if(location.hash) history.replaceState(null,'',location.pathname+location.search); }
 function trocaFoto(el){ const mm=document.getElementById('pm-main'); if(mm)mm.src=el.src; document.querySelectorAll('.pm-gal img').forEach(i=>i.classList.remove('on')); el.classList.add('on'); }
 
 function renderLista(){
   let list=PRODUTOS.slice();
   if(CAT_ATUAL) list=list.filter(p=>p.categoria===CAT_ATUAL);
-  if(BUSCA) list=list.filter(p=>(p.nome+' '+(p.categoria||'')+' '+(p.marca||'')).toLowerCase().includes(BUSCA));
+  if(BUSCA) list=list.filter(p=>(p.nome+' '+(p.categoria||'')+' '+(p.marca||'')+' '+(p.descricao||'')).toLowerCase().includes(BUSCA));
   const cont=document.getElementById('lista');
-  if(!list.length){ cont.innerHTML=`<div class="empty"><i class="ti ti-search-off"></i><p style="margin-top:10px">Nenhum produto encontrado.</p></div>`; return; }
+  if(!list.length){
+    if(BUSCA||CAT_ATUAL){
+      cont.innerHTML=`<div class="empty"><i class="ti ti-search-off"></i><p style="margin-top:10px">Não encontramos produto com esse termo.</p><button type="button" class="btn-clear" onclick="limparBusca()">Limpar busca</button></div>`;
+    } else {
+      cont.innerHTML=`<div class="empty"><i class="ti ti-search-off"></i><p style="margin-top:10px">Nenhum produto encontrado.</p></div>`;
+    }
+    return;
+  }
 
   const destaques=list.filter(p=>p.destaque);
   const normais=list.filter(p=>!p.destaque);
@@ -263,6 +392,13 @@ function renderLista(){
     html+=`<div class="sec" id="ofertas"><div class="grid">${list.map(p=>cardHtml(p,p.destaque)).join('')}</div></div>`;
   }
   cont.innerHTML=html;
+}
+function limparBusca(){
+  BUSCA=''; CAT_ATUAL='';
+  const q=document.getElementById('q'); if(q)q.value='';
+  document.querySelectorAll('.chip').forEach(ch=>ch.classList.remove('on'));
+  const primeiro=document.querySelector('.chip'); if(primeiro)primeiro.classList.add('on');
+  renderLista();
 }
 
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') fecharProduto(); });
