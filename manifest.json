@@ -10,6 +10,7 @@
   "background_color": "#070B1A",
   "theme_color": "#1E5EFF",
   "lang": "pt-BR",
+  "dir": "ltr",
   "categories": [
     "business",
     "productivity",
