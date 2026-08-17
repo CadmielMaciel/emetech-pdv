@@ -16,7 +16,7 @@ try{
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3"></script>
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3" onerror="window._zxingFalhouCarregar=true" onload="window._zxingFalhouCarregar=false"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <style>
@@ -1078,7 +1078,20 @@ let _zxReader=null;
 let _scanModo='produto';
 async function abrirScanner(modo){
   _scanModo=modo||'produto';
-  if(typeof ZXing==='undefined'){ notify('Scanner ainda carregando, tente de novo em 1s.','warn'); return; }
+  if(typeof ZXing==='undefined'){
+    // Fatia 20: diferencia "ainda carregando" (script em voo, tenta de novo
+    // sozinho daqui a pouco) de "falhou de vez" (CDN bloqueada/sem rede —
+    // reportado pelo usuário como "scanner continua sem funcionar"; tentar
+    // de novo no mesmo segundo não ia adiantar nada, então avisa direito e
+    // já aponta o caminho manual em vez de mandar "tentar de novo" à toa).
+    if(window._zxingFalhouCarregar){
+      console.error('[MISU MOBILE][scanner] biblioteca ZXing não carregou (CDN bloqueada ou sem conexão)');
+      notify('Não foi possível carregar o scanner agora (sem conexão com a biblioteca). Digite o código manualmente.','err');
+    } else {
+      notify('Scanner ainda carregando, tente de novo em 1s.','warn');
+    }
+    return;
+  }
   $('scan').style.display='flex';
   $('scan-hint').textContent='Aponte a câmera para o código.';
   try{
@@ -1097,9 +1110,12 @@ async function abrirScanner(modo){
       }
     );
   }catch(e){
-    const nm=e?.name||'';
-    if(nm==='NotAllowedError') notify('Não foi possível acessar a câmera. Digite o código manualmente.','err');
-    else notify('Não foi possível acessar a câmera. Digite o código manualmente.','err');
+    // Fatia 20: loga o erro real (nome/mensagem) pro console — a mensagem
+    // que o usuário vê continua a mesma exigida pelo spec ("Não foi possível
+    // acessar a câmera..."), mas agora dá pra diagnosticar de longe pedindo
+    // pro usuário abrir o console do navegador, em vez de ficar no escuro.
+    console.error('[MISU MOBILE][scanner]', e?.name||'', e?.message||e);
+    notify('Não foi possível acessar a câmera. Digite o código manualmente.','err');
     fecharScanner();
   }
 }
@@ -1352,7 +1368,7 @@ async function gerarVendaRapida(){
     const order_nsu='APP-'+Date.now();
     const {data,error}=await comTimeout(db.functions.invoke('infinitepay-link',{ body:{
       empresa_id:G.empresaId, order_nsu, origem:'venda_rapida', origem_id:order_nsu,
-      descricao:desc, itens:[{descricao:desc, valor, qtd:1}], redirect_url:location.origin,
+      descricao:desc, itens:[{nome:desc, quantidade:1, preco:valor}], redirect_url:location.origin,
       max_parcelas:cfg.max_parcelas||12, taxa_por_conta:cfg.taxa_por_conta||'cliente', pix:cfg.pix!==false
     }}),'gerar cobrança');
     if(error) throw new Error(error.message||'falha na chamada');
@@ -1502,7 +1518,7 @@ async function finalizarVenda(){
       try{
         let cfg={}; try{ const {data}=await db.from('empresas').select('infinitepay_config').eq('id',G.empresaId).maybeSingle(); cfg=data?.infinitepay_config||{}; }catch(_){}
         const order_nsu='APP-'+Date.now();
-        const {data,error}=await comTimeout(db.functions.invoke('infinitepay-link',{body:{empresa_id:G.empresaId,order_nsu,origem:'venda_rapida',origem_id:order_nsu,descricao:G.cart.map(c=>c.qty+'x '+c.nome).join(', '),itens:G.cart.map(c=>({descricao:c.nome,valor:c.preco,qtd:c.qty})),redirect_url:location.origin,max_parcelas:cfg.max_parcelas||12,taxa_por_conta:cfg.taxa_por_conta||'cliente',pix:cfg.pix!==false}}),'cobrança');
+        const {data,error}=await comTimeout(db.functions.invoke('infinitepay-link',{body:{empresa_id:G.empresaId,order_nsu,origem:'venda_rapida',origem_id:order_nsu,descricao:G.cart.map(c=>c.qty+'x '+c.nome).join(', '),itens:G.cart.map(c=>({nome:c.nome,quantidade:c.qty,preco:c.preco})),redirect_url:location.origin,max_parcelas:cfg.max_parcelas||12,taxa_por_conta:cfg.taxa_por_conta||'cliente',pix:cfg.pix!==false}}),'cobrança');
         if(!error && data?.success){
           G.ultimaVenda={url:data.checkout_url,valor:data.valor||total,fone};
           limparCarrinho();
