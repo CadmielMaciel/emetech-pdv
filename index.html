@@ -4118,6 +4118,25 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
               <i class="ti ti-shield-lock"></i> O dinheiro cai direto na conta InfinitePay desta loja. O sistema apenas gera o link — não intermedia o pagamento.
             </div>
           </div>
+
+          <!-- Pix próprio da loja — QR gerado localmente com a chave Pix da loja, sem passar pela InfinitePay -->
+          <div class="card" style="max-width:640px;margin-top:16px">
+            <div class="card-hdr" style="margin-bottom:14px"><div class="card-title"><i class="ti ti-qrcode" style="color:#16a34a"></i> Pix Próprio da Loja</div></div>
+            <div style="font-size:12.5px;color:var(--txt2);margin-bottom:14px">Gera um QR Code de Pix direto com a <b>sua chave Pix</b> — o cliente escaneia e paga na hora, sem abrir nenhuma página de terceiro. Como não passa por nenhum gateway, <b>não existe confirmação automática</b>: no PDV e no app do celular, o estoque só sai depois que você mesmo confirmar que o Pix caiu na conta.</div>
+            <div class="fg"><label class="lbl">Sua chave Pix</label>
+              <input type="text" id="px-chave" placeholder="CPF/CNPJ, e-mail, telefone ou chave aleatória" autocomplete="off">
+            </div>
+            <div class="g2" style="margin-top:4px">
+              <div class="fg"><label class="lbl">Nome do beneficiário</label><input type="text" id="px-nome" placeholder="Nome que aparece pro cliente no banco" maxlength="25"></div>
+              <div class="fg"><label class="lbl">Cidade</label><input type="text" id="px-cidade" placeholder="Ex: Irará" maxlength="15"></div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+              <button class="btn btn-pri" onclick="salvarPixProprio()"><i class="ti ti-device-floppy"></i> Salvar</button>
+            </div>
+            <div style="font-size:11.5px;color:var(--txt3);margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+              <i class="ti ti-alert-triangle"></i> Gerador de Pix (BR Code) local, seguindo o padrão do Banco Central — teste escaneando com o app do seu banco antes de usar com clientes de verdade.
+            </div>
+          </div>
         </div>
         <div id="cfg-impressora" style="display:none">
           <div class="card" style="max-width:620px">
@@ -11056,10 +11075,11 @@ function selPay(btn,m){
 // Detecta quais gateways estão conectados (cacheado após o 1º carregamento)
 async function detectarGateways(){
   if(G._gateways) return G._gateways;
-  const g={ asaas:false, infinitepay:false };
+  const g={ asaas:false, infinitepay:false, pixProprio:false };
   try{
-    const {data}=await db.from('empresas').select('infinitepay_handle').eq('id',EID()).maybeSingle();
+    const {data}=await db.from('empresas').select('infinitepay_handle,pix_proprio_chave').eq('id',EID()).maybeSingle();
     g.infinitepay = !!(data && data.infinitepay_handle);
+    g.pixProprio = !!(data && data.pix_proprio_chave);
   }catch(e){}
   try{
     const {data}=await db.rpc('status_pagamento');
@@ -11080,6 +11100,8 @@ async function renderBotoesQR(metodo){
 
   const g=await detectarGateways();
   const conectados=[];
+  // Pix próprio só faz sentido pra Pix (é um QR estático da chave da loja, não aceita cartão)
+  if(g.pixProprio && metodo==='pix') conectados.push({id:'pix_proprio',nome:'Pix da Loja',cor:'#16a34a',fn:'cobrarPdvPixProprio()'});
   if(g.infinitepay) conectados.push({id:'infinitepay',nome:'InfinitePay',cor:'#7c3aed',fn:'cobrarPdvInfinitePay()'});
   if(g.asaas)       conectados.push({id:'asaas',nome:'Asaas',cor:'var(--pri)',fn:'cobrarPdvAsaas()'});
 
@@ -11091,14 +11113,15 @@ async function renderBotoesQR(metodo){
     area.innerHTML=`<button class="btn btn-out" onclick="${c.fn}" style="width:100%;justify-content:center;font-size:12.5px;border-color:${c.cor};color:${c.cor}"><i class="ti ti-qrcode"></i> Cobrar com QR (${c.nome})</button>`;
   } else {
     // Dois ou mais: um botão que abre a escolha
-    area.innerHTML=`<button class="btn btn-out" onclick="escolherGatewayQR()" style="width:100%;justify-content:center;font-size:12.5px"><i class="ti ti-qrcode"></i> Cobrar com QR</button>`;
+    area.innerHTML=`<button class="btn btn-out" onclick="escolherGatewayQR('${metodo}')" style="width:100%;justify-content:center;font-size:12.5px"><i class="ti ti-qrcode"></i> Cobrar com QR</button>`;
   }
 }
 
 // Quando há mais de um gateway, deixa a pessoa escolher qual usar
-async function escolherGatewayQR(){
+async function escolherGatewayQR(metodo){
   const g=await detectarGateways();
   const opcoes=[];
+  if(g.pixProprio && metodo==='pix') opcoes.push({nome:'Pix da Loja',cor:'#16a34a',fn:'cobrarPdvPixProprio',desc:'QR direto com sua chave Pix — confirmação manual'});
   if(g.infinitepay) opcoes.push({nome:'InfinitePay',cor:'#7c3aed',fn:'cobrarPdvInfinitePay',desc:'Pix grátis e cartão até 12x'});
   if(g.asaas)       opcoes.push({nome:'Asaas',cor:'#2563eb',fn:'cobrarPdvAsaas',desc:'Pix e boleto'});
   const html=`
@@ -15560,6 +15583,7 @@ function cfgTab(aba, btn) {
   if(aba==='gateway'){
     if(typeof renderConfigPagamento==='function') renderConfigPagamento();
     if(typeof carregarHandleInfinitePay==='function') carregarHandleInfinitePay();
+    if(typeof carregarPixProprio==='function') carregarPixProprio();
   }
   if(aba==='os'){ const chk=document.getElementById('cfg-assin-balcao'); if(chk)chk.checked=(localStorage.getItem('misu_assin_balcao')==='1'); const fs=document.getElementById('cfg-fullscreen-auto'); if(fs)fs.checked=(localStorage.getItem('misu_fullscreen_auto')==='1'); }
   document.querySelectorAll('#page-configuracoes .fin-tab').forEach(b => b.classList.remove('active'));
@@ -21579,6 +21603,98 @@ async function salvarHandleInfinitePay(){
   localStorage.removeItem('misu_ip_ok_'+EID());   // handle/config novos → precisa validar de novo
   notify('Handle InfinitePay salvo. Clique em "Testar cobrança" para validar.','success');
   carregarHandleInfinitePay();
+}
+
+/* ── PIX PRÓPRIO DA LOJA (BR Code/EMV gerado localmente) ──────────────────
+   Continuação: diferente da InfinitePay, aqui não existe link de checkout
+   nem webhook — o QR já é o Pix da loja. Por isso não tem gateway pra
+   "testar conexão"; a confirmação do pagamento é sempre manual (ver
+   cobrarPdvPixProprio / o fluxo equivalente no app.html). */
+async function carregarPixProprio(){
+  const inp=document.getElementById('px-chave'); if(!inp) return;
+  try{
+    const {data,error}=await db.from('empresas').select('pix_proprio_chave,pix_proprio_config').eq('id',EID()).maybeSingle();
+    if(error) throw error;
+    inp.value=data?.pix_proprio_chave||'';
+    const cfg=data?.pix_proprio_config||{};
+    const nomeEl=document.getElementById('px-nome'); if(nomeEl) nomeEl.value=cfg.nome||G.empresa?.nome||document.getElementById('emp-nome')?.value||'';
+    const cidEl=document.getElementById('px-cidade'); if(cidEl) cidEl.value=cfg.cidade||(document.getElementById('emp-cid')?.value||'').split(/[—-]/)[0].trim();
+  }catch(e){ /* coluna pode não existir ainda — sem migração rodada, campo fica em branco */ }
+}
+async function salvarPixProprio(){
+  const chave=(document.getElementById('px-chave')?.value||'').trim();
+  const nome=(document.getElementById('px-nome')?.value||'').trim();
+  const cidade=(document.getElementById('px-cidade')?.value||'').trim();
+  if(!chave){ notify('Digite sua chave Pix.','warn'); return; }
+  if(!nome){ notify('Digite o nome do beneficiário (aparece pro cliente no banco).','warn'); return; }
+  if(!cidade){ notify('Digite a cidade da loja.','warn'); return; }
+  setLoad(true);
+  const {error}=await db.from('empresas').update({pix_proprio_chave:chave, pix_proprio_config:{nome,cidade}}).eq('id',EID());
+  setLoad(false);
+  if(error){
+    if(/column|does not exist|schema cache/i.test(error.message||'')) notify('Rode a migração do Pix próprio no Supabase primeiro (sql/fatia_pix_proprio.sql).','warn',7000);
+    else notify('Erro ao salvar: '+error.message,'error');
+    return;
+  }
+  G._gateways=null;
+  notify('Chave Pix salva! Já pode cobrar por Pix próprio no PDV e no app do celular.','success');
+}
+function _pixTLV(id,valor){ const s=String(valor); return id+String(s.length).padStart(2,'0')+s; }
+function _pixTexto(s,max){
+  const limpo=String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Za-z0-9 ]/g,'').trim().toUpperCase();
+  return (limpo||'NA').slice(0,max);
+}
+function _pixCRC16(str){
+  let crc=0xFFFF;
+  for(let i=0;i<str.length;i++){
+    crc^=str.charCodeAt(i)<<8;
+    for(let b=0;b<8;b++) crc=(crc&0x8000)?((crc<<1)^0x1021)&0xFFFF:(crc<<1)&0xFFFF;
+  }
+  return crc.toString(16).toUpperCase().padStart(4,'0');
+}
+// ⚠️ ASSUNÇÃO TÉCNICA: BR Code (Pix estático) seguindo o Manual de Padrões
+// do Pix (Bacen). Não testado nesta sessão contra um app de banco real —
+// teste escaneando antes de usar em produção.
+function gerarPixBRCode({chave,nome,cidade,valor,txid}){
+  const gui=_pixTLV('00','br.gov.bcb.pix');
+  const chaveTLV=_pixTLV('01',String(chave).trim());
+  const mai=_pixTLV('26',gui+chaveTLV);
+  const mcc=_pixTLV('52','0000');
+  const moeda=_pixTLV('53','986');
+  const valorTLV=(valor>0)?_pixTLV('54',Number(valor).toFixed(2)):'';
+  const pais=_pixTLV('58','BR');
+  const nomeTLV=_pixTLV('59',_pixTexto(nome,25));
+  const cidadeTLV=_pixTLV('60',_pixTexto(cidade,15));
+  const txidLimpo=(String(txid||'').replace(/[^A-Za-z0-9]/g,'').slice(0,25))||'***';
+  const addData=_pixTLV('62',_pixTLV('05',txidLimpo));
+  const payload='000201'+mai+mcc+moeda+valorTLV+pais+nomeTLV+cidadeTLV+addData+'6304';
+  return payload+_pixCRC16(payload);
+}
+function mostrarQRPixProprio(brcode, valor, contexto){
+  const html=`
+    <div class="card-title" style="gap:8px;margin-bottom:6px;justify-content:center"><i class="ti ti-qrcode" style="color:#16a34a"></i> Pix da Loja</div>
+    <div style="text-align:center;font-size:13px;color:var(--txt2);margin-bottom:14px">${contexto||''} — <b style="color:#16a34a;font-size:16px">${fmt(valor)}</b></div>
+    <div style="display:flex;justify-content:center;margin-bottom:14px" id="qr-pix-proprio-box"></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:14px">
+      <button class="btn btn-out btn-sm" onclick="navigator.clipboard.writeText('${brcode}').then(()=>notify('Código Pix copiado!','success'))"><i class="ti ti-copy"></i> Copiar código Pix</button>
+    </div>
+    <div style="font-size:11px;color:var(--txt3);text-align:center;margin-top:6px;padding-top:10px;border-top:1px solid var(--border)">
+      <i class="ti ti-alert-triangle"></i> Sem confirmação automática — <b>só finalize a venda depois de ver o Pix cair na sua conta.</b>
+    </div>`;
+  abrirModalGenerico(html, `<button class="btn btn-pri" onclick="closeModal('modal-generic')">Fechar</button>`);
+  setTimeout(()=>{ const box=document.getElementById('qr-pix-proprio-box'); if(box){ try{ new QRCode(box,{text:brcode,width:210,height:210,correctLevel:QRCode.CorrectLevel.M}); }catch(e){} } },50);
+}
+async function cobrarPdvPixProprio(){
+  const total=parseFloat((document.getElementById('c-tot')?.textContent||'').replace(/[^\d,]/g,'').replace(',','.'))||0;
+  if(total<=0){ notify('Adicione itens ao carrinho primeiro.','warn'); return; }
+  try{
+    const {data}=await db.from('empresas').select('pix_proprio_chave,pix_proprio_config').eq('id',EID()).maybeSingle();
+    const chave=data?.pix_proprio_chave;
+    if(!chave){ notify('Configure sua chave Pix em Configurações → Gateway de Pagamento.','info',6000); return; }
+    const cfg=data?.pix_proprio_config||{};
+    const brcode=gerarPixBRCode({chave, nome:cfg.nome, cidade:cfg.cidade, valor:total, txid:'PDV'+Date.now().toString(36).toUpperCase()});
+    mostrarQRPixProprio(brcode, total, 'Venda');
+  }catch(e){ console.error('Pix próprio:',e); notify('Não foi possível gerar o QR do Pix. Confira sua chave em Configurações.','error',6000); }
 }
 
 // Validação real: gera um link de teste pela Edge Function. Gerar o link NÃO
