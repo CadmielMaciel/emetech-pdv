@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MISU SYS — Planos e teste grátis de 7 dias</title>
+<meta name="description" content="PDV, OS, estoque, financeiro e entregas para lojas de celular e assistência técnica. Teste grátis por 7 dias, sem cartão.">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!--
+  Fatia 22 — página pública de planos/cadastro self-service.
+
+  PREMISSA QUE PRECISO DEIXAR EXPLÍCITA: não encontrei, no repositório
+  Git deste projeto, nenhuma landing page pública (index.html abre direto
+  na tela de login — confirmei lendo o <body>). Se você já tem uma landing
+  em outro lugar (outro projeto/host), o botão "Ver planos" dela deve
+  simplesmente LINKAR pra esta página (ex.: <a href="/planos.html">Ver
+  planos</a>) em vez de rolar a própria página — ajuste lá. Se a landing
+  também vive neste mesmo repositório só que eu não achei o arquivo, me
+  diga o nome do arquivo que eu conecto direto. Enquanto isso não estiver
+  resolvido, este arquivo funciona como página completa e autônoma (hero +
+  planos + trial + cadastro), publicável já em /planos.html.
+-->
+<style>
+:root{
+  --pri:#5B3FE8; --pri2:#7C5CFF; --pri-d:#3D2596;
+  --bg:#F7F6FC; --card:#fff; --txt:#191338; --txt2:#5A5280; --txt3:#9C95B6;
+  --border:#E6E2F5; --ok:#16a34a; --warn:#d97706; --danger:#dc2626;
+  --radius:16px; --shadow:0 10px 40px -12px rgba(60,40,150,.18);
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:'DM Sans',sans-serif;color:var(--txt);background:var(--bg);line-height:1.5}
+h1,h2,h3{font-family:'Syne',sans-serif;font-weight:800;margin:0}
+a{color:inherit}
+.wrap{max-width:1120px;margin:0 auto;padding:0 20px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none;border-radius:12px;padding:13px 22px;font-weight:700;font-size:14.5px;cursor:pointer;text-decoration:none;transition:transform .12s,box-shadow .12s}
+.btn:active{transform:scale(.97)}
+.btn-pri{background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;box-shadow:0 8px 24px -6px rgba(91,63,232,.5)}
+.btn-out{background:#fff;color:var(--pri);border:1.5px solid var(--border)}
+.btn-ghost{background:transparent;color:var(--txt2)}
+.btn-block{width:100%}
+/* Header */
+header{position:sticky;top:0;z-index:40;background:rgba(247,246,252,.85);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+header .wrap{display:flex;align-items:center;justify-content:space-between;padding:14px 20px}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:19px;color:var(--pri-d)}
+/* Hero */
+.hero{padding:70px 0 50px;text-align:center}
+.hero h1{font-size:clamp(30px,5vw,50px);line-height:1.12;max-width:780px;margin:0 auto 18px}
+.hero p{font-size:17px;color:var(--txt2);max-width:560px;margin:0 auto 30px}
+.hero-ctas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.hero-badges{display:flex;gap:18px;justify-content:center;margin-top:26px;flex-wrap:wrap;font-size:12.5px;color:var(--txt3)}
+.hero-badges span{display:flex;align-items:center;gap:6px}
+/* Planos */
+#planos{padding:60px 0 80px;scroll-margin-top:70px}
+.planos-title{text-align:center;margin-bottom:44px}
+.planos-title h2{font-size:clamp(24px,3.6vw,34px)}
+.planos-title p{color:var(--txt2);margin-top:10px}
+.planos-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+@media(max-width:860px){.planos-grid{grid-template-columns:1fr;max-width:420px;margin:0 auto}}
+.plano-card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:28px 24px;display:flex;flex-direction:column;position:relative}
+.plano-card.destaque{border-color:var(--pri);box-shadow:var(--shadow);transform:translateY(-6px)}
+.plano-selo{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:var(--pri);color:#fff;font-size:11px;font-weight:700;padding:5px 14px;border-radius:20px;white-space:nowrap}
+.plano-nome{font-family:'Syne',sans-serif;font-weight:800;font-size:20px}
+.plano-desc{color:var(--txt3);font-size:13px;margin-top:4px;min-height:34px}
+.plano-preco{margin:18px 0 6px;display:flex;align-items:baseline;gap:4px}
+.plano-preco b{font-family:'Syne',sans-serif;font-size:36px;font-weight:800}
+.plano-preco span{color:var(--txt3);font-size:13px}
+.plano-lista{list-style:none;margin:18px 0;padding:0;display:flex;flex-direction:column;gap:9px;flex:1}
+.plano-lista li{display:flex;gap:9px;font-size:13.5px;color:var(--txt2);align-items:flex-start}
+.plano-lista li i{color:var(--ok);margin-top:2px;flex-shrink:0}
+.plano-limites{font-size:11.5px;color:var(--txt3);border-top:1px dashed var(--border);padding-top:12px;margin-top:4px;margin-bottom:16px}
+.plano-ctas{display:flex;flex-direction:column;gap:8px}
+/* Trial banner */
+.trial-banner{background:linear-gradient(120deg,#EFE9FF,#F7F6FC);border:1.5px dashed var(--pri2);border-radius:var(--radius);padding:22px 26px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:36px}
+.trial-banner div h3{font-size:17px}
+.trial-banner div p{color:var(--txt2);font-size:13.5px;margin:4px 0 0}
+/* Footer */
+footer{border-top:1px solid var(--border);padding:30px 0;text-align:center;color:var(--txt3);font-size:12.5px}
+footer a{color:var(--pri);text-decoration:none}
+/* Modais */
+.modal-overlay{position:fixed;inset:0;background:rgba(25,19,56,.55);display:none;align-items:center;justify-content:center;z-index:100;padding:16px}
+.modal-overlay.show{display:flex}
+.modal{background:#fff;border-radius:18px;max-width:440px;width:100%;padding:28px;box-shadow:0 30px 80px -20px rgba(0,0,0,.35);max-height:90vh;overflow-y:auto}
+.modal h3{font-size:20px;margin-bottom:8px}
+.modal p.sub{color:var(--txt2);font-size:13.5px;margin:0 0 18px}
+.modal-close{position:absolute;top:16px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:var(--txt3)}
+.fg{margin-bottom:13px}
+.fg label{display:block;font-size:12.5px;font-weight:600;color:var(--txt2);margin-bottom:5px}
+.fg input,.fg select{width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit}
+.fg input:focus,.fg select:focus{outline:none;border-color:var(--pri)}
+.chk-row{display:flex;gap:9px;align-items:flex-start;font-size:12px;color:var(--txt2);margin-bottom:9px}
+.chk-row input{margin-top:2px;flex-shrink:0}
+.chk-row a{color:var(--pri);text-decoration:underline}
+.form-erro{color:var(--danger);font-size:12.5px;margin-top:6px;display:none}
+/* Cookie banner */
+#cookie-banner{position:fixed;left:16px;right:16px;bottom:16px;max-width:640px;margin:0 auto;background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow);z-index:90;display:none;font-size:13px;color:var(--txt2)}
+#cookie-banner.show{display:block}
+#cookie-banner .row{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+#cookie-banner .btn{padding:9px 16px;font-size:13px}
+/* Spinner */
+.spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="logo">MISU SYS</div>
+    <nav style="display:flex;gap:10px;align-items:center">
+      <a href="/index.html" class="btn btn-ghost" style="font-size:13px">Já sou cliente</a>
+      <button class="btn btn-pri" onclick="scrollParaPlanos()"><i class="ti ti-arrow-down"></i> Ver planos</button>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <h1>PDV, OS e estoque numa loja de celular, sem complicação.</h1>
+    <p>Venda, conserte, controle estoque e entregue — tudo em um só sistema. Teste grátis por 7 dias, sem cartão de crédito.</p>
+    <div class="hero-ctas">
+      <button class="btn btn-pri" onclick="abrirCadastro('trial')"><i class="ti ti-rocket"></i> Começar teste grátis</button>
+      <button class="btn btn-out" onclick="scrollParaPlanos()">Ver planos</button>
+    </div>
+    <div class="hero-badges">
+      <span><i class="ti ti-clock"></i> 7 dias grátis</span>
+      <span><i class="ti ti-credit-card-off"></i> Sem cartão pra testar</span>
+      <span><i class="ti ti-shield-check"></i> Dados isolados por loja</span>
+    </div>
+  </div>
+</section>
+
+<section id="planos">
+  <div class="wrap">
+    <div class="planos-title">
+      <h2>Planos para cada tamanho de loja</h2>
+      <p>Comece grátis, mude de plano quando quiser — sem perder dados.</p>
+    </div>
+
+    <div class="trial-banner">
+      <div>
+        <h3>🎁 Teste grátis por 7 dias no plano Premium</h3>
+        <p>Use os recursos mais completos do MISU SYS por uma semana, com limite de IA reduzido pra proteger a plataforma. Sem cobrança automática — só assina se quiser continuar.</p>
+      </div>
+      <button class="btn btn-pri" onclick="abrirCadastro('trial')"><i class="ti ti-rocket"></i> Começar teste grátis</button>
+    </div>
+
+    <div class="planos-grid" id="planos-grid"><!-- preenchido por renderPlanos() --></div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    MISU SYS PDV — © <span id="ano-atual"></span>. ·
+    <a href="/termos.html" target="_blank">Termos de Uso</a> ·
+    <a href="/termos.html#privacidade" target="_blank">Política de Privacidade</a> ·
+    <a href="/termos.html#cookies" target="_blank">Política de Cookies</a>
+  </div>
+</footer>
+
+<!-- ═══ MODAL DE CADASTRO (trial ou assinar) ═══ -->
+<div class="modal-overlay" id="modal-cadastro-overlay">
+  <div class="modal" style="position:relative">
+    <button class="modal-close" onclick="fecharCadastro()"><i class="ti ti-x"></i></button>
+    <h3 id="cad-titulo">Comece seu teste grátis</h3>
+    <p class="sub" id="cad-sub">7 dias, plano Premium, sem cartão de crédito.</p>
+
+    <div class="fg"><label>Nome da loja</label><input id="cad-empresa" placeholder="Ex.: TechCell Assistência"></div>
+    <div class="fg"><label>Seu nome</label><input id="cad-nome" placeholder="Seu nome completo"></div>
+    <div class="fg"><label>E-mail</label><input id="cad-email" type="email" placeholder="voce@suaempresa.com"></div>
+    <div class="fg"><label>Senha</label><input id="cad-senha" type="password" placeholder="Mínimo 8 caracteres"></div>
+
+    <div class="chk-row">
+      <input type="checkbox" id="cad-chk-termos">
+      <label for="cad-chk-termos">Li e aceito os <a href="/termos.html" target="_blank">Termos de Uso</a> e a <a href="/termos.html#privacidade" target="_blank">Política de Privacidade</a>.</label>
+    </div>
+    <div class="chk-row">
+      <input type="checkbox" id="cad-chk-contrato">
+      <label for="cad-chk-contrato">Li e aceito o <a href="/termos.html#contrato" target="_blank">Contrato de Prestação de Serviço (SaaS)</a>.</label>
+    </div>
+
+    <button class="btn btn-pri btn-block" id="cad-btn-enviar" onclick="enviarCadastro()" style="margin-top:6px">
+      <span id="cad-btn-texto"><i class="ti ti-rocket"></i> Criar minha conta</span>
+    </button>
+    <div class="form-erro" id="cad-erro"></div>
+    <p style="font-size:11.5px;color:var(--txt3);text-align:center;margin-top:14px">Já tem conta? <a href="/index.html" style="color:var(--pri)">Fazer login</a></p>
+  </div>
+</div>
+
+<!-- ═══ MODAL DE EXIT-INTENT (oferta de trial ao tentar sair) ═══ -->
+<div class="modal-overlay" id="modal-exit-overlay">
+  <div class="modal" style="text-align:center;position:relative">
+    <button class="modal-close" onclick="fecharExitIntent(false)"><i class="ti ti-x"></i></button>
+    <div style="font-size:38px;margin-bottom:6px">🎁</div>
+    <h3>Teste grátis o MISU SYS por 7 dias</h3>
+    <p class="sub">Use o plano mais completo por 7 dias, com limite de IA e recursos premium para testar sem compromisso.</p>
+    <div style="display:flex;flex-direction:column;gap:9px;margin-top:16px">
+      <button class="btn btn-pri btn-block" onclick="fecharExitIntent(true);abrirCadastro('trial')"><i class="ti ti-rocket"></i> Começar teste grátis</button>
+      <button class="btn btn-out btn-block" onclick="fecharExitIntent(true);scrollParaPlanos()">Ver planos</button>
+      <button class="btn btn-ghost btn-block" onclick="fecharExitIntent(false)">Agora não</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Cookie banner (sem checkbox pré-marcado — aceitar/recusar explícito) ═══ -->
+<div id="cookie-banner">
+  Usamos cookies essenciais para o funcionamento do site. Cookies de análise/marketing só são ativados com o seu consentimento.
+  <div class="row">
+    <button class="btn btn-pri" onclick="consentirCookies(true)">Aceitar todos</button>
+    <button class="btn btn-out" onclick="consentirCookies(false)">Só essenciais</button>
+  </div>
+</div>
+
+<script>
+document.getElementById('ano-atual').textContent = new Date().getFullYear();
+
+/* ── Config Supabase (mesma chave anon pública usada em index.html/app.html) ── */
+const SURL = 'https://icgfpfwcnhkjglrmnuca.supabase.co';
+const SKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljZ2ZwZndjbmhramdscm1udWNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwODA2OTEsImV4cCI6MjA5NTY1NjY5MX0.xDGiGCIlqXaqdWhWo0NoNi_XUdlw5raCogO_Jnc0ezw';
+const db = supabase.createClient(SURL, SKEY);
+const FUNCTIONS_URL = SURL.replace('.supabase.co', '.functions.supabase.co');
+
+/* ── Versões dos documentos exibidas/registradas no aceite. Ajuste aqui
+   toda vez que o texto de termos/privacidade/contrato mudar de verdade —
+   é isso que fica gravado em termos_aceites.versao por documento. ── */
+const VERSOES_DOC = { termos: '1.0', privacidade: '1.0', cookies: '1.0', contrato: '1.0' };
+
+/* ── PLANOS (nomes/preços/limites comerciais definidos nesta fatia —
+   espelha o que deve estar configurado na tabela `planos` do Supabase via
+   sql/fatia22_saas_selfservice_ia.sql; os `id` batem com os planos JÁ
+   existentes no sistema — basico/pro/enterprise — pra não quebrar nenhuma
+   empresa antiga; só o NOME comercial mudou pra Essencial/Profissional/
+   Premium, como pedido). ── */
+const PLANOS_VITRINE = [
+  {
+    id: 'basico', nome: 'Essencial', preco: 97,
+    desc: 'Para lojas que querem organizar vendas, produtos e estoque.',
+    itens: ['PDV completo','Produtos e estoque básico','Clientes','Caixa e vendas','Relatórios básicos','Catálogo simples','Suporte padrão'],
+    limites: 'Até 2 usuários · 1 loja · 5 consultas de IA/dia',
+  },
+  {
+    id: 'pro', nome: 'Profissional', preco: 197, destaque: true,
+    desc: 'Para lojas que vendem, fazem assistência e querem controle completo.',
+    itens: ['Tudo do Essencial','OS completa e garantias','Financeiro e crediário','Catálogo online completo','App mobile','Permissões avançadas','Entregas simples','Integrações principais'],
+    limites: 'Até 5 usuários · 1 loja · 30 consultas de IA/dia',
+  },
+  {
+    id: 'enterprise', nome: 'Premium', preco: 397,
+    desc: 'Gestão avançada, automações, IA, entregas e suporte prioritário.',
+    itens: ['Tudo do Profissional','Logística com entregador','Assinatura digital de entrega','Automações','IA avançada','Relatórios executivos','Logs avançados','Suporte prioritário'],
+    limites: 'Até 10 usuários · 100 consultas de IA/dia',
+  },
+];
+
+function renderPlanos(){
+  const grid = document.getElementById('planos-grid');
+  grid.innerHTML = PLANOS_VITRINE.map(p => `
+    <div class="plano-card ${p.destaque?'destaque':''}">
+      ${p.destaque?'<div class="plano-selo">Mais escolhido</div>':''}
+      <div class="plano-nome">${p.nome}</div>
+      <div class="plano-desc">${p.desc}</div>
+      <div class="plano-preco"><b>R$ ${p.preco}</b><span>/mês</span></div>
+      <ul class="plano-lista">${p.itens.map(i=>`<li><i class="ti ti-check"></i>${i}</li>`).join('')}</ul>
+      <div class="plano-limites">${p.limites}</div>
+      <div class="plano-ctas">
+        <button class="btn btn-out btn-block" onclick="abrirCadastro('trial')">Começar teste grátis</button>
+        <button class="btn btn-pri btn-block" onclick="abrirCadastro('assinar','${p.id}')">Assinar agora</button>
+      </div>
+    </div>
+  `).join('');
+}
+renderPlanos();
+
+function scrollParaPlanos(){
+  document.getElementById('planos').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+/* ── Cadastro (trial ou assinar) ─────────────────────────────────────── */
+let _modoCadastro = 'trial';
+let _planoEscolhido = null;
+function abrirCadastro(modo, planoId){
+  _modoCadastro = modo; _planoEscolhido = planoId || null;
+  const p = PLANOS_VITRINE.find(x=>x.id===planoId);
+  document.getElementById('cad-titulo').textContent = modo==='trial' ? 'Comece seu teste grátis' : `Assinar plano ${p?p.nome:''}`;
+  document.getElementById('cad-sub').textContent = modo==='trial'
+    ? '7 dias, plano Premium, sem cartão de crédito.'
+    : `R$ ${p?p.preco:''}/mês. Você paga só depois de confirmar os dados.`;
+  document.getElementById('cad-erro').style.display='none';
+  document.getElementById('modal-cadastro-overlay').classList.add('show');
+}
+function fecharCadastro(){ document.getElementById('modal-cadastro-overlay').classList.remove('show'); }
+
+function emailValido(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+
+async function enviarCadastro(){
+  const erroBox = document.getElementById('cad-erro');
+  erroBox.style.display='none';
+  const nomeEmpresa = document.getElementById('cad-empresa').value.trim();
+  const nomeUsuario = document.getElementById('cad-nome').value.trim();
+  const email = document.getElementById('cad-email').value.trim();
+  const senha = document.getElementById('cad-senha').value;
+  const aceitouTermos = document.getElementById('cad-chk-termos').checked;
+  const aceitouContrato = document.getElementById('cad-chk-contrato').checked;
+
+  const erros = [];
+  if(nomeEmpresa.length<2) erros.push('Informe o nome da loja.');
+  if(nomeUsuario.length<2) erros.push('Informe seu nome.');
+  if(!emailValido(email)) erros.push('E-mail inválido.');
+  if(senha.length<8) erros.push('A senha precisa ter no mínimo 8 caracteres.');
+  if(!aceitouTermos || !aceitouContrato) erros.push('É necessário aceitar os termos e o contrato para continuar.');
+  if(erros.length){ erroBox.textContent = erros[0]; erroBox.style.display='block'; return; }
+
+  const btn = document.getElementById('cad-btn-enviar'); const txt = document.getElementById('cad-btn-texto');
+  btn.disabled = true; txt.innerHTML = '<span class="spinner"></span> Criando sua conta...';
+
+  try{
+    const resp = await fetch(`${FUNCTIONS_URL}/signup-empresa`, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'apikey': SKEY },
+      body: JSON.stringify({
+        nomeEmpresa, nomeUsuario, email, senha,
+        modo: _modoCadastro, planoDesejado: _planoEscolhido || 'basico',
+        veioDeExitIntent: !!window._veioDeExitIntentAtual,
+        aceites: {
+          termos_versao: VERSOES_DOC.termos,
+          privacidade_versao: VERSOES_DOC.privacidade,
+          cookies_versao: _consentimentoCookies!==null ? VERSOES_DOC.cookies : null,
+          contrato_versao: VERSOES_DOC.contrato,
+        },
+      }),
+    });
+    const data = await resp.json();
+    if(!resp.ok || !data.ok){
+      erroBox.textContent = data.error || 'Não foi possível criar sua conta agora. Tente novamente em instantes.';
+      erroBox.style.display='block';
+      return;
+    }
+    // "Assinar agora": a conta nasce em trial (signup-empresa não gera
+    // cobrança) — o index.html é quem abre o fluxo REAL de troca de plano
+    // (selecionarPlano → gerar-cobranca, o mesmo que um cliente já logado
+    // usa pra fazer upgrade), lendo esse parâmetro assim que carregar.
+    const paramAssinar = data.plano_para_assinar ? `&assinar=${encodeURIComponent(data.plano_para_assinar)}` : '';
+
+    // Cadastro criado — se veio sessão, entra direto no sistema (Supabase
+    // guarda a sessão sozinho no localStorage assim que setSession roda,
+    // então index.html já abre autenticado).
+    if(data.auto_login && data.session){
+      await db.auth.setSession({ access_token:data.session.access_token, refresh_token:data.session.refresh_token });
+      window.location.href = `/index.html?cadastro=ok${paramAssinar}`;
+    } else {
+      // Conta criada mas auto-login falhou — manda pro login normal.
+      window.location.href = `/index.html?cadastro=ok${paramAssinar}`;
+    }
+  }catch(e){
+    erroBox.textContent = 'Não foi possível conectar agora. Confira sua internet e tente de novo.';
+    erroBox.style.display='block';
+  }finally{
+    btn.disabled = false; txt.innerHTML = '<i class="ti ti-rocket"></i> Criar minha conta';
+  }
+}
+
+/* ── Modal de exit-intent — dispara 1x por sessão de navegação, e não
+   reaparece por 7 dias depois de fechado (qualquer botão, inclusive "Agora
+   não"), pra não incomodar quem já disse que não quer. ── */
+const EXIT_INTENT_CHAVE = 'misu_exit_intent_visto_ate';
+let _exitModalMostrado = false;
+window._veioDeExitIntentAtual = false;
+let _consentimentoCookies = null; // null = ainda não decidiu, true/false = decidiu
+
+function _exitIntentPodeMostrar(){
+  try{
+    const ate = localStorage.getItem(EXIT_INTENT_CHAVE);
+    if(ate && Date.now() < Number(ate)) return false;
+  }catch(_){}
+  return true;
+}
+function abrirExitIntent(){
+  if(_exitModalMostrado || !_exitIntentPodeMostrar()) return;
+  _exitModalMostrado = true;
+  window._veioDeExitIntentAtual = true;
+  document.getElementById('modal-exit-overlay').classList.add('show');
+}
+function fecharExitIntent(convertendo){
+  document.getElementById('modal-exit-overlay').classList.remove('show');
+  try{ localStorage.setItem(EXIT_INTENT_CHAVE, String(Date.now() + 7*24*3600*1000)); }catch(_){}
+  if(!convertendo) window._veioDeExitIntentAtual = false;
+}
+
+// Desktop: mouse saindo por CIMA da janela = provável intenção de fechar aba/voltar.
+document.addEventListener('mouseout', (e) => {
+  if(!e.relatedTarget && e.clientY <= 0) abrirExitIntent();
+});
+// Mobile/tablet não tem "mouseout pra cima" — usa voltar do navegador como proxy.
+window.addEventListener('popstate', () => abrirExitIntent());
+// Fallback adicional pra mobile: 45s parado na página sem interagir com o cadastro.
+setTimeout(() => { if(!document.getElementById('modal-cadastro-overlay').classList.contains('show')) abrirExitIntent(); }, 45000);
+
+/* ── Cookie banner — nada de analytics/marketing carrega até decisão
+   explícita. Sem checkbox pré-marcado (o pedido do usuário é claro nisso).
+   Hoje esta página não carrega nenhum script de analytics/marketing — este
+   bloco só existe pra já vir pronto quando algum for adicionado no futuro. ── */
+const COOKIE_CHAVE = 'misu_cookie_consentimento';
+(function initCookieBanner(){
+  try{
+    const salvo = localStorage.getItem(COOKIE_CHAVE);
+    if(salvo === null){ document.getElementById('cookie-banner').classList.add('show'); }
+    else { _consentimentoCookies = salvo === '1'; }
+  }catch(_){ document.getElementById('cookie-banner').classList.add('show'); }
+})();
+function consentirCookies(aceitar){
+  _consentimentoCookies = aceitar;
+  try{ localStorage.setItem(COOKIE_CHAVE, aceitar ? '1':'0'); }catch(_){}
+  document.getElementById('cookie-banner').classList.remove('show');
+  // Ponto de extensão: SE aceitar===true, é aqui (e só aqui) que um script
+  // de analytics/marketing poderia ser injetado dinamicamente no futuro.
+  // Hoje não existe nenhum — não adicionei nenhum pixel/analytics sem você pedir.
+}
+</script>
+</body>
+</html>
