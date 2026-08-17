@@ -16,7 +16,26 @@ try{
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3" onerror="window._zxingFalhouCarregar=true" onload="window._zxingFalhouCarregar=false"></script>
+<script>
+/* Continuação Fatia 20: o scanner dependia de UM CDN só (jsDelivr) — se o
+   jsDelivr ficar fora do ar ou for bloqueado na rede do usuário (comum em
+   wifi de operadora/corporativo no Brasil), o scanner parava de funcionar
+   inteiro, mesmo sem nada de errado no código do app. Agora tenta um CDN
+   alternativo (unpkg) automaticamente antes de desistir. */
+(function(){
+  var _zxUrls=['https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3','https://unpkg.com/@zxing/library@0.21.3'];
+  var _zxI=0;
+  function _zxTentar(){
+    if(_zxI>=_zxUrls.length){ window._zxingFalhouCarregar=true; return; }
+    var s=document.createElement('script');
+    s.src=_zxUrls[_zxI];
+    s.onload=function(){ window._zxingFalhouCarregar=false; };
+    s.onerror=function(){ console.error('[MISU MOBILE][scanner] falha ao carregar ZXing de',_zxUrls[_zxI]); _zxI++; _zxTentar(); };
+    document.head.appendChild(s);
+  }
+  _zxTentar();
+})();
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <style>
@@ -564,6 +583,23 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
     <button class="btn btn-ghost" style="margin-top:10px" onclick="goHome()">Voltar ao início</button>
   </div>
 
+  <!-- Continuação Fatia 20: TELA DE PAGAMENTO PENDENTE (Pix próprio / InfinitePay) —
+       nada de estoque/venda é gravado até o pagamento ser confirmado aqui. -->
+  <div class="wrap hidden" id="scr-pgpendente">
+    <div class="success">
+      <div class="success-ic" id="pg-icone">⏳</div>
+      <div class="success-t" id="pg-titulo">Aguardando pagamento</div>
+      <div class="success-val" id="pg-valor"></div>
+    </div>
+    <div class="qr-box"><div id="pg-qr"></div></div>
+    <div class="qr-hint" id="pg-hint">Mostre o QR pro cliente.</div>
+    <div id="pg-status" style="text-align:center;font-size:12.5px;font-weight:600;color:var(--txt2);margin:-6px 0 14px"></div>
+    <button class="btn btn-out hidden" id="pg-btn-copiar" style="margin-bottom:10px" onclick="copiarCodigoPix()"><i class="ti ti-copy"></i>Copiar código Pix</button>
+    <button class="btn btn-out hidden" id="pg-btn-verificar" style="margin-bottom:10px" onclick="verificarCobrancaAgora()"><i class="ti ti-refresh"></i>Verificar pagamento agora</button>
+    <button class="btn btn-ok" id="pg-btn-confirmar" onclick="confirmarPagamentoManual()"><i class="ti ti-check"></i>Confirmar pagamento recebido</button>
+    <button class="btn btn-ghost" style="margin-top:10px" onclick="cancelarPagamentoPendente()"><i class="ti ti-x"></i>Cancelar venda</button>
+  </div>
+
   <!-- CARRINHO -->
   <div class="wrap hidden" id="scr-cart">
     <div id="cart-caixa-aviso"></div>
@@ -998,17 +1034,19 @@ function _marcarNavAtivo(scr){
   if(alvo) $('bn-'+alvo)?.classList.add('on');
 }
 function abrir(scr){
-  ['home','produto','os','os-ok','os-lista','venda','venda-ok','estoque','cart','etiqueta'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
+  ['home','produto','os','os-ok','os-lista','venda','venda-ok','estoque','cart','etiqueta','pgpendente'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
   $('scr-'+scr).classList.remove('hidden');
   $('btn-back').classList.remove('hidden');
-  $('scr-title').textContent = ({produto:'Cadastrar Produto',os:'OS Rápida','os-lista':'Minhas OS',venda:'Venda Rápida',estoque:'Estoque',cart:'Carrinho',etiqueta:'Etiqueta'})[scr]||scr;
+  $('scr-title').textContent = ({produto:'Cadastrar Produto',os:'OS Rápida','os-lista':'Minhas OS',venda:'Venda Rápida',estoque:'Estoque',cart:'Carrinho',etiqueta:'Etiqueta',pgpendente:'Pagamento'})[scr]||scr;
   if(scr==='estoque') abrirEstoque();
   if(scr==='cart') renderCart();
   if(scr==='os-lista') abrirOsLista();
+  if(scr!=='pgpendente') pararPollingCobranca();
   _marcarNavAtivo(scr);
 }
 function goHome(){
-  ['produto','os','os-ok','os-lista','venda','venda-ok','estoque','cart','etiqueta'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
+  pararPollingCobranca();
+  ['produto','os','os-ok','os-lista','venda','venda-ok','estoque','cart','etiqueta','pgpendente'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
   $('scr-home').classList.remove('hidden');
   $('btn-back').classList.add('hidden');
   $('scr-title').textContent='Início';
@@ -1489,51 +1527,234 @@ function renderCart(){
 }
 function setForma(f){ G.formaPag=f; document.querySelectorAll('#scr-cart .pg').forEach(b=>b.classList.toggle('on', b.dataset.f===f)); }
 function limparCarrinho(){ G.cart=[]; G.estoqueCache=null; renderCartBar(); ['cart-cli','cart-fone'].forEach(id=>{const e=$(id); if(e)e.value='';}); }
+
+/* ── Continuação Fatia 20: estoque só sai depois de pago ──────────────────
+   Antes, pagar por "Link/QR" (InfinitePay) baixava o estoque e marcava a
+   venda como concluída ANTES de sequer confirmar se o cliente pagou —
+   se o cliente nunca pagasse, o produto já tinha "saído" do sistema.
+   Agora: Dinheiro/Cartão continuam imediatos (o operador já confirmou o
+   pagamento na hora, em mãos). Pix (chave própria da loja) e Link/QR
+   (InfinitePay) só viram venda de verdade — e só baixam estoque — depois
+   de confirmado o pagamento (webhook, verificação manual, ou o operador
+   confirmando que viu o dinheiro cair). Enquanto isso, nada é gravado. */
+
+// Baixa de estoque + movimentação (extraído p/ ser reaproveitado nos dois fluxos)
+async function baixarEstoqueItens(itens, motivo){
+  for(const ci of (itens||[])){
+    try{
+      const {data:srv}=await db.from('produtos').select('estoque,estoque_infinito').eq('id',ci.id).single();
+      if(srv && srv.estoque_infinito) continue;
+      const atual=srv?(Number(srv.estoque)||0):0;
+      const ne=Math.max(0,atual-ci.qty);
+      await db.from('produtos').update({estoque:ne}).eq('id',ci.id);
+      try{ await db.from('movimentacoes_estoque').insert({empresa_id:G.empresaId,produto_id:ci.id,produto_nome:ci.nome,tipo:'saida',quantidade:ci.qty,estoque_apos:ne,motivo:motivo||'Venda pelo app MISU MOBILE'}); }catch(_){}
+    }catch(_){}
+  }
+}
+
+function itensDoCarrinho(){ return G.cart.map(c=>({id:c.id,nome:c.nome,preco:c.preco,qty:c.qty})); }
+
 async function finalizarVenda(){
   if(!G.cart.length){ notify('Carrinho vazio.','warn'); return; }
   const total=cartTotal(), forma=G.formaPag||'dinheiro';
+  if(forma==='pix') return iniciarPagamentoPixProprio(total);
+  if(forma==='link') return iniciarPagamentoInfinitePay(total);
+  return registrarVendaImediata(total, forma);
+}
+
+// Dinheiro/Cartão: pagamento já confirmado na hora pelo operador — comportamento de sempre.
+async function registrarVendaImediata(total, forma){
   const btn=$('cart-fin'); btn.disabled=true; btn.innerHTML='<div class="spinner"></div>Finalizando...';
   try{
-    // 1) registra a venda primeiro (se falhar, NÃO baixa estoque)
     const venda={ empresa_id:G.empresaId, cliente_nome:($('cart-cli').value.trim()||'Consumidor Final'),
       operador_id:G.operador?.id||null, operador_nome:G.operador?.nome||'MISU MOBILE', caixa_id:G.caixa?.id||null,
-      itens:G.cart.map(c=>({id:c.id,nome:c.nome,preco:c.preco,qty:c.qty})),
+      itens:itensDoCarrinho(),
       subtotal:total, desconto_pct:0, total, pagamento:forma, status:'concluida' };
     const {error:vErr}=await comTimeout(db.from('vendas').insert(venda),'registrar venda');
     if(vErr) throw new Error(vErr.message||'não foi possível registrar a venda');
-    // 2) baixa de estoque + movimentação
-    for(const ci of G.cart){
-      try{
-        const {data:srv}=await db.from('produtos').select('estoque,estoque_infinito').eq('id',ci.id).single();
-        if(srv && srv.estoque_infinito) continue;
-        const atual=srv?(Number(srv.estoque)||0):0;
-        const ne=Math.max(0,atual-ci.qty);
-        await db.from('produtos').update({estoque:ne}).eq('id',ci.id);
-        try{ await db.from('movimentacoes_estoque').insert({empresa_id:G.empresaId,produto_id:ci.id,produto_nome:ci.nome,tipo:'saida',quantidade:ci.qty,estoque_apos:ne,motivo:'Venda pelo app MISU MOBILE'}); }catch(_){}
-      }catch(_){}
-    }
-    // 3) pagamento por link/QR
-    const fone=$('cart-fone').value.replace(/\D/g,'');
-    if(forma==='link'){
-      try{
-        let cfg={}; try{ const {data}=await db.from('empresas').select('infinitepay_config').eq('id',G.empresaId).maybeSingle(); cfg=data?.infinitepay_config||{}; }catch(_){}
-        const order_nsu='APP-'+Date.now();
-        const {data,error}=await comTimeout(db.functions.invoke('infinitepay-link',{body:{empresa_id:G.empresaId,order_nsu,origem:'venda_rapida',origem_id:order_nsu,descricao:G.cart.map(c=>c.qty+'x '+c.nome).join(', '),itens:G.cart.map(c=>({nome:c.nome,quantidade:c.qty,preco:c.preco})),redirect_url:location.origin,max_parcelas:cfg.max_parcelas||12,taxa_por_conta:cfg.taxa_por_conta||'cliente',pix:cfg.pix!==false}}),'cobrança');
-        if(!error && data?.success){
-          G.ultimaVenda={url:data.checkout_url,valor:data.valor||total,fone};
-          limparCarrinho();
-          $('v-ok-valor').textContent='R$ '+(Number(G.ultimaVenda.valor)||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
-          const q=$('venda-qr'); q.innerHTML=''; try{ new QRCode(q,{text:G.ultimaVenda.url,width:210,height:210,correctLevel:QRCode.CorrectLevel.M}); }catch(_){}
-          abrir('venda-ok'); return;
-        }
-      }catch(_){}
-      notify('Venda registrada, mas não gerei o link (InfinitePay). Confira no sistema.','warn');
-    } else {
-      notify('✅ Venda registrada e estoque baixado!','ok');
-    }
+    await baixarEstoqueItens(itensDoCarrinho());
+    notify('✅ Venda registrada e estoque baixado!','ok');
     limparCarrinho(); goHome();
   }catch(e){ notify(msgAmigavel(e,'Não foi possível finalizar a venda.'),'err'); }
   finally{ btn.disabled=false; btn.innerHTML='<i class="ti ti-check"></i>Finalizar venda'; }
+}
+
+/* ── Pix próprio da loja (BR Code / EMV) — gerado no aparelho, sem depender
+   da InfinitePay. Precisa da chave Pix cadastrada em Configurações →
+   Gateway de Pagamento (sistema desktop). Sem webhook: a confirmação é
+   manual (o operador confirma depois de ver o Pix cair na conta). ── */
+async function carregarConfigPix(){
+  if(G._pixConfig) return G._pixConfig;
+  try{
+    const {data}=await db.from('empresas').select('pix_proprio_chave,pix_proprio_config').eq('id',G.empresaId).maybeSingle();
+    const cfg=data?.pix_proprio_config||{};
+    G._pixConfig={ chave:(data?.pix_proprio_chave||'').trim(), nome:cfg.nome||G.empresa?.nome||'', cidade:cfg.cidade||'' };
+  }catch(_){ G._pixConfig={chave:'',nome:G.empresa?.nome||'',cidade:''}; }
+  return G._pixConfig;
+}
+function _pixTLV(id,valor){ const s=String(valor); return id+String(s.length).padStart(2,'0')+s; }
+function _pixTexto(s,max){
+  const limpo=String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9 ]/g,'').trim().toUpperCase();
+  return (limpo||'NA').slice(0,max);
+}
+function _pixCRC16(str){
+  let crc=0xFFFF;
+  for(let i=0;i<str.length;i++){
+    crc^=str.charCodeAt(i)<<8;
+    for(let b=0;b<8;b++) crc=(crc&0x8000)?((crc<<1)^0x1021)&0xFFFF:(crc<<1)&0xFFFF;
+  }
+  return crc.toString(16).toUpperCase().padStart(4,'0');
+}
+// ⚠️ ASSUNÇÃO TÉCNICA: gerador de Pix estático (BR Code/EMV) seguindo o
+// Manual de Padrões do Pix (Bacen). Não foi testado contra um app de banco
+// real nesta sessão — teste escaneando com o app do seu banco antes de usar
+// em produção.
+function gerarPixBRCode({chave,nome,cidade,valor,txid}){
+  const gui=_pixTLV('00','br.gov.bcb.pix');
+  const chaveTLV=_pixTLV('01',String(chave).trim());
+  const mai=_pixTLV('26',gui+chaveTLV);
+  const mcc=_pixTLV('52','0000');
+  const moeda=_pixTLV('53','986');
+  const valorTLV=(valor>0)?_pixTLV('54',Number(valor).toFixed(2)):'';
+  const pais=_pixTLV('58','BR');
+  const nomeTLV=_pixTLV('59',_pixTexto(nome,25));
+  const cidadeTLV=_pixTLV('60',_pixTexto(cidade,15));
+  const txidLimpo=(String(txid||'').replace(/[^A-Za-z0-9]/g,'').slice(0,25))||'***';
+  const addData=_pixTLV('62',_pixTLV('05',txidLimpo));
+  const payload='000201'+mai+mcc+moeda+valorTLV+pais+nomeTLV+cidadeTLV+addData+'6304';
+  return payload+_pixCRC16(payload);
+}
+
+async function iniciarPagamentoPixProprio(total){
+  const btn=$('cart-fin'); btn.disabled=true; btn.innerHTML='<div class="spinner"></div>Gerando Pix...';
+  try{
+    const cfg=await carregarConfigPix();
+    if(!cfg.chave){ notify('Configure sua chave Pix em Configurações → Gateway de Pagamento (sistema desktop) antes de cobrar por Pix.','warn',6000); return; }
+    const txid='V'+Date.now().toString(36).toUpperCase();
+    const brcode=gerarPixBRCode({chave:cfg.chave,nome:cfg.nome,cidade:cfg.cidade,valor:total,txid});
+    G.vendaPendente={ itens:itensDoCarrinho(), total, cliente:($('cart-cli').value.trim()||'Consumidor Final'), fone:$('cart-fone').value.replace(/\D/g,''), forma:'pix', gateway:'pix_proprio', brcode };
+    abrirTelaPagamentoPendente();
+  }catch(e){ notify(msgAmigavel(e,'Não foi possível gerar o Pix.'),'err'); }
+  finally{ btn.disabled=false; btn.innerHTML='<i class="ti ti-check"></i>Finalizar venda'; }
+}
+
+/* ── InfinitePay (link/QR) — agora só vira venda de verdade (e só baixa
+   estoque) depois que a cobrança for confirmada como paga. ── */
+async function registrarCobrancaLocalApp(gateway,{order_nsu,origem,origem_id,descricao,valor,checkout_url}){
+  if(!order_nsu) return;
+  try{
+    await db.from('cobrancas').upsert({ empresa_id:G.empresaId, gateway, origem:origem||null, origem_id:origem_id!=null?String(origem_id):null,
+      order_nsu, descricao:descricao||null, valor:valor!=null?valor:null, status:'link_gerado', checkout_url:checkout_url||null,
+      criado_por:(G.operador&&G.operador.nome)||'MISU MOBILE' }, {onConflict:'gateway,order_nsu',ignoreDuplicates:true});
+  }catch(_){ /* rastreabilidade não pode travar a cobrança */ }
+}
+
+async function iniciarPagamentoInfinitePay(total){
+  const btn=$('cart-fin'); btn.disabled=true; btn.innerHTML='<div class="spinner"></div>Gerando cobrança...';
+  try{
+    let cfg={}; try{ const {data}=await db.from('empresas').select('infinitepay_config').eq('id',G.empresaId).maybeSingle(); cfg=data?.infinitepay_config||{}; }catch(_){}
+    const order_nsu='APP-'+Date.now();
+    const descricao=G.cart.map(c=>c.qty+'x '+c.nome).join(', ');
+    const {data,error}=await comTimeout(db.functions.invoke('infinitepay-link',{body:{empresa_id:G.empresaId,order_nsu,origem:'venda_app',origem_id:order_nsu,descricao,itens:G.cart.map(c=>({nome:c.nome,quantidade:c.qty,preco:c.preco})),redirect_url:location.origin,max_parcelas:cfg.max_parcelas||12,taxa_por_conta:cfg.taxa_por_conta||'cliente',pix:cfg.pix!==false}}),'cobrança');
+    if(error || !data?.success){
+      // Nada foi registrado nem baixado — o carrinho continua intacto.
+      notify(msgAmigavel(error,'Não foi possível gerar o link de pagamento (InfinitePay). Nada foi registrado — o carrinho continua aqui.'),'err',6000);
+      return;
+    }
+    const valor=data.valor||total;
+    registrarCobrancaLocalApp('infinitepay',{order_nsu,origem:'venda_app',origem_id:order_nsu,descricao,valor,checkout_url:data.checkout_url});
+    G.vendaPendente={ itens:itensDoCarrinho(), total:valor, cliente:($('cart-cli').value.trim()||'Consumidor Final'), fone:$('cart-fone').value.replace(/\D/g,''), forma:'link', gateway:'infinitepay', order_nsu, checkout_url:data.checkout_url };
+    abrirTelaPagamentoPendente();
+    iniciarPollingCobranca(order_nsu);
+  }catch(e){ notify(msgAmigavel(e,'Não foi possível gerar o link de pagamento. Nada foi registrado.'),'err'); }
+  finally{ btn.disabled=false; btn.innerHTML='<i class="ti ti-check"></i>Finalizar venda'; }
+}
+
+function abrirTelaPagamentoPendente(){
+  const vp=G.vendaPendente; if(!vp) return;
+  $('pg-valor').textContent='R$ '+(Number(vp.total)||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
+  const q=$('pg-qr'); q.innerHTML='';
+  const textoQR = vp.gateway==='pix_proprio' ? vp.brcode : vp.checkout_url;
+  try{ new QRCode(q,{text:textoQR,width:210,height:210,correctLevel:QRCode.CorrectLevel.M}); }catch(_){}
+  $('pg-btn-copiar').classList.remove('hidden');
+  $('pg-btn-verificar').classList.toggle('hidden', vp.gateway!=='infinitepay');
+  if(vp.gateway==='pix_proprio'){
+    $('pg-icone').textContent='📱'; $('pg-titulo').textContent='Pix da loja';
+    $('pg-hint').textContent='Peça pro cliente escanear com o app do banco dele (Pix Copia e Cola também funciona pelo botão abaixo).';
+    $('pg-status').textContent='Sem confirmação automática — só clique em "Confirmar" depois de ver o Pix cair na sua conta.';
+  } else {
+    $('pg-icone').textContent='⏳'; $('pg-titulo').textContent='InfinitePay';
+    $('pg-hint').textContent='Mostre o QR pro cliente ou abra o link (Pix ou cartão em até 12x).';
+    $('pg-status').textContent='Aguardando confirmação automática do pagamento...';
+  }
+  abrir('pgpendente');
+}
+
+function copiarCodigoPix(){
+  const vp=G.vendaPendente; if(!vp) return;
+  const texto = vp.gateway==='pix_proprio' ? vp.brcode : vp.checkout_url;
+  navigator.clipboard.writeText(texto).then(()=>notify(vp.gateway==='pix_proprio'?'Código Pix copiado!':'Link copiado!','ok')).catch(()=>{});
+}
+
+async function checarStatusCobranca(order_nsu){
+  try{
+    const {data}=await db.from('cobrancas').select('status').eq('empresa_id',G.empresaId).eq('gateway','infinitepay').eq('order_nsu',order_nsu).maybeSingle();
+    return data?.status||null;
+  }catch(_){ return null; }
+}
+function iniciarPollingCobranca(order_nsu){
+  pararPollingCobranca();
+  G._pollTimer=setInterval(async()=>{
+    const st=await checarStatusCobranca(order_nsu);
+    if(st==='pago'){ pararPollingCobranca(); notify('Pagamento confirmado!','ok'); await concluirVendaPendente(); }
+  },5000);
+}
+function pararPollingCobranca(){ if(G._pollTimer){ clearInterval(G._pollTimer); G._pollTimer=null; } }
+
+async function verificarCobrancaAgora(){
+  const vp=G.vendaPendente; if(!vp||vp.gateway!=='infinitepay') return;
+  const btn=$('pg-btn-verificar'); btn.disabled=true; btn.innerHTML='<div class="spinner"></div>Verificando...';
+  try{
+    const st=await checarStatusCobranca(vp.order_nsu);
+    if(st==='pago'){ notify('Pagamento confirmado!','ok'); await concluirVendaPendente(); }
+    else notify('Ainda não recebemos a confirmação do pagamento. Tente novamente em instantes.','info',4000);
+  }finally{ btn.disabled=false; btn.innerHTML='<i class="ti ti-refresh"></i>Verificar pagamento agora'; }
+}
+
+// Confirmação manual — obrigatória pro Pix próprio (não tem webhook) e um
+// reforço pro InfinitePay (caso o webhook demore ou não esteja configurado).
+async function confirmarPagamentoManual(){
+  const vp=G.vendaPendente; if(!vp) return;
+  const msg = vp.gateway==='pix_proprio'
+    ? 'Confirma que o Pix de R$ '+(Number(vp.total)||0).toLocaleString('pt-BR',{minimumFractionDigits:2})+' já caiu na sua conta? O estoque será baixado agora.'
+    : 'Confirma manualmente que esse pagamento (R$ '+(Number(vp.total)||0).toLocaleString('pt-BR',{minimumFractionDigits:2})+') foi recebido? Use só se tiver certeza — o normal é aguardar a confirmação automática.';
+  if(!confirm(msg)) return;
+  await concluirVendaPendente();
+}
+
+// Só aqui a venda é gravada de fato e o estoque sai — depois de confirmado o pagamento.
+async function concluirVendaPendente(){
+  const vp=G.vendaPendente; if(!vp) return;
+  pararPollingCobranca();
+  const btn=$('pg-btn-confirmar'); if(btn){ btn.disabled=true; btn.innerHTML='<div class="spinner"></div>Concluindo...'; }
+  try{
+    const venda={ empresa_id:G.empresaId, cliente_nome:vp.cliente, operador_id:G.operador?.id||null,
+      operador_nome:G.operador?.nome||'MISU MOBILE', caixa_id:G.caixa?.id||null, itens:vp.itens,
+      subtotal:vp.total, desconto_pct:0, total:vp.total, pagamento:vp.forma, status:'concluida' };
+    try{ await db.from('vendas').insert(venda); }
+    catch(e){ notify('Pagamento confirmado, mas não consegui registrar a venda no sistema. Anote manualmente e avise o suporte.','warn',7000); }
+    await baixarEstoqueItens(vp.itens, vp.gateway==='pix_proprio'?'Venda por Pix (app MISU MOBILE)':'Venda por InfinitePay (app MISU MOBILE)');
+    notify('✅ Pagamento confirmado, venda registrada e estoque baixado!','ok');
+    G.vendaPendente=null; limparCarrinho(); goHome();
+  }catch(e){ notify(msgAmigavel(e,'Não foi possível concluir a venda.'),'err'); }
+  finally{ if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-check"></i>Confirmar pagamento recebido'; } }
+}
+
+function cancelarPagamentoPendente(){
+  if(!confirm('Cancelar essa cobrança? O QR deixará de valer e nada foi baixado do estoque.')) return;
+  pararPollingCobranca();
+  G.vendaPendente=null;
+  abrir('cart');
 }
 
 /* ── ETIQUETA (JsBarcode) ── */
