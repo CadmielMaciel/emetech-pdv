@@ -38,6 +38,18 @@
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:10px}
 
+/* Motion leve (Fatia 10A) — respeita a preferência do sistema operacional
+   por menos movimento. Zera durações/atrasos de animação e transição em
+   quase tudo, sem remover a mudança de estado em si (só o movimento). */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 body {
   font-family: 'DM Sans', sans-serif;
   background: var(--bg);
@@ -192,6 +204,16 @@ body {
   padding-left: 8px;
 }
 .sb-item i { font-size: 17px; flex-shrink: 0; }
+.sb-sec-toggle { display: flex; align-items: center; gap: 5px; cursor: pointer; user-select: none; }
+.sb-sec-toggle:hover { color: var(--txt2); }
+.sb-chev { font-size: 12px !important; transition: transform .15s; }
+.sb-group.collapsed .sb-chev { transform: rotate(-90deg); }
+.sb-group.collapsed .sb-group-body { display: none; }
+.sb-badge {
+  margin-left: auto; background: var(--danger); color: #fff;
+  font-size: 9.5px; font-weight: 700; border-radius: 8px;
+  padding: 1px 6px; line-height: 1.5;
+}
 .sb-footer {
   padding: 12px 10px;
   border-top: 1px solid var(--border);
@@ -295,6 +317,7 @@ body {
 .badge-gold  { background: rgba(245,158,11,.12); color: var(--gold);    border: 1px solid rgba(245,158,11,.25); }
 .badge-pri   { background: var(--pri-light);     color: var(--pri);     border: 1px solid rgba(124,58,237,.3); }
 .badge-gray  { background: rgba(255,255,255,.05); color: var(--txt3);   border: 1px solid var(--border); }
+.badge-crit  { background: rgba(239,68,68,.22);  color: #fff;  border: 1px solid rgba(239,68,68,.5); font-weight:700; }
 
 .stat-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 24px; }
 .stat-card {
@@ -529,12 +552,24 @@ select option { background: var(--bg2); }
 .wpp-on  { background: rgba(37,211,102,.12); color: #25D366; border: 1px solid rgba(37,211,102,.3); }
 .wpp-off { background: rgba(255,255,255,.05); color: var(--txt3); border: 1px solid var(--border); }
 
-.kpi-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 14px; margin-bottom: 24px; }
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap: 14px; margin-bottom: 24px; }
 .kpi-card {
   background: var(--bg2); border: 1px solid var(--border);
   border-radius: var(--radius); padding: 16px;
   position: relative; overflow: hidden;
+  transition: transform .15s ease, border-color .15s ease;
+  animation: fi .35s ease backwards;
 }
+.kpi-card:hover { transform: translateY(-2px); border-color: var(--border2); }
+/* Entrada escalonada leve dos KPIs (Fatia 10A) — cada card espera um
+   pouquinho mais que o anterior, sem exagero */
+.kpi-grid .kpi-card:nth-child(1){animation-delay:0ms}
+.kpi-grid .kpi-card:nth-child(2){animation-delay:40ms}
+.kpi-grid .kpi-card:nth-child(3){animation-delay:80ms}
+.kpi-grid .kpi-card:nth-child(4){animation-delay:120ms}
+.kpi-grid .kpi-card:nth-child(5){animation-delay:160ms}
+.kpi-grid .kpi-card:nth-child(6){animation-delay:200ms}
+.kpi-grid .kpi-card:nth-child(7){animation-delay:240ms}
 .kpi-card::before {
   content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
   background: linear-gradient(90deg, var(--pri2), var(--pri));
@@ -577,8 +612,10 @@ select option { background: var(--bg2); }
 .feed-item {
   display: flex; align-items: flex-start; gap: 12px;
   padding: 12px 0; border-bottom: 1px solid var(--border);
+  transition: background-color .15s ease;
 }
 .feed-item:last-child { border-bottom: none; }
+.feed-item[onclick]:hover { background-color: var(--bg3); border-radius: 8px; padding-left: 8px; padding-right: 8px; margin: 0 -8px; }
 .feed-dot {
   width: 8px; height: 8px; border-radius: 50%;
   background: var(--pri); flex-shrink: 0; margin-top: 5px;
@@ -656,26 +693,67 @@ select option { background: var(--bg2); }
         </div>
       </div>
     </div>
-    <nav class="sb-nav">
-      <div class="sb-sec">Gestão</div>
-      <div class="sb-item active" onclick="go('dashboard')"><i class="ti ti-layout-dashboard"></i> Dashboard</div>
-      <div class="sb-item" onclick="go('empresas')"><i class="ti ti-building-store"></i> Empresas</div>
-      <div class="sb-item" onclick="go('saude')"><i class="ti ti-heart-rate-monitor"></i> Saúde dos Clientes</div>
-      <div class="sb-item" onclick="go('crm_vendas')"><i class="ti ti-target-arrow"></i> CRM de Vendas</div>
-      <div class="sb-item" onclick="go('uso')"><i class="ti ti-chart-bar"></i> Uso & Relatórios</div>
-      <div class="sb-item" onclick="go('financeiro')"><i class="ti ti-currency-dollar"></i> Financeiro SaaS</div>
-      <div class="sb-item" onclick="go('onboarding')"><i class="ti ti-rocket"></i> Onboarding</div>
-      <div class="sb-item" onclick="go('cobrancas')"><i class="ti ti-receipt"></i> Cobranças</div>
-      <div class="sb-item" onclick="go('planos')"><i class="ti ti-credit-card"></i> Planos</div>
-      <div class="sb-sec">Operações</div>
-      <div class="sb-item" onclick="go('contratos_master')"><i class="ti ti-file-certificate"></i> Contratos Master</div>
-      <div class="sb-item" onclick="go('whatsapp')"><i class="ti ti-brand-whatsapp"></i> WhatsApp</div>
-      <div class="sb-item" onclick="go('updates')"><i class="ti ti-cloud-upload"></i> Updates</div>
-      <div class="sb-item" onclick="go('logs')"><i class="ti ti-activity"></i> Logs</div>
-      <div class="sb-sec">Sistema</div>
-      <div class="sb-item" onclick="go('suporte')"><i class="ti ti-headset"></i> Suporte</div>
-      <div class="sb-item" onclick="go('config')"><i class="ti ti-settings"></i> Configurações</div>
-      <div class="sb-item" onclick="go('config');setTimeout(()=>cfgTab('admins'),80)"><i class="ti ti-crown"></i> Administradores</div>
+    <nav class="sb-nav" id="sb-nav">
+      <div class="sb-group" data-grp="visao">
+        <div class="sb-sec sb-sec-toggle" onclick="toggleSbGroup('visao')"><i class="ti ti-chevron-down sb-chev"></i> Visão Geral</div>
+        <div class="sb-group-body">
+          <div class="sb-item active" onclick="go('dashboard')"><i class="ti ti-layout-dashboard"></i> Dashboard</div>
+        </div>
+      </div>
+      <div class="sb-group" data-grp="empresas">
+        <div class="sb-sec sb-sec-toggle" onclick="toggleSbGroup('empresas')"><i class="ti ti-chevron-down sb-chev"></i> Empresas</div>
+        <div class="sb-group-body">
+          <div class="sb-item" onclick="go('empresas')"><i class="ti ti-building-store"></i> Empresas</div>
+          <div class="sb-item" onclick="go('saude')"><i class="ti ti-heart-rate-monitor"></i> Saúde dos Clientes</div>
+          <div class="sb-item" onclick="go('onboarding')"><i class="ti ti-rocket"></i> Onboarding</div>
+        </div>
+      </div>
+      <div class="sb-group" data-grp="receita">
+        <div class="sb-sec sb-sec-toggle" onclick="toggleSbGroup('receita')"><i class="ti ti-chevron-down sb-chev"></i> Receita SaaS</div>
+        <div class="sb-group-body">
+          <div class="sb-item" onclick="go('financeiro')"><i class="ti ti-currency-dollar"></i> Financeiro SaaS</div>
+          <div class="sb-item" onclick="go('cobrancas')"><i class="ti ti-receipt"></i> Cobranças</div>
+          <div class="sb-item" onclick="go('planos')"><i class="ti ti-credit-card"></i> Planos</div>
+        </div>
+      </div>
+      <div class="sb-group" data-grp="comercial">
+        <div class="sb-sec sb-sec-toggle" onclick="toggleSbGroup('comercial')"><i class="ti ti-chevron-down sb-chev"></i> Comercial</div>
+        <div class="sb-group-body">
+          <div class="sb-item" onclick="go('crm_vendas')"><i class="ti ti-target-arrow"></i> CRM de Vendas</div>
+          <div class="sb-item" onclick="go('uso')"><i class="ti ti-chart-bar"></i> Uso & Relatórios</div>
+        </div>
+      </div>
+      <div class="sb-group" data-grp="compliance">
+        <div class="sb-sec sb-sec-toggle" onclick="toggleSbGroup('compliance')"><i class="ti ti-chevron-down sb-chev"></i> Compliance</div>
+        <div class="sb-group-body">
+          <div class="sb-item" onclick="go('lgpd')"><i class="ti ti-shield-check"></i> LGPD e Privacidade</div>
+          <div class="sb-item" onclick="go('cookies')"><i class="ti ti-cookie"></i> Cookies</div>
+          <div class="sb-item" onclick="go('suporte');setTimeout(()=>document.getElementById('csaas-titulo')?.scrollIntoView({behavior:'smooth',block:'center'}),80)"><i class="ti ti-file-dollar"></i> Contrato SaaS</div>
+        </div>
+      </div>
+      <div class="sb-group" data-grp="fiscal">
+        <div class="sb-sec sb-sec-toggle" onclick="toggleSbGroup('fiscal')"><i class="ti ti-chevron-down sb-chev"></i> Fiscal e Tributário</div>
+        <div class="sb-group-body">
+          <div class="sb-item" onclick="go('fiscal')"><i class="ti ti-receipt-tax"></i> Fiscal e Tributário</div>
+        </div>
+      </div>
+      <div class="sb-group" data-grp="operacoes">
+        <div class="sb-sec sb-sec-toggle" onclick="toggleSbGroup('operacoes')"><i class="ti ti-chevron-down sb-chev"></i> Operações</div>
+        <div class="sb-group-body">
+          <div class="sb-item" onclick="go('contratos_master')"><i class="ti ti-file-certificate"></i> Contratos Master</div>
+          <div class="sb-item" onclick="go('whatsapp')"><i class="ti ti-brand-whatsapp"></i> WhatsApp</div>
+          <div class="sb-item" onclick="go('updates')"><i class="ti ti-cloud-upload"></i> Updates</div>
+          <div class="sb-item" onclick="go('logs')"><i class="ti ti-activity"></i> Logs</div>
+        </div>
+      </div>
+      <div class="sb-group" data-grp="sistema">
+        <div class="sb-sec sb-sec-toggle" onclick="toggleSbGroup('sistema')"><i class="ti ti-chevron-down sb-chev"></i> Sistema</div>
+        <div class="sb-group-body">
+          <div class="sb-item" onclick="go('suporte')"><i class="ti ti-headset"></i> Suporte</div>
+          <div class="sb-item" onclick="go('config')"><i class="ti ti-settings"></i> Configurações</div>
+          <div class="sb-item" onclick="go('config');setTimeout(()=>cfgTab('admins'),80)"><i class="ti ti-crown"></i> Administradores</div>
+        </div>
+      </div>
     </nav>
     <div class="sb-footer">
       <div class="sb-user">
@@ -718,6 +796,10 @@ select option { background: var(--bg2); }
             <div class="kpi-delta" id="st-mrr-delta"></div>
           </div>
           <div class="kpi-card">
+            <div class="kpi-val" id="st-arr">—</div>
+            <div class="kpi-lbl">ARR (Receita Recorrente Anual)</div>
+          </div>
+          <div class="kpi-card">
             <div class="kpi-val" id="st-total">—</div>
             <div class="kpi-lbl">Empresas cadastradas</div>
           </div>
@@ -726,12 +808,26 @@ select option { background: var(--bg2); }
             <div class="kpi-lbl">Empresas ativas</div>
           </div>
           <div class="kpi-card">
+            <div class="kpi-val" id="st-trial" style="color:var(--gold)">—</div>
+            <div class="kpi-lbl">Em trial</div>
+          </div>
+          <div class="kpi-card">
             <div class="kpi-val" id="st-bloq" style="color:var(--danger)">—</div>
             <div class="kpi-lbl">Bloqueadas</div>
           </div>
           <div class="kpi-card">
             <div class="kpi-val" id="st-inadimplencia" style="color:var(--gold)">—</div>
             <div class="kpi-lbl">Taxa de inadimplência</div>
+          </div>
+        </div>
+
+        <!-- Ações do Master hoje -->
+        <div class="card" style="margin-bottom:16px">
+          <div class="sec-hdr">
+            <div class="sec-title"><i class="ti ti-bolt" style="color:var(--gold)"></i> Ações do Master hoje</div>
+          </div>
+          <div id="acoes-master-hoje">
+            <div style="color:var(--txt3);font-size:13px;text-align:center;padding:20px">Carregando...</div>
           </div>
         </div>
 
@@ -833,7 +929,8 @@ select option { background: var(--bg2); }
         <div class="sec-hdr"><div class="sec-title">Empresas por nível de saúde</div>
           <select id="saude-filtro" onchange="renderSaude()" style="padding:7px 10px;font-size:12.5px;border-radius:8px;width:auto">
             <option value="">Todas</option>
-            <option value="risco">Só risco de cancelamento</option>
+            <option value="critico">Só crítico</option>
+            <option value="risco">Só risco</option>
             <option value="atencao">Só atenção</option>
             <option value="saudavel">Só saudáveis</option>
           </select>
@@ -1020,6 +1117,10 @@ select option { background: var(--bg2); }
         <div id="planos-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">
         </div>
         <div style="margin-top:24px" class="card">
+          <div class="sec-title" style="margin-bottom:14px">Receita e churn por plano</div>
+          <div id="planos-receita"></div>
+        </div>
+        <div style="margin-top:24px" class="card">
           <div class="sec-title" style="margin-bottom:14px">Associar plano a empresa</div>
           <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end">
             <div class="fg" style="margin:0">
@@ -1104,6 +1205,167 @@ select option { background: var(--bg2); }
         </div>
 
         <div id="crmv-board" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;align-items:start"></div>
+      </div>
+
+      <!-- ══ PAGE: FISCAL E TRIBUTÁRIO (FATIA 17) ══ -->
+      <div class="page" id="page-fiscal">
+        <div class="sec-hdr"><div class="sec-title"><i class="ti ti-receipt-tax" style="color:var(--pri)"></i> Fiscal e Tributário</div></div>
+        <div style="background:rgba(245,158,11,.08);border:1.5px solid rgba(245,158,11,.25);border-radius:10px;padding:12px 16px;margin-bottom:18px;font-size:12.5px;color:#92400e">
+          <i class="ti ti-alert-triangle"></i> Os valores fiscais devem ser conferidos pela contabilidade antes da emissão/declaração. Esta área organiza dados cadastrais — não calcula nem emite nenhum documento fiscal.
+        </div>
+
+        <div id="fiscal-sem-migracao" style="display:none;background:rgba(91,71,224,.06);border:1.5px solid rgba(91,71,224,.2);border-radius:10px;padding:14px 16px;margin-bottom:18px;font-size:12.5px;color:var(--txt2)">
+          <i class="ti ti-info-circle"></i> Esta área ainda não está ligada ao banco — faltam colunas/tabela novas. Rode <code>sql/fatia17_admin_saas.sql</code> no Supabase para ativá-la. Até lá, os campos abaixo funcionam só de leitura/preparo.
+        </div>
+
+        <div class="card" style="max-width:640px;margin-bottom:18px">
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:14px"><i class="ti ti-building" style="color:var(--pri)"></i> Dados fiscais da MISU</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="fg"><label class="lbl">Razão social</label><input type="text" id="fm-razao"></div>
+            <div class="fg"><label class="lbl">CNPJ</label><input type="text" id="fm-cnpj"></div>
+            <div class="fg"><label class="lbl">Inscrição municipal</label><input type="text" id="fm-im"></div>
+            <div class="fg"><label class="lbl">Regime tributário</label>
+              <select id="fm-regime">
+                <option value="">—</option>
+                <option value="simples">Simples Nacional</option>
+                <option value="presumido">Lucro Presumido</option>
+                <option value="real">Lucro Real</option>
+                <option value="mei">MEI</option>
+              </select>
+            </div>
+            <div class="fg" style="grid-column:1/-1"><label class="lbl">Endereço fiscal</label><input type="text" id="fm-end"></div>
+            <div class="fg"><label class="lbl">Contador — nome</label><input type="text" id="fm-cont-nome"></div>
+            <div class="fg"><label class="lbl">Contador — contato</label><input type="text" id="fm-cont-contato"></div>
+          </div>
+          <button class="btn btn-pri" onclick="salvarFiscalMisu()"><i class="ti ti-device-floppy"></i> Salvar</button>
+          <span id="fm-status" style="font-size:12px;color:var(--txt3);margin-left:8px"></span>
+        </div>
+
+        <div class="card">
+          <div class="sec-hdr" style="margin-bottom:10px">
+            <div class="sec-title" style="margin:0"><i class="ti ti-list-check"></i> Completude fiscal das empresas</div>
+          </div>
+          <div style="font-size:12px;color:var(--txt3);margin-bottom:10px">Mostra quais empresas ainda não têm razão social, inscrições e regime tributário preenchidos — apenas informativo, nada é bloqueado por causa disso.</div>
+          <div class="tw"><table>
+            <thead><tr><th>Empresa</th><th>Razão social</th><th>Regime</th><th>Insc. estadual</th><th>Insc. municipal</th><th>CNAE</th></tr></thead>
+            <tbody id="fiscal-empresas-table"><tr><td colspan="6" style="text-align:center;padding:20px;color:var(--txt3)">Carregando...</td></tr></tbody>
+          </table></div>
+        </div>
+
+        <div style="font-size:11.5px;color:var(--txt3);margin-top:14px">
+          <i class="ti ti-info-circle"></i> NFe/NFSe (emissão fiscal por empresa) já existe em outro módulo do sistema (index.html) — esta área não duplica isso, só organiza dados cadastrais que faltavam aqui no painel master.
+        </div>
+      </div>
+
+      <!-- ══ PAGE: LGPD E PRIVACIDADE (FATIA 17) ══ -->
+      <div class="page" id="page-lgpd">
+        <div class="sec-hdr"><div class="sec-title"><i class="ti ti-shield-check" style="color:var(--pri)"></i> LGPD e Privacidade</div></div>
+        <div style="background:rgba(91,71,224,.06);border:1.5px solid rgba(91,71,224,.2);border-radius:10px;padding:12px 16px;margin-bottom:18px;font-size:12.5px;color:var(--txt2)">
+          <i class="ti ti-info-circle"></i> Estas telas são <b>ferramentas de apoio à conformidade com a LGPD</b> — não é uma certificação nem garantia de conformidade total. Confirme sempre com seu jurídico/DPO.
+        </div>
+
+        <div style="display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap;border-bottom:1px solid var(--border);padding-bottom:10px">
+          <button class="btn btn-pri btn-xs" id="lgpdtab-docs" onclick="lgpdTab('docs')"><i class="ti ti-file-text"></i> Documentos</button>
+          <button class="btn btn-out btn-xs" id="lgpdtab-solic" onclick="lgpdTab('solic')"><i class="ti ti-user-question"></i> Solicitações de titulares</button>
+          <button class="btn btn-out btn-xs" id="lgpdtab-sub" onclick="lgpdTab('sub')"><i class="ti ti-building-warehouse"></i> Suboperadores</button>
+          <button class="btn btn-out btn-xs" id="lgpdtab-inc" onclick="lgpdTab('inc')"><i class="ti ti-alert-octagon"></i> Incidentes</button>
+        </div>
+
+        <!-- Documentos -->
+        <div id="lgpd-sec-docs">
+          <div class="card" style="max-width:640px;margin-bottom:18px">
+            <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:14px">Publicar/atualizar documento</div>
+            <div class="fg"><label class="lbl">Tipo de documento</label>
+              <select id="lg-doc-tipo">
+                <option value="politica_privacidade">Política de Privacidade</option>
+                <option value="dpa">DPA (acordo de tratamento de dados)</option>
+                <option value="aviso_cookies">Aviso de Cookies</option>
+                <option value="outro">Outro</option>
+              </select>
+            </div>
+            <div class="fg"><label class="lbl">Título</label><input type="text" id="lg-doc-titulo"></div>
+            <div class="fg"><label class="lbl">Conteúdo</label><textarea id="lg-doc-conteudo" rows="8" style="font-family:inherit"></textarea></div>
+            <div class="fg"><label class="lbl">O que mudou nesta versão</label><textarea id="lg-doc-resumo" rows="2" style="font-family:inherit"></textarea></div>
+            <button class="btn btn-pri" onclick="publicarLgpdDocumento()"><i class="ti ti-cloud-upload"></i> Publicar nova versão</button>
+            <span id="lg-doc-status" style="font-size:12px;color:var(--txt3);margin-left:8px"></span>
+          </div>
+          <div class="card">
+            <div class="sec-title" style="margin-bottom:10px">Documentos publicados</div>
+            <div id="lgpd-docs-lista"><div style="color:var(--txt3);font-size:13px;text-align:center;padding:20px">Carregando...</div></div>
+          </div>
+        </div>
+
+        <!-- Solicitações de titulares -->
+        <div id="lgpd-sec-solic" style="display:none">
+          <div class="sec-hdr" style="margin-bottom:10px">
+            <div class="sec-title" style="margin:0">Solicitações de titulares (art. 18 LGPD)</div>
+            <button class="btn btn-pri btn-sm" onclick="abrirNovaSolicitacaoLgpd()"><i class="ti ti-plus"></i> Nova solicitação</button>
+          </div>
+          <div class="tw"><table>
+            <thead><tr><th>Titular</th><th>Tipo</th><th>Empresa</th><th>Status</th><th>Aberta em</th><th>Ações</th></tr></thead>
+            <tbody id="lgpd-solic-table"><tr><td colspan="6" style="text-align:center;padding:20px;color:var(--txt3)">Carregando...</td></tr></tbody>
+          </table></div>
+        </div>
+
+        <!-- Suboperadores -->
+        <div id="lgpd-sec-sub" style="display:none">
+          <div class="card" style="margin-bottom:18px">
+            <div class="sec-title" style="margin-bottom:10px">Detectados automaticamente</div>
+            <div style="font-size:12px;color:var(--txt3);margin-bottom:10px">Fornecedores que o próprio código do sistema já usa hoje — listados a partir do que foi encontrado no projeto, não é uma lista genérica.</div>
+            <div id="lgpd-sub-detectados" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px"></div>
+          </div>
+          <div class="sec-hdr" style="margin-bottom:10px">
+            <div class="sec-title" style="margin:0">Cadastrados manualmente</div>
+            <button class="btn btn-pri btn-sm" onclick="abrirNovoSuboperador()"><i class="ti ti-plus"></i> Adicionar</button>
+          </div>
+          <div class="tw"><table>
+            <thead><tr><th>Nome</th><th>Finalidade</th><th>País</th><th>Site</th><th></th></tr></thead>
+            <tbody id="lgpd-sub-table"><tr><td colspan="5" style="text-align:center;padding:20px;color:var(--txt3)">Carregando...</td></tr></tbody>
+          </table></div>
+        </div>
+
+        <!-- Incidentes -->
+        <div id="lgpd-sec-inc" style="display:none">
+          <div class="sec-hdr" style="margin-bottom:10px">
+            <div class="sec-title" style="margin:0">Incidentes de segurança/privacidade</div>
+            <button class="btn btn-danger btn-sm" onclick="abrirNovoIncidente()"><i class="ti ti-plus"></i> Registrar incidente</button>
+          </div>
+          <div class="tw"><table>
+            <thead><tr><th>Título</th><th>Severidade</th><th>Status</th><th>Aberto em</th><th>Ações</th></tr></thead>
+            <tbody id="lgpd-inc-table"><tr><td colspan="5" style="text-align:center;padding:20px;color:var(--txt3)">Carregando...</td></tr></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- ══ PAGE: COOKIES (FATIA 17) ══ -->
+      <div class="page" id="page-cookies">
+        <div class="sec-hdr"><div class="sec-title"><i class="ti ti-cookie" style="color:var(--pri)"></i> Cookies</div></div>
+        <div style="background:rgba(91,71,224,.06);border:1.5px solid rgba(91,71,224,.2);border-radius:10px;padding:12px 16px;margin-bottom:18px;font-size:12.5px;color:var(--txt2)">
+          <i class="ti ti-info-circle"></i> <b>Assunção técnica — precisa validar:</b> não encontrei nenhuma página pública do sistema hoje capturando consentimento de cookies de verdade. Esta tela prepara a configuração; a captura em si precisa ser implementada nas páginas públicas (catalogo/orcamento/entrega) numa próxima fatia.
+        </div>
+
+        <div class="card" style="max-width:640px;margin-bottom:18px">
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:14px">Configuração do banner</div>
+          <div class="fg"><label class="lbl">Empresa</label>
+            <select id="ck-empresa"><option value="">Selecione...</option></select>
+          </div>
+          <div class="fg"><label class="lbl">Banner ativo nas páginas públicas desta empresa</label>
+            <select id="ck-ativo"><option value="false">Desativado</option><option value="true">Ativado</option></select>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;margin:10px 0">
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px"><input type="checkbox" checked disabled> Essenciais (sempre ativo, não pode desmarcar)</label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px"><input type="checkbox" id="ck-analiticos"> Analíticos</label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px"><input type="checkbox" id="ck-marketing"> Marketing</label>
+          </div>
+          <div style="font-size:11px;color:var(--txt3);margin-bottom:10px"><i class="ti ti-shield-lock"></i> Categorias não-essenciais nunca vêm pré-marcadas para o visitante final — isso é regra fixa, não dá pra mudar aqui.</div>
+          <button class="btn btn-pri" onclick="salvarCookieConfig()"><i class="ti ti-device-floppy"></i> Salvar</button>
+          <span id="ck-status" style="font-size:12px;color:var(--txt3);margin-left:8px"></span>
+        </div>
+
+        <div class="card">
+          <div class="sec-title" style="margin-bottom:10px">Consentimentos registrados</div>
+          <div id="cookies-consent-lista"><div style="color:var(--txt3);font-size:13px;text-align:center;padding:20px">Métrica ainda não disponível — nenhum consentimento foi registrado ainda.</div></div>
+        </div>
       </div>
 
       <!-- ══ PAGE: UPDATES ══ -->
@@ -1559,6 +1821,37 @@ CREATE POLICY "master_all" ON admin_master FOR ALL USING (true) WITH CHECK (true
         </select>
       </div>
     </div>
+    <div class="ms">Dados fiscais (opcional — Fatia 17)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="fg">
+        <label class="lbl">Razão social</label>
+        <input type="text" id="emp-razao-social" placeholder="Nome jurídico completo">
+      </div>
+      <div class="fg">
+        <label class="lbl">Regime tributário</label>
+        <select id="emp-regime-tributario">
+          <option value="">—</option>
+          <option value="simples">Simples Nacional</option>
+          <option value="presumido">Lucro Presumido</option>
+          <option value="real">Lucro Real</option>
+          <option value="mei">MEI</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+      <div class="fg">
+        <label class="lbl">Inscrição estadual</label>
+        <input type="text" id="emp-inscricao-estadual">
+      </div>
+      <div class="fg">
+        <label class="lbl">Inscrição municipal</label>
+        <input type="text" id="emp-inscricao-municipal">
+      </div>
+      <div class="fg">
+        <label class="lbl">CNAE</label>
+        <input type="text" id="emp-cnae" placeholder="0000-0/00">
+      </div>
+    </div>
     <div class="ms">Acesso ao sistema</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="fg">
@@ -1622,6 +1915,7 @@ CREATE POLICY "master_all" ON admin_master FOR ALL USING (true) WITH CHECK (true
 <div class="modal-overlay" id="modal-detalhes">
   <div class="modal lg">
     <div class="modal-title"><i class="ti ti-building-store"></i><span id="det-titulo">Detalhes</span></div>
+    <div id="det-badges" style="display:flex;gap:6px;flex-wrap:wrap;margin:-6px 0 12px"></div>
     <div class="tabs">
       <button class="tab-btn active" onclick="detTab('geral',this)">Geral</button>
       <button class="tab-btn" onclick="detTab('financeiro',this)">Financeiro</button>
@@ -1677,6 +1971,16 @@ CREATE POLICY "master_all" ON admin_master FOR ALL USING (true) WITH CHECK (true
       <div class="fg">
         <label class="lbl">Máx. usuários</label>
         <input type="number" id="plano-usuarios" min="1" placeholder="3">
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="fg">
+        <label class="lbl">Preço anual (R$, opcional)</label>
+        <input type="number" id="plano-preco-anual" min="0" step="0.01" placeholder="890.00">
+      </div>
+      <div class="fg">
+        <label class="lbl">Desconto anual (%)</label>
+        <input type="number" id="plano-desconto-anual" min="0" max="100" step="0.1" placeholder="Ex: 17">
       </div>
     </div>
     <div class="fg">
@@ -1932,6 +2236,23 @@ const db = createClient(SURL, SKEY, {
   },
 });
 
+// ── ESCAPE DE HTML (Fatia 10A — correção) ───────────────────────────────
+// Faltava esta função no arquivo: era chamada em várias telas (Suporte,
+// CRM de Vendas, detalhes da empresa) mas nunca foi definida — o que
+// quebrava essas telas assim que havia pelo menos 1 registro pra
+// renderizar (ticket, lead, aceite de contrato). Mesma implementação
+// usada no index.html, pra evitar que nome/observação com aspas ou "<"
+// quebre o HTML gerado (ou pior, permita HTML/script injetado).
+function esc(v) {
+  if (v == null) return '';
+  return String(v)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // ── TRATAMENTO DE SESSÃO EXPIRADA ───────────────────────────────────────
 // Se a sessão acabar (logout, refresh token expirado/revogado), em vez de
 // deixar a página re-tentando requisições mortas (que travam o painel com
@@ -2018,6 +2339,10 @@ function mapEmpresaFromDb(r) {
     proxVencSrv: r.prox_venc,
     pagamentoMetodo: r.pagamento_metodo,
     asaasSubscriptionId: r.asaas_subscription_id,
+    // Fiscal (Fatia 17) — aditivo, undefined até a migração ser rodada
+    razao_social: r.razao_social, regime_tributario: r.regime_tributario,
+    inscricao_estadual: r.inscricao_estadual, inscricao_municipal: r.inscricao_municipal,
+    cnae: r.cnae,
   };
 }
 function mapEmpresaToDb(e) {
@@ -2030,6 +2355,12 @@ function mapEmpresaToDb(e) {
     dias_atraso_bloqueio: e.diasAtrasoNoBloqueio ?? null,
     pago_ate: e.pagoAte ?? null,
     ...(e.trial_expira_em !== undefined ? { trial_expira_em: e.trial_expira_em } : {}),
+    // Fiscal (Fatia 17) — só envia se a coluna existir; se a migração não
+    // rodou ainda, o Supabase rejeita a coluna desconhecida e o catch de
+    // saveEmpresa() é quem decide o que fazer (ver observação abaixo).
+    razao_social: e.razaoSocial || null, regime_tributario: e.regimeTributario || null,
+    inscricao_estadual: e.inscricaoEstadual || null, inscricao_municipal: e.inscricaoMunicipal || null,
+    cnae: e.cnae || null,
   };
 }
 
@@ -2076,15 +2407,36 @@ async function getEmpresas() {
   const { rows } = await getEmpresasPagina();
   return rows;
 }
+// Colunas fiscais novas (Fatia 17) — só existem depois que
+// sql/fatia17_admin_saas.sql for rodado. Removê-las do payload em caso de
+// "coluna não existe" evita que a migração pendente quebre o cadastro/edição
+// de empresa, que é uma função crítica pré-existente.
+const _CAMPOS_FISCAIS_EMPRESA = ['razao_social','regime_tributario','inscricao_estadual','inscricao_municipal','cnae'];
+function _semCamposFiscais(payload) {
+  const p = { ...payload };
+  _CAMPOS_FISCAIS_EMPRESA.forEach(c => delete p[c]);
+  return p;
+}
+function _erroColunaFiscalInexistente(error) {
+  return error && (error.code === '42703' || /column .*(razao_social|regime_tributario|inscricao_estadual|inscricao_municipal|cnae).*does not exist/i.test(error.message || ''));
+}
 async function saveEmpresa(empresa) {
   const payload = mapEmpresaToDb(empresa);
   if (empresa.id && !empresa._isNew) {
-    const { error } = await db.from('empresas').update(payload).eq('id', empresa.id);
+    let { error } = await db.from('empresas').update(payload).eq('id', empresa.id);
+    if (error && _erroColunaFiscalInexistente(error)) {
+      ({ error } = await db.from('empresas').update(_semCamposFiscais(payload)).eq('id', empresa.id));
+      if (!error) notify('Empresa salva, mas os dados fiscais não foram gravados — rode sql/fatia17_admin_saas.sql.', 'warn', 7000);
+    }
     if (error) throw error;
     return empresa.id;
   } else {
     const id = empresa.id || ('emp_' + Date.now());
-    const { error } = await db.from('empresas').insert({ id, ...payload, senha_inicial: empresa.senha || null });
+    let { error } = await db.from('empresas').insert({ id, ...payload, senha_inicial: empresa.senha || null });
+    if (error && _erroColunaFiscalInexistente(error)) {
+      ({ error } = await db.from('empresas').insert({ id, ..._semCamposFiscais(payload), senha_inicial: empresa.senha || null }));
+      if (!error) notify('Empresa criada, mas os dados fiscais não foram gravados — rode sql/fatia17_admin_saas.sql.', 'warn', 7000);
+    }
     if (error) throw error;
     // Após inserir a empresa, salvarEmpresa() chama criarUsuarioEmpresa()
     // para criar o usuário no Supabase Auth + public.usuarios (role='admin').
@@ -2125,7 +2477,12 @@ async function criarUsuarioEmpresa(empresaId, nomeUsuario, email, senha) {
 }
 
 function mapPlanoFromDb(r) {
-  return { id: r.id, nome: r.nome, preco: Number(r.preco), usuarios: r.usuarios, features: r.features };
+  return {
+    id: r.id, nome: r.nome, preco: Number(r.preco), usuarios: r.usuarios, features: r.features,
+    // Fatia 17 — aditivo, undefined até a migração ser rodada
+    precoAnual: r.preco_anual != null ? Number(r.preco_anual) : null,
+    descontoAnualPct: r.desconto_anual_pct != null ? Number(r.desconto_anual_pct) : null,
+  };
 }
 async function getPlanos() {
   const { data, error } = await db.from('planos').select('*').order('preco', { ascending:true });
@@ -2235,15 +2592,30 @@ async function salvarEntitlements() {
     setLoad(false);
   }
 }
+function _erroColunaPlanoAnualInexistente(error) {
+  return error && (error.code === '42703' || /column .*(preco_anual|desconto_anual_pct).*does not exist/i.test(error.message || ''));
+}
 async function salvarPlanoDb(plano) {
   const payload = { nome: plano.nome, preco: plano.preco, usuarios: plano.usuarios, features: plano.features };
+  if (plano.precoAnual !== undefined) payload.preco_anual = plano.precoAnual;
+  if (plano.descontoAnualPct !== undefined) payload.desconto_anual_pct = plano.descontoAnualPct;
   if (plano.id) {
-    const { error } = await db.from('planos').update(payload).eq('id', plano.id);
+    let { error } = await db.from('planos').update(payload).eq('id', plano.id);
+    if (error && _erroColunaPlanoAnualInexistente(error)) {
+      const { preco_anual, desconto_anual_pct, ...semAnual } = payload;
+      ({ error } = await db.from('planos').update(semAnual).eq('id', plano.id));
+      if (!error) notify('Plano salvo, mas preço anual não foi gravado — rode sql/fatia17_admin_saas.sql.', 'warn', 7000);
+    }
     if (error) throw error;
     return plano.id;
   } else {
     const id = 'plano_' + Date.now();
-    const { error } = await db.from('planos').insert({ id, ...payload });
+    let { error } = await db.from('planos').insert({ id, ...payload });
+    if (error && _erroColunaPlanoAnualInexistente(error)) {
+      const { preco_anual, desconto_anual_pct, ...semAnual } = payload;
+      ({ error } = await db.from('planos').insert({ id, ...semAnual }));
+      if (!error) notify('Plano salvo, mas preço anual não foi gravado — rode sql/fatia17_admin_saas.sql.', 'warn', 7000);
+    }
     if (error) throw error;
     return id;
   }
@@ -2507,6 +2879,8 @@ async function iniciarApp() {
   renderPlanos();
   await renderUpdates();
   populateSelects();
+  restaurarSbGroups();
+  atualizarBadgesSidebar();
   go('dashboard');
 }
 
@@ -2535,6 +2909,7 @@ async function refreshDados() {
     G.empresas = corrigida.rows;
     EMPRESAS_PAGE.total = corrigida.count;
   }
+  atualizarBadgesSidebar();
 }
 
 /* ── NAVEGAÇÃO ── */
@@ -2554,7 +2929,51 @@ const PAGE_TITLES = {
   config:    { title:'Configurações',icon:'ti-settings'         },
   suporte:   { title:'Suporte',      icon:'ti-headset'          },
   crm_vendas:{ title:'CRM de Vendas — Novas Lojas', icon:'ti-target-arrow' },
+  lgpd:      { title:'LGPD e Privacidade', icon:'ti-shield-check' },
+  cookies:   { title:'Cookies',      icon:'ti-cookie'           },
+  fiscal:    { title:'Fiscal e Tributário', icon:'ti-receipt-tax' },
 };
+
+/* ── Sidebar: grupos colapsáveis (FATIA 17) ──
+   Estado de aberto/fechado por grupo fica salvo no localStorage do
+   navegador do admin master (não é um artifact do Claude, é a página
+   real do painel — localStorage é o mecanismo normal aqui). */
+function toggleSbGroup(grp) {
+  const el = document.querySelector(`.sb-group[data-grp="${grp}"]`);
+  if (!el) return;
+  el.classList.toggle('collapsed');
+  try {
+    const fechados = JSON.parse(localStorage.getItem('sb_grupos_fechados') || '[]');
+    const idx = fechados.indexOf(grp);
+    if (el.classList.contains('collapsed')) { if (idx === -1) fechados.push(grp); }
+    else if (idx !== -1) fechados.splice(idx, 1);
+    localStorage.setItem('sb_grupos_fechados', JSON.stringify(fechados));
+  } catch (e) { /* localStorage indisponível — só não persiste, não quebra nada */ }
+}
+function restaurarSbGroups() {
+  try {
+    const fechados = JSON.parse(localStorage.getItem('sb_grupos_fechados') || '[]');
+    fechados.forEach(grp => document.querySelector(`.sb-group[data-grp="${grp}"]`)?.classList.add('collapsed'));
+  } catch (e) {}
+}
+/* Badges/contadores nos títulos de grupo — só aparecem quando há algo
+   real que precisa de atenção (nunca um número inventado). */
+function atualizarBadgesSidebar() {
+  try {
+    const emp = G.empresas || [];
+    const risco = emp.filter(e => e.status !== 'cancelada' && ['Risco','Crítico'].includes(_healthEmpresa(e).nivel)).length;
+    _setSbBadge('empresas', risco);
+  } catch (e) {}
+  _setSbBadge('compliance', (window._lgpdSolicitacoesAbertas || 0));
+}
+function _setSbBadge(grp, n) {
+  const sec = document.querySelector(`.sb-group[data-grp="${grp}"] .sb-sec-toggle`);
+  if (!sec) return;
+  let b = sec.querySelector('.sb-badge');
+  if (!n) { b?.remove(); return; }
+  if (!b) { b = document.createElement('span'); b.className = 'sb-badge'; sec.appendChild(b); }
+  b.textContent = n;
+}
 
 function go(page) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -2580,6 +2999,9 @@ function go(page) {
   if (page === 'suporte'){ carregarSuporteConfig(); renderTicketsAdmin(); }
   if (page === 'contratos_master') renderContratosMaster();
   if (page === 'crm_vendas') renderCrmVendas();
+  if (page === 'lgpd') renderLgpd();
+  if (page === 'cookies') renderCookies();
+  if (page === 'fiscal') renderFiscal();
 }
 
 /* ── HEALTH SCORE (Saúde dos Clientes) — item 11.3 ───────────────────
@@ -2602,8 +3024,31 @@ function _healthEmpresa(e){
   let nivel,cor;
   if(score>=70){nivel='Saudável';cor='green';}
   else if(score>=45){nivel='Atenção';cor='gold';}
-  else {nivel='Risco de cancelamento';cor='red';}
-  return {score,nivel,cor,fatores};
+  else if(score>=25){nivel='Risco';cor='red';}
+  else {nivel='Crítico';cor='crit';}
+  // Ação recomendada — só quando há motivo real (fatores[]) por trás,
+  // nunca um texto genérico sem relação com o que causou o score.
+  let acaoRecomendada = null;
+  if (nivel === 'Crítico' || nivel === 'Risco') {
+    if (fatores.includes('Bloqueada')) acaoRecomendada = 'Falar com a empresa sobre a pendência que causou o bloqueio.';
+    else if (fatores.includes('Inadimplente')) acaoRecomendada = 'Enviar cobrança/lembrete de pagamento.';
+    else if (fatores.some(f=>f.startsWith('Sem acesso'))) acaoRecomendada = 'Entrar em contato — empresa sem acessar o sistema há tempo.';
+    else if (fatores.includes('Em teste')) acaoRecomendada = 'Ajudar a ativar antes do trial vencer.';
+    else if (fatores.includes('Cancelada')) acaoRecomendada = null; // já cancelou, não é ação de retenção
+    else acaoRecomendada = 'Revisar a situação da empresa.';
+  }
+  return {score,nivel,cor,fatores,acaoRecomendada};
+}
+/* Fatia 17 — oportunidade de upgrade. Heurística simples e honesta:
+   só marca quando a empresa está saudável, ativa, e num plano que NÃO
+   parece ser o de topo (mesmo teste usado em _healthEmpresa). Não é uma
+   previsão garantida — é um sinal pra o time comercial olhar. */
+function _oportunidadeUpgrade(e, health){
+  if(!health) health=_healthEmpresa(e);
+  const st=(e.status||'').toLowerCase();
+  if(health.nivel!=='Saudável' || st!=='ativa') return null;
+  if(e.plano && /pro|premium|enterprise|avan/i.test(e.plano)) return null;
+  return `Empresa saudável no plano "${e.plano||'básico'}" — candidata a upgrade.`;
 }
 /* ══════════════════════════════════════════════════════════════
    USO & RELATÓRIOS — analytics cross-tenant do SaaS
@@ -3118,38 +3563,55 @@ function exportarUsoCSV(){
 function renderSaude(){
   const emp=(G.empresas||[]).filter(e=>e.status!=='cancelada');
   const avaliadas=emp.map(e=>({e,h:_healthEmpresa(e)}));
-  const cont={saudavel:0,atencao:0,risco:0};
-  avaliadas.forEach(({h})=>{ if(h.nivel==='Saudável')cont.saudavel++; else if(h.nivel==='Atenção')cont.atencao++; else cont.risco++; });
+  const cont={saudavel:0,atencao:0,risco:0,critico:0};
+  avaliadas.forEach(({h})=>{
+    if(h.nivel==='Saudável')cont.saudavel++;
+    else if(h.nivel==='Atenção')cont.atencao++;
+    else if(h.nivel==='Crítico')cont.critico++;
+    else cont.risco++;
+  });
   const cards=document.getElementById('saude-cards');
   if(cards)cards.innerHTML=`
     <div class="kpi-card"><div class="kpi-val" style="color:#16a34a">${cont.saudavel}</div><div class="kpi-lbl">Saudáveis</div></div>
     <div class="kpi-card"><div class="kpi-val" style="color:var(--gold)">${cont.atencao}</div><div class="kpi-lbl">Atenção</div></div>
-    <div class="kpi-card"><div class="kpi-val" style="color:#dc2626">${cont.risco}</div><div class="kpi-lbl">Risco de cancelamento</div></div>
+    <div class="kpi-card"><div class="kpi-val" style="color:#dc2626">${cont.risco}</div><div class="kpi-lbl">Risco</div></div>
+    <div class="kpi-card"><div class="kpi-val" style="color:#b91c1c">${cont.critico}</div><div class="kpi-lbl">Crítico</div></div>
     <div class="kpi-card"><div class="kpi-val">${emp.length}</div><div class="kpi-lbl">Empresas avaliadas</div></div>`;
 
   const filtro=document.getElementById('saude-filtro')?.value||'';
   let list=avaliadas;
-  if(filtro==='risco')list=list.filter(x=>x.h.nivel==='Risco de cancelamento');
+  if(filtro==='critico')list=list.filter(x=>x.h.nivel==='Crítico');
+  else if(filtro==='risco')list=list.filter(x=>x.h.nivel==='Risco');
   else if(filtro==='atencao')list=list.filter(x=>x.h.nivel==='Atenção');
   else if(filtro==='saudavel')list=list.filter(x=>x.h.nivel==='Saudável');
-  const ordem={'Risco de cancelamento':0,'Atenção':1,'Saudável':2};
+  const ordem={'Crítico':0,'Risco':1,'Atenção':2,'Saudável':3};
   list.sort((a,b)=>ordem[a.h.nivel]-ordem[b.h.nivel]||a.h.score-b.h.score);
 
   const cont2=document.getElementById('saude-lista');
   if(!cont2)return;
-  if(!list.length){ cont2.innerHTML='<div style="color:var(--txt3);font-size:13px;padding:20px;text-align:center">Nenhuma empresa neste filtro.</div>'; return; }
+  if(!list.length){ cont2.innerHTML='<div style="color:var(--txt3);font-size:13px;padding:20px;text-align:center">Nenhuma empresa neste filtro. <a href="#" onclick="event.preventDefault();document.getElementById(\'saude-filtro\').value=\'\';renderSaude()" style="color:var(--pri)">Ver todas</a></div>'; return; }
+  const corTexto = { green:'#16a34a', gold:'var(--gold)', red:'#dc2626', crit:'#b91c1c' };
   cont2.innerHTML=list.map(({e,h})=>{
     const ini=(e.nome||'?').slice(0,2).toUpperCase();
     const cor=typeof stringToColor==='function'?stringToColor(e.id||e.nome):'#5B47E0';
+    const emRisco = h.nivel==='Risco' || h.nivel==='Crítico';
     return `<div style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px">
       <div style="width:38px;height:38px;border-radius:9px;background:${cor};display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:#fff;flex-shrink:0">${ini}</div>
       <div style="flex:1;min-width:0">
-        <div style="font-weight:600;font-size:13.5px;color:var(--txt)">${e.nome||'—'}</div>
-        <div style="font-size:11.5px;color:var(--txt3)">${e.plano||'sem plano'} · ${e.cidade||'—'}${h.fatores.length?' · '+h.fatores.join(', '):''}</div>
+        <div style="font-weight:600;font-size:13.5px;color:var(--txt)">${esc(e.nome||'—')}</div>
+        <div style="font-size:11.5px;color:var(--txt3)">${esc(e.plano||'sem plano')} · ${esc(e.cidade||'—')}${h.fatores.length?' · '+esc(h.fatores.join(', ')):''}</div>
+        ${h.acaoRecomendada?`<div style="font-size:11.5px;color:${corTexto[h.cor]||'var(--txt3)'};margin-top:3px"><i class="ti ti-bulb"></i> ${esc(h.acaoRecomendada)}</div>`:''}
+        ${(()=>{const up=_oportunidadeUpgrade(e,h);return up?`<div style="font-size:11.5px;color:var(--pri);margin-top:3px"><i class="ti ti-trending-up"></i> ${esc(up)}</div>`:'';})()}
       </div>
-      <div style="text-align:right">
-        <div style="font-weight:800;font-size:18px;color:${h.cor==='green'?'#16a34a':h.cor==='gold'?'var(--gold)':'#dc2626'}">${h.score}</div>
-        <span class="badge badge-${h.cor}" style="font-size:10px">${h.nivel}</span>
+      <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+        <div>
+          <div style="font-weight:800;font-size:18px;color:${corTexto[h.cor]||'var(--txt)'}">${h.score}</div>
+          <span class="badge badge-${h.cor==='crit'?'crit':h.cor}" style="font-size:10px">${h.nivel}</span>
+        </div>
+        ${emRisco?`<div style="display:flex;gap:5px">
+          <button class="btn btn-out btn-xs" onclick="enviarLembreteWhatsApp('${e.id}')" title="WhatsApp"><i class="ti ti-brand-whatsapp"></i></button>
+          <button class="btn btn-out btn-xs" onclick="abrirDetalhes('${e.id}')" title="Detalhes"><i class="ti ti-eye"></i></button>
+        </div>`:''}
       </div>
     </div>`;
   }).join('');
@@ -3223,6 +3685,113 @@ function executarResultadoBusca(i) {
   r.action();
 }
 
+/* ── MOTION: contador animado para KPIs (Fatia 10A) ─────────────────────
+   Anima de 0 (ou do valor anterior) até o valor final num card de KPI.
+   Curta (600ms), leve (requestAnimationFrame, sem lib), e desliga sozinha
+   se o usuário pediu menos movimento no sistema operacional. */
+const _reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function animarKpi(elId, valorFinal, formatar) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  formatar = formatar || (v => String(Math.round(v)));
+  if (_reduceMotion || typeof valorFinal !== 'number' || !isFinite(valorFinal)) {
+    el.textContent = formatar(valorFinal);
+    return;
+  }
+  const inicio = performance.now();
+  const duracao = 600;
+  const de = 0;
+  function passo(agora) {
+    const t = Math.min(1, (agora - inicio) / duracao);
+    const ease = 1 - Math.pow(1 - t, 3); // ease-out cúbico
+    el.textContent = formatar(de + (valorFinal - de) * ease);
+    if (t < 1) requestAnimationFrame(passo);
+    else el.textContent = formatar(valorFinal);
+  }
+  requestAnimationFrame(passo);
+}
+
+/* ── AÇÕES DO MASTER HOJE (Fatia 10A) ──────────────────────────────────
+   Painel de itens acionáveis no Dashboard. Cada item só aparece se
+   vier de um dado REAL (consulta ao banco) — nada de número inventado.
+   Se uma consulta falhar (RPC/tabela ainda não migrada), aquele item
+   simplesmente não aparece, sem quebrar o resto do painel. */
+async function carregarAcoesMasterHoje(metrics) {
+  const itens = [];
+
+  // 1) Trial vencendo em até 7 dias (+ total em trial, pro KPI card)
+  try {
+    const agora = new Date();
+    const em7dias = new Date(agora.getTime() + 7*86400000).toISOString();
+    const { data: trials } = await db.from('empresas_status')
+      .select('id,nome,trial_expira_em').eq('status','trial');
+    const listaTrial = trials || [];
+    document.getElementById('st-trial').textContent = listaTrial.length;
+    const vencendo = listaTrial.filter(e => e.trial_expira_em && e.trial_expira_em <= em7dias);
+    if (vencendo.length > 0) {
+      itens.push({
+        icon: 'ti-hourglass-low', cor: 'var(--gold)',
+        texto: `${vencendo.length} empresa${vencendo.length>1?'s':''} com trial vencendo em até 7 dias`,
+        cta: 'Ver empresas', onclick: `go('empresas')`
+      });
+    }
+  } catch(e) { console.warn('Ações do Master — trial:', e); }
+
+  // 2) Empresas em atraso (reaproveita a métrica já carregada no dashboard)
+  const emAtraso = metrics?.inadimplentes || 0;
+  if (emAtraso > 0) {
+    itens.push({
+      icon: 'ti-cash-off', cor: 'var(--danger)',
+      texto: `${emAtraso} empresa${emAtraso>1?'s':''} em atraso no pagamento`,
+      cta: 'Ver cobranças', onclick: `go('cobrancas')`
+    });
+  }
+
+  // 3) Chamados de suporte abertos
+  try {
+    const { count } = await db.from('suporte_tickets').select('id',{count:'exact',head:true}).eq('status','aberto');
+    if (count) {
+      itens.push({
+        icon: 'ti-headset', cor: 'var(--pri)',
+        texto: `${count} chamado${count>1?'s':''} de suporte aberto${count>1?'s':''}`,
+        cta: 'Ver suporte', onclick: `go('suporte')`
+      });
+    }
+  } catch(e) { console.warn('Ações do Master — suporte:', e); }
+
+  // 4) Empresas travadas no onboarding (nunca venderam, 7+ dias de cadastro)
+  try {
+    const { data } = await db.rpc('admin_onboarding');
+    const emp = data || [];
+    const travadas = emp.filter(e => !e.fez_venda && e.dias_cadastro >= 7);
+    if (travadas.length > 0) {
+      itens.push({
+        icon: 'ti-alert-triangle', cor: 'var(--danger)',
+        texto: `${travadas.length} empresa${travadas.length>1?'s':''} travada${travadas.length>1?'s':''} no onboarding (nunca vendeu)`,
+        cta: 'Ver onboarding', onclick: `go('onboarding')`
+      });
+    }
+  } catch(e) { /* RPC de onboarding pode não estar migrada ainda — item simplesmente não aparece */ }
+
+  const box = document.getElementById('acoes-master-hoje');
+  if (!box) return;
+  if (itens.length === 0) {
+    box.innerHTML = `<div style="text-align:center;padding:24px;color:var(--txt3)">
+      <i class="ti ti-circle-check" style="font-size:26px;color:var(--success)"></i>
+      <div style="margin-top:8px;font-size:13px">Nenhuma ação urgente agora. Tudo em ordem por aqui.</div>
+    </div>`;
+    return;
+  }
+  box.innerHTML = itens.map(it => `
+    <div class="feed-item" style="cursor:pointer" onclick="${it.onclick}">
+      <div class="feed-dot" style="background:${it.cor}"></div>
+      <div style="flex:1">
+        <div style="font-size:13px;color:var(--txt);font-weight:500">${esc(it.texto)}</div>
+      </div>
+      <span class="btn btn-out btn-sm" style="pointer-events:none"><i class="ti ${it.icon}"></i> ${esc(it.cta)}</span>
+    </div>`).join('');
+}
+
 /* ── DASHBOARD ── */
 async function renderDashboard() {
   // Métricas via agregação no banco (escala para milhares de empresas)
@@ -3237,8 +3806,14 @@ async function renderDashboard() {
   document.getElementById('st-total').textContent = total;
   document.getElementById('st-ativas').textContent = ativas;
   document.getElementById('st-bloq').textContent = bloq;
-  document.getElementById('st-mrr').textContent = 'R$ ' + mrr.toLocaleString('pt-BR', { minimumFractionDigits:2 });
+  animarKpi('st-mrr', mrr, v => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits:2 }));
+  animarKpi('st-arr', mrr*12, v => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits:0 }));
   document.getElementById('st-inadimplencia').textContent = taxaInadimplencia.toFixed(1) + '%';
+
+  // "Em trial" e o painel "Ações do Master hoje" usam consulta própria e
+  // honesta (não deriva por subtração de m.ativas/m.bloqueadas, que pode
+  // não bater com a realidade se a RPC não cobrir todos os status).
+  carregarAcoesMasterHoje(m).catch(e => console.warn('Ações do Master hoje:', e));
 
   // MRR growth (compara com mês anterior salvo no histórico)
   const mrrHist = await getMrrHistorico();
@@ -3264,7 +3839,7 @@ async function renderDashboard() {
   const list = document.getElementById('dash-empresas-list');
   const recentes = G.empresas || [];
   if (recentes.length === 0) {
-    list.innerHTML = '<div style="color:var(--txt3);font-size:13px;text-align:center;padding:20px">Nenhuma empresa cadastrada ainda</div>';
+    list.innerHTML = '<div style="color:var(--txt3);font-size:13px;text-align:center;padding:20px">Nenhuma empresa cadastrada ainda.<br><button class="btn btn-pri btn-sm" style="margin-top:10px" onclick="go(\'empresas\')"><i class="ti ti-plus"></i> Cadastrar primeira empresa</button></div>';
   } else {
     list.innerHTML = recentes.slice(0,5).map(e => {
       const statusCor = { ativa:'green', bloqueada:'red', trial:'gold', cancelada:'gray' }[e.status] || 'gray';
@@ -3468,6 +4043,11 @@ function renderEmpresas() {
     if (fin.status === 'tolerancia') vencBadgeColor = 'var(--gold)';
     else if (fin.status === 'atrasado' || fin.status === 'bloqueado') vencBadgeColor = 'var(--danger)';
 
+    // Saúde do cliente — só um indicador discreto (não polui o card;
+    // detalhe completo fica na tela de Saúde dos Clientes).
+    const health = (e.status !== 'cancelada' && typeof _healthEmpresa === 'function') ? _healthEmpresa(e) : null;
+    const healthDotColor = health ? ({green:'#16a34a',gold:'var(--gold)',red:'#dc2626',crit:'#b91c1c'}[health.cor]||'var(--txt3)') : null;
+
     return `<div class="empresa-card ${bloqueada ? 'bloqueada' : ''}">
       <!-- Header -->
       <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:14px">
@@ -3477,7 +4057,10 @@ function renderEmpresas() {
           <div class="empresa-meta">${e.cidade||'—'}${e.estado?', '+e.estado:''}</div>
           <div class="empresa-meta" style="font-family:'DM Mono',monospace">${e.email||'—'}</div>
         </div>
-        <span class="badge badge-${statusCor}" style="flex-shrink:0">${e.status}</span>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0">
+          <span class="badge badge-${statusCor}">${e.status}</span>
+          ${health?`<span title="Saúde: ${health.nivel}" style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--txt3)"><span style="width:7px;height:7px;border-radius:50%;background:${healthDotColor}"></span>${health.nivel}</span>`:''}
+        </div>
       </div>
 
       <!-- Financeiro (NOVO) -->
@@ -3655,6 +4238,11 @@ function abrirNovaEmpresa() {
   document.getElementById('emp-tolerancia').value = '5';
   document.getElementById('emp-gateway-id').value = '';
   document.getElementById('emp-whatsapp').value = '';
+  document.getElementById('emp-razao-social').value = '';
+  document.getElementById('emp-regime-tributario').value = '';
+  document.getElementById('emp-inscricao-estadual').value = '';
+  document.getElementById('emp-inscricao-municipal').value = '';
+  document.getElementById('emp-cnae').value = '';
   // Gerar senha sugerida
   document.getElementById('emp-senha').value = gerarSenha();
   document.getElementById('modal-empresa-title').textContent = 'Nova Empresa';
@@ -3690,6 +4278,11 @@ function editarEmpresa(id) {
   document.getElementById('emp-tolerancia').value = e.tolerancia ?? 5;
   document.getElementById('emp-gateway-id').value = e.gatewayId || '';
   document.getElementById('emp-whatsapp').value = e.whatsapp || '';
+  document.getElementById('emp-razao-social').value = e.razao_social || '';
+  document.getElementById('emp-regime-tributario').value = e.regime_tributario || '';
+  document.getElementById('emp-inscricao-estadual').value = e.inscricao_estadual || '';
+  document.getElementById('emp-inscricao-municipal').value = e.inscricao_municipal || '';
+  document.getElementById('emp-cnae').value = e.cnae || '';
   document.getElementById('modal-empresa-title').textContent = 'Editar — ' + e.nome;
   openModal('modal-empresa');
 }
@@ -3714,6 +4307,11 @@ async function salvarEmpresa() {
     tolerancia: document.getElementById('emp-tolerancia').value,
     gatewayId: document.getElementById('emp-gateway-id').value,
     whatsapp: document.getElementById('emp-whatsapp').value,
+    razaoSocial: document.getElementById('emp-razao-social').value.trim(),
+    regimeTributario: document.getElementById('emp-regime-tributario').value,
+    inscricaoEstadual: document.getElementById('emp-inscricao-estadual').value.trim(),
+    inscricaoMunicipal: document.getElementById('emp-inscricao-municipal').value.trim(),
+    cnae: document.getElementById('emp-cnae').value.trim(),
   };
   // Trial: se o status é 'trial' e é uma empresa nova (ou marcada como teste),
   // define a expiração para 7 dias a partir de agora.
@@ -4018,8 +4616,30 @@ async function abrirDetalhes(id) {
   const tit = document.getElementById('det-titulo');
   if (tit) tit.textContent = e.nome || 'Detalhes';
   openModal('modal-detalhes');
+  try { renderDetBadges(e); } catch (err) { console.error('Erro nos badges de detalhes:', err); }
   // Renderiza a aba geral por último (se algo falhar, o modal já está aberto)
   try { detTab('geral', null); } catch (err) { console.error('Erro ao renderizar detalhes:', err); }
+}
+
+// Fatia 17 — badges rápidos no topo do 360° da empresa (saúde, fiscal,
+// oportunidade de upgrade). Só mostra o que dá pra calcular com dados reais.
+function renderDetBadges(e){
+  const box=document.getElementById('det-badges'); if(!box)return;
+  const badges=[];
+  try{
+    const h=_healthEmpresa(e);
+    const corBadge={green:'green',gold:'gold',red:'red',crit:'crit'}[h.cor]||'gray';
+    badges.push(`<span class="badge badge-${corBadge}" style="font-size:10.5px"><i class="ti ti-heart-rate-monitor"></i> ${esc(h.nivel)} (${h.score})</span>`);
+    const up=_oportunidadeUpgrade(e,h);
+    if(up) badges.push(`<span class="badge badge-pri" style="font-size:10.5px"><i class="ti ti-trending-up"></i> Oportunidade de upgrade</span>`);
+  }catch(err){}
+  const fiscalCompleto=e.razao_social&&e.regime_tributario&&(e.inscricao_estadual||e.inscricao_municipal);
+  if(e.razao_social!==undefined){ // só mostra se a migração já rodou (campo existe no objeto)
+    badges.push(fiscalCompleto
+      ? `<span class="badge badge-green" style="font-size:10.5px"><i class="ti ti-receipt-tax"></i> Fiscal completo</span>`
+      : `<span class="badge badge-gray" style="font-size:10.5px"><i class="ti ti-receipt-tax"></i> Fiscal incompleto</span>`);
+  }
+  box.innerHTML=badges.join('');
 }
 
 async function carregarAceitesEmpresa(empId){
@@ -5013,6 +5633,42 @@ function renderPlanos() {
   const assocPlan = document.getElementById('assoc-plano-sel');
   if (assocEmp) assocEmp.innerHTML = G.empresas.map(e => `<option value="${e.id}">${e.nome}</option>`).join('');
   if (assocPlan) assocPlan.innerHTML = G.planos.map(p => `<option value="${p.id}">${p.nome} — R$ ${p.preco}/mês</option>`).join('');
+
+  renderPlanosReceita();
+}
+
+// Fatia 17 — MRR e churn por plano. Usa contagem no servidor (head:true,
+// count:exact) em vez de percorrer G.empresas (que só tem a página atual
+// carregada) — assim o número é real mesmo com milhares de empresas.
+async function renderPlanosReceita() {
+  const box = document.getElementById('planos-receita');
+  if (!box || !G.planos || !G.planos.length) return;
+  box.innerHTML = '<div style="color:var(--txt3);font-size:13px;text-align:center;padding:16px">Calculando...</div>';
+  try {
+    const inicioMes = new Date(); inicioMes.setDate(1); inicioMes.setHours(0,0,0,0);
+    const linhas = await Promise.all(G.planos.map(async p => {
+      const [{ count: ativos }, { count: cancelados30d }] = await Promise.all([
+        db.from('empresas_status').select('id', { count: 'exact', head: true }).eq('plano', p.id).eq('status', 'ativa'),
+        db.from('empresas').select('id', { count: 'exact', head: true }).eq('plano', p.id).eq('status', 'cancelada').gte('atualizado_em', inicioMes.toISOString()),
+      ]);
+      const mrr = (ativos || 0) * (p.preco || 0);
+      const churnPct = ativos ? ((cancelados30d || 0) / (ativos + (cancelados30d || 0)) * 100) : (cancelados30d ? 100 : 0);
+      return { p, ativos: ativos || 0, mrr, cancelados30d: cancelados30d || 0, churnPct };
+    }));
+    box.innerHTML = `<div class="tw"><table>
+      <thead><tr><th>Plano</th><th>Empresas ativas</th><th>MRR do plano</th><th>Preço anual</th><th>Cancelamentos (mês)</th><th>Churn do mês</th></tr></thead>
+      <tbody>${linhas.map(l => `<tr>
+        <td>${esc(l.p.nome)}</td>
+        <td>${l.ativos}</td>
+        <td>R$ ${l.mrr.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+        <td>${l.p.precoAnual != null ? 'R$ ' + Number(l.p.precoAnual).toLocaleString('pt-BR',{minimumFractionDigits:2}) : '<span style="color:var(--txt3)">não definido</span>'}</td>
+        <td>${l.cancelados30d}</td>
+        <td>${l.churnPct.toFixed(1)}%</td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
+  } catch (e) {
+    box.innerHTML = '<div style="color:var(--txt3);font-size:13px;text-align:center;padding:16px">Métrica ainda não disponível.</div>';
+  }
 }
 
 function editarPlano(id) {
@@ -5022,6 +5678,8 @@ function editarPlano(id) {
   document.getElementById('plano-nome').value = p.nome;
   document.getElementById('plano-preco').value = p.preco;
   document.getElementById('plano-usuarios').value = p.usuarios;
+  document.getElementById('plano-preco-anual').value = p.precoAnual ?? '';
+  document.getElementById('plano-desconto-anual').value = p.descontoAnualPct ?? '';
   document.getElementById('plano-features').value = p.features;
   openModal('modal-plano');
 }
@@ -5032,12 +5690,16 @@ async function salvarPlano() {
   const preco    = parseFloat(document.getElementById('plano-preco').value) || 0;
   const usuarios = parseInt(document.getElementById('plano-usuarios').value) || 1;
   const features = document.getElementById('plano-features').value.trim();
+  const precoAnualRaw = document.getElementById('plano-preco-anual').value;
+  const descontoAnualRaw = document.getElementById('plano-desconto-anual').value;
+  const precoAnual = precoAnualRaw !== '' ? parseFloat(precoAnualRaw) : null;
+  const descontoAnualPct = descontoAnualRaw !== '' ? parseFloat(descontoAnualRaw) : null;
 
   if (!nome) { notify('Nome obrigatório.', 'error'); return; }
 
   setLoad(true);
   try {
-    await salvarPlanoDb({ id: id || null, nome, preco, usuarios, features });
+    await salvarPlanoDb({ id: id || null, nome, preco, usuarios, features, precoAnual, descontoAnualPct });
     G.planos = await getPlanos();
     document.getElementById('plano-id').value = '';
     closeModal('modal-plano');
@@ -5675,7 +6337,7 @@ async function carregarLogs() {
   G.logs = await getLogs();
   if (!el) return;
   if (G.logs.length === 0) {
-    el.innerHTML = '<div style="color:var(--txt3);text-align:center;padding:20px">Sem logs</div>';
+    el.innerHTML = '<div style="color:var(--txt3);text-align:center;padding:24px"><i class="ti ti-history-toggle" style="font-size:24px;opacity:.4"></i><div style="margin-top:6px">Nenhum log registrado ainda. As ações do painel (criar/bloquear empresa, pagamento, update...) vão aparecer aqui.</div></div>';
     return;
   }
   const dotMap = { criada:'green', bloqueada:'red', desbloqueada:'green', update:'', excluida:'red', plano:'', editada:'', pagamento:'green', lembrete:'', boleto:'', webhook:'', whatsapp:'' };
@@ -6428,6 +7090,369 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
   // Mostrar login
   document.getElementById('login-screen').style.display = 'flex';
 })();
+
+/* ══════════════════════════════════════════════════════════════
+   FATIA 17 — FISCAL E TRIBUTÁRIO
+   ══════════════════════════════════════════════════════════════ */
+async function renderFiscal(){
+  // Dados fiscais da Misu
+  try{
+    const {data,error}=await db.from('fiscal_misu').select('*').eq('id',1).maybeSingle();
+    if(error) throw error;
+    document.getElementById('fiscal-sem-migracao').style.display='none';
+    const f=data||{};
+    document.getElementById('fm-razao').value=f.razao_social||'';
+    document.getElementById('fm-cnpj').value=f.cnpj||'';
+    document.getElementById('fm-im').value=f.inscricao_municipal||'';
+    document.getElementById('fm-regime').value=f.regime_tributario||'';
+    document.getElementById('fm-end').value=f.endereco_fiscal||'';
+    document.getElementById('fm-cont-nome').value=f.contador_nome||'';
+    document.getElementById('fm-cont-contato').value=f.contador_contato||'';
+  }catch(e){
+    document.getElementById('fiscal-sem-migracao').style.display='block';
+  }
+
+  // Completude fiscal por empresa (usa a página atual de empresas já carregada)
+  const tb=document.getElementById('fiscal-empresas-table');
+  const emp=G.empresas||[];
+  if(!emp.length){ tb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--txt3)">Nenhuma empresa carregada.</td></tr>'; return; }
+  const marca=v=>v?`<span class="badge badge-green" style="font-size:10px">OK</span>`:`<span class="badge badge-gray" style="font-size:10px">Faltando</span>`;
+  tb.innerHTML=emp.map(e=>`<tr>
+    <td>${esc(e.nome||'—')}</td>
+    <td>${marca(e.razao_social)}</td>
+    <td>${marca(e.regime_tributario)}</td>
+    <td>${marca(e.inscricao_estadual)}</td>
+    <td>${marca(e.inscricao_municipal)}</td>
+    <td>${marca(e.cnae)}</td>
+  </tr>`).join('');
+}
+async function salvarFiscalMisu(){
+  const payload={
+    id:1,
+    razao_social:document.getElementById('fm-razao').value.trim()||null,
+    cnpj:document.getElementById('fm-cnpj').value.trim()||null,
+    inscricao_municipal:document.getElementById('fm-im').value.trim()||null,
+    regime_tributario:document.getElementById('fm-regime').value||null,
+    endereco_fiscal:document.getElementById('fm-end').value.trim()||null,
+    contador_nome:document.getElementById('fm-cont-nome').value.trim()||null,
+    contador_contato:document.getElementById('fm-cont-contato').value.trim()||null,
+    atualizado_em:new Date().toISOString(),
+  };
+  const st=document.getElementById('fm-status');
+  try{
+    const {error}=await db.from('fiscal_misu').upsert(payload);
+    if(error) throw error;
+    st.textContent='Salvo!'; st.style.color='var(--success)';
+    addLog('fiscal_misu_atualizado','Dados fiscais da MISU atualizados');
+    setTimeout(()=>st.textContent='',3000);
+  }catch(e){
+    st.textContent='Rode a migração fatia17_admin_saas.sql primeiro.'; st.style.color='var(--danger)';
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   FATIA 17 — LGPD E PRIVACIDADE (documentos / solicitações /
+   suboperadores / incidentes) — carrega por aba, sob demanda
+   (performance: não busca as 4 tabelas de uma vez).
+   ══════════════════════════════════════════════════════════════ */
+let _lgpdTabAtual='docs';
+function lgpdTab(tab){
+  _lgpdTabAtual=tab;
+  ['docs','solic','sub','inc'].forEach(t=>{
+    document.getElementById('lgpd-sec-'+t).style.display=t===tab?'block':'none';
+    const btn=document.getElementById('lgpdtab-'+t);
+    if(btn){ btn.className='btn btn-xs '+(t===tab?'btn-pri':'btn-out'); }
+  });
+  renderLgpd();
+}
+async function renderLgpd(){
+  if(_lgpdTabAtual==='docs') return renderLgpdDocs();
+  if(_lgpdTabAtual==='solic') return renderLgpdSolicitacoes();
+  if(_lgpdTabAtual==='sub') return renderLgpdSuboperadores();
+  if(_lgpdTabAtual==='inc') return renderLgpdIncidentes();
+}
+const LGPD_TIPO_LABEL={politica_privacidade:'Política de Privacidade',dpa:'DPA',aviso_cookies:'Aviso de Cookies',outro:'Outro'};
+async function renderLgpdDocs(){
+  const box=document.getElementById('lgpd-docs-lista'); if(!box)return;
+  try{
+    const {data,error}=await db.from('lgpd_documentos').select('*').order('criado_em',{ascending:false}).limit(50);
+    if(error) throw error;
+    const docs=data||[];
+    if(!docs.length){ box.innerHTML='<div style="color:var(--txt3);font-size:13px;text-align:center;padding:20px">Nenhum documento publicado ainda.</div>'; return; }
+    box.innerHTML=docs.map(d=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="flex:1"><div style="font-weight:600;font-size:13px">${esc(d.titulo)}</div>
+      <div style="font-size:11px;color:var(--txt3)">${LGPD_TIPO_LABEL[d.tipo]||esc(d.tipo)} · v${d.versao} · ${new Date(d.criado_em).toLocaleDateString('pt-BR')}</div></div>
+      ${d.publicado?'<span class="badge badge-green" style="font-size:10px">Publicado</span>':'<span class="badge badge-gray" style="font-size:10px">Rascunho</span>'}
+    </div>`).join('');
+  }catch(e){
+    box.innerHTML='<div style="color:var(--txt3);font-size:13px;text-align:center;padding:20px">Ainda não disponível — rode a migração <code>sql/fatia17_admin_saas.sql</code>.</div>';
+  }
+}
+async function publicarLgpdDocumento(){
+  const tipo=document.getElementById('lg-doc-tipo').value;
+  const titulo=document.getElementById('lg-doc-titulo').value.trim();
+  const conteudo=document.getElementById('lg-doc-conteudo').value.trim();
+  const resumo=document.getElementById('lg-doc-resumo').value.trim();
+  const st=document.getElementById('lg-doc-status');
+  if(!titulo||conteudo.length<20){ st.textContent='Preencha título e um conteúdo com pelo menos 20 caracteres.'; st.style.color='var(--danger)'; return; }
+  try{
+    let prox=1;
+    const {data:ultimo}=await db.from('lgpd_documentos').select('versao').eq('tipo',tipo).order('versao',{ascending:false}).limit(1).maybeSingle();
+    if(ultimo) prox=(ultimo.versao||0)+1;
+    const {error}=await db.from('lgpd_documentos').insert({tipo,versao:prox,titulo,conteudo,resumo_mudancas:resumo||null,publicado:true});
+    if(error) throw error;
+    st.textContent='Publicado!'; st.style.color='var(--success)';
+    addLog('lgpd_documento_publicado',`Documento LGPD publicado: ${titulo} (${tipo}, v${prox})`);
+    document.getElementById('lg-doc-conteudo').value='';
+    document.getElementById('lg-doc-resumo').value='';
+    renderLgpdDocs();
+    setTimeout(()=>st.textContent='',3000);
+  }catch(e){
+    st.textContent='Rode a migração fatia17_admin_saas.sql primeiro.'; st.style.color='var(--danger)';
+  }
+}
+
+const LGPD_SOLIC_TIPO={acesso:'Acesso',correcao:'Correção',exclusao:'Exclusão',portabilidade:'Portabilidade',outro:'Outro'};
+const LGPD_SOLIC_STATUS_COR={aberta:'gold',em_andamento:'pri',concluida:'green',recusada:'red'};
+async function renderLgpdSolicitacoes(){
+  const tb=document.getElementById('lgpd-solic-table'); if(!tb)return;
+  try{
+    const {data,error}=await db.from('lgpd_solicitacoes').select('*').order('criado_em',{ascending:false}).limit(200);
+    if(error) throw error;
+    const rows=data||[];
+    window._lgpdSolicitacoesAbertas=rows.filter(r=>r.status==='aberta').length;
+    atualizarBadgesSidebar();
+    if(!rows.length){ tb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--txt3)">Nenhuma solicitação registrada.</td></tr>'; return; }
+    tb.innerHTML=rows.map(r=>{
+      const emp=(G.empresas||[]).find(e=>e.id===r.empresa_id);
+      return `<tr>
+        <td>${esc(r.titular_nome)}</td>
+        <td>${LGPD_SOLIC_TIPO[r.tipo]||esc(r.tipo)}</td>
+        <td>${emp?esc(emp.nome):'—'}</td>
+        <td><span class="badge badge-${LGPD_SOLIC_STATUS_COR[r.status]||'gray'}" style="font-size:10px">${esc(r.status)}</span></td>
+        <td>${new Date(r.criado_em).toLocaleDateString('pt-BR')}</td>
+        <td>${r.status!=='concluida'?`<button class="btn btn-out btn-xs" onclick="mudarStatusSolicitacaoLgpd('${r.id}','${r.status==='aberta'?'em_andamento':'concluida'}')">${r.status==='aberta'?'Assumir':'Concluir'}</button>`:'—'}</td>
+      </tr>`;
+    }).join('');
+  }catch(e){
+    tb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--txt3)">Ainda não disponível — rode a migração <code>sql/fatia17_admin_saas.sql</code>.</td></tr>';
+  }
+}
+function abrirNovaSolicitacaoLgpd(){
+  const opts=(G.empresas||[]).map(e=>`<option value="${e.id}">${esc(e.nome)}</option>`).join('');
+  const html=`<div class="modal-title"><i class="ti ti-user-question" style="color:var(--pri)"></i> Nova solicitação de titular</div>
+    <div class="fg"><label class="lbl">Nome do titular *</label><input type="text" id="ls-nome"></div>
+    <div class="fg"><label class="lbl">Contato</label><input type="text" id="ls-contato" placeholder="e-mail ou telefone"></div>
+    <div class="fg"><label class="lbl">Tipo *</label>
+      <select id="ls-tipo"><option value="acesso">Acesso</option><option value="correcao">Correção</option><option value="exclusao">Exclusão</option><option value="portabilidade">Portabilidade</option><option value="outro">Outro</option></select>
+    </div>
+    <div class="fg"><label class="lbl">Empresa relacionada (se souber)</label><select id="ls-empresa"><option value="">—</option>${opts}</select></div>
+    <div class="fg"><label class="lbl">Descrição</label><textarea id="ls-desc" rows="3" style="font-family:inherit"></textarea></div>`;
+  const foot=`<button class="btn btn-out" onclick="closeModal('modal-generic-adm')">Cancelar</button>
+    <button class="btn btn-pri" onclick="salvarSolicitacaoLgpd()"><i class="ti ti-check"></i> Registrar</button>`;
+  abrirModalGenericoAdm(html,foot);
+}
+async function salvarSolicitacaoLgpd(){
+  const nome=document.getElementById('ls-nome').value.trim();
+  if(!nome){ alert('Informe o nome do titular.'); return; }
+  const payload={
+    titular_nome:nome,
+    titular_contato:document.getElementById('ls-contato').value.trim()||null,
+    tipo:document.getElementById('ls-tipo').value,
+    empresa_id:document.getElementById('ls-empresa').value||null,
+    descricao:document.getElementById('ls-desc').value.trim()||null,
+    status:'aberta',
+  };
+  try{
+    const {error}=await db.from('lgpd_solicitacoes').insert(payload);
+    if(error) throw error;
+    closeModal('modal-generic-adm');
+    notify('Solicitação registrada.','success');
+    addLog('lgpd_solicitacao_criada',`Nova solicitação de titular: ${nome} (${payload.tipo})`);
+    renderLgpdSolicitacoes();
+  }catch(e){
+    notify('Rode a migração fatia17_admin_saas.sql para ativar esta área.','error',6000);
+  }
+}
+async function mudarStatusSolicitacaoLgpd(id,novoStatus){
+  confirmAct('Atualizar solicitação','Confirma a mudança de status desta solicitação?', async ()=>{
+    const payload={status:novoStatus};
+    if(novoStatus==='concluida') payload.resolvido_em=new Date().toISOString();
+    const {error}=await db.from('lgpd_solicitacoes').update(payload).eq('id',id);
+    if(error){ notify('Erro: '+error.message,'error'); return; }
+    addLog('lgpd_solicitacao_status',`Solicitação LGPD ${id} → ${novoStatus}`);
+    renderLgpdSolicitacoes();
+  }, 'Confirmar');
+}
+
+// Suboperadores detectados de verdade no código do projeto (não é uma
+// lista genérica — cada um foi confirmado em fatias anteriores).
+const SUBOPERADORES_DETECTADOS=[
+  {nome:'Supabase',finalidade:'Banco de dados e autenticação',pais:'EUA/UE (infra própria do Supabase)'},
+  {nome:'Vercel',finalidade:'Hospedagem das páginas e das funções de API',pais:'EUA'},
+  {nome:'Evolution API (WhatsApp)',finalidade:'Envio/recebimento de mensagens de WhatsApp',pais:'Depende de onde a instância está hospedada'},
+  {nome:'InfinitePay',finalidade:'Processamento de pagamentos',pais:'Brasil'},
+  {nome:'Asaas',finalidade:'Cobrança recorrente e emissão de faturas',pais:'Brasil'},
+];
+async function renderLgpdSuboperadores(){
+  const boxDet=document.getElementById('lgpd-sub-detectados');
+  if(boxDet){
+    boxDet.innerHTML=SUBOPERADORES_DETECTADOS.map(s=>`<div style="border:1px solid var(--border);border-radius:10px;padding:12px">
+      <div style="font-weight:700;font-size:13px;margin-bottom:4px">${esc(s.nome)}</div>
+      <div style="font-size:11.5px;color:var(--txt3)">${esc(s.finalidade)}</div>
+      <div style="font-size:11px;color:var(--txt3);margin-top:4px">${esc(s.pais)}</div>
+    </div>`).join('');
+  }
+  const tb=document.getElementById('lgpd-sub-table'); if(!tb)return;
+  try{
+    const {data,error}=await db.from('subprocessadores').select('*').eq('detectado_automaticamente',false).order('criado_em',{ascending:false});
+    if(error) throw error;
+    const rows=data||[];
+    if(!rows.length){ tb.innerHTML='<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--txt3)">Nenhum suboperador cadastrado manualmente.</td></tr>'; return; }
+    tb.innerHTML=rows.map(r=>`<tr>
+      <td>${esc(r.nome)}</td><td>${esc(r.finalidade||'—')}</td><td>${esc(r.pais||'—')}</td>
+      <td>${r.site?`<a href="${esc(r.site)}" target="_blank">${esc(r.site)}</a>`:'—'}</td>
+      <td><button class="btn btn-out btn-xs" onclick="excluirSuboperador('${r.id}')"><i class="ti ti-trash"></i></button></td>
+    </tr>`).join('');
+  }catch(e){
+    tb.innerHTML='<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--txt3)">Ainda não disponível — rode a migração <code>sql/fatia17_admin_saas.sql</code>.</td></tr>';
+  }
+}
+function abrirNovoSuboperador(){
+  const html=`<div class="modal-title"><i class="ti ti-building-warehouse" style="color:var(--pri)"></i> Novo suboperador</div>
+    <div class="fg"><label class="lbl">Nome *</label><input type="text" id="so-nome"></div>
+    <div class="fg"><label class="lbl">Finalidade</label><input type="text" id="so-finalidade"></div>
+    <div class="fg"><label class="lbl">País</label><input type="text" id="so-pais"></div>
+    <div class="fg"><label class="lbl">Site</label><input type="text" id="so-site" placeholder="https://"></div>`;
+  const foot=`<button class="btn btn-out" onclick="closeModal('modal-generic-adm')">Cancelar</button>
+    <button class="btn btn-pri" onclick="salvarSuboperador()"><i class="ti ti-check"></i> Adicionar</button>`;
+  abrirModalGenericoAdm(html,foot);
+}
+async function salvarSuboperador(){
+  const nome=document.getElementById('so-nome').value.trim();
+  if(!nome){ alert('Informe o nome do suboperador.'); return; }
+  const payload={nome,finalidade:document.getElementById('so-finalidade').value.trim()||null,pais:document.getElementById('so-pais').value.trim()||null,site:document.getElementById('so-site').value.trim()||null,detectado_automaticamente:false};
+  try{
+    const {error}=await db.from('subprocessadores').insert(payload);
+    if(error) throw error;
+    closeModal('modal-generic-adm');
+    notify('Suboperador adicionado.','success');
+    addLog('subprocessador_criado',`Suboperador cadastrado: ${nome}`);
+    renderLgpdSuboperadores();
+  }catch(e){
+    notify('Rode a migração fatia17_admin_saas.sql para ativar esta área.','error',6000);
+  }
+}
+function excluirSuboperador(id){
+  confirmAct('Excluir suboperador','Tem certeza que deseja remover este suboperador da lista?', async ()=>{
+    const {error}=await db.from('subprocessadores').delete().eq('id',id);
+    if(error){ notify('Erro: '+error.message,'error'); return; }
+    addLog('subprocessador_excluido',`Suboperador ${id} removido`);
+    renderLgpdSuboperadores();
+  }, 'Excluir');
+}
+
+const INC_SEVERIDADE_COR={baixa:'gray',media:'gold',alta:'red',critica:'crit'};
+async function renderLgpdIncidentes(){
+  const tb=document.getElementById('lgpd-inc-table'); if(!tb)return;
+  try{
+    const {data,error}=await db.from('incidentes_seguranca').select('*').order('criado_em',{ascending:false}).limit(100);
+    if(error) throw error;
+    const rows=data||[];
+    if(!rows.length){ tb.innerHTML='<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--txt3)">Nenhum incidente registrado.</td></tr>'; return; }
+    tb.innerHTML=rows.map(r=>`<tr>
+      <td>${esc(r.titulo)}</td>
+      <td><span class="badge badge-${INC_SEVERIDADE_COR[r.severidade]||'gray'}" style="font-size:10px">${esc(r.severidade)}</span></td>
+      <td>${esc(r.status)}</td>
+      <td>${new Date(r.criado_em).toLocaleDateString('pt-BR')}</td>
+      <td>${r.status!=='resolvido'?`<button class="btn btn-out btn-xs" onclick="avancarIncidente('${r.id}','${r.status}')">Avançar</button>`:'—'}</td>
+    </tr>`).join('');
+  }catch(e){
+    tb.innerHTML='<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--txt3)">Ainda não disponível — rode a migração <code>sql/fatia17_admin_saas.sql</code>.</td></tr>';
+  }
+}
+function abrirNovoIncidente(){
+  const html=`<div class="modal-title"><i class="ti ti-alert-octagon" style="color:var(--danger)"></i> Registrar incidente de segurança</div>
+    <div class="fg"><label class="lbl">Título *</label><input type="text" id="ic-titulo"></div>
+    <div class="fg"><label class="lbl">Severidade</label>
+      <select id="ic-sev"><option value="baixa">Baixa</option><option value="media" selected>Média</option><option value="alta">Alta</option><option value="critica">Crítica</option></select>
+    </div>
+    <div class="fg"><label class="lbl">Descrição</label><textarea id="ic-desc" rows="4" style="font-family:inherit"></textarea></div>`;
+  const foot=`<button class="btn btn-out" onclick="closeModal('modal-generic-adm')">Cancelar</button>
+    <button class="btn btn-danger" onclick="salvarIncidente()"><i class="ti ti-check"></i> Registrar</button>`;
+  abrirModalGenericoAdm(html,foot);
+}
+async function salvarIncidente(){
+  const titulo=document.getElementById('ic-titulo').value.trim();
+  if(!titulo){ alert('Informe o título do incidente.'); return; }
+  const payload={titulo,severidade:document.getElementById('ic-sev').value,descricao:document.getElementById('ic-desc').value.trim()||null,status:'aberto'};
+  try{
+    const {error}=await db.from('incidentes_seguranca').insert(payload);
+    if(error) throw error;
+    closeModal('modal-generic-adm');
+    notify('Incidente registrado.','success');
+    addLog('incidente_seguranca_criado',`Incidente registrado: ${titulo} (${payload.severidade})`);
+    renderLgpdIncidentes();
+  }catch(e){
+    notify('Rode a migração fatia17_admin_saas.sql para ativar esta área.','error',6000);
+  }
+}
+function avancarIncidente(id,statusAtual){
+  const proximo={aberto:'investigando',investigando:'contido',contido:'resolvido'}[statusAtual]||'resolvido';
+  confirmAct('Avançar incidente',`Mudar status para "${proximo}"?`, async ()=>{
+    const payload={status:proximo};
+    if(proximo==='resolvido') payload.resolvido_em=new Date().toISOString();
+    const {error}=await db.from('incidentes_seguranca').update(payload).eq('id',id);
+    if(error){ notify('Erro: '+error.message,'error'); return; }
+    addLog('incidente_seguranca_status',`Incidente ${id} → ${proximo}`);
+    renderLgpdIncidentes();
+  }, 'Confirmar');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   FATIA 17 — COOKIES
+   ══════════════════════════════════════════════════════════════ */
+async function renderCookies(){
+  const sel=document.getElementById('ck-empresa');
+  if(sel && sel.options.length<=1){
+    const opts=(G.empresas||[]).map(e=>`<option value="${e.id}">${esc(e.nome)}</option>`).join('');
+    sel.innerHTML='<option value="">Selecione...</option>'+opts;
+    sel.onchange=carregarCookieConfigEmpresa;
+  }
+}
+async function carregarCookieConfigEmpresa(){
+  const empId=document.getElementById('ck-empresa').value;
+  if(!empId)return;
+  try{
+    const {data,error}=await db.from('cookie_config').select('*').eq('empresa_id',empId).maybeSingle();
+    if(error) throw error;
+    const c=data||{};
+    document.getElementById('ck-ativo').value=String(!!c.banner_ativo);
+    const cat=c.categorias||{analiticos:false,marketing:false};
+    document.getElementById('ck-analiticos').checked=!!cat.analiticos;
+    document.getElementById('ck-marketing').checked=!!cat.marketing;
+  }catch(e){ /* tabela ainda não migrada — formulário fica com os valores padrão (nada pré-marcado) */ }
+}
+async function salvarCookieConfig(){
+  const empId=document.getElementById('ck-empresa').value;
+  const st=document.getElementById('ck-status');
+  if(!empId){ st.textContent='Selecione uma empresa.'; st.style.color='var(--danger)'; return; }
+  const payload={
+    empresa_id:empId,
+    banner_ativo:document.getElementById('ck-ativo').value==='true',
+    categorias:{essenciais:true,analiticos:document.getElementById('ck-analiticos').checked,marketing:document.getElementById('ck-marketing').checked},
+    atualizado_em:new Date().toISOString(),
+  };
+  try{
+    const {error}=await db.from('cookie_config').upsert(payload);
+    if(error) throw error;
+    st.textContent='Salvo!'; st.style.color='var(--success)';
+    addLog('cookie_config_atualizada','Configuração de cookies atualizada',(G.empresas||[]).find(e=>e.id===empId)?.nome||'',empId);
+    setTimeout(()=>st.textContent='',3000);
+  }catch(e){
+    st.textContent='Rode a migração fatia17_admin_saas.sql primeiro.'; st.style.color='var(--danger)';
+  }
+}
 </script>
 <div class="modal-overlay" id="modal-qr-empresa">
   <div class="modal" style="max-width:420px;text-align:center">
