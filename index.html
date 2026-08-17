@@ -353,6 +353,96 @@ try{
    regra aqui, só adicionamos o efeito visual do hover em si. */
 .ni:hover{transform:translateX(2px)}
 .alert-danger i{animation:motionPulseSoft 2.2s ease-in-out infinite}
+
+/* ═══ TOUR GUIADO (treinamento interativo estilo "spotlight") ═══
+   Reaproveita os tokens de motion/cor já existentes no projeto (var(--pri),
+   var(--bg)/var(--txt)/var(--surface), var(--motion-*)/var(--ease-*)) — não
+   cria paleta nem sistema de animação paralelo. A redução de movimento já é
+   automática: o bloco @media(prefers-reduced-motion:reduce) lá em cima zera
+   --motion-* pra todo mundo, então .tour-popover/.tour-highlight herdam
+   isso de graça, sem precisar de outra regra reduced-motion aqui. */
+/* Recorte real do overlay: 4 tiras (cima/baixo/esquerda/direita) cobrindo
+   a tela inteira MENOS a área do elemento — o elemento nunca fica embaixo
+   de nada, então nunca precisa ganhar z-index/position próprio (evita o
+   problema clássico de "elemento preso num contexto de empilhamento do
+   pai" que a técnica de só subir z-index do alvo real sofreria). Mais
+   robusto entre navegadores que clip-path/mask, e fácil de recalcular a
+   cada passo/scroll/resize. .tour-overlay é usado só como fallback (tela
+   toda escura) nos raríssimos casos em que não dá pra medir o retângulo
+   do alvo ainda. */
+.tour-overlay{
+  position:fixed;inset:0;z-index:99990;
+  background:rgba(8,10,20,.62);
+  opacity:0;pointer-events:none;
+  transition:opacity var(--motion-base) var(--ease-standard);
+}
+.tour-overlay.tour-on{opacity:1;pointer-events:auto}
+.tour-overlay-slice{position:fixed;background:rgba(8,10,20,.62);z-index:99990;pointer-events:auto;opacity:0;transition:opacity var(--motion-base) var(--ease-standard),top var(--motion-fast) var(--ease-standard),left var(--motion-fast) var(--ease-standard),width var(--motion-fast) var(--ease-standard),height var(--motion-fast) var(--ease-standard)}
+.tour-overlay-slice.tour-on{opacity:1}
+/* Anel de destaque: um elemento FLUTUANTE independente, posicionado por
+   cima das coordenadas do alvo real (fixed + top/left/width/height via
+   JS) — não é aplicado ao elemento real, então nunca altera o layout dele
+   nem seu z-index/stacking. Só decorativo (pointer-events:none): o alvo
+   de verdade continua clicável através do "buraco" do overlay. */
+.tour-highlight{
+  position:fixed;z-index:99991;pointer-events:none;
+  border-radius:12px;
+  outline:2.5px solid var(--pri);
+  outline-offset:3px;
+  box-shadow:0 0 0 5px rgba(30,94,255,.18),0 0 26px rgba(30,94,255,.35);
+  animation:tourPulse 1.8s ease-in-out infinite;
+  opacity:0;
+  transition:opacity var(--motion-base) var(--ease-standard),top var(--motion-fast) var(--ease-standard),left var(--motion-fast) var(--ease-standard),width var(--motion-fast) var(--ease-standard),height var(--motion-fast) var(--ease-standard);
+}
+.tour-highlight.tour-on{opacity:1}
+@keyframes tourPulse{0%,100%{box-shadow:0 0 0 5px rgba(30,94,255,.18),0 0 26px rgba(30,94,255,.35)}50%{box-shadow:0 0 0 8px rgba(30,94,255,.1),0 0 34px rgba(30,94,255,.22)}}
+.tour-popover{
+  position:fixed;z-index:99992;width:328px;max-width:calc(100vw - 24px);
+  background:var(--bg2);color:var(--txt);
+  border:1px solid var(--border);border-radius:16px;
+  box-shadow:var(--shadow-lg);
+  padding:18px 20px 16px;
+  opacity:0;transform:translateY(6px) scale(.98);
+  transition:opacity var(--motion-base) var(--ease-enter),transform var(--motion-base) var(--ease-enter);
+  pointer-events:none;
+}
+.tour-popover.tour-on{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+.tour-popover-title{font-family:'Syne',sans-serif;font-weight:800;font-size:15.5px;color:var(--txt);margin-bottom:6px;padding-right:22px}
+.tour-popover-text{font-size:13px;line-height:1.55;color:var(--txt2);margin-bottom:14px}
+.tour-popover-close{position:absolute;top:12px;right:12px;width:26px;height:26px;border:none;background:none;color:var(--txt3);cursor:pointer;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;transition:background var(--motion-instant) ease,color var(--motion-instant) ease}
+.tour-popover-close:hover{background:var(--surface2);color:var(--txt)}
+.tour-popover-foot{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.tour-popover-progress{font-size:11px;color:var(--txt3);font-weight:600;white-space:nowrap}
+.tour-popover-dots{display:flex;gap:4px;margin-top:2px}
+.tour-popover-dot{width:5px;height:5px;border-radius:50%;background:var(--border2)}
+.tour-popover-dot.tour-dot-on{background:var(--pri);width:14px;border-radius:3px;transition:width var(--motion-fast) ease}
+.tour-popover-actions{display:flex;gap:8px}
+.tour-btn{border:none;border-radius:9px;padding:8px 14px;font-size:12.5px;font-weight:700;cursor:pointer;transition:transform var(--motion-instant) ease,background var(--motion-fast) ease}
+.tour-btn:active{transform:scale(.96)}
+.tour-btn-ghost{background:transparent;color:var(--txt3)}
+.tour-btn-ghost:hover{color:var(--txt)}
+.tour-btn-out{background:var(--surface2);color:var(--txt2)}
+.tour-btn-out:hover{background:var(--border)}
+.tour-btn-pri{background:var(--pri);color:#fff}
+.tour-btn-pri:hover{background:var(--pri-dark)}
+.tour-popover-skip{font-size:11px;color:var(--txt3);text-decoration:underline;cursor:pointer;background:none;border:none;padding:0;margin-top:10px;display:block}
+.tour-popover-skip:hover{color:var(--txt2)}
+/* Convite inicial ("Quer fazer um tour rápido?") */
+.tour-invite{position:fixed;right:20px;bottom:20px;z-index:99980;width:300px;max-width:calc(100vw - 32px);background:var(--bg2);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow-lg);padding:16px 18px;opacity:0;transform:translateY(10px);transition:opacity var(--motion-base) var(--ease-enter),transform var(--motion-base) var(--ease-enter);pointer-events:none}
+.tour-invite.tour-on{opacity:1;transform:translateY(0);pointer-events:auto}
+.tour-invite-title{font-weight:800;font-size:14px;color:var(--txt);margin-bottom:5px;display:flex;align-items:center;gap:7px}
+.tour-invite-text{font-size:12.5px;color:var(--txt2);line-height:1.5;margin-bottom:12px}
+.tour-invite-actions{display:flex;gap:8px;flex-wrap:wrap}
+/* Mobile: popover vira bottom sheet — mais fácil de ler com o polegar,
+   e nunca tampa o elemento destacado (que costuma estar no topo/meio). */
+@media (max-width:640px){
+  .tour-popover{left:0!important;right:0!important;bottom:0!important;top:auto!important;width:100%;max-width:100%;border-radius:18px 18px 0 0;transform:translateY(100%);padding:16px 18px calc(16px + env(safe-area-inset-bottom))}
+  .tour-popover.tour-on{transform:translateY(0)}
+  .tour-popover::before{content:'';position:absolute;top:8px;left:50%;transform:translateX(-50%);width:36px;height:4px;border-radius:99px;background:var(--border2)}
+  .tour-popover-title{margin-top:8px}
+  .tour-btn{padding:10px 16px;font-size:13px}
+  .tour-invite{left:12px;right:12px;bottom:12px;width:auto}
+}
 [data-theme="dark"]{--bg:#070B1A;--bg2:#0B1228;--surface:#101A38;--surface2:#152147;--txt:#EAF0FF;--txt2:#A8BAE8;--txt3:#6B7FB8;--txt4:#3A4A78;--border:#1B2A55;--border2:#25376B;--pri-light:#0F2058;--accent:#E8915B;--accent-soft:#3A2218;
 --shadow:0 2px 12px rgba(0,0,0,.25);
 --shadow-lg:0 8px 28px rgba(0,0,0,.36);
@@ -2362,22 +2452,22 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
         </div>
       </div>
     </div>
-    <nav class="nav" id="nav">
+    <nav class="nav" id="nav" data-tour="sidebar">
       <!-- Itens diretos (sempre visíveis) -->
       <div class="ni active" onclick="go('dashboard')" data-p="admin,gerente"><i class="ti ti-layout-dashboard"></i><span class="ni-label">Início</span><span class="ni-tip">Dashboard</span></div>
-      <div class="ni" onclick="go('pdv')" data-p="admin,gerente,operador"><i class="ti ti-shopping-cart"></i><span class="ni-label">PDV / Venda</span><span class="ni-tip">PDV / Caixa</span></div>
+      <div class="ni" onclick="go('pdv')" data-p="admin,gerente,operador" data-tour="pdv"><i class="ti ti-shopping-cart"></i><span class="ni-label">PDV / Venda</span><span class="ni-tip">PDV / Caixa</span></div>
 
       <!-- Grupos clicáveis -->
       <div class="nav-div-thin"></div>
       <div class="ni ni-group" onclick="goHub('vendas')" data-p="admin,gerente,operador" data-hub="vendas"><i class="ti ti-tag"></i><span class="ni-label">Vendas</span><span class="ni-tip">Vendas</span></div>
-      <div class="ni ni-group" onclick="goHub('servicos')" data-p="admin,gerente,tecnico" data-hub="servicos"><i class="ti ti-tools"></i><span class="ni-label">Assistência</span><span class="ni-tip">Serviços</span></div>
+      <div class="ni ni-group" onclick="goHub('servicos')" data-p="admin,gerente,tecnico" data-hub="servicos" data-tour="os"><i class="ti ti-tools"></i><span class="ni-label">Assistência</span><span class="ni-tip">Serviços</span></div>
       <div class="ni ni-group" onclick="goHub('clientes')" data-p="admin,gerente,operador,tecnico" data-hub="clientes"><i class="ti ti-users"></i><span class="ni-label">Clientes</span><span class="ni-tip">Clientes</span></div>
-      <div class="ni ni-group" onclick="goHub('estoque')" data-p="admin,gerente" data-hub="estoque"><i class="ti ti-package"></i><span class="ni-label">Estoque</span><span class="ni-tip">Estoque</span></div>
-      <div class="ni ni-group" onclick="goHub('financeiro')" data-p="admin,gerente" data-hub="financeiro"><i class="ti ti-wallet"></i><span class="ni-label">Financeiro</span><span class="ni-tip">Financeiro</span></div>
+      <div class="ni ni-group" onclick="goHub('estoque')" data-p="admin,gerente" data-hub="estoque" data-tour="estoque"><i class="ti ti-package"></i><span class="ni-label">Estoque</span><span class="ni-tip">Estoque</span></div>
+      <div class="ni ni-group" onclick="goHub('financeiro')" data-p="admin,gerente" data-hub="financeiro" data-tour="financeiro"><i class="ti ti-wallet"></i><span class="ni-label">Financeiro</span><span class="ni-tip">Financeiro</span></div>
 
       <div class="nav-div-thin"></div>
       <div class="ni ni-group" onclick="goHub('relatorios')" data-p="admin,gerente" data-hub="relatorios"><i class="ti ti-chart-bar"></i><span class="ni-label">Relatórios</span><span class="ni-tip">Relatórios</span></div>
-      <div class="ni ni-group nav-adm" onclick="goHub('admin')" data-p="admin" data-hub="admin"><i class="ti ti-settings"></i><span class="ni-label">Configurações</span><span class="ni-tip">Administração</span></div>
+      <div class="ni ni-group nav-adm" onclick="goHub('admin')" data-p="admin" data-hub="admin" data-tour="configuracoes"><i class="ti ti-settings"></i><span class="ni-label">Configurações</span><span class="ni-tip">Administração</span></div>
 
       <div class="nav-div-thin"></div>
       <div class="ni" onclick="abrirUpgrade()" data-p="admin,gerente"><i class="ti ti-rocket"></i><span class="ni-label">Fazer Upgrade</span><span class="ni-tip">Upgrade</span></div>
@@ -2429,7 +2519,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
         <div id="dash-tarefas-wrap" style="margin-bottom:14px"></div>
         <div id="dash-acoes-wrap" style="margin-bottom:14px"></div>
         <!-- KPI cards estilo misu-store: ícone circular no canto -->
-        <div class="sg">
+        <div class="sg" data-tour="dashboard">
           <div class="sc" style="cursor:pointer" onclick="go('pdv')">
             <div class="sc-body"><div class="sc-lbl">Faturamento Hoje</div><div class="sc-val" id="d-fat">R$ 0,00</div></div>
             <div class="sc-icon" style="background:rgba(30,94,255,.12)"><i class="ti ti-trending-up" style="color:var(--pri)"></i></div>
@@ -4218,12 +4308,21 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
             </label>
             <button class="btn btn-out btn-sm" style="margin-top:10px" onclick="toggleFullscreen()"><i class="ti ti-maximize"></i> Ativar tela cheia agora</button>
           </div>
-          <div class="card" style="max-width:640px;margin-top:14px">
+          <div class="card" style="max-width:640px;margin-top:14px" data-tour="termos-privacidade">
             <div class="card-hdr" style="margin-bottom:14px"><div class="card-title"><i class="ti ti-file-certificate" style="color:var(--pri)"></i> Documentos legais</div></div>
             <div style="font-size:12.5px;color:var(--txt2);margin-bottom:12px">Consulte os termos e o contrato que você aceitou ao usar o sistema.</div>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
-              <button class="btn btn-out btn-sm" onclick="verTermosSalvos()"><i class="ti ti-file-text"></i> Ver Termos de Uso</button>
-              <button class="btn btn-out btn-sm" onclick="verContratoSalvo()"><i class="ti ti-file-dollar"></i> Ver Contrato do Serviço</button>
+              <button class="btn btn-out btn-sm" onclick="verTermosSalvos()" data-tour="termos-uso"><i class="ti ti-file-text"></i> Ver Termos de Uso</button>
+              <button class="btn btn-out btn-sm" onclick="verContratoSalvo()" data-tour="contrato-saas"><i class="ti ti-file-dollar"></i> Ver Contrato do Serviço</button>
+            </div>
+          </div>
+
+          <div class="card" style="max-width:640px;margin-top:14px">
+            <div class="card-hdr" style="margin-bottom:14px"><div class="card-title"><i class="ti ti-map-2" style="color:var(--pri)"></i> Treinamento guiado</div></div>
+            <div style="font-size:12.5px;color:var(--txt2);margin-bottom:12px">Reveja o tour interativo do sistema a qualquer momento.</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-out btn-sm" onclick="startTour('inicial')"><i class="ti ti-route"></i> Iniciar tour do sistema</button>
+              <button class="btn btn-out btn-sm" onclick="startTour('termos')"><i class="ti ti-file-shield"></i> Iniciar tour de termos</button>
             </div>
           </div>
 
@@ -6291,6 +6390,12 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
     <div class="card" style="padding:14px 16px;margin-bottom:4px">
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--txt3);margin-bottom:12px">Uso atual do plano</div>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px" id="plano-uso-grid"></div>
+    </div>
+
+    <!-- Uso de IA (fatia 22) -->
+    <div class="card" style="padding:14px 16px;margin-top:12px;margin-bottom:4px" id="ia-uso-card">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--txt3);margin-bottom:12px"><i class="ti ti-sparkles"></i> Uso de Inteligência Artificial</div>
+      <div id="ia-uso-conteudo" style="font-size:12.5px;color:var(--txt3);text-align:center;padding:8px">Carregando...</div>
     </div>
 
     <div class="modal-footer">
@@ -8768,7 +8873,7 @@ async function renderRecursosDosPlanos(){
 
 // Abre o modal de planos (upgrade)
 async function abrirUpgrade(){
-  if (typeof openModal === 'function') openModal('modal-planos');
+  if (typeof abrirModalPlanos === 'function') abrirModalPlanos(); else if (typeof openModal === 'function') openModal('modal-planos');
   // Sincroniza preço/nome dos planos com o que o admin configurou no banco
   await sincronizarPlanosDoBanco();
   await renderRecursosDosPlanos();  // lista de recursos reflete o que o admin liberou
@@ -9154,7 +9259,7 @@ function go(page){
   const _featKey = PAGE_FEATURE[page];
   if (_featKey && typeof temFeatureKey==='function' && !temFeatureKey(_featKey)) {
     notify('🔒 Este recurso não está incluído no plano da sua empresa.','warn');
-    if (typeof openModal==='function') openModal('modal-planos');
+    if (typeof abrirModalPlanos==='function') abrirModalPlanos(); else if (typeof openModal==='function') openModal('modal-planos');
     return;
   }
   // Sai do modo tela cheia do PDV ao navegar para qualquer outra página
@@ -9976,14 +10081,9 @@ async function buscarCompatIA(){
   // ── PASSO 2: não achou na base → consulta a IA (uma única vez) ──
   if(sug)sug.innerHTML='<div style="padding:10px;text-align:center;color:var(--txt3);font-size:12.5px"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Pesquisando na web modelos compatíveis… <span style="display:block;font-size:10.5px;color:var(--txt4);margin-top:3px">Pode levar alguns segundos</span></div>';
 
-  // ── COTA DE IA: não deixa passar do limite diário do plano ──
-  if(!(await verificarCotaIA('compat'))){
-    if(sug)sug.innerHTML='<div style="padding:10px;font-size:12px;color:var(--warn);background:rgba(245,158,11,.08);border-radius:8px"><b>Limite diário de IA atingido.</b> Você pode adicionar os modelos compatíveis manualmente no campo abaixo.</div>';
-    return;
-  }
-  // ── COTA DE TOKENS: não deixa passar do limite mensal de tokens do plano ──
-  if(!(await verificarCotaIATokens('compat'))){
-    if(sug)sug.innerHTML='<div style="padding:10px;font-size:12px;color:var(--warn);background:rgba(245,158,11,.08);border-radius:8px"><b>Limite mensal de tokens de IA atingido.</b> Você pode adicionar os modelos compatíveis manualmente no campo abaixo.</div>';
+  // ── COTA DE IA (fatia 22: valida de verdade no servidor; cai pro modo antigo se a migração ainda não rodou) ──
+  if(!(await verificarEBloquearIA('compat_ia', 'compat'))){
+    if(sug)sug.innerHTML='<div style="padding:10px;font-size:12px;color:var(--warn);background:rgba(245,158,11,.08);border-radius:8px"><b>Limite de IA atingido.</b> Você pode adicionar os modelos compatíveis manualmente no campo abaixo.</div>';
     return;
   }
 
@@ -9999,8 +10099,12 @@ async function buscarCompatIA(){
 
     // Novo formato: { success, source, cached, data:{modelos[],alertas[]} } | { success:false, error:{code,message} }
     if(data && data.success && data.data){
-      registrarUsoIA('compat'); // conta 1 consumo de IA (best-effort)
-      registrarUsoIATokens('compat', data.tokens_usados || data.usage?.total_tokens || 0); // conta tokens (best-effort)
+      registrarUsoIAFatia22('compat_ia', 'compat', {
+        totalTokens: data.tokens_usados || data.usage?.total_tokens || 0,
+        promptTokens: data.usage?.prompt_tokens || 0,
+        completionTokens: data.usage?.completion_tokens || 0,
+        modelo: data.modelo || data.model || null,
+      }); // conta consumo de IA — servidor novo (ai_usage) + entitlements antigos, best-effort
       const modelosObj = data.data.modelos || [];
       const lista = modelosObj.map(m => m.modelo).filter(Boolean);
       // Guarda os detalhes (confiança/código/obs) para o render
@@ -18210,14 +18314,8 @@ async function consultarDiagnosticoIA(forcar){
   }
 
   // PASSO 2: não achou na base da loja → consulta a IA
-  // ── COTA DE IA: respeita o limite diário do plano ──
-  if(!(await verificarCotaIA('diagnostico'))){
-    if(res) res.innerHTML='';
-    if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-search"></i> Analisar'; }
-    return;
-  }
-  // ── COTA DE TOKENS: respeita o limite mensal de tokens do plano ──
-  if(!(await verificarCotaIATokens('diagnostico'))){
+  // ── COTA DE IA (fatia 22: valida de verdade no servidor; cai pro modo antigo se a migração ainda não rodou) ──
+  if(!(await verificarEBloquearIA('diagnostico_ia', 'diagnostico'))){
     if(res) res.innerHTML='';
     if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-search"></i> Analisar'; }
     return;
@@ -18238,8 +18336,12 @@ async function consultarDiagnosticoIA(forcar){
     }
 
     _diagUltimo = data.data;
-    registrarUsoIA('diagnostico'); // conta 1 consumo de IA (best-effort)
-    registrarUsoIATokens('diagnostico', data.tokens_usados || data.usage?.total_tokens || 0); // conta tokens (best-effort)
+    registrarUsoIAFatia22('diagnostico_ia', 'diagnostico', {
+      totalTokens: data.tokens_usados || data.usage?.total_tokens || 0,
+      promptTokens: data.usage?.prompt_tokens || 0,
+      completionTokens: data.usage?.completion_tokens || 0,
+      modelo: data.modelo || data.model || null,
+    }); // conta consumo de IA — servidor novo (ai_usage) + entitlements antigos, best-effort
     renderResultadoDiagnostico(data.data, data.cached);
     // Salva no histórico da loja (best-effort)
     try{
@@ -20103,7 +20205,7 @@ function renderUsuarios(q=''){
     const _pct = (_lim>0) ? Math.round((_ativos/_lim)*100) : 0;
     _plInfo.innerHTML = `<span style="font-size:11.5px;color:${_pct>=90?'var(--danger)':'var(--txt3)'}">
       ${_ativos}/${_limTxt} usuários
-      <span class="plano-badge ${_pl.cor}" style="margin-left:6px;cursor:pointer" onclick="openModal('modal-planos')">${_pl.nome}</span>
+      <span class="plano-badge ${_pl.cor}" style="margin-left:6px;cursor:pointer" onclick="abrirModalPlanos()">${_pl.nome}</span>
     </span>`;
   }
   document.getElementById('usr-table').innerHTML = list.length===0
@@ -26446,6 +26548,121 @@ async function registrarUsoIATokens(tipo, tokens){
   try{ await db.rpc('registrar_uso_ia_tokens', { p_tokens: Number(tokens)||0, p_tipo: tipo || 'ia' }); }catch(e){ /* silencioso */ }
 }
 
+/* ══════════════════════════════════════════════════════════════════
+   FATIA 22 — cota de IA validada de verdade no SERVIDOR (RLS + RPC
+   rpc_verificar_cota_ia / rpc_registrar_uso_ia, de
+   sql/fatia22_saas_selfservice_ia.sql), cobrindo trial (limites
+   reduzidos), bloqueio manual por empresa (ai_limits_overrides) e
+   feature liberada por plano — nada disso a cota antiga acima
+   (baseada só em entitlements) sabia checar.
+   NÃO substitui verificarCotaIA/verificarCotaIATokens — só ADICIONA
+   uma camada real de backend. Se a migração da fatia 22 ainda não foi
+   rodada neste banco, a RPC nova não existe: cai automaticamente no
+   comportamento antigo (mesmo modo tolerante de sempre), sem quebrar
+   nada.
+   ══════════════════════════════════════════════════════════════════ */
+let _ultimaCotaIA = null; // cache da última resposta da RPC, usado pelo widget do modal de planos
+
+function _erroFuncaoServidorInexistente(error){
+  return !!error && (error.code === '42883' || error.code === '42P01' ||
+    /function .*rpc_(verificar|registrar)_cota_ia.* does not exist|relation ".*(ai_usage|ai_limits_overrides)".* does not exist/i.test(error.message || ''));
+}
+
+// Consulta a cota real no servidor (RPC rpc_verificar_cota_ia). Retorna o
+// jsonb completo devolvido pela função (liberado, motivo, limites e uso
+// atual) ou null se a RPC ainda não existir neste banco (fatia 22 não
+// rodada) ou a chamada falhar por qualquer outro motivo.
+async function _consultarCotaIAServidor(feature){
+  try{
+    const { data, error } = await db.rpc('rpc_verificar_cota_ia', { p_feature: feature || null });
+    if(error){ if(!_erroFuncaoServidorInexistente(error)) console.warn('[cota-ia] rpc_verificar_cota_ia falhou:', error.message); return null; }
+    const row = Array.isArray(data) ? data[0] : data;
+    return row || null;
+  }catch(e){ return null; }
+}
+
+// PRÉ-CHECAGEM UNIFICADA — chamar ANTES de qualquer consulta de IA.
+// 1) Tenta a cota REAL do servidor (fatia 22). Se disponível, ela manda:
+//    respeita trial, bloqueio manual do master e feature por plano.
+// 2) Se a RPC nova não existir ainda, cai pro par antigo
+//    verificarCotaIA()+verificarCotaIATokens() (baseado em entitlements),
+//    preservando o comportamento de empresas que ainda não migraram.
+// Retorna true se pode seguir com a chamada de IA, false se deve bloquear
+// (e já mostra o aviso/modal certo para o usuário).
+async function verificarEBloquearIA(feature, tipoLegado){
+  const cota = await _consultarCotaIAServidor(feature);
+  _ultimaCotaIA = cota;
+  // A empresa está em trial "pelo cliente" (G.empresa), não pelo jsonb da
+  // RPC — o campo is_trial só vem preenchido quando liberado:true (ver
+  // função verificar_cota_ia() em sql/fatia22_saas_selfservice_ia.sql).
+  const empresaEmTrial = G.empresa?.status === 'trial';
+
+  if(cota){
+    if(cota.liberado){
+      // Nomes de campo exatamente como devolvidos por verificar_cota_ia():
+      // usado_hoje_consultas/limite_dia_consultas, usado_mes_tokens/limite_mes_tokens.
+      const restanteDia = (typeof cota.limite_dia_consultas === 'number') ? cota.limite_dia_consultas - (cota.usado_hoje_consultas||0) : null;
+      const restanteMesTok = (typeof cota.limite_mes_tokens === 'number') ? cota.limite_mes_tokens - (cota.usado_mes_tokens||0) : null;
+      const pertoDia = restanteDia !== null && cota.limite_dia_consultas > 0 && restanteDia <= Math.max(1, Math.ceil(cota.limite_dia_consultas*0.2));
+      const pertoMes = restanteMesTok !== null && cota.limite_mes_tokens > 0 && restanteMesTok <= Math.max(1000, cota.limite_mes_tokens*0.1);
+      if(pertoDia || pertoMes){
+        notify(empresaEmTrial
+          ? 'Você está usando o teste grátis. A IA tem limite reduzido durante o período de teste.'
+          : 'Você está perto do limite de IA do seu plano.', 'info', 5000);
+      }
+      return true;
+    }
+    // Bloqueado — motivo já vem calculado no servidor.
+    if(cota.motivo === 'limite_diario_consultas' || cota.motivo === 'limite_diario_tokens'){
+      notify(empresaEmTrial
+        ? 'Você está usando o teste grátis. A IA tem limite reduzido durante o período de teste.'
+        : 'Você atingiu o limite de IA do seu plano hoje. Tente novamente amanhã ou faça upgrade.', 'warn', 7000);
+    } else if(cota.motivo === 'limite_mensal_consultas' || cota.motivo === 'limite_mensal_tokens'){
+      notify('Sua empresa atingiu o limite mensal de IA do plano. Fale com o suporte ou faça upgrade.', 'warn', 7000);
+    } else if(cota.motivo === 'bloqueado_manualmente_pelo_master'){
+      notify('O uso de IA desta empresa está temporariamente bloqueado. Fale com o suporte.', 'warn', 7000);
+    } else if(cota.motivo === 'ia_desativada_no_plano' || cota.motivo === 'feature_nao_liberada_no_plano'){
+      notify('Este recurso de IA não está incluído no seu plano atual.', 'warn', 6000);
+    } else if(cota.motivo === 'plano_bloqueado'){
+      notify('O acesso desta empresa está bloqueado (teste vencido ou pendência de pagamento).', 'warn', 7000);
+    } else {
+      notify('Não foi possível usar a IA agora — verifique seu plano.', 'warn', 6000);
+    }
+    if(typeof abrirModalPlanos === 'function') abrirModalPlanos();
+    return false;
+  }
+
+  // Fallback: RPC nova indisponível (fatia 22 ainda não migrada neste banco)
+  // — usa o par antigo, que continua funcionando como sempre funcionou.
+  if(!(await verificarCotaIA(tipoLegado))) return false;
+  if(!(await verificarCotaIATokens(tipoLegado))) return false;
+  return true;
+}
+
+// REGISTRO UNIFICADO — chamar DEPOIS de a consulta de IA dar certo.
+// Grava tanto na fonte nova (ai_usage, via rpc_registrar_uso_ia — tokens
+// de entrada/saída separados, por feature) quanto na fonte antiga
+// (registrar_uso_ia/registrar_uso_ia_tokens), pra não perder histórico
+// nem quebrar o painel/entitlements antigos. Tudo best-effort.
+async function registrarUsoIAFatia22(feature, tipoLegado, opts){
+  const promptTokens = Number(opts?.promptTokens) || 0;
+  const completionTokens = Number(opts?.completionTokens) || 0;
+  const totalTokens = promptTokens + completionTokens || Number(opts?.totalTokens) || 0;
+  const modelo = opts?.modelo || null;
+
+  registrarUsoIA(tipoLegado);
+  registrarUsoIATokens(tipoLegado, totalTokens);
+
+  try{
+    await db.rpc('rpc_registrar_uso_ia', {
+      p_feature: feature || tipoLegado || 'ia',
+      p_model: modelo,
+      p_prompt_tokens: promptTokens,
+      p_completion_tokens: completionTokens,
+    });
+  }catch(e){ /* fatia 22 ainda não migrada — silencioso, a fonte antiga já registrou acima */ }
+}
+
 function getPlanoAtual() {
   // 1) Plano definido pela empresa no painel master (Supabase) — fonte de verdade
   const planoEmpresa = G.empresa?.plano;
@@ -26567,7 +26784,7 @@ function mostrarBannerLimite(tipo, container) {
       <strong>Limite do plano ${plano.nome} atingido</strong> — máximo de ${limite} ${nomes[tipo]||tipo}.
       <br>Faça upgrade para adicionar mais.
     </div>
-    <span class="upgrade-link" onclick="openModal('modal-planos')">Ver planos →</span>`;
+    <span class="upgrade-link" onclick="abrirModalPlanos()">Ver planos →</span>`;
   if (container) container.insertAdjacentElement('afterbegin', el);
   return el;
 }
@@ -26823,7 +27040,7 @@ function verificarLimiteAntesDe(tipo, acao) {
     const limite = plano.limites[tipo];
     const nomes = { usuarios:'usuários', caixas:'caixas', produtos:'produtos' };
     notify(`🔒 Limite de ${limite} ${nomes[tipo]||tipo} atingido no plano ${plano.nome}. Faça upgrade para continuar.`, 'warn');
-    openModal('modal-planos');
+    if (typeof abrirModalPlanos === 'function') abrirModalPlanos(); else openModal('modal-planos');
   }
 }
 
@@ -26849,7 +27066,7 @@ function goComPlano(page) {
     const plano = getPlanoAtual();
     const planoNecessario = feat === 'inteligencia' ? 'Enterprise' : 'Pro';
     notify(`🔒 "${page}" não está disponível no plano ${plano.nome}. Requer plano ${planoNecessario}.`, 'warn');
-    openModal('modal-planos');
+    if (typeof abrirModalPlanos === 'function') abrirModalPlanos(); else openModal('modal-planos');
     return;
   }
   _origGo(page);
@@ -26861,6 +27078,30 @@ function initPlanos() {
   aplicarRestricoesDePlano();
   // Substituir go() pelo wrapper
   // (não substitui diretamente para manter compatibilidade)
+  continuarAssinaturaAposCadastro();
+  if(typeof verificarConviteTourInicial==='function') verificarConviteTourInicial();
+}
+
+// Continua o fluxo de "Assinar agora" iniciado em planos.html (fatia 22).
+// signup-empresa só cria a conta em trial — quem gera a cobrança de
+// verdade é o mesmo fluxo que um cliente já logado usa pra trocar de
+// plano (selecionarPlano → abrirConfirmacaoPlano → processarMudancaPlano,
+// via gerar-cobranca). Isso evita duplicar/reinventar aquela lógica aqui.
+function continuarAssinaturaAposCadastro(){
+  try{
+    const params = new URLSearchParams(location.search);
+    const planoId = params.get('assinar');
+    if(!planoId) return;
+    // Limpa o parâmetro da URL — não repete ao dar F5 nem ao voltar depois.
+    params.delete('assinar');
+    const novaUrl = location.pathname + (params.toString() ? '?'+params.toString() : '') + location.hash;
+    history.replaceState(null, '', novaUrl);
+    if(!PLANOS[planoId]) return;
+    setTimeout(() => {
+      notify(`Falta só confirmar o pagamento para ativar o plano ${PLANOS[planoId].nome}.`, 'info', 5000);
+      selecionarPlano(planoId);
+    }, 400); // pequeno atraso pra tela terminar de montar antes de abrir o modal
+  }catch(e){ console.error('[continuarAssinaturaAposCadastro]', e); }
 }
 
 /* Chamar ao abrir o modal */
@@ -26869,6 +27110,122 @@ document.addEventListener('click', e => {
     renderModalPlanos();
   }
 });
+
+// Widget "Uso de Inteligência Artificial" dentro do modal de planos —
+// plano atual, consultas hoje / limite diário, tokens do mês / limite
+// mensal, modelo em uso, próxima renovação e botão de upgrade quando
+// perto ou no limite. Usa a cota real do servidor (fatia 22) quando
+// disponível; se a migração ainda não rodou, mostra o que dá pra saber
+// pelo sistema antigo (entitlements) em vez de esconder o widget.
+async function renderUsoIANoModalPlanos(){
+  const box = document.getElementById('ia-uso-conteudo');
+  if(!box) return;
+  box.innerHTML = '<div style="padding:8px;color:var(--txt3)">Carregando...</div>';
+
+  const cota = await _consultarCotaIAServidor(null);
+
+  const fmtNum = (n) => (typeof n === 'number') ? n.toLocaleString('pt-BR') : '—';
+  const barra = (usado, limite) => {
+    if(typeof limite !== 'number' || limite <= 0) return '';
+    const pct = Math.min(100, Math.round((usado/limite)*100));
+    const cor = pct>=100?'var(--danger)':pct>=80?'var(--warn)':'var(--success)';
+    return `<div style="background:var(--border);border-radius:99px;height:5px;overflow:hidden;margin-top:5px">
+      <div style="height:100%;border-radius:99px;background:${cor};width:${pct}%"></div>
+    </div>`;
+  };
+
+  const empresaEmTrial = G.empresa?.status === 'trial';
+
+  if(cota && cota.liberado){
+    // Nomes de campo exatamente como devolvidos por verificar_cota_ia()
+    // em sql/fatia22_saas_selfservice_ia.sql (só existem quando liberado:true).
+    const amanha = new Date(); amanha.setDate(amanha.getDate()+1); amanha.setHours(0,0,0,0);
+    const proxMes = new Date(); proxMes.setMonth(proxMes.getMonth()+1,1); proxMes.setHours(0,0,0,0);
+
+    let avisoTxt = '', avisoCor = 'var(--txt3)';
+    if(empresaEmTrial){
+      avisoTxt = 'Você está usando o teste grátis. A IA tem limite reduzido durante o período de teste.';
+      avisoCor = 'var(--warn)';
+    } else {
+      const restanteDia = (typeof cota.limite_dia_consultas === 'number') ? cota.limite_dia_consultas - (cota.usado_hoje_consultas||0) : null;
+      const restanteMesTok = (typeof cota.limite_mes_tokens === 'number') ? cota.limite_mes_tokens - (cota.usado_mes_tokens||0) : null;
+      if((restanteDia !== null && cota.limite_dia_consultas > 0 && restanteDia <= Math.max(1, Math.ceil(cota.limite_dia_consultas*0.2))) ||
+         (restanteMesTok !== null && cota.limite_mes_tokens > 0 && restanteMesTok <= Math.max(1000, cota.limite_mes_tokens*0.1))){
+        avisoTxt = 'Você está perto do limite de IA do seu plano.';
+        avisoCor = 'var(--warn)';
+      }
+    }
+
+    box.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:${avisoTxt?'10px':'0'}">
+        <div>
+          <div style="font-size:11px;color:var(--txt3)">Consultas hoje</div>
+          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px">${fmtNum(cota.usado_hoje_consultas||0)}${typeof cota.limite_dia_consultas==='number' ? ` / ${fmtNum(cota.limite_dia_consultas)}` : ' / ilimitado'}</div>
+          ${typeof cota.limite_dia_consultas==='number' ? barra(cota.usado_hoje_consultas||0, cota.limite_dia_consultas) : ''}
+          <div style="font-size:10px;color:var(--txt3);margin-top:3px">Renova ${amanha.toLocaleDateString('pt-BR')}</div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--txt3)">Tokens este mês</div>
+          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px">${fmtNum(cota.usado_mes_tokens||0)}${typeof cota.limite_mes_tokens==='number' ? ` / ${fmtNum(cota.limite_mes_tokens)}` : ' / ilimitado'}</div>
+          ${typeof cota.limite_mes_tokens==='number' ? barra(cota.usado_mes_tokens||0, cota.limite_mes_tokens) : ''}
+          <div style="font-size:10px;color:var(--txt3);margin-top:3px">Renova ${proxMes.toLocaleDateString('pt-BR')}</div>
+        </div>
+      </div>
+      <div style="font-size:10.5px;color:var(--txt3);margin-top:8px">Modelo em uso: ${esc(cota.modelo || '—')}${empresaEmTrial ? ' · período de teste' : ''}</div>
+      ${avisoTxt ? `<div style="margin-top:10px;padding:9px 11px;border-radius:8px;background:rgba(0,0,0,.04);color:${avisoCor};font-size:12px;font-weight:600">${avisoTxt}</div>` : ''}
+    `;
+  } else if(cota && !cota.liberado){
+    // Bloqueado — mesmas mensagens usadas na pré-checagem (verificarEBloquearIA).
+    let msg;
+    switch(cota.motivo){
+      case 'limite_diario_consultas': case 'limite_diario_tokens':
+        msg = empresaEmTrial
+          ? 'Você está usando o teste grátis. A IA tem limite reduzido durante o período de teste.'
+          : 'Você atingiu o limite de IA do seu plano hoje. Tente novamente amanhã ou faça upgrade.';
+        break;
+      case 'limite_mensal_consultas': case 'limite_mensal_tokens':
+        msg = 'Sua empresa atingiu o limite mensal de IA do plano. Fale com o suporte ou faça upgrade.'; break;
+      case 'bloqueado_manualmente_pelo_master':
+        msg = 'O uso de IA desta empresa está temporariamente bloqueado. Fale com o suporte.'; break;
+      case 'ia_desativada_no_plano': case 'feature_nao_liberada_no_plano':
+        msg = 'A IA não está incluída no seu plano atual.'; break;
+      case 'plano_bloqueado':
+        msg = 'O acesso desta empresa está bloqueado (teste vencido ou pendência de pagamento).'; break;
+      default:
+        msg = 'Não foi possível usar a IA agora.';
+    }
+    box.innerHTML = `<div style="padding:9px 11px;border-radius:8px;background:rgba(220,38,38,.08);color:var(--danger);font-size:12.5px;font-weight:600">${esc(msg)}</div>`;
+  } else {
+    // Fallback: sistema antigo (entitlements), sem os detalhes de trial/servidor.
+    const [usadoHoje, tokMes] = await Promise.all([_usoIAHoje(), _tokensIAMes()]);
+    const limDia = (typeof limiteFeature==='function') ? limiteFeature('ai.daily_limit') : -1;
+    const limMes = (typeof limiteFeature==='function') ? limiteFeature('ai.monthly_token_limit') : -1;
+    box.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">
+        <div>
+          <div style="font-size:11px;color:var(--txt3)">Consultas hoje</div>
+          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px">${usadoHoje===null?'—':fmtNum(usadoHoje)}${limDia>=0 ? ` / ${fmtNum(limDia)}` : ' / ilimitado'}</div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--txt3)">Tokens este mês</div>
+          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px">${tokMes===null?'—':fmtNum(tokMes)}${limMes>=0 ? ` / ${fmtNum(limMes)}` : ' / ilimitado'}</div>
+        </div>
+      </div>
+      <div style="font-size:10.5px;color:var(--txt3);margin-top:8px">Cota detalhada de IA (trial, modelo, bloqueio manual) fica disponível depois que a migração <code>fatia22_saas_selfservice_ia.sql</code> for aplicada.</div>
+    `;
+  }
+}
+
+// Abre o modal de planos já com o conteúdo atualizado (uso de plano +
+// uso de IA). Os onclick que abriam "openModal('modal-planos')" direto
+// dependiam do listener de clique acima pra popular o grid — o que só
+// funcionava em cliques DEPOIS do modal já aberto, não no clique que
+// abre. Esta função resolve isso chamando o render ANTES de abrir.
+function abrirModalPlanos(){
+  renderModalPlanos();
+  if (typeof renderUsoIANoModalPlanos === 'function') renderUsoIANoModalPlanos();
+  openModal('modal-planos');
+}
 
 
 /* ══════════════════════════════════════════════════════════════════
@@ -29302,5 +29659,340 @@ html.ac-readable p,html.ac-readable li,html.ac-readable td,html.ac-readable labe
 })();
 </script>
 <!-- ═══ FIM LOTE 2 ═══ -->
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     TOUR GUIADO — treinamento interativo estilo "spotlight" (nova fatia)
+     Motor próprio, sem biblioteca externa. Cria os elementos do overlay/
+     destaque/popover uma única vez (lazy) e só os reposiciona a cada
+     passo — nunca toca nos elementos reais do sistema (não aplica classe
+     nem z-index neles), então não tem como quebrar layout/funções
+     existentes. Se um alvo não existir ou estiver escondido, o passo é
+     pulado automaticamente (nunca trava, nunca mostra erro técnico).
+     ═══════════════════════════════════════════════════════════════════ -->
+<script>
+const TOURS = {
+  inicial: [
+    { target:'[data-tour="dashboard"]', title:'Dashboard', text:'Aqui você acompanha os principais indicadores da loja: faturamento do dia, OS abertas, valores a receber vencidos, estoque e ticket médio.', position:'bottom' },
+    { target:'[data-tour="sidebar"]', title:'Menu principal', text:'Use este menu para acessar vendas, clientes, estoque, financeiro, relatórios e configurações.', position:'right' },
+    { target:'[data-tour="pdv"]', title:'PDV / Venda', text:'Inicie vendas rápidas e controle o caixa por aqui — abertura, sangria, reforço e fechamento.', position:'right' },
+    { target:'[data-tour="estoque"]', title:'Produtos e Estoque', text:'Cadastre produtos, consulte preços e acompanhe o estoque baixo direto por este menu.', position:'right' },
+    { target:'[data-tour="os"]', title:'Assistência (Ordens de Serviço)', text:'Abra ordens de serviço, acompanhe o andamento e registre orçamentos e reparos.', position:'right' },
+    { target:'[data-tour="financeiro"]', title:'Financeiro', text:'Controle despesas, contas a pagar/receber e o fluxo de caixa da loja.', position:'right' },
+    { target:'[data-tour="configuracoes"]', title:'Configurações', text:'Gerencie usuários, planos, permissões, termos, integrações e limites de IA.', position:'right' },
+  ],
+  termos: [
+    { target:'[data-tour="termos-privacidade"]', title:'Termos e Privacidade', text:'Aqui ficam os documentos legais aceitos pela sua empresa.', position:'left' },
+    { target:'[data-tour="termos-uso"]', title:'Termos de Uso', text:'Este documento regula o uso do sistema e a contratação do SaaS — hoje ele também cobre como seus dados pessoais são tratados (o sistema ainda não tem uma tela separada só de privacidade).', position:'left' },
+    { target:'[data-tour="contrato-saas"]', title:'Contrato do Serviço', text:'Aqui você consulta o contrato de prestação de serviço que sua empresa aceitou ao assinar o plano.', position:'left' },
+    { target:'[data-tour="termos-cookies"]', title:'Política de Cookies', text:'Permite consultar e ajustar suas preferências de cookies.', position:'left' },
+    { target:'[data-tour="termos-camera"]', title:'Câmera e Scanner', text:'Explica o uso da câmera para o scanner de código de barras, fotos de produtos e anexos de OS.', position:'left' },
+    { target:'[data-tour="termos-ia"]', title:'Uso de IA', text:'Explica o uso do Gemini nas consultas de IA, além de tokens e limites do seu plano.', position:'left' },
+    { target:'[data-tour="historico-aceites"]', title:'Histórico de Aceites', text:'Aqui você vê a versão, a data e o usuário que aceitou cada termo.', position:'left' },
+  ],
+};
+
+// ⚠️ Passos "termos-cookies"/"termos-camera"/"termos-ia"/"historico-aceites"
+// apontam pra data-tour que ainda NÃO existem em nenhuma tela deste
+// arquivo (não há telas dedicadas de cookies/câmera/IA/histórico de
+// aceites dentro do sistema hoje — só o modal de Termos de Uso e o botão
+// de contrato, dentro de Configurações). Isso é intencional: o motor
+// pula automaticamente qualquer passo cujo elemento não existe (ver
+// _tourResolveTarget), então esses 4 passos ficam prontos pra "acender"
+// sozinhos no dia em que essas telas existirem — basta adicionar o
+// atributo data-tour correspondente no elemento novo, sem tocar em nada
+// aqui. Ver relatório de entrega para mais detalhes.
+
+let _tour = { nome:null, passo:0, ativo:false };
+let _tourDom = null; // cache dos elementos criados (lazy)
+let _tourReflowPendente = false;
+
+function _tourEnsureDom(){
+  if(_tourDom) return _tourDom;
+  const mkSlice = () => { const d=document.createElement('div'); d.className='tour-overlay-slice'; document.body.appendChild(d); return d; };
+  const ring = document.createElement('div');
+  ring.className='tour-highlight'; ring.id='tour-highlight-ring';
+  document.body.appendChild(ring);
+
+  const pop = document.createElement('div');
+  pop.className='tour-popover'; pop.id='tour-popover';
+  pop.setAttribute('role','dialog');
+  pop.setAttribute('aria-modal','true');
+  pop.setAttribute('aria-live','polite');
+  pop.setAttribute('tabindex','-1');
+  document.body.appendChild(pop);
+
+  _tourDom = {
+    slices: { top:mkSlice(), bottom:mkSlice(), left:mkSlice(), right:mkSlice() },
+    ring, pop,
+  };
+  return _tourDom;
+}
+
+function _tourResolveTarget(step){
+  try{
+    const el = document.querySelector(step.target);
+    if(!el) return null;
+    const rect = el.getBoundingClientRect();
+    if(rect.width===0 && rect.height===0) return null; // display:none ou fora do fluxo
+    if(el.offsetParent===null && getComputedStyle(el).position!=='fixed') return null; // escondido (ex.: aba fechada, sem permissão)
+    return el;
+  }catch(e){ console.warn('[tour] seletor inválido, pulando etapa:', step.target, e); return null; }
+}
+
+function _tourHasStepAt(steps, i){ return i>=0 && i<steps.length && !!_tourResolveTarget(steps[i]); }
+
+function startTour(nome, opts){
+  opts = opts || {};
+  const steps = TOURS[nome];
+  if(!steps || !steps.length){ console.warn('[tour] tour desconhecido:', nome); return; }
+  _tourEnsureDom();
+  _tour.nome = nome;
+  _tour.ativo = true;
+  const saved = loadTourProgress(nome);
+  _tour.passo = (opts.resume && saved.status==='in_progress' && saved.passo>0) ? saved.passo : 0;
+  document.addEventListener('keydown', _tourKeyHandler);
+  window.addEventListener('resize', _tourReflow);
+  window.addEventListener('scroll', _tourReflow, true);
+  _tourHideInvite();
+  saveTourProgress(nome, 'in_progress', _tour.passo);
+  renderTourStep();
+}
+
+function renderTourStep(){
+  if(!_tour.ativo) return;
+  const steps = TOURS[_tour.nome];
+  if(!steps){ closeTour(); return; }
+  while(_tour.passo < steps.length){
+    const step = steps[_tour.passo];
+    const el = _tourResolveTarget(step);
+    if(el){ _tourShowStep(step, el); return; }
+    console.warn('[tour] etapa sem elemento disponível para este perfil/tela, pulando:', step.target);
+    _tour.passo++;
+  }
+  finishTour();
+}
+
+function _tourShowStep(step, el){
+  const dom = _tourEnsureDom();
+  const steps = TOURS[_tour.nome];
+  const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  el.scrollIntoView({ behavior: reduced?'auto':'smooth', block:'center', inline:'nearest' });
+
+  const posicionar = () => {
+    const rect = el.getBoundingClientRect();
+    _tourPositionHighlight(rect);
+    _tourPositionPopover(rect, step.position || 'right');
+  };
+  // pequeno atraso pro scroll suave terminar antes de medir a posição final
+  setTimeout(posicionar, reduced ? 0 : 260);
+
+  const temAnterior = (() => { for(let i=_tour.passo-1;i>=0;i--) if(_tourHasStepAt(steps,i)) return true; return false; })();
+  const temProxima  = (() => { for(let i=_tour.passo+1;i<steps.length;i++) if(_tourHasStepAt(steps,i)) return true; return false; })();
+
+  dom.pop.innerHTML = `
+    <button class="tour-popover-close" aria-label="Fechar tour" onclick="closeTour()"><i class="ti ti-x"></i></button>
+    <div class="tour-popover-title">${esc(step.title)}</div>
+    <div class="tour-popover-text">${esc(step.text)}</div>
+    <div class="tour-popover-foot">
+      <div>
+        <div class="tour-popover-progress">${_tour.passo+1} de ${steps.length}</div>
+        <div class="tour-popover-dots">${steps.map((_,i)=>`<span class="tour-popover-dot${i===_tour.passo?' tour-dot-on':''}"></span>`).join('')}</div>
+      </div>
+      <div class="tour-popover-actions">
+        ${temAnterior ? `<button class="tour-btn tour-btn-ghost" onclick="prevTourStep()">Voltar</button>` : ''}
+        ${temProxima
+          ? `<button class="tour-btn tour-btn-pri" onclick="nextTourStep()">Avançar</button>`
+          : `<button class="tour-btn tour-btn-pri" onclick="finishTour()">Concluir</button>`}
+      </div>
+    </div>
+    <button class="tour-popover-skip" onclick="closeTour({skip:true})">Pular tour</button>
+  `;
+
+  [dom.slices.top, dom.slices.bottom, dom.slices.left, dom.slices.right, dom.ring, dom.pop].forEach(elx => elx.classList.add('tour-on'));
+  dom.pop.focus({ preventScroll:true });
+  saveTourProgress(_tour.nome, 'in_progress', _tour.passo);
+}
+
+function _tourPositionHighlight(rect){
+  const dom = _tourEnsureDom();
+  const pad = 6;
+  const holeTop = Math.max(0, rect.top-pad), holeLeft = Math.max(0, rect.left-pad);
+  const holeRight = rect.right+pad, holeBottom = rect.bottom+pad;
+  const vw = window.innerWidth, vh = window.innerHeight;
+
+  Object.assign(dom.ring.style, { top:holeTop+'px', left:holeLeft+'px', width:Math.max(0,rect.width+pad*2)+'px', height:Math.max(0,rect.height+pad*2)+'px' });
+
+  Object.assign(dom.slices.top.style,    { top:'0px', left:'0px', width:vw+'px', height:holeTop+'px' });
+  Object.assign(dom.slices.bottom.style, { top:Math.min(vh,holeBottom)+'px', left:'0px', width:vw+'px', height:Math.max(0,vh-holeBottom)+'px' });
+  Object.assign(dom.slices.left.style,   { top:holeTop+'px', left:'0px', width:holeLeft+'px', height:Math.max(0,holeBottom-holeTop)+'px' });
+  Object.assign(dom.slices.right.style,  { top:holeTop+'px', left:Math.min(vw,holeRight)+'px', width:Math.max(0,vw-holeRight)+'px', height:Math.max(0,holeBottom-holeTop)+'px' });
+}
+
+function _tourPositionPopover(rect, prefer){
+  const dom = _tourEnsureDom();
+  const pop = dom.pop;
+  if(window.innerWidth <= 640) return; // mobile vira bottom-sheet via CSS (!important), não precisa calcular
+  const margin = 14;
+  const pw = pop.offsetWidth || 328, ph = pop.offsetHeight || 170;
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const fits = {
+    right:  (vw-rect.right)  >= pw+margin,
+    left:   rect.left        >= pw+margin,
+    bottom: (vh-rect.bottom) >= ph+margin,
+    top:    rect.top         >= ph+margin,
+  };
+  let pos = fits[prefer] ? prefer : (['right','left','bottom','top'].find(p=>fits[p]) || 'bottom');
+  const clamp = (v,min,max) => Math.min(Math.max(v,min), Math.max(min,max));
+  let top, left;
+  if(pos==='right'){ left = rect.right+margin; top = clamp(rect.top, margin, vh-ph-margin); }
+  else if(pos==='left'){ left = rect.left-pw-margin; top = clamp(rect.top, margin, vh-ph-margin); }
+  else if(pos==='bottom'){ top = rect.bottom+margin; left = clamp(rect.left, margin, vw-pw-margin); }
+  else { top = rect.top-ph-margin; left = clamp(rect.left, margin, vw-pw-margin); }
+  // canto superior direito como último recurso, se nada coube direito
+  if(!isFinite(top) || !isFinite(left)){ top = margin; left = vw-pw-margin; }
+  pop.style.top = Math.max(margin, top)+'px';
+  pop.style.left = Math.max(margin, Math.min(left, vw-pw-margin))+'px';
+}
+
+function _tourReflow(){
+  if(!_tour.ativo || _tourReflowPendente) return;
+  _tourReflowPendente = true;
+  requestAnimationFrame(() => {
+    _tourReflowPendente = false;
+    if(!_tour.ativo) return;
+    const steps = TOURS[_tour.nome];
+    const step = steps && steps[_tour.passo];
+    if(!step) return;
+    const el = _tourResolveTarget(step);
+    if(!el){ renderTourStep(); return; } // saiu da tela/deixou de existir -> trata como passo indisponível
+    const rect = el.getBoundingClientRect();
+    _tourPositionHighlight(rect);
+    _tourPositionPopover(rect, step.position || 'right');
+  });
+}
+
+function nextTourStep(){ if(!_tour.ativo) return; _tour.passo++; renderTourStep(); }
+
+function prevTourStep(){
+  if(!_tour.ativo) return;
+  const steps = TOURS[_tour.nome];
+  for(let i=_tour.passo-1;i>=0;i--){
+    if(_tourHasStepAt(steps,i)){ _tour.passo = i; renderTourStep(); return; }
+  }
+}
+
+function closeTour(opts){
+  opts = opts || {};
+  if(!_tour.ativo) return;
+  const nome = _tour.nome;
+  const passo = _tour.passo;
+  _tour.ativo = false;
+  document.removeEventListener('keydown', _tourKeyHandler);
+  window.removeEventListener('resize', _tourReflow);
+  window.removeEventListener('scroll', _tourReflow, true);
+  if(_tourDom){
+    [_tourDom.slices.top, _tourDom.slices.bottom, _tourDom.slices.left, _tourDom.slices.right, _tourDom.ring, _tourDom.pop].forEach(el => el.classList.remove('tour-on'));
+  }
+  saveTourProgress(nome, opts.skip ? 'skipped' : 'in_progress', passo);
+}
+
+function finishTour(){
+  if(!_tour.ativo) return;
+  const nome = _tour.nome;
+  _tour.ativo = false;
+  document.removeEventListener('keydown', _tourKeyHandler);
+  window.removeEventListener('resize', _tourReflow);
+  window.removeEventListener('scroll', _tourReflow, true);
+  if(_tourDom){
+    [_tourDom.slices.top, _tourDom.slices.bottom, _tourDom.slices.left, _tourDom.slices.right, _tourDom.ring, _tourDom.pop].forEach(el => el.classList.remove('tour-on'));
+  }
+  saveTourProgress(nome, 'completed', 0);
+  if(typeof notify==='function') notify('🎉 Treinamento concluído! Agora você já sabe onde ficam as principais funções.', 'success', 5000);
+}
+
+function _tourKeyHandler(e){
+  if(!_tour.ativo) return;
+  if(e.key==='Escape'){ e.preventDefault(); closeTour(); }
+  else if(e.key==='Enter'){ e.preventDefault(); nextTourStep(); }
+}
+
+// ── Persistência: localStorage sempre (funciona sem banco nenhum) +
+//    melhor esforço no Supabase (tabela tours_status, ver SQL desta
+//    fatia) — se a tabela ainda não existir, falha em silêncio. ──
+function _tourLocalKey(nome, sufixo){ return `misu_tour_${nome}_${sufixo}`; }
+function saveTourProgress(nome, status, passo){
+  try{
+    localStorage.setItem(_tourLocalKey(nome,'status'), status);
+    localStorage.setItem(_tourLocalKey(nome,'step'), String(passo||0));
+    if(status==='completed') localStorage.setItem(_tourLocalKey(nome,'completed_at'), new Date().toISOString());
+  }catch(e){ /* localStorage indisponível — segue só em memória nesta sessão */ }
+  try{
+    if(typeof db!=='undefined' && db && typeof EID==='function' && EID()){
+      db.from('tours_status').upsert({
+        empresa_id: EID(), user_id: (typeof G!=='undefined' && G.profile?.id) || null, tour_slug: nome,
+        status, current_step: passo||0,
+        completed_at: status==='completed' ? new Date().toISOString() : null,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'empresa_id,user_id,tour_slug' }).then(()=>{}).catch(()=>{});
+    }
+  }catch(e){ /* tabela pode não existir ainda — localStorage já salvou acima */ }
+}
+function loadTourProgress(nome){
+  let status='not_started', passo=0;
+  try{
+    status = localStorage.getItem(_tourLocalKey(nome,'status')) || 'not_started';
+    passo = parseInt(localStorage.getItem(_tourLocalKey(nome,'step'))||'0',10) || 0;
+  }catch(e){}
+  return { status, passo };
+}
+
+// ── Convite automático no primeiro acesso (ou tour pendente) ──────────
+function _tourEnsureInviteDom(){
+  let el = document.getElementById('tour-invite');
+  if(el) return el;
+  el = document.createElement('div');
+  el.id = 'tour-invite'; el.className = 'tour-invite';
+  el.setAttribute('role','dialog');
+  el.setAttribute('aria-live','polite');
+  el.innerHTML = `
+    <div class="tour-invite-title"><i class="ti ti-map-2" style="color:var(--pri)"></i><span class="tour-invite-title-txt">Quer fazer um tour rápido pelo MISU SYS?</span></div>
+    <div class="tour-invite-text">Em menos de 1 minuto você conhece as áreas principais do sistema.</div>
+    <div class="tour-invite-actions">
+      <button class="tour-btn tour-btn-pri tour-invite-btn-ok">Começar tour</button>
+      <button class="tour-btn tour-btn-out" onclick="_tourHideInvite()">Agora não</button>
+    </div>
+    <button class="tour-popover-skip" onclick="_tourNaoMostrarConviteNovamente()">Não mostrar novamente</button>
+  `;
+  document.body.appendChild(el);
+  return el;
+}
+function _tourHideInvite(){ const el=document.getElementById('tour-invite'); if(el) el.classList.remove('tour-on'); }
+function _tourNaoMostrarConviteNovamente(){
+  try{ localStorage.setItem('misu_tour_convite_oculto','1'); }catch(e){}
+  _tourHideInvite();
+}
+function verificarConviteTourInicial(){
+  try{
+    if(new URLSearchParams(location.search).has('assinar')) return; // não empilha com o fluxo de assinatura da fatia 22
+    const saved = loadTourProgress('inicial');
+    if(saved.status==='completed' || saved.status==='skipped') return;
+    try{ if(localStorage.getItem('misu_tour_convite_oculto')==='1') return; }catch(e){}
+    setTimeout(() => {
+      if(_tour.ativo) return; // já iniciou por outro caminho nesse meio-tempo
+      const retomar = saved.status==='in_progress' && saved.passo>0;
+      const el = _tourEnsureInviteDom();
+      el.querySelector('.tour-invite-title-txt').textContent = retomar ? 'Continuar o tour do MISU SYS?' : 'Quer fazer um tour rápido pelo MISU SYS?';
+      el.querySelector('.tour-invite-text').textContent = retomar
+        ? 'Você começou o tour guiado e ainda não terminou — quer continuar de onde parou?'
+        : 'Em menos de 1 minuto você conhece as áreas principais do sistema.';
+      const btnOk = el.querySelector('.tour-invite-btn-ok');
+      btnOk.textContent = retomar ? 'Continuar tour' : 'Começar tour';
+      btnOk.onclick = () => { _tourHideInvite(); startTour('inicial', { resume:retomar }); };
+      requestAnimationFrame(() => el.classList.add('tour-on'));
+    }, 1400);
+  }catch(e){ console.warn('[tour] convite inicial falhou (não bloqueia o sistema):', e); }
+}
+</script>
+
 </body>
 </html>
