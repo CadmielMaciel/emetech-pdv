@@ -174,6 +174,45 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 
+/* ── FATIA 18 (APP.HTML): SISTEMA DE MOTION ──
+   Reaproveita os keyframes que já existiam no arquivo (pop, screenIn, up, skel)
+   e só cria os que realmente faltavam: motionFadeIn, motionSoftPop, motionShake,
+   motionPulseSoft. Só transform/opacity — a única "exceção" de sempre é o
+   .motion-shimmer, que já existia como .skel (gradiente de fundo, mesma
+   técnica do catalogo.html), então virou alias em vez de duplicar CSS.
+   O kill-switch de prefers-reduced-motion acima (`*{animation:none!important}`)
+   já cobre tudo isso automaticamente, sem precisar repetir a regra aqui. ── */
+@keyframes motionFadeIn{from{opacity:0}to{opacity:1}}
+@keyframes motionSoftPop{0%{transform:scale(1)}45%{transform:scale(1.05)}100%{transform:scale(1)}}
+@keyframes motionShake{10%,90%{transform:translateX(-1px)}20%,80%{transform:translateX(2px)}30%,50%,70%{transform:translateX(-4px)}40%,60%{transform:translateX(4px)}}
+@keyframes motionPulseSoft{0%,100%{opacity:1}50%{opacity:.55}}
+
+.motion-fade-up{animation:screenIn .3s ease backwards}
+.motion-fade-in{animation:motionFadeIn .3s ease backwards}
+.motion-scale-in{animation:pop .3s ease backwards}
+.motion-slide-up{animation:up .25s ease backwards}
+.motion-modal{animation:up .25s ease}
+.motion-soft-pop{animation:motionSoftPop .32s ease}
+.motion-shake{animation:motionShake .4s ease}
+.motion-pulse-soft{animation:motionPulseSoft 2.2s ease-in-out infinite}
+.motion-card{transition:transform .14s ease}
+.motion-card:active{transform:scale(.985)}
+.motion-btn{transition:transform .12s ease}
+.motion-btn:active{transform:scale(.95)}
+.motion-reveal{opacity:0;transform:translateY(10px);transition:opacity .35s ease,transform .35s ease}
+.motion-reveal-visible{opacity:1;transform:none}
+
+/* erro de login: reaparece com um "shake" — antes só aparecia sem nenhum
+   feedback de movimento (achado real do diagnóstico) */
+.l-err{animation:motionShake .4s ease}
+
+/* as duas folhas (bottom sheets) mais usadas do app — "Mais" e o detalhe de
+   uma OS — não tinham NENHUMA entrada animada, só apareciam "de repente"
+   (outro achado real). Ganham a mesma entrada de baixo pra cima que o
+   modal-pin/modal-ios (poucas linhas abaixo) já usam. */
+#sheet-mais,#sheet-os{animation:up .25s ease}
+#sheet-overlay,#sheet-os-overlay,#modal-pin-overlay,#modal-ios-overlay{animation:motionFadeIn .18s ease}
+
 @media print{
   body *{visibility:hidden!important}
   #etq-label,#etq-label *{visibility:visible!important}
@@ -212,6 +251,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 .rc-lbl{font-size:10.5px;color:var(--txt3);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
 .rc-val{font-family:'Syne',sans-serif;font-size:19px;font-weight:800;color:var(--txt)}
 .rc-val.locked{font-size:15px;color:var(--txt3);display:flex;align-items:center;gap:5px;cursor:pointer}
+.rc-val.empty{font-size:12.5px;font-weight:600;color:var(--txt3);line-height:1.3}
 .rc.warn .rc-val{color:var(--warn)}
 .rc.danger .rc-val{color:var(--danger)}
 .rc.ok .rc-val{color:var(--ok)}
@@ -244,7 +284,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 #home-alertas .aviso.click{cursor:pointer}
 
 /* ── Fatia 11A: skeleton loading (mesmo padrão do catalogo.html) ── */
-.skel{background:linear-gradient(90deg,var(--bg2) 25%,var(--border) 37%,var(--bg2) 63%);background-size:400% 100%;animation:skel 1.4s ease infinite;border-radius:14px}
+.skel,.motion-shimmer{background:linear-gradient(90deg,var(--bg2) 25%,var(--border) 37%,var(--bg2) 63%);background-size:400% 100%;animation:skel 1.4s ease infinite;border-radius:14px}
 @keyframes skel{0%{background-position:100% 50%}100%{background-position:0 50%}}
 .skel-card{height:72px;margin-bottom:11px}
 
@@ -319,10 +359,10 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 
     <!-- Fatia 9: resumo do dia — só contagens/status não sensíveis; lucro fica atrás de PIN -->
     <div class="resumo-grid" id="resumo-grid">
-      <div class="rc"><div class="rc-lbl">Vendas hoje</div><div class="rc-val" id="rc-vendas">—</div></div>
-      <div class="rc" id="rc-caixa-box"><div class="rc-lbl">Caixa</div><div class="rc-val" id="rc-caixa">—</div></div>
-      <div class="rc" id="rc-os-box"><div class="rc-lbl">OS em aberto</div><div class="rc-val" id="rc-os">—</div></div>
-      <div class="rc" id="rc-estoque-box"><div class="rc-lbl">Estoque baixo</div><div class="rc-val" id="rc-estbaixo">—</div></div>
+      <div class="rc"><div class="rc-lbl">Vendas hoje</div><div class="rc-val" id="rc-vendas"><span class="motion-shimmer" style="display:inline-block;width:52px;height:15px"></span></div></div>
+      <div class="rc" id="rc-caixa-box"><div class="rc-lbl">Caixa</div><div class="rc-val" id="rc-caixa"><span class="motion-shimmer" style="display:inline-block;width:44px;height:15px"></span></div></div>
+      <div class="rc" id="rc-os-box"><div class="rc-lbl">OS em aberto</div><div class="rc-val" id="rc-os"><span class="motion-shimmer" style="display:inline-block;width:24px;height:15px"></span></div></div>
+      <div class="rc" id="rc-estoque-box"><div class="rc-lbl">Estoque baixo</div><div class="rc-val" id="rc-estbaixo"><span class="motion-shimmer" style="display:inline-block;width:24px;height:15px"></span></div></div>
       <div class="rc" style="grid-column:1/-1" id="rc-lucro-box">
         <div class="rc-lbl">Lucro estimado hoje</div>
         <div class="rc-val locked" id="rc-lucro" onclick="pedirPinParaLucro()"><i class="ti ti-lock"></i> Toque para ver (PIN de Admin/Gerente)</div>
@@ -446,7 +486,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
   <!-- Fatia 11A: MINHAS OS (lista + busca) -->
   <div class="wrap hidden" id="scr-os-lista">
     <div class="bc-row" style="margin-bottom:14px">
-      <input class="inp" id="osl-busca" placeholder="🔍 Buscar por cliente, número ou aparelho..." oninput="renderOsLista(this.value)">
+      <input class="inp" id="osl-busca" placeholder="🔍 Buscar por cliente, número ou aparelho..." oninput="renderOsListaDebounced(this.value)">
     </div>
     <div id="os-lista-list"></div>
   </div>
@@ -454,11 +494,11 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
   <!-- ESTOQUE -->
   <div class="wrap hidden" id="scr-estoque">
     <div class="bc-row" style="margin-bottom:14px">
-      <input class="inp" id="est-busca" placeholder="🔍 Buscar produto..." oninput="renderEstoque(this.value)">
+      <input class="inp" id="est-busca" placeholder="🔍 Buscar produto..." oninput="renderEstoqueDebounced(this.value)">
       <button class="icon-btn" onclick="abrirScanner('estoque')" title="Escanear para vender"><i class="ti ti-scan"></i></button>
     </div>
     <div class="filtro-row">
-      <button class="pg" id="chip-est-baixo" onclick="toggleFiltroEstoqueBaixo()"><i class="ti ti-alert-triangle" style="font-size:13px;margin-right:4px"></i>Só estoque baixo</button>
+      <button class="pg motion-btn" id="chip-est-baixo" onclick="toggleFiltroEstoqueBaixo()"><i class="ti ti-alert-triangle" style="font-size:13px;margin-right:4px"></i>Só estoque baixo</button>
     </div>
     <div id="estoque-list"></div>
   </div>
@@ -504,10 +544,10 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
       <input class="inp" id="cart-fone" type="tel" inputmode="numeric" placeholder="(DDD) 9 9999-9999">
       <label class="lbl">Forma de pagamento</label>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
-        <button class="pg on" data-f="dinheiro" onclick="setForma('dinheiro')">Dinheiro</button>
-        <button class="pg" data-f="pix" onclick="setForma('pix')">Pix</button>
-        <button class="pg" data-f="cartao" onclick="setForma('cartao')">Cartão</button>
-        <button class="pg" data-f="link" onclick="setForma('link')">Link/QR</button>
+        <button class="pg motion-btn on" data-f="dinheiro" onclick="setForma('dinheiro')">Dinheiro</button>
+        <button class="pg motion-btn" data-f="pix" onclick="setForma('pix')">Pix</button>
+        <button class="pg motion-btn" data-f="cartao" onclick="setForma('cartao')">Cartão</button>
+        <button class="pg motion-btn" data-f="link" onclick="setForma('link')">Link/QR</button>
       </div>
     </div>
     <div class="cart-footer-sticky">
@@ -640,11 +680,36 @@ function msgAmigavel(e,fallback){
   return fallback||'Não foi possível concluir esta ação. Tente novamente.';
 }
 
+/* ── FATIA 18: utilitários de motion (mesmo padrão já usado no index.html/
+   admin.html) — a flag de reduced-motion aqui é só um reforço: o CSS já mata
+   toda animation/transition via `*{...!important}`, isso só evita fazer
+   trabalho (setar animation-delay) que não teria efeito nenhum visual. ── */
+const _reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+function motionStagger(container, childSelector, opts){
+  if(!container) return;
+  const o=opts||{}, stepMs=o.stepMs||25, maxMs=o.maxMs||180, cls=o.cls||'motion-fade-up';
+  container.querySelectorAll(childSelector).forEach((el,i)=>{
+    el.classList.add(cls);
+    if(!_reduceMotion) el.style.animationDelay = Math.min(i*stepMs, maxMs)+'ms';
+  });
+}
+// "bump" discreto pra chamar atenção quando um valor muda (ex.: total do
+// carrinho) — remove+reflow+readiciona a classe, porque só re-setar a mesma
+// classe num elemento que já a tem não reinicia a animação CSS.
+function motionBump(el){
+  if(!el || _reduceMotion) return;
+  el.classList.remove('motion-soft-pop'); void el.offsetWidth; el.classList.add('motion-soft-pop');
+}
+// debounce leve pra busca — evita re-renderizar a lista inteira a cada tecla
+// digitada em telas com muitos produtos/OS (só atrasa a chamada, não muda
+// nenhuma lógica de filtro).
+function debounce(fn, ms){ let t; return function(...a){ clearTimeout(t); t=setTimeout(()=>fn.apply(this,a), ms); }; }
+
 /* ── LOGIN ── */
 async function doLogin(){
   const em=$('l-email').value.trim(), pw=$('l-pass').value, err=$('l-err'), btn=$('l-btn');
   err.style.display='none';
-  if(!em||!pw){err.textContent='Preencha e-mail e senha.';err.style.display='block';return;}
+  if(!em||!pw){err.textContent='Preencha e-mail e senha.'; void err.offsetWidth; err.style.display='block';return;}
   let ok=false;
   try{
     btn.disabled=true; btn.innerHTML='<div class="spinner"></div>Entrando...';
@@ -655,6 +720,7 @@ async function doLogin(){
     ok=true;
   }catch(e){
     err.textContent = (e?.message==='Invalid login credentials') ? 'E-mail ou senha incorretos.' : msgAmigavel(e,'Não foi possível entrar. Tente novamente em instantes.');
+    void err.offsetWidth;
     err.style.display='block';
     try{ await db.auth.signOut(); }catch(_){}
   }finally{
@@ -710,7 +776,9 @@ async function carregarResumoDia(){
     const list=data||[];
     const tot=list.reduce((s,v)=>s+(Number(v.total)||0),0);
     _lucroHojeCache=list.reduce((s,v)=>s+(Number(v.lucro)||0),0);
-    $('rc-vendas').textContent=list.length+' · R$ '+tot.toLocaleString('pt-BR',{minimumFractionDigits:2});
+    const vEl=$('rc-vendas');
+    if(list.length){ vEl.classList.remove('empty'); vEl.textContent=list.length+' · R$ '+tot.toLocaleString('pt-BR',{minimumFractionDigits:2}); }
+    else { vEl.classList.add('empty'); vEl.textContent='Nenhuma venda hoje.'; }
   }catch(_){ $('rc-vendas').textContent='—'; }
   const caixaEl=$('rc-caixa'), caixaBox=$('rc-caixa-box');
   if(G.caixa){ caixaEl.textContent='Aberto'; caixaBox.className='rc ok'; }
@@ -736,7 +804,7 @@ function carregarAlertasHome(){
   const el=$('home-alertas'); if(!el) return;
   let html='';
   if(!G.caixa){
-    html+=`<div class="aviso"><i class="ti ti-lock-open"></i><div><b>Nenhum caixa aberto.</b> Abra o caixa no sistema principal para começar a vender.</div></div>`;
+    html+=`<div class="aviso"><i class="ti ti-lock-open"></i><div><b>Nenhum caixa aberto.</b> Abra o caixa para começar a vender.</div></div>`;
   }
   if(typeof G._estoqueBaixoCount==='number' && G._estoqueBaixoCount>0){
     const n=G._estoqueBaixoCount;
@@ -874,11 +942,12 @@ async function carregarRecentes(){
     w.classList.remove('hidden');
     c.innerHTML=list.map(p=>{
       const f=Array.isArray(p.fotos)&&p.fotos[0]?p.fotos[0]:null;
-      return `<div class="card" style="display:flex;align-items:center;gap:12px;padding:11px 13px">
+      return `<div class="card motion-card" style="display:flex;align-items:center;gap:12px;padding:11px 13px">
         ${f?`<img src="${f}" style="width:44px;height:44px;border-radius:10px;object-fit:cover;flex-shrink:0">`:`<div style="width:44px;height:44px;border-radius:10px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">📦</div>`}
         <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.nome)}</div><div style="font-size:12px;color:var(--pri);font-weight:700">R$ ${(Number(p.preco)||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>
       </div>`;
     }).join('');
+    motionStagger(c, '.card', { stepMs:25, maxMs:150 });
   }catch(_){}
 }
 
@@ -1142,6 +1211,9 @@ function _osBadge(status){
   const mapa={'Aguardando':'st-aguardando','Entregue':'st-entregue','Cancelada':'st-cancelada'};
   return `<span class="os-badge ${mapa[s]||'st-outro'}">${esc(s||'—')}</span>`;
 }
+// Fatia 18: debounce leve (120ms) — só atrasa a chamada de renderOsLista()
+// enquanto o usuário digita, a lógica de busca em si não muda em nada.
+const renderOsListaDebounced=debounce(q=>renderOsLista(q),120);
 function renderOsLista(q){
   const c=$('os-lista-list'); if(!c) return;
   const busca=(q||'').toLowerCase();
@@ -1150,12 +1222,12 @@ function renderOsLista(q){
   if(!list.length){
     c.innerHTML = busca
       ? '<div style="text-align:center;padding:24px;color:var(--txt3)">Nenhuma OS encontrada com esse termo.</div>'
-      : `<div style="text-align:center;padding:30px 20px"><div style="color:var(--txt3);margin-bottom:14px">Nenhuma OS aberta ainda.</div><button class="btn" style="width:auto;padding:11px 22px;margin:0 auto" onclick="abrir('os')"><i class="ti ti-plus"></i>Criar OS rápida</button></div>`;
+      : `<div style="text-align:center;padding:30px 20px"><div style="color:var(--txt3);margin-bottom:14px">Nenhuma OS aberta.</div><button class="btn" style="width:auto;padding:11px 22px;margin:0 auto" onclick="abrir('os')"><i class="ti ti-plus"></i>Criar OS rápida</button></div>`;
     return;
   }
   c.innerHTML=list.map(o=>{
     const data=o.criado_em?new Date(o.criado_em).toLocaleDateString('pt-BR'):'';
-    return `<div class="card os-card" onclick="abrirDetalheOS('${o.id}')">
+    return `<div class="card os-card motion-card" onclick="abrirDetalheOS('${o.id}')">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
         <div style="min-width:0"><div style="font-weight:700;font-size:14.5px">${esc(o.numero||'OS')}</div><div style="font-size:12.5px;color:var(--txt3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(o.cliente_nome||'—')} · ${esc(o.aparelho||'—')}</div></div>
         ${_osBadge(o.status)}
@@ -1291,6 +1363,8 @@ function toggleFiltroEstoqueBaixo(){
   $('chip-est-baixo')?.classList.toggle('on',G._estFiltroBaixo);
   renderEstoque($('est-busca')?.value||'');
 }
+// Fatia 18: mesmo debounce leve (120ms) aplicado à busca do estoque.
+const renderEstoqueDebounced=debounce(q=>renderEstoque(q),120);
 function renderEstoque(q){
   const c=$('estoque-list'); if(!c) return;
   const busca=(q||'').toLowerCase();
@@ -1307,7 +1381,7 @@ function renderEstoque(q){
     const f=Array.isArray(p.fotos)&&p.fotos[0]?p.fotos[0]:null;
     const est=Number(p.estoque)||0, min=Number(p.estoque_minimo)||0;
     const cor=est<=0?'var(--danger)':(est<=min?'var(--warn)':'var(--ok)');
-    return `<div class="card" style="padding:11px 13px">
+    return `<div class="card motion-card" style="padding:11px 13px">
       <div style="display:flex;align-items:center;gap:12px">
         ${f?`<img src="${f}" style="width:44px;height:44px;border-radius:10px;object-fit:cover;flex-shrink:0">`:`<div style="width:44px;height:44px;border-radius:10px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">📦</div>`}
         <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.nome)}</div><div style="font-size:12px;color:var(--txt3)">R$ ${(Number(p.preco)||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>
@@ -1335,7 +1409,9 @@ function renderCartBar(){
   if(!n){ bar.classList.add('hidden'); return; }
   bar.classList.remove('hidden');
   $('cart-count').textContent=n+' item'+(n>1?'s':'');
-  $('cart-total').textContent='R$ '+cartTotal().toLocaleString('pt-BR',{minimumFractionDigits:2});
+  const novoTot='R$ '+cartTotal().toLocaleString('pt-BR',{minimumFractionDigits:2});
+  const totEl=$('cart-total');
+  if(totEl.textContent!==novoTot){ totEl.textContent=novoTot; motionBump(totEl); }
 }
 function mudarQty(id,d){
   const c=G.cart.find(x=>x.id===id); if(!c) return;
@@ -1355,7 +1431,9 @@ function renderCart(){
       <button class="qty-b" onclick="mudarQty('${it.id}',1)">+</button>
     </div>
   </div>`).join('');
-  $('cart-tot-b').textContent='R$ '+cartTotal().toLocaleString('pt-BR',{minimumFractionDigits:2});
+  const novoTotB='R$ '+cartTotal().toLocaleString('pt-BR',{minimumFractionDigits:2});
+  const totBEl=$('cart-tot-b');
+  if(totBEl.textContent!==novoTotB){ totBEl.textContent=novoTotB; motionBump(totBEl); }
 }
 function setForma(f){ G.formaPag=f; document.querySelectorAll('#scr-cart .pg').forEach(b=>b.classList.toggle('on', b.dataset.f===f)); }
 function limparCarrinho(){ G.cart=[]; G.estoqueCache=null; renderCartBar(); ['cart-cli','cart-fone'].forEach(id=>{const e=$(id); if(e)e.value='';}); }
