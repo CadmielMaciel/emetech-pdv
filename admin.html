@@ -759,6 +759,40 @@ select option { background: var(--bg2); }
   .tour-popover-title{margin-top:8px}
   .tour-btn{padding:10px 16px;font-size:13px}
 }
+
+/* ═══ CENTRAL DE TERMOS — acordeão de documentos legais (FATIA 24) ═══ */
+.tc-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;margin-bottom:10px;overflow:hidden;transition:border-color .15s ease}
+.tc-card.tc-open{border-color:var(--pri)}
+.tc-card.tc-vazio{opacity:.7}
+.tc-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;cursor:pointer;user-select:none}
+.tc-head:hover{background:rgba(255,255,255,.02)}
+.tc-head-l{display:flex;align-items:center;gap:12px;min-width:0}
+.tc-head-l>i{font-size:19px;color:var(--pri);flex-shrink:0}
+.tc-tipo-label{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:var(--txt)}
+.tc-meta{font-size:11.5px;color:var(--txt3);margin-top:2px}
+.tc-chev{color:var(--txt3);transition:transform .15s ease;flex-shrink:0}
+.tc-card.tc-open .tc-chev{transform:rotate(180deg);color:var(--pri)}
+.tc-body{display:none;padding:0 18px 18px}
+.tc-card.tc-open .tc-body{display:block}
+.tc-titulo{font-family:'Syne',sans-serif;font-weight:800;font-size:15.5px;color:var(--txt);margin-bottom:2px}
+.tc-meta2{font-size:11.5px;color:var(--txt3);margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.tc-clausula{margin-bottom:14px}
+.tc-cl-titulo{font-weight:700;font-size:13px;color:var(--txt);margin-bottom:4px}
+.tc-cl-corpo{font-size:12.5px;color:var(--txt2);line-height:1.6;white-space:pre-wrap}
+.tc-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.tc-hist-aviso{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:9px;padding:8px 12px;font-size:12px;color:var(--txt2);margin-bottom:12px}
+.tc-hist-aviso button{background:none;border:none;color:var(--pri);font-weight:700;font-size:12px;cursor:pointer;text-decoration:underline;padding:0}
+.tc-hist-list{display:none;margin-top:10px;border-top:1px solid var(--border);padding-top:10px}
+.tc-hist-list.tc-hist-open{display:block}
+.tc-hist-item{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12.5px;color:var(--txt2)}
+.tc-hist-item:hover{background:var(--bg3)}
+.tc-hist-item-atual{color:var(--pri);font-weight:700}
+.tc-hist-data{color:var(--txt3);font-size:11.5px}
+/* Linhas dinâmicas de cláusula dentro do modal "Novo termo / nova versão" */
+.tcm-clausula-row{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px}
+.tcm-clausula-row-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.tcm-clausula-num{font-size:11px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px}
+.tcm-clausula-remove{background:none;border:none;color:var(--danger,#ef4444);cursor:pointer;font-size:13px;padding:2px 6px}
 </style>
 </head>
 <body>
@@ -834,6 +868,7 @@ select option { background: var(--bg2); }
         <div class="sb-sec sb-sec-toggle" onclick="toggleSbGroup('compliance')"><i class="ti ti-chevron-down sb-chev"></i> Compliance</div>
         <div class="sb-group-body">
           <div class="sb-item" onclick="go('lgpd')" data-tour="admin-termos"><i class="ti ti-shield-check"></i> LGPD e Privacidade</div>
+          <div class="sb-item" onclick="go('termos_central')"><i class="ti ti-files"></i> Central de Termos</div>
           <div class="sb-item" onclick="go('cookies')"><i class="ti ti-cookie"></i> Cookies</div>
           <div class="sb-item" onclick="go('suporte');setTimeout(()=>document.getElementById('csaas-titulo')?.scrollIntoView({behavior:'smooth',block:'center'}),80)"><i class="ti ti-file-dollar"></i> Contrato SaaS</div>
         </div>
@@ -1520,6 +1555,26 @@ select option { background: var(--bg2); }
             <tbody id="lgpd-inc-table"><tr><td colspan="5" style="text-align:center;padding:20px;color:var(--txt3)">Carregando...</td></tr></tbody>
           </table></div>
         </div>
+      </div>
+
+      <!-- ══ PAGE: CENTRAL DE TERMOS (FATIA 24) ══
+           Documentos legais da plataforma organizados por cláusula, um
+           card por tipo de documento, em acordeão: clique expande o
+           conteúdo completo (título + cláusulas), clique de novo recolhe.
+           Só um card fica aberto por vez (clicar em outro troca o
+           "domínio" exibido), tudo dentro desta mesma página — sem
+           navegar pra outro lugar. Independente de termos_uso/
+           contrato_saas/lgpd_documentos (essas continuam intactas,
+           usadas pelo fluxo de aceite do lojista). -->
+      <div class="page" id="page-termos_central">
+        <div class="sec-hdr">
+          <div class="sec-title"><i class="ti ti-files" style="color:var(--pri)"></i> Central de Termos</div>
+          <button class="btn btn-pri btn-sm" onclick="abrirNovoTermoModal()"><i class="ti ti-plus"></i> Novo termo / nova versão</button>
+        </div>
+        <div style="background:rgba(91,71,224,.06);border:1.5px solid rgba(91,71,224,.2);border-radius:10px;padding:12px 16px;margin-bottom:18px;font-size:12.5px;color:var(--txt2);max-width:720px">
+          <i class="ti ti-info-circle"></i> Redija cada documento legal por cláusulas (título + corpo). Clique em um termo abaixo pra abrir o conteúdo completo; clique de novo pra fechar. Cada novo salvamento cria uma nova versão — as anteriores ficam guardadas no histórico de cada termo.
+        </div>
+        <div id="termos-central-list"><div style="display:flex;flex-direction:column;gap:8px;padding:6px 0"><div class="motion-shimmer" style="height:60px;width:100%;border-radius:12px"></div><div class="motion-shimmer" style="height:60px;width:100%;border-radius:12px"></div></div></div>
       </div>
 
       <!-- ══ PAGE: COOKIES (FATIA 17) ══ -->
@@ -2361,6 +2416,47 @@ CREATE POLICY "master_all" ON admin_master FOR ALL USING (true) WITH CHECK (true
     <div class="modal-footer">
       <button class="btn btn-out" onclick="closeModal('modal-bloqueio')">Cancelar</button>
       <button class="btn btn-danger" onclick="confirmarBloqueio()"><i class="ti ti-lock"></i> Bloquear</button>
+    </div>
+  </div>
+</div>
+
+<!-- Novo termo / nova versão — Central de Termos (FATIA 24) -->
+<div class="modal-overlay" id="modal-termo-central">
+  <div class="modal lg">
+    <div class="modal-title"><i class="ti ti-file-plus"></i> Novo termo / nova versão</div>
+    <input type="hidden" id="tcm-versao-base">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="fg">
+        <label class="lbl">Tipo de documento</label>
+        <select id="tcm-tipo" onchange="_tcmTipoAlterado()">
+          <!-- populado por JS a partir de TERMOS_TIPOS_CATALOGO -->
+        </select>
+      </div>
+      <div class="fg" id="tcm-tipo-custom-wrap" style="display:none">
+        <label class="lbl">Nome do novo tipo</label>
+        <input type="text" id="tcm-tipo-custom" placeholder="Ex: Termo de Parceria">
+      </div>
+    </div>
+    <div id="tcm-versao-info" style="font-size:11.5px;color:var(--txt3);margin:-6px 0 12px"></div>
+    <div class="fg">
+      <label class="lbl">Título do documento</label>
+      <input type="text" id="tcm-titulo" placeholder="Ex: Termos de Uso do MISU SYS">
+    </div>
+    <div class="fg">
+      <label class="lbl">O que mudou nesta versão (opcional)</label>
+      <input type="text" id="tcm-resumo" placeholder="Ex: Ajuste na cláusula de cancelamento">
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin:16px 0 8px">
+      <label class="lbl" style="margin:0">Cláusulas</label>
+      <button type="button" class="btn btn-out btn-xs" onclick="_tcmAdicionarClausula()"><i class="ti ti-plus"></i> Adicionar cláusula</button>
+    </div>
+    <div id="tcm-clausulas-list"></div>
+    <div style="font-size:11px;color:var(--txt3);margin-top:4px">Cada cláusula vira uma seção numerada no documento (título + corpo). Deixe pelo menos uma cláusula preenchida.</div>
+
+    <div class="modal-footer">
+      <button class="btn btn-out" onclick="closeModal('modal-termo-central')">Cancelar</button>
+      <button class="btn btn-pri" onclick="salvarTermoCentral()"><i class="ti ti-cloud-upload"></i> Publicar</button>
     </div>
   </div>
 </div>
@@ -3210,6 +3306,7 @@ const PAGE_TITLES = {
   planos:    { title:'Planos',       icon:'ti-credit-card'      },
   ia_consumo:{ title:'Consumo de IA', icon:'ti-sparkles'        },
   contratos_master: { title:'Contratos & Termos — Globais', icon:'ti-file-certificate' },
+  termos_central: { title:'Central de Termos', icon:'ti-files' },
   whatsapp:  { title:'WhatsApp',     icon:'ti-brand-whatsapp'   },
   updates:   { title:'Updates',      icon:'ti-cloud-upload'     },
   logs:      { title:'Logs',         icon:'ti-activity'         },
@@ -3289,6 +3386,7 @@ function go(page) {
   if (page === 'crm_vendas') renderCrmVendas();
   if (page === 'lgpd') renderLgpd();
   if (page === 'cookies') renderCookies();
+  if (page === 'termos_central') renderTermosCentral();
   if (page === 'fiscal') renderFiscal();
   requestAnimationFrame(() => initMotionReveal());
 }
@@ -8324,6 +8422,258 @@ function verificarConviteTourAdmin(){
       requestAnimationFrame(() => el.classList.add('tour-on'));
     }, 1400);
   }catch(e){ console.warn('[tour] convite inicial (admin) falhou (não bloqueia o sistema):', e); }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   CENTRAL DE TERMOS — documentos legais por cláusula (FATIA 24)
+   Acordeão: um card por tipo de documento, clique expande o conteúdo
+   completo (título + cláusulas numeradas), clique de novo recolhe.
+   Clicar em outro card fecha o atual e abre o novo (só um "domínio"
+   visível por vez), tudo na mesma página. Tabela nova e independente
+   (termos_documentos) — não mexe em termos_uso/contrato_saas/
+   lgpd_documentos, que continuam alimentando o aceite do lojista.
+   ══════════════════════════════════════════════════════════════ */
+const TERMOS_TIPOS_CATALOGO = [
+  { tipo:'termos_uso', label:'Termos de Uso', icon:'ti-file-text' },
+  { tipo:'politica_privacidade', label:'Política de Privacidade', icon:'ti-shield-lock' },
+  { tipo:'politica_cookies', label:'Política de Cookies', icon:'ti-cookie' },
+  { tipo:'contrato_saas', label:'Contrato do Serviço (SaaS)', icon:'ti-file-dollar' },
+  { tipo:'termo_camera_scanner', label:'Termo de Câmera e Scanner', icon:'ti-camera' },
+  { tipo:'termo_ia', label:'Termo de Uso de IA', icon:'ti-sparkles' },
+  { tipo:'dpa', label:'DPA (Acordo de Processamento de Dados)', icon:'ti-file-shield' },
+];
+
+let _tcDocs = [];              // todas as linhas de termos_documentos carregadas
+let _tcPorTipo = {};           // { tipo: [docs ordenados por versão desc] }
+let _tcAberto = null;          // tipo atualmente expandido (só um por vez)
+let _tcVersaoExibida = {};     // { tipo: versao } — qual versão está sendo mostrada dentro do card aberto
+
+function _tcLabelTipo(tipo){
+  const cat = TERMOS_TIPOS_CATALOGO.find(t=>t.tipo===tipo);
+  if(cat) return cat.label;
+  const doc = (_tcPorTipo[tipo]||[])[0];
+  return doc?.tipo_label || tipo;
+}
+function _tcIconTipo(tipo){
+  return (TERMOS_TIPOS_CATALOGO.find(t=>t.tipo===tipo)||{}).icon || 'ti-file';
+}
+function _tcFmtData(iso){
+  try{ return new Date(iso).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' }); }catch(e){ return '—'; }
+}
+
+async function renderTermosCentral(){
+  const wrap = document.getElementById('termos-central-list');
+  if(!wrap) return;
+  try{
+    const { data, error } = await db.from('termos_documentos').select('*').order('tipo').order('versao', { ascending:false });
+    if(error) throw error;
+    _tcDocs = data || [];
+  }catch(e){
+    wrap.innerHTML = `<div class="card" style="text-align:center;padding:24px;color:var(--txt3);font-size:12.5px">
+      <i class="ti ti-database-off" style="font-size:22px;display:block;margin-bottom:8px"></i>
+      Central de Termos ainda não disponível — rode a migração <code>sql/fatia24_central_termos.sql</code> no Supabase.
+    </div>`;
+    return;
+  }
+  _tcPorTipo = {};
+  _tcDocs.forEach(d => { (_tcPorTipo[d.tipo] = _tcPorTipo[d.tipo] || []).push(d); });
+  // tipos do catálogo primeiro (sempre visíveis, mesmo sem doc ainda), depois quaisquer tipos custom já usados
+  const tiposExtras = Object.keys(_tcPorTipo).filter(t => !TERMOS_TIPOS_CATALOGO.some(c=>c.tipo===t));
+  const ordem = [...TERMOS_TIPOS_CATALOGO.map(c=>c.tipo), ...tiposExtras];
+  wrap.innerHTML = ordem.map(tipo => _tcRenderCard(tipo)).join('');
+}
+
+function _tcRenderCard(tipo){
+  const docs = _tcPorTipo[tipo] || [];
+  const vazio = docs.length === 0;
+  const vigente = docs[0];
+  const aberto = _tcAberto === tipo;
+  return `
+    <div class="tc-card${aberto?' tc-open':''}${vazio?' tc-vazio':''}" data-tipo="${esc(tipo)}">
+      <div class="tc-head" onclick="toggleTermoCentral('${esc(tipo)}')">
+        <div class="tc-head-l">
+          <i class="ti ${_tcIconTipo(tipo)}"></i>
+          <div>
+            <div class="tc-tipo-label">${esc(_tcLabelTipo(tipo))}</div>
+            <div class="tc-meta">${vazio ? 'Nenhuma versão publicada ainda' : `v${vigente.versao} · publicado em ${_tcFmtData(vigente.criado_em)} · ${(vigente.clausulas||[]).length} cláusula(s)`}</div>
+          </div>
+        </div>
+        <i class="ti ti-chevron-down tc-chev"></i>
+      </div>
+      <div class="tc-body" id="tc-body-${esc(tipo)}">${aberto ? _tcRenderCorpo(tipo, _tcVersaoExibida[tipo]) : ''}</div>
+    </div>`;
+}
+
+function _tcRenderCorpo(tipo, versaoParaMostrar){
+  const docs = _tcPorTipo[tipo] || [];
+  if(!docs.length){
+    return `<div style="font-size:12.5px;color:var(--txt3);padding:4px 0 8px">Nenhuma versão publicada ainda.</div>
+      <div class="tc-actions" style="border-top:none;padding-top:0;margin-top:0">
+        <button class="btn btn-pri btn-xs" onclick="abrirNovoTermoModal('${esc(tipo)}')"><i class="ti ti-plus"></i> Criar agora</button>
+      </div>`;
+  }
+  const vigente = docs[0];
+  const doc = docs.find(d=>d.versao===versaoParaMostrar) || vigente;
+  const clausulas = Array.isArray(doc.clausulas) ? doc.clausulas : [];
+  const historicoAberto = document.getElementById('tc-hist-'+tipo)?.classList.contains('tc-hist-open');
+  return `
+    ${doc.versao!==vigente.versao ? `<div class="tc-hist-aviso"><i class="ti ti-history"></i> Vendo a versão ${doc.versao} (não é a vigente). <button onclick="_tcMostrarVersao('${esc(tipo)}',${vigente.versao})">Voltar para a vigente (v${vigente.versao})</button></div>` : ''}
+    <div class="tc-titulo">${esc(doc.titulo)}</div>
+    <div class="tc-meta2">v${doc.versao} · publicado em ${_tcFmtData(doc.criado_em)}${doc.resumo_mudancas ? ' · '+esc(doc.resumo_mudancas) : ''}</div>
+    ${clausulas.length
+      ? clausulas.map((c,i)=>`<div class="tc-clausula"><div class="tc-cl-titulo">${i+1}. ${esc(c.titulo||('Cláusula '+(i+1)))}</div><div class="tc-cl-corpo">${esc(c.corpo||'')}</div></div>`).join('')
+      : `<div class="tc-clausula"><div class="tc-cl-corpo" style="color:var(--txt3)">Sem cláusulas cadastradas nesta versão.</div></div>`}
+    <div class="tc-actions">
+      <button class="btn btn-pri btn-xs" onclick="abrirNovoTermoModal('${esc(tipo)}')"><i class="ti ti-plus"></i> Nova versão</button>
+      ${docs.length>1 ? `<button class="btn btn-out btn-xs" onclick="_tcToggleHistorico('${esc(tipo)}')"><i class="ti ti-history"></i> ${docs.length-1} versão(ões) anterior(es)</button>` : ''}
+    </div>
+    ${docs.length>1 ? `<div class="tc-hist-list${historicoAberto?' tc-hist-open':''}" id="tc-hist-${esc(tipo)}">
+      ${docs.map(d=>`<div class="tc-hist-item${d.versao===doc.versao?' tc-hist-item-atual':''}" onclick="_tcMostrarVersao('${esc(tipo)}',${d.versao})">
+        <span>v${d.versao}${d.versao===vigente.versao?' (vigente)':''}${d.resumo_mudancas?' — '+esc(d.resumo_mudancas):''}</span>
+        <span class="tc-hist-data">${_tcFmtData(d.criado_em)}</span>
+      </div>`).join('')}
+    </div>` : ''}
+  `;
+}
+
+function toggleTermoCentral(tipo){
+  const estavaAberto = _tcAberto === tipo;
+  _tcAberto = estavaAberto ? null : tipo;
+  if(!estavaAberto) _tcVersaoExibida[tipo] = undefined; // sempre abre na versão vigente
+  document.querySelectorAll('#termos-central-list .tc-card').forEach(card => {
+    const t = card.dataset.tipo;
+    const abrir = t === _tcAberto;
+    card.classList.toggle('tc-open', abrir);
+    const body = document.getElementById('tc-body-'+t);
+    if(body) body.innerHTML = abrir ? _tcRenderCorpo(t, _tcVersaoExibida[t]) : '';
+  });
+  if(!estavaAberto){
+    const card = document.querySelector(`#termos-central-list .tc-card[data-tipo="${tipo}"]`);
+    const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if(card) card.scrollIntoView({ behavior: reduced?'auto':'smooth', block:'nearest' });
+  }
+}
+
+function _tcToggleHistorico(tipo){
+  const el = document.getElementById('tc-hist-'+tipo);
+  if(el) el.classList.toggle('tc-hist-open');
+}
+
+function _tcMostrarVersao(tipo, versao){
+  _tcVersaoExibida[tipo] = versao;
+  const body = document.getElementById('tc-body-'+tipo);
+  if(body) body.innerHTML = _tcRenderCorpo(tipo, versao);
+}
+
+// ── Modal: novo termo / nova versão ─────────────────────────────────
+function abrirNovoTermoModal(tipoPreSelecionado){
+  const sel = document.getElementById('tcm-tipo');
+  sel.innerHTML = TERMOS_TIPOS_CATALOGO.map(t=>`<option value="${esc(t.tipo)}">${esc(t.label)}</option>`).join('')
+    + `<option value="__custom__">+ Novo tipo personalizado…</option>`;
+  const tipoExtra = tipoPreSelecionado && !TERMOS_TIPOS_CATALOGO.some(t=>t.tipo===tipoPreSelecionado) ? tipoPreSelecionado : null;
+  if(tipoExtra){
+    const opt = document.createElement('option');
+    opt.value = tipoExtra; opt.textContent = _tcLabelTipo(tipoExtra);
+    sel.insertBefore(opt, sel.lastElementChild);
+  }
+  sel.value = tipoPreSelecionado || TERMOS_TIPOS_CATALOGO[0].tipo;
+  document.getElementById('tcm-tipo-custom-wrap').style.display = 'none';
+  document.getElementById('tcm-tipo-custom').value = '';
+
+  const docsExistentes = (_tcPorTipo[sel.value]||[]);
+  const vigente = docsExistentes[0];
+  document.getElementById('tcm-titulo').value = vigente?.titulo || '';
+  document.getElementById('tcm-resumo').value = '';
+  document.getElementById('tcm-versao-base').value = sel.value;
+
+  const list = document.getElementById('tcm-clausulas-list');
+  list.innerHTML = '';
+  const clausulasBase = vigente && Array.isArray(vigente.clausulas) ? vigente.clausulas : [];
+  if(clausulasBase.length){ clausulasBase.forEach(c=>_tcmAdicionarClausula(c)); }
+  else { _tcmAdicionarClausula(); }
+
+  _tcmAtualizarVersaoInfo();
+  openModal('modal-termo-central');
+}
+
+function _tcmTipoAlterado(){
+  const sel = document.getElementById('tcm-tipo');
+  const isCustom = sel.value === '__custom__';
+  document.getElementById('tcm-tipo-custom-wrap').style.display = isCustom ? '' : 'none';
+  if(!isCustom){
+    const docsExistentes = (_tcPorTipo[sel.value]||[]);
+    const vigente = docsExistentes[0];
+    document.getElementById('tcm-titulo').value = vigente?.titulo || '';
+    const list = document.getElementById('tcm-clausulas-list');
+    list.innerHTML = '';
+    const clausulasBase = vigente && Array.isArray(vigente.clausulas) ? vigente.clausulas : [];
+    if(clausulasBase.length){ clausulasBase.forEach(c=>_tcmAdicionarClausula(c)); }
+    else { _tcmAdicionarClausula(); }
+  }
+  _tcmAtualizarVersaoInfo();
+}
+
+function _tcmAtualizarVersaoInfo(){
+  const sel = document.getElementById('tcm-tipo');
+  const info = document.getElementById('tcm-versao-info');
+  if(sel.value === '__custom__'){ info.textContent = 'Este será a versão 1 do novo tipo de documento.'; return; }
+  const docs = _tcPorTipo[sel.value] || [];
+  const proxima = docs.length ? Math.max(...docs.map(d=>d.versao)) + 1 : 1;
+  info.textContent = docs.length ? `Isto vai publicar a versão ${proxima} (a v${docs[0].versao} atual continua guardada no histórico).` : 'Isto vai publicar a versão 1 (primeiro documento deste tipo).';
+}
+
+function _tcmAdicionarClausula(clausula){
+  const list = document.getElementById('tcm-clausulas-list');
+  const row = document.createElement('div');
+  row.className = 'tcm-clausula-row';
+  row.innerHTML = `
+    <div class="tcm-clausula-row-head">
+      <span class="tcm-clausula-num">Cláusula</span>
+      <button type="button" class="tcm-clausula-remove" onclick="this.closest('.tcm-clausula-row').remove()" aria-label="Remover cláusula"><i class="ti ti-trash"></i></button>
+    </div>
+    <div class="fg" style="margin-bottom:8px"><input type="text" class="tcm-cl-titulo" placeholder="Título da cláusula (ex: Objeto do contrato)" value="${esc(clausula?.titulo||'')}"></div>
+    <div class="fg" style="margin-bottom:0"><textarea class="tcm-cl-corpo" rows="3" placeholder="Texto da cláusula...">${esc(clausula?.corpo||'')}</textarea></div>
+  `;
+  list.appendChild(row);
+}
+
+async function salvarTermoCentral(){
+  const sel = document.getElementById('tcm-tipo');
+  const isCustom = sel.value === '__custom__';
+  const tipoCustomTxt = document.getElementById('tcm-tipo-custom').value.trim();
+  if(isCustom && !tipoCustomTxt){ notify('Informe o nome do novo tipo de documento.', 'error'); return; }
+  const tipo = isCustom ? tipoCustomTxt.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'') : sel.value;
+  if(!tipo){ notify('Não foi possível gerar um identificador para esse tipo. Tente um nome mais simples.', 'error'); return; }
+  const titulo = document.getElementById('tcm-titulo').value.trim();
+  if(!titulo){ notify('Informe o título do documento.', 'error'); return; }
+  const resumo = document.getElementById('tcm-resumo').value.trim() || null;
+
+  const clausulas = Array.from(document.querySelectorAll('#tcm-clausulas-list .tcm-clausula-row')).map(row => ({
+    titulo: row.querySelector('.tcm-cl-titulo').value.trim(),
+    corpo: row.querySelector('.tcm-cl-corpo').value.trim(),
+  })).filter(c => c.titulo || c.corpo);
+
+  if(!clausulas.length){ notify('Adicione pelo menos uma cláusula com título ou corpo preenchido.', 'error'); return; }
+
+  const docsExistentes = _tcPorTipo[tipo] || [];
+  const proximaVersao = docsExistentes.length ? Math.max(...docsExistentes.map(d=>d.versao)) + 1 : 1;
+  const tipoLabel = isCustom ? tipoCustomTxt : _tcLabelTipo(tipo);
+
+  try{
+    const { error } = await db.from('termos_documentos').insert({
+      tipo, tipo_label: tipoLabel, versao: proximaVersao, titulo,
+      resumo_mudancas: resumo, clausulas, publicado: true,
+    });
+    if(error) throw error;
+    closeModal('modal-termo-central');
+    notify(`✅ "${tipoLabel}" — versão ${proximaVersao} publicada!`, 'success');
+    addLog('termo_publicado', `${tipoLabel} — versão ${proximaVersao} publicada (${clausulas.length} cláusula(s))`);
+    _tcAberto = tipo;
+    _tcVersaoExibida[tipo] = undefined;
+    await renderTermosCentral();
+  }catch(e){
+    notify('Não foi possível publicar. Rode a migração sql/fatia24_central_termos.sql no Supabase.', 'error', 6000);
+  }
 }
 </script>
 <div class="modal-overlay" id="modal-qr-empresa">
