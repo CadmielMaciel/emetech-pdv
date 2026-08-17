@@ -394,6 +394,40 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 #sheet-os .osd-sub{font-size:12.5px;color:var(--txt3);margin-bottom:14px}
 #sheet-os .osd-lbl{font-size:10.5px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 4px}
 #sheet-os .osd-val{font-size:14px;color:var(--txt);line-height:1.4}
+
+/* ── TOUR GUIADO (app mobile) — mesmo motor "spotlight" do index.html,
+   adaptado pro app.html. Como aqui é sempre mobile, o popover já nasce
+   como bottom-sheet fixo (mesmo padrão visual do #sheet-mais/#sheet-os
+   acima), sem precisar de @media — sempre a mesma tela. O kill-switch
+   de prefers-reduced-motion (linha ~209 deste arquivo) já cobre as
+   animações abaixo automaticamente. Nunca toca nos elementos reais
+   (não aplica classe/z-index neles). ── */
+.tour-overlay-slice{position:fixed;background:rgba(8,8,20,.6);z-index:9990;pointer-events:auto;opacity:0;transition:opacity .18s ease}
+.tour-overlay-slice.tour-on{opacity:1}
+.tour-highlight{position:fixed;z-index:9991;pointer-events:none;border-radius:14px;outline:2.5px solid var(--pri);outline-offset:3px;box-shadow:0 0 0 5000px rgba(8,8,20,0),0 0 18px 2px rgba(91,63,232,.55);opacity:0;transition:top .22s ease,left .22s ease,width .22s ease,height .22s ease,opacity .18s ease;animation:tourPulseMob 1.8s ease-in-out infinite}
+.tour-highlight.tour-on{opacity:1}
+@keyframes tourPulseMob{0%,100%{box-shadow:0 0 0 5000px rgba(8,8,20,0),0 0 14px 1px rgba(91,63,232,.4)}50%{box-shadow:0 0 0 5000px rgba(8,8,20,0),0 0 22px 4px rgba(91,63,232,.75)}}
+.tour-popover{position:fixed;left:0;right:0;bottom:0;z-index:9992;background:var(--card);border-radius:20px 20px 0 0;padding:16px 18px calc(18px + var(--sab));box-shadow:0 -10px 40px rgba(0,0,0,.3);max-height:70vh;overflow-y:auto;transform:translateY(12px);opacity:0;pointer-events:none;transition:transform .22s ease,opacity .18s ease}
+.tour-popover.tour-on{transform:translateY(0);opacity:1;pointer-events:auto}
+.tour-popover-close{position:absolute;top:12px;right:14px;background:var(--bg2);border:none;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--txt2);font-size:15px;cursor:pointer}
+.tour-popover-title{font-family:'Syne',sans-serif;font-weight:800;font-size:16px;color:var(--txt);margin:2px 30px 6px 0}
+.tour-popover-text{font-size:13.5px;color:var(--txt2);line-height:1.5;margin-bottom:14px}
+.tour-popover-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.tour-popover-progress{font-size:11px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
+.tour-popover-dots{display:flex;gap:5px}
+.tour-popover-dot{width:6px;height:6px;border-radius:50%;background:var(--border)}
+.tour-popover-dot.tour-dot-on{background:var(--pri);width:16px;border-radius:4px}
+.tour-popover-actions{display:flex;gap:8px}
+.tour-popover-skip{display:block;width:100%;text-align:center;background:none;border:none;color:var(--txt3);font-size:12px;font-weight:600;margin-top:14px;padding:6px;cursor:pointer}
+.tour-btn{border:none;border-radius:11px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer}
+.tour-btn-pri{background:var(--pri);color:#fff}
+.tour-btn-ghost{background:var(--bg2);color:var(--txt2)}
+.tour-btn-out{background:transparent;color:var(--pri);border:1.5px solid var(--pri)}
+.tour-invite{position:fixed;left:12px;right:12px;bottom:calc(14px + var(--sab));z-index:9989;background:var(--card);border-radius:16px;padding:14px 16px;box-shadow:0 8px 30px rgba(0,0,0,.25);border:1px solid var(--border);opacity:0;transform:translateY(10px);pointer-events:none;transition:transform .2s ease,opacity .18s ease}
+.tour-invite.tour-on{opacity:1;transform:translateY(0);pointer-events:auto}
+.tour-invite-title{display:flex;align-items:center;gap:8px;font-family:'Syne',sans-serif;font-weight:800;font-size:13.5px;color:var(--txt);margin-bottom:4px}
+.tour-invite-text{font-size:12px;color:var(--txt2);line-height:1.4;margin-bottom:12px}
+.tour-invite-actions{display:flex;gap:8px}
 </style>
 </head>
 <body>
@@ -450,7 +484,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 
     <!-- Fatia 11A: ações rápidas que não cabiam nos 4 cards grandes -->
     <div class="qa-row">
-      <div class="qa-btn" onclick="abrirScanner('estoque')"><i class="ti ti-scan"></i>Scanner</div>
+      <div class="qa-btn" data-tour="mobile-scanner" onclick="abrirScanner('estoque')"><i class="ti ti-scan"></i>Scanner</div>
       <div class="qa-btn" onclick="abrir('os-lista')"><i class="ti ti-list-details"></i>Minhas OS</div>
     </div>
 
@@ -684,10 +718,10 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 
 <!-- Fatia 9: NAVEGAÇÃO INFERIOR (máx. 5 itens, sempre com "Mais" p/ tema/instalar/sair) -->
 <div id="bottom-nav" class="hidden">
-  <button class="bn-it on" id="bn-inicio" onclick="goHome()"><i class="ti ti-home"></i>Início</button>
-  <button class="bn-it" id="bn-vender" onclick="abrir('estoque')"><i class="ti ti-shopping-cart"></i>Vender</button>
-  <button class="bn-it" id="bn-os" onclick="abrir('os')"><i class="ti ti-tool"></i>OS</button>
-  <button class="bn-it" id="bn-produto" onclick="abrir('produto')"><i class="ti ti-package"></i>Produto</button>
+  <button class="bn-it on" id="bn-inicio" data-tour="mobile-inicio" onclick="goHome()"><i class="ti ti-home"></i>Início</button>
+  <button class="bn-it" id="bn-vender" data-tour="mobile-vender" onclick="abrir('estoque')"><i class="ti ti-shopping-cart"></i>Vender</button>
+  <button class="bn-it" id="bn-os" data-tour="mobile-os" onclick="abrir('os')"><i class="ti ti-tool"></i>OS</button>
+  <button class="bn-it" id="bn-produto" data-tour="mobile-estoque" onclick="abrir('produto')"><i class="ti ti-package"></i>Produto</button>
   <button class="bn-it" id="bn-mais" onclick="abrirMais()"><i class="ti ti-dots"></i>Mais</button>
 </div>
 
@@ -697,9 +731,10 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
   <div class="sheet-handle" onclick="fecharMais()" style="cursor:pointer"></div>
   <div class="sheet-it" id="sheet-venda-rapida" onclick="fecharMais();abrir('venda')"><i class="ti ti-qrcode"></i>Venda rápida (link/QR)</div>
   <div class="sheet-it" id="sheet-minhas-os" onclick="fecharMais();abrir('os-lista')"><i class="ti ti-list-details"></i>Minhas OS</div>
-  <div class="sheet-it" id="sheet-entregas-mais" style="display:none" onclick="fecharMais();abrir('entregas')"><i class="ti ti-truck"></i>Minhas Entregas</div>
+  <div class="sheet-it" id="sheet-entregas-mais" data-tour="mobile-entregas" style="display:none" onclick="fecharMais();abrir('entregas')"><i class="ti ti-truck"></i>Minhas Entregas</div>
   <div class="sheet-it" id="sheet-pessoas" style="display:none" onclick="fecharMais();abrir('pessoas')"><i class="ti ti-users"></i>Pessoas da Empresa</div>
   <div class="sheet-it" onclick="toggleTemaApp()"><i class="ti ti-moon" id="tema-ic"></i><span id="tema-lbl">Tema escuro</span></div>
+  <div class="sheet-it" id="sheet-tour" onclick="fecharMais();startTour('mobile')"><i class="ti ti-route"></i>Tour guiado do app</div>
   <div class="sheet-it" id="sheet-instalar" style="display:none" onclick="instalarPWA()"><i class="ti ti-download"></i>Instalar aplicativo</div>
   <div class="sheet-it" id="sheet-suporte" style="display:none" onclick="abrirSuporte()"><i class="ti ti-headset"></i>Suporte</div>
   <div class="sheet-it" onclick="fecharMais();trocarUsuarioDispositivo()"><i class="ti ti-user-switch"></i>Trocar usuário deste celular</div>
@@ -1020,6 +1055,7 @@ async function carregarEmpresa(user){
   carregarRecentes();
   carregarConfigSuporte();
   _atualizarIconeTema();
+  if(typeof verificarConviteTourMobile==='function') verificarConviteTourMobile();
 }
 
 /* ── CONTEXTO DE VENDA (caixa aberto + lista de funcionários) ── */
@@ -2432,6 +2468,283 @@ async function salvarTentativaEntrega(){
     notify('Tentativa registrada.','ok');
     renderEntregasMob();
   }catch(err){ notify(msgAmigavel(err,'Não foi possível registrar a tentativa.'),'err'); }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TOUR GUIADO (App Mobile) — mesmo motor "spotlight" do index.html/
+   admin.html, adaptado pro app.html. Popover sempre em formato de
+   bottom-sheet (CSS já cuida disso, sem precisar calcular posição).
+   Persistência: SOMENTE localStorage (mesmo padrão do admin.html —
+   simples e sem depender de tabela nova pra funcionar hoje; o upsert
+   best-effort no Supabase pode ser plugado depois do mesmo jeito que
+   foi feito no index.html, se desejado). Nunca toca nos elementos
+   reais (não aplica classe/z-index neles). Alvo ausente/escondido =
+   passo pulado automaticamente, sem travar e sem erro técnico visível.
+   ══════════════════════════════════════════════════════════════ */
+const TOURS = {
+  mobile: [
+    { target:'[data-tour="mobile-inicio"]', title:'Início', text:'Aqui você vê o resumo do dia: vendas, OS em aberto, estoque baixo e o lucro estimado (com PIN).' },
+    { target:'[data-tour="mobile-vender"]', title:'Vender', text:'Toque aqui para abrir o estoque e começar uma venda rapidinho.' },
+    { target:'[data-tour="mobile-scanner"]', title:'Scanner', text:'Use a câmera do celular pra ler o código de barras do produto na hora de vender ou cadastrar.' },
+    { target:'[data-tour="mobile-os"]', title:'OS', text:'Crie uma ordem de serviço rápida com fotos do aparelho e gere o link pro cliente.' },
+    { target:'[data-tour="mobile-estoque"]', title:'Estoque', text:'Cadastre produtos novos com foto e código de barras direto pelo celular.' },
+    { target:'[data-tour="mobile-entregas"]', title:'Entregas', text:'Se você é Entregador, aqui ficam as entregas atribuídas a você.', before:()=>{ try{ if(typeof abrirMais==='function') abrirMais(); }catch(e){} } },
+  ],
+};
+
+// ⚠️ O passo "mobile-entregas" fica dentro da folha "Mais" (#sheet-mais),
+// que só existe visível depois de abrirMais() — o "before" acima cuida
+// de abrir a folha antes de tentar destacar o item. Além disso, o item
+// só aparece de verdade pra quem é Entregador (display:none pros
+// demais perfis) — pra outros perfis, este passo é pulado automaticamente,
+// que é o comportamento esperado (ver relatório de entrega).
+
+let _tour = { nome:null, passo:0, ativo:false };
+let _tourDom = null;
+
+function _tourEnsureDom(){
+  if(_tourDom) return _tourDom;
+  const mkSlice = () => { const d=document.createElement('div'); d.className='tour-overlay-slice'; document.body.appendChild(d); return d; };
+  const ring = document.createElement('div');
+  ring.className='tour-highlight'; ring.id='tour-highlight-ring';
+  document.body.appendChild(ring);
+
+  const pop = document.createElement('div');
+  pop.className='tour-popover'; pop.id='tour-popover';
+  pop.setAttribute('role','dialog');
+  pop.setAttribute('aria-modal','true');
+  pop.setAttribute('aria-live','polite');
+  pop.setAttribute('tabindex','-1');
+  document.body.appendChild(pop);
+
+  _tourDom = {
+    slices: { top:mkSlice(), bottom:mkSlice(), left:mkSlice(), right:mkSlice() },
+    ring, pop,
+  };
+  return _tourDom;
+}
+
+function _tourResolveTarget(step){
+  try{
+    const el = document.querySelector(step.target);
+    if(!el) return null;
+    const rect = el.getBoundingClientRect();
+    if(rect.width===0 && rect.height===0) return null;
+    if(el.offsetParent===null && getComputedStyle(el).position!=='fixed') return null;
+    return el;
+  }catch(e){ console.warn('[tour] seletor inválido, pulando etapa:', step.target, e); return null; }
+}
+
+function _tourHasStepAt(steps, i){ return i>=0 && i<steps.length && !!_tourResolveTarget(steps[i]); }
+
+function startTour(nome, opts){
+  opts = opts || {};
+  const steps = TOURS[nome];
+  if(!steps || !steps.length){ console.warn('[tour] tour desconhecido:', nome); return; }
+  _tourEnsureDom();
+  _tour.nome = nome;
+  _tour.ativo = true;
+  const saved = loadTourProgress(nome);
+  _tour.passo = (opts.resume && saved.status==='in_progress' && saved.passo>0) ? saved.passo : 0;
+  document.addEventListener('keydown', _tourKeyHandler);
+  window.addEventListener('resize', _tourReflow);
+  window.addEventListener('scroll', _tourReflow, true);
+  _tourHideInviteMobile();
+  saveTourProgress(nome, 'in_progress', _tour.passo);
+  renderTourStep();
+}
+
+function renderTourStep(){
+  if(!_tour.ativo) return;
+  const steps = TOURS[_tour.nome];
+  if(!steps){ closeTour(); return; }
+  while(_tour.passo < steps.length){
+    const step = steps[_tour.passo];
+    if(typeof step.before==='function'){ try{ step.before(); }catch(e){} }
+    const el = _tourResolveTarget(step);
+    if(el){ _tourShowStep(step, el); return; }
+    console.warn('[tour] etapa sem elemento disponível para este perfil/tela, pulando:', step.target);
+    _tour.passo++;
+  }
+  finishTour();
+}
+
+function _tourShowStep(step, el){
+  const dom = _tourEnsureDom();
+  const steps = TOURS[_tour.nome];
+  const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  el.scrollIntoView({ behavior: reduced?'auto':'smooth', block:'center', inline:'nearest' });
+
+  const posicionar = () => {
+    const rect = el.getBoundingClientRect();
+    _tourPositionHighlight(rect);
+  };
+  setTimeout(posicionar, reduced ? 0 : 260);
+
+  const temAnterior = (() => { for(let i=_tour.passo-1;i>=0;i--) if(_tourHasStepAt(steps,i)) return true; return false; })();
+  const temProxima  = (() => { for(let i=_tour.passo+1;i<steps.length;i++) if(_tourHasStepAt(steps,i)) return true; return false; })();
+
+  dom.pop.innerHTML = `
+    <button class="tour-popover-close" aria-label="Fechar tour" onclick="closeTour()"><i class="ti ti-x"></i></button>
+    <div class="tour-popover-title">${esc(step.title)}</div>
+    <div class="tour-popover-text">${esc(step.text)}</div>
+    <div class="tour-popover-foot">
+      <div>
+        <div class="tour-popover-progress">${_tour.passo+1} de ${steps.length}</div>
+        <div class="tour-popover-dots">${steps.map((_,i)=>`<span class="tour-popover-dot${i===_tour.passo?' tour-dot-on':''}"></span>`).join('')}</div>
+      </div>
+      <div class="tour-popover-actions">
+        ${temAnterior ? `<button class="tour-btn tour-btn-ghost" onclick="prevTourStep()">Voltar</button>` : ''}
+        ${temProxima
+          ? `<button class="tour-btn tour-btn-pri" onclick="nextTourStep()">Avançar</button>`
+          : `<button class="tour-btn tour-btn-pri" onclick="finishTour()">Concluir</button>`}
+      </div>
+    </div>
+    <button class="tour-popover-skip" onclick="closeTour({skip:true})">Pular tour</button>
+  `;
+
+  [dom.slices.top, dom.slices.bottom, dom.slices.left, dom.slices.right, dom.ring, dom.pop].forEach(elx => elx.classList.add('tour-on'));
+  saveTourProgress(_tour.nome, 'in_progress', _tour.passo);
+}
+
+function _tourPositionHighlight(rect){
+  const dom = _tourEnsureDom();
+  const pad = 6;
+  const holeTop = Math.max(0, rect.top-pad), holeLeft = Math.max(0, rect.left-pad);
+  const holeRight = rect.right+pad, holeBottom = rect.bottom+pad;
+  const vw = window.innerWidth, vh = window.innerHeight;
+
+  Object.assign(dom.ring.style, { top:holeTop+'px', left:holeLeft+'px', width:Math.max(0,rect.width+pad*2)+'px', height:Math.max(0,rect.height+pad*2)+'px' });
+
+  Object.assign(dom.slices.top.style,    { top:'0px', left:'0px', width:vw+'px', height:holeTop+'px' });
+  Object.assign(dom.slices.bottom.style, { top:Math.min(vh,holeBottom)+'px', left:'0px', width:vw+'px', height:Math.max(0,vh-holeBottom)+'px' });
+  Object.assign(dom.slices.left.style,   { top:holeTop+'px', left:'0px', width:holeLeft+'px', height:Math.max(0,holeBottom-holeTop)+'px' });
+  Object.assign(dom.slices.right.style,  { top:holeTop+'px', left:Math.min(vw,holeRight)+'px', width:Math.max(0,vw-holeRight)+'px', height:Math.max(0,holeBottom-holeTop)+'px' });
+}
+
+let _tourReflowPendente = false;
+function _tourReflow(){
+  if(!_tour.ativo || _tourReflowPendente) return;
+  _tourReflowPendente = true;
+  requestAnimationFrame(() => {
+    _tourReflowPendente = false;
+    if(!_tour.ativo) return;
+    const steps = TOURS[_tour.nome];
+    const step = steps && steps[_tour.passo];
+    if(!step) return;
+    const el = _tourResolveTarget(step);
+    if(!el){ renderTourStep(); return; }
+    const rect = el.getBoundingClientRect();
+    _tourPositionHighlight(rect);
+  });
+}
+
+function nextTourStep(){ if(!_tour.ativo) return; _tour.passo++; renderTourStep(); }
+
+function prevTourStep(){
+  if(!_tour.ativo) return;
+  const steps = TOURS[_tour.nome];
+  for(let i=_tour.passo-1;i>=0;i--){
+    if(_tourHasStepAt(steps,i)){ _tour.passo = i; renderTourStep(); return; }
+  }
+}
+
+function closeTour(opts){
+  opts = opts || {};
+  if(!_tour.ativo) return;
+  const nome = _tour.nome;
+  const passo = _tour.passo;
+  _tour.ativo = false;
+  document.removeEventListener('keydown', _tourKeyHandler);
+  window.removeEventListener('resize', _tourReflow);
+  window.removeEventListener('scroll', _tourReflow, true);
+  if(_tourDom){
+    [_tourDom.slices.top, _tourDom.slices.bottom, _tourDom.slices.left, _tourDom.slices.right, _tourDom.ring, _tourDom.pop].forEach(el => el.classList.remove('tour-on'));
+  }
+  saveTourProgress(nome, opts.skip ? 'skipped' : 'in_progress', passo);
+}
+
+function finishTour(){
+  if(!_tour.ativo) return;
+  const nome = _tour.nome;
+  _tour.ativo = false;
+  document.removeEventListener('keydown', _tourKeyHandler);
+  window.removeEventListener('resize', _tourReflow);
+  window.removeEventListener('scroll', _tourReflow, true);
+  if(_tourDom){
+    [_tourDom.slices.top, _tourDom.slices.bottom, _tourDom.slices.left, _tourDom.slices.right, _tourDom.ring, _tourDom.pop].forEach(el => el.classList.remove('tour-on'));
+  }
+  saveTourProgress(nome, 'completed', 0);
+  if(typeof notify==='function') notify('🎉 Treinamento concluído!','ok');
+}
+
+function _tourKeyHandler(e){
+  if(!_tour.ativo) return;
+  if(e.key==='Escape'){ e.preventDefault(); closeTour(); }
+  else if(e.key==='Enter'){ e.preventDefault(); nextTourStep(); }
+}
+
+function _tourLocalKey(nome, sufixo){ return `misu_tour_${nome}_${sufixo}`; }
+function saveTourProgress(nome, status, passo){
+  try{
+    localStorage.setItem(_tourLocalKey(nome,'status'), status);
+    localStorage.setItem(_tourLocalKey(nome,'step'), String(passo||0));
+    if(status==='completed') localStorage.setItem(_tourLocalKey(nome,'completed_at'), new Date().toISOString());
+  }catch(e){ /* localStorage indisponível — segue só em memória nesta sessão */ }
+}
+function loadTourProgress(nome){
+  let status='not_started', passo=0;
+  try{
+    status = localStorage.getItem(_tourLocalKey(nome,'status')) || 'not_started';
+    passo = parseInt(localStorage.getItem(_tourLocalKey(nome,'step'))||'0',10) || 0;
+  }catch(e){}
+  return { status, passo };
+}
+
+// ── Convite automático no primeiro acesso ao app mobile ────────────────
+function _tourEnsureInviteDomMobile(){
+  let el = document.getElementById('tour-invite');
+  if(el) return el;
+  el = document.createElement('div');
+  el.id = 'tour-invite'; el.className = 'tour-invite';
+  el.setAttribute('role','dialog');
+  el.setAttribute('aria-live','polite');
+  el.innerHTML = `
+    <div class="tour-invite-title"><i class="ti ti-map-2" style="color:var(--pri)"></i><span class="tour-invite-title-txt">Quer fazer um tour rápido pelo app?</span></div>
+    <div class="tour-invite-text">Em menos de 1 minuto você conhece as áreas principais.</div>
+    <div class="tour-invite-actions">
+      <button class="tour-btn tour-btn-pri tour-invite-btn-ok">Começar tour</button>
+      <button class="tour-btn tour-btn-out" onclick="_tourHideInviteMobile()">Agora não</button>
+    </div>
+    <button class="tour-popover-skip" onclick="_tourNaoMostrarConviteMobileNovamente()">Não mostrar novamente</button>
+  `;
+  document.body.appendChild(el);
+  return el;
+}
+function _tourHideInviteMobile(){ const el=document.getElementById('tour-invite'); if(el) el.classList.remove('tour-on'); }
+function _tourNaoMostrarConviteMobileNovamente(){
+  try{ localStorage.setItem('misu_tour_mobile_convite_oculto','1'); }catch(e){}
+  _tourHideInviteMobile();
+}
+function verificarConviteTourMobile(){
+  try{
+    const saved = loadTourProgress('mobile');
+    if(saved.status==='completed' || saved.status==='skipped') return;
+    try{ if(localStorage.getItem('misu_tour_mobile_convite_oculto')==='1') return; }catch(e){}
+    setTimeout(() => {
+      if(_tour.ativo) return;
+      const retomar = saved.status==='in_progress' && saved.passo>0;
+      const el = _tourEnsureInviteDomMobile();
+      el.querySelector('.tour-invite-title-txt').textContent = retomar ? 'Continuar o tour do app?' : 'Quer fazer um tour rápido pelo app?';
+      el.querySelector('.tour-invite-text').textContent = retomar
+        ? 'Você começou o tour guiado e ainda não terminou — quer continuar de onde parou?'
+        : 'Em menos de 1 minuto você conhece as áreas principais.';
+      const btnOk = el.querySelector('.tour-invite-btn-ok');
+      btnOk.textContent = retomar ? 'Continuar tour' : 'Começar tour';
+      btnOk.onclick = () => { _tourHideInviteMobile(); startTour('mobile', { resume:retomar }); };
+      requestAnimationFrame(() => el.classList.add('tour-on'));
+    }, 1400);
+  }catch(e){ console.warn('[tour] convite inicial (mobile) falhou (não bloqueia o sistema):', e); }
 }
 
 /* ── BOOT: restaura sessão (com timeout, sem travar) ── */
