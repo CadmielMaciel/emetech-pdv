@@ -23,13 +23,28 @@ try{
    inteiro, mesmo sem nada de errado no código do app. Agora tenta um CDN
    alternativo (unpkg) automaticamente antes de desistir. */
 (function(){
-  var _zxUrls=['https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3','https://unpkg.com/@zxing/library@0.21.3'];
+  // CORREÇÃO URGENTE: as URLs sem "/umd/index.min.js" apontam pro build
+  // CommonJS do pacote (cjs/index.js) — carregado direto por <script src>,
+  // sem nenhum bundler/CommonJS runtime por trás, isso falha com
+  // "Uncaught ReferenceError: exports is not defined" e o ZXing nunca fica
+  // disponível. A build correta pra <script> puro no navegador é a UMD.
+  var _zxUrls=['https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js','https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js'];
   var _zxI=0;
   function _zxTentar(){
     if(_zxI>=_zxUrls.length){ window._zxingFalhouCarregar=true; return; }
     var s=document.createElement('script');
     s.src=_zxUrls[_zxI];
-    s.onload=function(){ window._zxingFalhouCarregar=false; };
+    s.onload=function(){
+      // Confere que a build realmente expôs window.ZXing (defesa extra —
+      // se algum CDN um dia trocar o conteúdo servido nessa URL, não
+      // fica "carregado" mas quebrado silenciosamente).
+      if(typeof window.ZXing==='undefined'){
+        console.error('[MISU MOBILE][scanner] script carregou mas window.ZXing não existe, de',_zxUrls[_zxI]);
+        _zxI++; _zxTentar();
+        return;
+      }
+      window._zxingFalhouCarregar=false;
+    };
     s.onerror=function(){ console.error('[MISU MOBILE][scanner] falha ao carregar ZXing de',_zxUrls[_zxI]); _zxI++; _zxTentar(); };
     document.head.appendChild(s);
   }
@@ -893,6 +908,34 @@ function notify(msg,tipo){
   $('toast').appendChild(t); setTimeout(()=>t.remove(),3500);
 }
 
+/* ── CORREÇÃO URGENTE: sessão expirada (refresh token inválido/expirado) ──
+   Reportado pelo usuário: erros 400 Bad Request no console vindos da
+   renovação automática de token do Supabase. Quando o refresh token não
+   pode mais ser renovado (expirou de vez, ou foi invalidado — ex.: senha
+   trocada em outro lugar), o supabase-js já desloga sozinho e dispara o
+   evento 'SIGNED_OUT' com sessão nula. Antes disso não tinha nenhum
+   listener — o app ficava numa tela travada, chamando API com um token
+   morto, sem avisar o usuário. Agora reage: limpa o estado local e volta
+   pro login com mensagem amigável. Não interfere no login/logout manual
+   (a flag `_logoutManual` evita mensagem duplicada quando é o próprio
+   usuário que apertou "Sair"). */
+let _logoutManual=false;
+try{
+  db.auth.onAuthStateChange((event)=>{
+    if(event!=='SIGNED_OUT') return;
+    const foiManual=_logoutManual; _logoutManual=false;
+    if(foiManual) return;               // logout normal (doLogout já cuida da tela)
+    if(!G.empresaId) return;            // ainda não tinha logado (ex.: 1ª carga da página) — nada a fazer
+    console.warn('[MISU MOBILE][sessão] sessão encerrada pelo Supabase (token expirado/inválido) — voltando ao login');
+    G.empresa=null; G.empresaId=null; G.operador=null; G.caixa=null;
+    G.cart=[]; G.fotos=[]; G.osFotos=[]; G.estoqueCache=null; G.ultimaOS=null; G.ultimaVenda=null;
+    $('app').classList.add('hidden');
+    $('bottom-nav').classList.add('hidden');
+    $('login').classList.remove('hidden');
+    notify('Sua sessão expirou. Faça login novamente.','warn');
+  });
+}catch(_){ /* onAuthStateChange indisponível por algum motivo — não deve travar o app */ }
+
 // Fatia 9: nunca mostrar erro técnico bruto (stack, "TypeError", erro de
 // rede/Postgres) na tela — só as mensagens que o próprio app escreveu pro
 // usuário. O erro completo continua indo pro console para investigação.
@@ -946,7 +989,7 @@ async function doLogin(){
     err.textContent = (e?.message==='Invalid login credentials') ? 'E-mail ou senha incorretos.' : msgAmigavel(e,'Não foi possível entrar. Tente novamente em instantes.');
     void err.offsetWidth;
     err.style.display='block';
-    try{ await db.auth.signOut(); }catch(_){}
+    try{ _logoutManual=true; await db.auth.signOut(); }catch(_){}
   }finally{
     if(!ok){ btn.disabled=false; btn.innerHTML='<i class="ti ti-lock"></i>Entrar'; }
   }
@@ -1258,6 +1301,7 @@ async function doLogout(){
   fecharMais();
   try{
     G.cart=[]; G.fotos=[]; G.osFotos=[]; G.estoqueCache=null; G.ultimaOS=null; G.ultimaVenda=null;
+    _logoutManual=true;
     await db.auth.signOut();
   }catch(_){}
   location.reload();
@@ -1286,7 +1330,7 @@ let _zxReader=null;
 let _scanModo='produto';
 async function abrirScanner(modo){
   _scanModo=modo||'produto';
-  if(typeof ZXing==='undefined'){
+  if(typeof window.ZXing==='undefined'){
     // Fatia 20: diferencia "ainda carregando" (script em voo, tenta de novo
     // sozinho daqui a pouco) de "falhou de vez" (CDN bloqueada/sem rede —
     // reportado pelo usuário como "scanner continua sem funcionar"; tentar
@@ -1296,7 +1340,7 @@ async function abrirScanner(modo){
       console.error('[MISU MOBILE][scanner] biblioteca ZXing não carregou (CDN bloqueada ou sem conexão)');
       notify('Não foi possível carregar o scanner agora (sem conexão com a biblioteca). Digite o código manualmente.','err');
     } else {
-      notify('Scanner ainda carregando, tente de novo em 1s.','warn');
+      notify('Scanner ainda carregando. Aguarde 1 segundo e tente novamente.','warn');
     }
     return;
   }
