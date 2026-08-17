@@ -790,6 +790,7 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
 .r-gerente{background:#EFF6FF;color:#1D4ED8}
 .r-operador{background:#ECFDF5;color:#059669}
 .r-tecnico{background:#FFFBEB;color:#B45309}
+.r-entregador{background:#F5F3FF;color:#7C3AED}
 
 @media(max-width:900px){.sg{grid-template-columns:1fr 1fr}.pdv-wrap,.os-grid{grid-template-columns:1fr}.g2{grid-template-columns:1fr}.gdash3{grid-template-columns:1fr!important}.gdash3 .dash-quick{grid-column:unset!important}}
 
@@ -3556,6 +3557,20 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
           </div>
           <div id="central-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px"></div>
         </div>
+        <!-- Fatia 21: config de confirmação de entrega (assinatura/código) — só admin/gerente -->
+        <div class="card" id="cfg-entrega-box" style="padding:14px;margin-bottom:14px;display:none">
+          <div class="card-title" style="margin-bottom:8px"><i class="ti ti-signature" style="color:var(--pri)"></i> Confirmação de Entrega</div>
+          <div style="font-size:12.5px;color:var(--txt2);margin-bottom:12px">Como o entregador confirma no celular que a entrega foi concluída. Se os dois abaixo ficarem desligados, ele confirma só com um botão + observação.</div>
+          <label style="display:flex;align-items:center;gap:9px;cursor:pointer;margin-bottom:10px">
+            <input type="checkbox" id="cfg-ent-assinatura" style="width:18px;height:18px;accent-color:var(--pri)">
+            <span style="font-size:13px">Exigir assinatura do cliente na tela</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:9px;cursor:pointer;margin-bottom:12px">
+            <input type="checkbox" id="cfg-ent-codigo" style="width:18px;height:18px;accent-color:var(--pri)">
+            <span style="font-size:13px">Exigir código/palavra-chave de confirmação</span>
+          </label>
+          <button class="btn btn-pri btn-sm" onclick="salvarConfigEntrega()"><i class="ti ti-check"></i> Salvar</button>
+        </div>
         <div class="card" style="padding:14px">
           <div id="agenda-grid" class="agenda-grid"></div>
         </div>
@@ -4766,7 +4781,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
       <div class="page" id="page-usuarios">
         <div style="display:flex;gap:8px;margin-bottom:12px">
           <div class="ig" style="flex:1"><i class="ti ti-search"></i><input type="text" placeholder="Buscar usuário..." oninput="renderUsuarios(this.value)"></div>
-          <button class="btn btn-pri" onclick="document.getElementById('u-id').value='';document.getElementById('u-nome').value='';document.getElementById('u-pin').value='';var h=document.getElementById('u-pin-hint');if(h)h.textContent='';document.getElementById('u-comissao-grp').style.display='none';document.getElementById('u-comissao').value='';document.getElementById('u-ativo').value='true';document.getElementById('u-role').value='operador';document.getElementById('usr-ttl').textContent='Novo Usuário';openModal('modal-usr')"><i class="ti ti-user-plus"></i>Novo Usuário</button>
+          <button class="btn btn-pri" onclick="document.getElementById('u-id').value='';document.getElementById('u-nome').value='';var _ut=document.getElementById('u-telefone');if(_ut)_ut.value='';document.getElementById('u-pin').value='';var h=document.getElementById('u-pin-hint');if(h)h.textContent='';document.getElementById('u-comissao-grp').style.display='none';document.getElementById('u-comissao').value='';document.getElementById('u-ativo').value='true';document.getElementById('u-role').value='operador';document.getElementById('usr-ttl').textContent='Novo Usuário';openModal('modal-usr')"><i class="ti ti-user-plus"></i>Novo Usuário</button>
         </div>
         <div class="fin-tabs" style="margin-bottom:14px">
           <button class="fin-tab active" onclick="usrTab('lista',this)"><i class="ti ti-users" style="font-size:13px"></i> Usuários</button>
@@ -5530,8 +5545,9 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
   <div class="modal-title"><i class="ti ti-shield-lock"></i><span id="usr-ttl">Novo Usuário</span></div>
   <input type="hidden" id="u-id">
   <div class="fg"><label class="lbl">Nome *</label><input type="text" id="u-nome"></div>
+  <div class="fg"><label class="lbl">Telefone / WhatsApp</label><input type="text" id="u-telefone" inputmode="numeric" placeholder="(DDD) 9 9999-9999"></div>
   <div class="fg"><label class="lbl">PIN (4 dígitos) <span id="u-pin-hint" style="font-weight:400;color:rgba(255,255,255,.4)"></span></label><input type="text" id="u-pin" inputmode="numeric" maxlength="6" placeholder="ex: 1234"></div>
-  <div class="fg"><label class="lbl">Nível *</label><select id="u-role" onchange="toggleComissaoField()"><option value="operador">Operador de Caixa</option><option value="tecnico">Técnico</option><option value="gerente">Gerente</option><option value="admin">Administrador</option></select></div>
+  <div class="fg"><label class="lbl">Nível *</label><select id="u-role" onchange="toggleComissaoField()"><option value="operador">Operador de Caixa</option><option value="tecnico">Técnico</option><option value="entregador">Entregador</option><option value="gerente">Gerente</option><option value="admin">Administrador</option></select></div>
   <div class="fg" id="u-comissao-grp" style="display:none"><label class="lbl">Comissão por OS concluída (%)</label><input type="number" id="u-comissao" step="0.1" min="0" max="100" placeholder="Ex: 10"></div>
   <div class="fg"><label class="lbl">Status</label><select id="u-ativo"><option value="true">Ativo</option><option value="false">Inativo</option></select></div>
   <div class="alert-box alert-info" style="font-size:12px"><i class="ti ti-info-circle"></i>O funcionário acessa por <b>nome + PIN</b> na tela inicial. Sem e-mail nem senha próprios.</div>
@@ -7594,8 +7610,8 @@ try{
 }catch(e){}
 
 /* ── AUTH ────────────────────────────────────────────── */
-const RL = {admin:'Administrador',gerente:'Gerente',operador:'Operador de Caixa',tecnico:'Técnico'};
-const RC = {admin:'r-admin',gerente:'r-gerente',operador:'r-operador',tecnico:'r-tecnico'};
+const RL = {admin:'Administrador',gerente:'Gerente',operador:'Operador de Caixa',tecnico:'Técnico',entregador:'Entregador'};
+const RC = {admin:'r-admin',gerente:'r-gerente',operador:'r-operador',tecnico:'r-tecnico',entregador:'r-entregador'};
 const RH = {admin:'dashboard',gerente:'dashboard',operador:'pdv',tecnico:'os'};
 
 // Catálogo de páginas configuráveis (rótulo amigável) — usado na tela de Permissões.
@@ -19377,12 +19393,16 @@ function renderCentralEntregas(){
 }
 function _cardEntrega(e){
   const tipoLbl={venda:'Produto',os:'OS',avulsa:'Compromisso'}[e.origem_tipo]||e.origem_tipo;
-  const stLbl={para_agendar:'Para agendar',agendada:'Agendada',em_rota:'Em rota',retirada:'Retirada',entregue:'Entregue',cancelada:'Cancelada'}[e.status]||e.status;
+  // Fatia 21: 'proximo_destino' e 'tentativa' são status novos (marcados pelo
+  // entregador no app mobile) — mesmo padrão dos status já existentes.
+  const stLbl={para_agendar:'Para agendar',agendada:'Agendada',em_rota:'Em rota',proximo_destino:'Próximo do destino',tentativa:'Tentativa de entrega',retirada:'Retirada',entregue:'Entregue',cancelada:'Cancelada'}[e.status]||e.status;
   const isAvulsa=e.origem_tipo==='avulsa';
   const pagoBadge=isAvulsa?'':(e.pago?'<span style="color:var(--success);font-size:11px"><i class="ti ti-check"></i> Pago</span>':'<span style="color:var(--warn);font-size:11px"><i class="ti ti-alert-triangle"></i> Pagamento pendente</span>');
   const prontaTxt=(e.origem_tipo==='os'&&e.status==='para_agendar')?(e.pago?'<div style="font-size:11px;color:var(--success);font-weight:600;margin-top:3px">PRONTA PARA ENTREGA</div>':'<div style="font-size:11px;color:var(--warn);font-weight:600;margin-top:3px">PRONTA — PAGAMENTO PENDENTE</div>'):'';
   const podeEntregar=isAvulsa||e.pago;
   const dataTxt=e.data_agendada?`${fmtD(e.data_agendada+'T12:00')}${e.janela?(' · '+e.janela):''}`:'<span style="color:var(--txt3)">sem data</span>';
+  // Fatia 21: quem está entregando (perfil Entregador, atribuído por admin/gerente aqui ou pelo app mobile)
+  const entregadorTxt=e.entregador_nome?`<div style="font-size:11px;color:var(--pri);margin-top:4px"><i class="ti ti-truck"></i> ${esc(e.entregador_nome)}</div>`:'';
   return `<div style="border:1px solid var(--border);border-radius:12px;padding:12px;background:var(--bg2)">
     <div style="display:flex;justify-content:space-between;align-items:start;gap:8px">
       <div style="font-weight:700;font-size:13.5px">${e.cliente_nome||'—'}</div>
@@ -19393,8 +19413,10 @@ function _cardEntrega(e){
     <div style="font-size:11.5px;color:var(--txt3);margin-top:6px">${e.forma==='retirada'?'<i class="ti ti-building-store"></i> Retirada na loja':'<i class="ti ti-truck"></i> Entrega'} · ${dataTxt}</div>
     <div style="display:flex;gap:8px;align-items:center;margin-top:6px">${pagoBadge}<span class="tag tag-blu" style="font-size:10px">${stLbl}</span></div>
     ${e.endereco?`<div style="font-size:11px;color:var(--txt3);margin-top:4px"><i class="ti ti-map-pin"></i> ${e.endereco}</div>`:''}
+    ${entregadorTxt}
     <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:10px">
       <button class="btn btn-out btn-xs" title="Agendar" onclick="agendarEntrega('${e.id}')"><i class="ti ti-calendar"></i></button>
+      ${e.forma!=='retirada'?`<button class="btn btn-out btn-xs" title="${e.entregador_nome?'Trocar entregador':'Atribuir entregador'}" onclick="atribuirEntregador('${e.id}')"><i class="ti ti-user-cog"></i></button>`:''}
       <button class="btn btn-out btn-xs" title="Gerar link do cliente" onclick="gerarLinkEntrega('${e.id}')"><i class="ti ti-link"></i></button>
       ${e.telefone?`<button class="btn btn-out btn-xs" title="WhatsApp" onclick="whatsappEntrega('${e.id}')"><i class="ti ti-brand-whatsapp"></i></button>`:''}
       ${e.status!=='entregue'&&e.forma!=='retirada'?`<button class="btn btn-out btn-xs" title="Iniciar entrega" onclick="iniciarEntrega('${e.id}')"><i class="ti ti-route"></i></button>`:''}
@@ -19438,12 +19460,31 @@ async function gerarLinkEntrega(id){
     if(error){ notify('Erro ao gerar link: '+error.message,'error'); return; }
     e.token_publico=tok; e.token_expira_em=exp;
   }
+  // Fatia 21: se a empresa exige código de confirmação (config_entrega.
+  // exigir_codigo) e esta entrega ainda não tem um gerado, gera agora e
+  // manda junto no WhatsApp — é assim que o código chega ao cliente antes
+  // de o entregador pedir na hora de confirmar (app mobile, Minhas Entregas
+  // → Confirmar entrega). Sem isso o app mobile só validava contra um
+  // código que nunca existia.
+  let codigo=e.codigo_confirmacao||null;
+  try{
+    const {data:empCfg}=await db.from('empresas').select('config_entrega').eq('id',EID()).maybeSingle();
+    const exigeCodigo=!!empCfg?.config_entrega?.exigir_codigo;
+    if(exigeCodigo && !codigo){
+      codigo=String(Math.floor(1000+Math.random()*9000)); // 4 dígitos
+      const {error:cErr}=await db.from('entregas').update({codigo_confirmacao:codigo, codigo_tentativas:0}).eq('id',id);
+      if(!cErr){ e.codigo_confirmacao=codigo; e.codigo_tentativas=0; }
+      else codigo=null; // coluna pode não existir ainda (migração da Fatia 21 não rodada) — segue sem código
+    }
+  }catch(_){ /* config_entrega pode não existir ainda — segue sem código, não trava o link */ }
+
   const link=`${location.origin}/entrega.html?t=${tok}`;
   try{ await navigator.clipboard.writeText(link); notify('Link de entrega copiado!','success'); }
   catch(_){ notify('Link: '+link,'info',9000); }
   if(e.telefone){
     const tel=String(e.telefone).replace(/\D/g,'');
-    const msg=encodeURIComponent(`Olá ${e.cliente_nome||''}! Preencha seus dados de entrega aqui: ${link}`);
+    const codigoTxt=codigo?` Guarde este código: *${codigo}* — o entregador vai pedir ele na hora de confirmar a entrega.`:'';
+    const msg=encodeURIComponent(`Olá ${e.cliente_nome||''}! Preencha seus dados de entrega aqui: ${link}${codigoTxt}`);
     window.open(`https://wa.me/55${tel}?text=${msg}`,'_blank');
   }
 }
@@ -19451,10 +19492,62 @@ function verOrigemEntrega(id){
   const e=(G.entregas||[]).find(x=>x.id===id); if(!e) return;
   if(e.origem_tipo==='os') go('os'); else if(e.origem_tipo==='venda') go('hist-vendas');
 }
+
+/* Fatia 21: atribuir entrega a um usuário com perfil Entregador — ele passa
+   a ver essa entrega em "Minhas Entregas" no app mobile. Só lista usuários
+   ativos com role='entregador' (perfil novo desta fatia). */
+function atribuirEntregador(id){
+  const e=(G.entregas||[]).find(x=>x.id===id); if(!e) return;
+  const entregadores=(G.usuarios||[]).filter(u=>u.ativo&&u.role==='entregador');
+  if(!entregadores.length){ notify('Nenhum entregador cadastrado ainda. Crie um usuário com o perfil "Entregador" em Usuários.','info',6000); return; }
+  const html=`
+    <div class="card-title" style="gap:8px;margin-bottom:12px"><i class="ti ti-user-cog" style="color:var(--pri)"></i> Atribuir entregador</div>
+    <div style="font-size:12.5px;color:var(--txt3);margin-bottom:14px">${esc(e.cliente_nome||'')} — ${esc(e.descricao||'')}</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      ${entregadores.map(u=>`<button class="btn ${e.entregador_id===u.id?'btn-pri':'btn-out'}" style="width:100%;justify-content:flex-start" onclick="closeModal('modal-generic');_setEntregador('${id}','${u.id}','${esc(u.nome).replace(/'/g,"\\'")}')"><i class="ti ti-truck"></i> ${esc(u.nome)}${e.entregador_id===u.id?' (atual)':''}</button>`).join('')}
+      ${e.entregador_id?`<button class="btn btn-out" style="width:100%;justify-content:flex-start;color:var(--danger);border-color:var(--danger)" onclick="closeModal('modal-generic');_setEntregador('${id}',null,null)"><i class="ti ti-x"></i> Remover atribuição</button>`:''}
+    </div>`;
+  abrirModalGenerico(html, `<button class="btn btn-out" onclick="closeModal('modal-generic')">Cancelar</button>`);
+}
+async function _setEntregador(id, entregadorId, entregadorNome){
+  const patch={entregador_id:entregadorId||null, entregador_nome:entregadorNome||null, atribuido_em:entregadorId?new Date().toISOString():null};
+  if(await _updEntrega(id,patch)) notify(entregadorId?('Entrega atribuída a '+entregadorNome+'.'):'Atribuição removida.','success');
+}
+
+/* Fatia 21: config de confirmação de entrega (assinatura/código) — usada
+   pelo app mobile (perfil Entregador) na hora de confirmar. Guardada em
+   empresas.config_entrega (jsonb). */
+async function carregarConfigEntrega(){
+  const box=document.getElementById('cfg-entrega-box'); if(!box) return;
+  try{
+    const {data,error}=await db.from('empresas').select('config_entrega').eq('id',EID()).maybeSingle();
+    if(error) throw error;
+    const cfg=data?.config_entrega||{};
+    const a=document.getElementById('cfg-ent-assinatura'); if(a) a.checked=!!cfg.exigir_assinatura;
+    const c=document.getElementById('cfg-ent-codigo'); if(c) c.checked=!!cfg.exigir_codigo;
+  }catch(e){ /* coluna pode não existir ainda — fica com os padrões (ambos desligados) */ }
+}
+async function salvarConfigEntrega(){
+  const exigir_assinatura=!!document.getElementById('cfg-ent-assinatura')?.checked;
+  const exigir_codigo=!!document.getElementById('cfg-ent-codigo')?.checked;
+  setLoad(true);
+  const {error}=await db.from('empresas').update({config_entrega:{exigir_assinatura,exigir_codigo}}).eq('id',EID());
+  setLoad(false);
+  if(error){
+    if(/column|does not exist|schema cache/i.test(error.message||'')) notify('Rode a migração da Fatia 21 no Supabase primeiro.','warn',7000);
+    else notify('Erro ao salvar: '+error.message,'error');
+    return;
+  }
+  notify('Configuração de confirmação de entrega salva!','success');
+}
+
 async function initCentral(){
   try{ await sincronizarEntregas(); }catch(e){ console.warn('sincronizarEntregas:',e); }
   renderCentralEntregas();
   renderAgenda();
+  // Fatia 21: config de confirmação de entrega só aparece pra quem pode mexer em Usuários/config
+  const cfgBox=document.getElementById('cfg-entrega-box');
+  if(cfgBox){ cfgBox.style.display=(G.role==='admin'||G.role==='admin_master'||G.role==='gerente')?'':'none'; if(cfgBox.style.display!=='none') carregarConfigEntrega(); }
 }
 
 var G_entregaFiltro='Pendente';
@@ -19946,6 +20039,7 @@ function getMarcaDagua(tipo) {
 /* ── USUÁRIOS ────────────────────────────────────────── */
 async function saveUsr(){
   const nome=document.getElementById('u-nome').value.trim();
+  const telefone=(document.getElementById('u-telefone')?.value||'').trim();
   const pin=document.getElementById('u-pin').value.trim();
   const role=document.getElementById('u-role').value;
   const ativo=document.getElementById('u-ativo').value==='true';
@@ -19957,11 +20051,19 @@ async function saveUsr(){
   setLoad(true);
   let err;
   if(editId){
-    const patch={nome,role,ativo,comissao_pct};
+    const patch={nome,telefone:telefone||null,role,ativo,comissao_pct};
     if(pin) patch.pin=pin;
     ({error:err}=await db.from('usuarios').update(patch).eq('id',editId));
+    // Fatia 21: telefone é coluna nova — se a migração ainda não rodou, tenta de novo sem ele
+    if(err && /telefone|column|schema cache/i.test(err.message||'')){
+      delete patch.telefone;
+      ({error:err}=await db.from('usuarios').update(patch).eq('id',editId));
+    }
   } else {
-    ({error:err}=await db.from('usuarios').insert({nome,pin,role,ativo,comissao_pct,empresa_id:EID()}));
+    ({error:err}=await db.from('usuarios').insert({nome,telefone:telefone||null,pin,role,ativo,comissao_pct,empresa_id:EID()}));
+    if(err && /telefone|column|schema cache/i.test(err.message||'')){
+      ({error:err}=await db.from('usuarios').insert({nome,pin,role,ativo,comissao_pct,empresa_id:EID()}));
+    }
   }
   setLoad(false);
   if(err){
@@ -20049,6 +20151,7 @@ function editUsr(id){
   const u=G.usuarios.find(x=>x.id===id);if(!u)return;
   document.getElementById('u-id').value=u.id;
   document.getElementById('u-nome').value=u.nome;
+  const telEl=document.getElementById('u-telefone'); if(telEl) telEl.value=u.telefone||'';
   document.getElementById('u-pin').value='';
   const hint=document.getElementById('u-pin-hint'); if(hint) hint.textContent = u.pin ? '— deixe em branco para manter' : '— defina um PIN';
   document.getElementById('u-role').value=u.role;
@@ -24216,10 +24319,11 @@ const NFColors = {
   admin:    { bg:'linear-gradient(135deg,#1E5EFF,#3D8BFF)', cor:'#fff' },
   gerente:  { bg:'linear-gradient(135deg,#1D4ED8,#3B82F6)', cor:'#fff' },
   operador: { bg:'linear-gradient(135deg,#059669,#10B981)', cor:'#fff' },
-  tecnico:  { bg:'linear-gradient(135deg,#D97706,#F59E0B)', cor:'#fff' }
+  tecnico:  { bg:'linear-gradient(135deg,#D97706,#F59E0B)', cor:'#fff' },
+  entregador:{ bg:'linear-gradient(135deg,#7C3AED,#A78BFA)', cor:'#fff' }
 };
-const NFRoleLbl = { admin:'Administrador', gerente:'Gerente', operador:'Operador', tecnico:'Técnico' };
-const NFRoleTag = { admin:'r-admin', gerente:'r-gerente', operador:'r-operador', tecnico:'r-tecnico' };
+const NFRoleLbl = { admin:'Administrador', gerente:'Gerente', operador:'Operador', tecnico:'Técnico', entregador:'Entregador' };
+const NFRoleTag = { admin:'r-admin', gerente:'r-gerente', operador:'r-operador', tecnico:'r-tecnico', entregador:'r-entregador' };
 
 let _nfPerfilSelecionado = null;
 let _pinDigitos = '';
