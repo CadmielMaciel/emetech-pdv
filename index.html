@@ -311,6 +311,48 @@ try{
   --trans-props:transform var(--motion-fast) var(--ease-standard),opacity var(--motion-fast) var(--ease-standard),background-color var(--motion-fast) ease,border-color var(--motion-fast) ease,box-shadow var(--motion-fast) ease,color var(--motion-fast) ease;/* para componentes que quiserem sair do transition:all */
 }
 @media (prefers-reduced-motion: reduce){:root{--motion-instant:1ms;--motion-fast:1ms;--motion-base:1ms;--motion-slow:1ms}*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:1ms!important}}
+
+/* ═══ FATIA 18 — SISTEMA DE MOTION (classes reutilizáveis) ═══
+   Reaproveita os tokens --motion-*/--ease-* que já existiam (Fatia 1)
+   em vez de criar um sistema paralelo — só adiciona os keyframes e
+   classes nomeadas que ainda não existiam (fade-in puro, scale-in,
+   slide, shimmer, glow, shake, pop, stagger, reveal). O bloco de
+   prefers-reduced-motion acima já zera as durações via variável, então
+   essas classes automaticamente ficam instantâneas também. */
+@keyframes motionFadeIn{from{opacity:0}to{opacity:1}}
+@keyframes motionScaleIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+@keyframes motionSlideLeft{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:translateX(0)}}
+@keyframes motionSlideRight{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:translateX(0)}}
+@keyframes motionSoftPop{0%{transform:scale(.85);opacity:0}60%{transform:scale(1.04)}100%{transform:scale(1);opacity:1}}
+@keyframes motionShimmer{0%{background-position:-200px 0}100%{background-position:calc(200px + 100%) 0}}
+@keyframes motionGlow{0%,100%{box-shadow:0 0 0 rgba(30,94,255,.2)}50%{box-shadow:0 0 14px rgba(30,94,255,.35)}}
+@keyframes motionShake{10%,90%{transform:translateX(-1px)}20%,80%{transform:translateX(2px)}30%,50%,70%{transform:translateX(-4px)}40%,60%{transform:translateX(4px)}}
+@keyframes motionPulseSoft{0%,100%{opacity:1}50%{opacity:.6}}
+.motion-fade-up{animation:fi var(--motion-base) var(--ease-enter) backwards}
+.motion-fade-in{animation:motionFadeIn var(--motion-fast) ease backwards}
+.motion-scale-in{animation:motionScaleIn var(--motion-base) var(--ease-spring) backwards}
+.motion-slide-left{animation:motionSlideLeft var(--motion-base) var(--ease-enter) backwards}
+.motion-slide-right{animation:motionSlideRight var(--motion-base) var(--ease-enter) backwards}
+.motion-soft-pop{animation:motionSoftPop var(--motion-base) var(--ease-spring) backwards}
+.motion-shake{animation:motionShake .4s var(--ease-standard)}
+.motion-glow{animation:motionGlow 2.4s ease-in-out infinite}
+.motion-pulse-soft{animation:motionPulseSoft 2s ease-in-out infinite}
+.motion-card{transition:transform var(--motion-fast) var(--ease-standard),box-shadow var(--motion-fast) var(--ease-standard)}
+.motion-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+.motion-btn{transition:transform var(--motion-instant) ease}
+.motion-btn:active{transform:scale(.96)}
+.motion-sidebar-item{transition:transform var(--motion-fast) var(--ease-standard),background var(--motion-fast) ease,color var(--motion-fast) ease}
+.motion-kpi{transition:color var(--motion-fast) ease}
+.motion-shimmer{background:linear-gradient(90deg,var(--surface2,#eee) 0%,rgba(255,255,255,.35) 50%,var(--surface2,#eee) 100%);background-size:400px 100%;background-repeat:no-repeat;animation:motionShimmer 1.4s ease-in-out infinite;border-radius:8px}
+.motion-reveal{opacity:0;transform:translateY(10px);transition:opacity .4s ease,transform .4s ease}
+.motion-reveal.motion-reveal-visible{opacity:1;transform:translateY(0)}
+/* Aplicações globais discretas — cobrem várias telas de uma vez, sem
+   precisar tocar em cada função de render. Só transform/opacity.
+   Obs: .ni já tem "transition:background .15s,transform .1s !important"
+   definido mais abaixo no arquivo (Fatia anterior) — não duplicamos essa
+   regra aqui, só adicionamos o efeito visual do hover em si. */
+.ni:hover{transform:translateX(2px)}
+.alert-danger i{animation:motionPulseSoft 2.2s ease-in-out infinite}
 [data-theme="dark"]{--bg:#070B1A;--bg2:#0B1228;--surface:#101A38;--surface2:#152147;--txt:#EAF0FF;--txt2:#A8BAE8;--txt3:#6B7FB8;--txt4:#3A4A78;--border:#1B2A55;--border2:#25376B;--pri-light:#0F2058;--accent:#E8915B;--accent-soft:#3A2218;
 --shadow:0 2px 12px rgba(0,0,0,.25);
 --shadow-lg:0 8px 28px rgba(0,0,0,.36);
@@ -333,12 +375,12 @@ button,.btn,.card,.tag,input,select,textarea{transition:var(--trans)}
 /* LOGIN */
 .ls{position:fixed;inset:0;background:linear-gradient(145deg,var(--pri-dark) 0%,var(--pri) 45%,var(--pri2) 100%);display:flex;align-items:center;justify-content:center;z-index:9999;transition:opacity .4s}
 .ls.hidden{opacity:0;pointer-events:none}
-.lb{background:#fff;border-radius:26px;padding:42px 40px;width:100%;max-width:400px;box-shadow:0 32px 80px rgba(0,0,0,.28),0 0 0 1px rgba(255,255,255,.08)}
+.lb{background:#fff;border-radius:26px;padding:42px 40px;width:100%;max-width:400px;box-shadow:0 32px 80px rgba(0,0,0,.28),0 0 0 1px rgba(255,255,255,.08);animation:fi var(--motion-slow) var(--ease-enter)}
 .l-icon{width:100px;height:100px;background:none;border-radius:0;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;box-shadow:none}
 .l-icon span{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:#fff}
 .l-title{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:#1A0F3C;text-align:center;letter-spacing:.5px;text-transform:uppercase}
 .l-sub{font-size:13px;color:#9D8FC5;text-align:center;margin-top:3px;margin-bottom:26px}
-.l-err{background:#FEF2F2;color:#EF4444;border:1px solid #FECACA;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:600;margin-bottom:14px;display:none}
+.l-err{background:#FEF2F2;color:#EF4444;border:1px solid #FECACA;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:600;margin-bottom:14px;display:none;animation:motionShake .4s var(--ease-standard)}
 .l-lbl{display:block;font-size:11.5px;font-weight:700;color:#5C4F8A;margin-bottom:5px;text-transform:uppercase;letter-spacing:.6px}
 .l-inp{width:100%;padding:12px 14px;border:1.5px solid #E4DEFF;border-radius:11px;font-size:14px;font-family:'DM Sans',sans-serif;color:#1A0F3C;outline:none;margin-bottom:14px;transition:border-color .2s,box-shadow .2s}
 .l-inp:focus{border-color:#1E5EFF;box-shadow:0 0 0 3.5px rgba(30,94,255,.14)}
@@ -7360,6 +7402,70 @@ function msgInfo(m){ notify(m||'', 'info'); }
 function msgCampoObrig(campo){ notify('Preencha o campo '+(campo||'obrigatório')+' para continuar.', 'warn'); }
 function msgIntegracao(nome){ notify('Não conseguimos falar com '+(nome||'a integração')+' agora. Verifique a conexão e tente de novo.', 'error', 4200); }
 
+/* ══════════════════════════════════════════════════════════════
+   FATIA 18 — utilitários de motion (JS leve, sem biblioteca)
+   ══════════════════════════════════════════════════════════════ */
+const _reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+// Contador animado (usado nos KPIs do dashboard). Se o usuário pediu
+// menos movimento, ou o valor não é um número válido, só escreve o
+// valor final direto — sem animar.
+function motionCountUp(elId, valorFinal, formatar) {
+  const el = typeof elId === 'string' ? document.getElementById(elId) : elId;
+  if (!el) return;
+  formatar = formatar || (v => String(Math.round(v)));
+  if (_reduceMotion || typeof valorFinal !== 'number' || !isFinite(valorFinal)) {
+    el.textContent = formatar(valorFinal);
+    return;
+  }
+  const inicio = performance.now();
+  const duracao = 600;
+  function passo(agora) {
+    const t = Math.min(1, (agora - inicio) / duracao);
+    const ease = 1 - Math.pow(1 - t, 3);
+    el.textContent = formatar(valorFinal * ease);
+    if (t < 1) requestAnimationFrame(passo);
+    else el.textContent = formatar(valorFinal);
+  }
+  requestAnimationFrame(passo);
+}
+
+// Aplica animation-delay incremental nos filhos de um container — efeito
+// de "stagger" em qualquer grid/lista sem escrever nth-child fixo.
+function motionStagger(container, childSelector, opts) {
+  opts = opts || {};
+  const stepMs = opts.stepMs ?? 30;
+  const maxMs = opts.maxMs ?? 300;
+  const cls = opts.cls || 'motion-fade-up';
+  if (!container) return;
+  container.querySelectorAll(childSelector).forEach((el, i) => {
+    el.classList.add(cls);
+    if (!_reduceMotion) el.style.animationDelay = Math.min(i * stepMs, maxMs) + 'ms';
+  });
+}
+
+// IntersectionObserver leve para "scroll reveal" — só observa .motion-reveal
+// e para de observar depois de revelar uma vez (não fica calculando à toa
+// em telas com scroll longo, ex: relatórios).
+let _motionRevealObs = null;
+function initMotionReveal(root) {
+  if (_reduceMotion || !('IntersectionObserver' in window)) {
+    (root || document).querySelectorAll('.motion-reveal').forEach(el => el.classList.add('motion-reveal-visible'));
+    return;
+  }
+  if (!_motionRevealObs) {
+    _motionRevealObs = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('motion-reveal-visible');
+          _motionRevealObs.unobserve(entry.target);
+        }
+      });
+    }, { threshold: .1, rootMargin: '0px 0px -40px 0px' });
+  }
+  (root || document).querySelectorAll('.motion-reveal:not(.motion-reveal-visible)').forEach(el => _motionRevealObs.observe(el));
+}
+
 function openModal(id){document.getElementById(id)?.classList.add('open')}
 function closeModal(id){
   document.getElementById(id)?.classList.remove('open');
@@ -9840,6 +9946,11 @@ async function buscarCompatIA(){
     if(sug)sug.innerHTML='<div style="padding:10px;font-size:12px;color:var(--warn);background:rgba(245,158,11,.08);border-radius:8px"><b>Limite diário de IA atingido.</b> Você pode adicionar os modelos compatíveis manualmente no campo abaixo.</div>';
     return;
   }
+  // ── COTA DE TOKENS: não deixa passar do limite mensal de tokens do plano ──
+  if(!(await verificarCotaIATokens('compat'))){
+    if(sug)sug.innerHTML='<div style="padding:10px;font-size:12px;color:var(--warn);background:rgba(245,158,11,.08);border-radius:8px"><b>Limite mensal de tokens de IA atingido.</b> Você pode adicionar os modelos compatíveis manualmente no campo abaixo.</div>';
+    return;
+  }
 
   // Evita duplo clique / chamadas simultâneas
   if(window._compatIALoading){ return; }
@@ -9854,6 +9965,7 @@ async function buscarCompatIA(){
     // Novo formato: { success, source, cached, data:{modelos[],alertas[]} } | { success:false, error:{code,message} }
     if(data && data.success && data.data){
       registrarUsoIA('compat'); // conta 1 consumo de IA (best-effort)
+      registrarUsoIATokens('compat', data.tokens_usados || data.usage?.total_tokens || 0); // conta tokens (best-effort)
       const modelosObj = data.data.modelos || [];
       const lista = modelosObj.map(m => m.modelo).filter(Boolean);
       // Guarda os detalhes (confiança/código/obs) para o render
@@ -10726,6 +10838,9 @@ function atualizarDisplayUltimoItem(p){
   const tot=document.getElementById('pdv-last-total');
   if(tot)tot.textContent=fmt(totalItem);
   box.style.display='flex';
+  // Fatia 18: microanimação discreta a cada item bipado — reinicia a
+  // classe pra "pipocar" de novo mesmo em bipagens seguidas do mesmo item.
+  if(!_reduceMotion){ box.classList.remove('motion-soft-pop'); void box.offsetWidth; box.classList.add('motion-soft-pop'); }
 }
 
 // ═══ FATIA 3 — Validação central da venda (o que falta para finalizar) ═══
@@ -10777,8 +10892,8 @@ function renderCart(){
   badge.textContent=total_qty;badge.style.display=total_qty>0?'':'none';
   if(G.cart.length===0){
     cont.innerHTML = !G.caixaAtual
-      ? '<div class="cart-empty"><i class="ti ti-lock"></i><p><strong>Caixa fechado</strong></p><p style="font-size:12px">Abra o caixa para começar a vender.</p></div>'
-      : '<div class="cart-empty"><i class="ti ti-shopping-cart"></i><p>Carrinho vazio</p><p style="font-size:12px">Busque um produto acima ou passe o código de barras.</p></div>';
+      ? '<div class="cart-empty motion-fade-up"><i class="ti ti-lock"></i><p><strong>Caixa fechado</strong></p><p style="font-size:12px">Abra o caixa para começar a vender.</p></div>'
+      : '<div class="cart-empty motion-fade-up"><i class="ti ti-shopping-cart"></i><p>Carrinho vazio</p><p style="font-size:12px">Busque um produto acima ou passe o código de barras.</p></div>';
     document.getElementById('fin-btn').disabled=true;
   }else{
     cont.innerHTML=G.cart.map(i=>`<div class="ci">
@@ -10815,7 +10930,14 @@ function renderCart(){
   document.getElementById('c-sub').textContent=fmt(sub);
   // Fatia 3: mostra o desconto em R$ (apresentação; não altera o total)
   try{ var _descVal=sub*(desc/100); var _dvR=document.getElementById('c-desc-val-row'); var _dvE=document.getElementById('c-desc-val'); if(_dvE)_dvE.textContent='− '+fmt(_descVal); if(_dvR)_dvR.style.display=(_descVal>0)?'flex':'none'; }catch(_){}
-  document.getElementById('c-tot').textContent=fmt(total);
+  try{
+    const _totEl=document.getElementById('c-tot');
+    const _novoTxt=fmt(total);
+    if(_totEl.textContent!==_novoTxt){
+      _totEl.textContent=_novoTxt;
+      if(!_reduceMotion){ _totEl.classList.remove('motion-soft-pop'); void _totEl.offsetWidth; _totEl.classList.add('motion-soft-pop'); }
+    }
+  }catch(_){ document.getElementById('c-tot').textContent=fmt(total); }
   // Fluxo incremental: o campo "Valor" + botão Confirmar fica SEMPRE visível
   // para todas as formas (dinheiro/pix/cartão). Vazio = paga o restante inteiro.
   const recRow=document.getElementById('recebido-row');
@@ -14756,12 +14878,12 @@ async function uploadMidiasOS(osId, files){
 async function carregarMidiasOS(osId){
   const grid=document.getElementById('osd-midias-grid');
   if(!grid)return;
-  grid.innerHTML='<div style="grid-column:1/-1;text-align:center;color:var(--txt3);padding:20px">Carregando…</div>';
+  grid.innerHTML='<div class="motion-shimmer" style="grid-column:1/-1;height:90px"></div><div class="motion-shimmer" style="grid-column:1/-1;height:90px"></div>';
   const {data,error}=await db.from('os_midias').select('*').eq('os_id',osId).order('criado_em');
   if(error){grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;color:var(--danger);padding:16px">Rode a migração X10 para ativar as mídias.</div>`;return;}
   if(!data||!data.length){grid.innerHTML='<div style="grid-column:1/-1;text-align:center;color:var(--txt3);padding:24px"><i class="ti ti-photo-off" style="font-size:28px;opacity:.4;display:block;margin-bottom:8px"></i>Nenhuma mídia anexada</div>';return;}
   grid.innerHTML=data.map(m=>`
-    <div style="border:1px solid var(--border);border-radius:11px;overflow:hidden;background:var(--bg2);position:relative">
+    <div class="motion-fade-up" style="border:1px solid var(--border);border-radius:11px;overflow:hidden;background:var(--bg2);position:relative">
       <div style="aspect-ratio:1;background:#000;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="window.open('${m.url}','_blank')">
         ${m.tipo==='video'
           ?`<video src="${m.url}" style="width:100%;height:100%;object-fit:cover" muted></video><div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font-size:26px"><i class="ti ti-player-play-filled"></i></div>`
@@ -14775,6 +14897,7 @@ async function carregarMidiasOS(osId){
         <button class="btn-ghost" onclick="excluirMidiaOS('${m.id}','${(m.path||'').replace(/'/g,'')}','${osId}')" title="Excluir" style="padding:2px 4px"><i class="ti ti-trash" style="color:var(--danger);font-size:13px"></i></button>
       </div>
     </div>`).join('');
+  motionStagger(grid, ':scope > div', { stepMs: 25, maxMs: 150 });
 }
 
 async function toggleMidiaVisivel(id,vis){
@@ -18053,6 +18176,12 @@ async function consultarDiagnosticoIA(forcar){
     if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-search"></i> Analisar'; }
     return;
   }
+  // ── COTA DE TOKENS: respeita o limite mensal de tokens do plano ──
+  if(!(await verificarCotaIATokens('diagnostico'))){
+    if(res) res.innerHTML='';
+    if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-search"></i> Analisar'; }
+    return;
+  }
   if(res) res.innerHTML='<div style="text-align:center;padding:20px;color:var(--txt3);font-size:12.5px"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite;font-size:20px"></i><div style="margin-top:6px">Consultando a IA e pesquisando na web…</div><div style="font-size:10.5px;color:var(--txt4)">Pode levar alguns segundos</div></div>';
 
   try{
@@ -18070,6 +18199,7 @@ async function consultarDiagnosticoIA(forcar){
 
     _diagUltimo = data.data;
     registrarUsoIA('diagnostico'); // conta 1 consumo de IA (best-effort)
+    registrarUsoIATokens('diagnostico', data.tokens_usados || data.usage?.total_tokens || 0); // conta tokens (best-effort)
     renderResultadoDiagnostico(data.data, data.cached);
     // Salva no histórico da loja (best-effort)
     try{
@@ -18937,17 +19067,23 @@ function renderDashboard(){
   const hr=new Date();
   const recVenc=G.receber.filter(r=>r.status!=='pago'&&new Date(r.data_vencimento+'T12:00')<hr).length;
   const totalEstoque=G.produtos.filter(p=>!p.estoque_infinito).reduce((s,p)=>s+(p.estoque||0),0);
-  document.getElementById('d-fat').textContent=fmt(fat);
-  document.getElementById('d-lucro').textContent=fmt(lucro);
-  document.getElementById('d-os').textContent=osAb;
-  document.getElementById('d-venc').textContent=recVenc;
-  const estEl=document.getElementById('d-estoque');if(estEl)estEl.textContent=totalEstoque;
+  // Fatia 18: contador animado só na PRIMEIRA vez que o dashboard aparece
+  // nesta sessão — em renders seguintes (ex: depois de cada venda, num PDV
+  // movimentado) só troca o número direto, pra não ficar "recontando" toda
+  // hora e distrair o operador.
+  const _kpiAnim = window._dashKpiAnimadoUmaVez ? (id,v,f)=>{const el=document.getElementById(id);if(el)el.textContent=f?f(v):v;} : motionCountUp;
+  window._dashKpiAnimadoUmaVez = true;
+  _kpiAnim('d-fat',fat,fmt);
+  _kpiAnim('d-lucro',lucro,fmt);
+  _kpiAnim('d-os',osAb);
+  _kpiAnim('d-venc',recVenc);
+  if(document.getElementById('d-estoque')) _kpiAnim('d-estoque',totalEstoque);
   // ── LOTE 2: Ticket médio, OS aguardando pagamento e mais vendidos ──
   try{
     const ticket = hoje.length ? (fat/hoje.length) : 0;
-    const tkEl=document.getElementById('d-ticket'); if(tkEl) tkEl.textContent=fmt(ticket);
+    if(document.getElementById('d-ticket')) _kpiAnim('d-ticket',ticket,fmt);
     const osPag = G.os.filter(o=>o.status==='Ag. Pagamento').length;
-    const opEl=document.getElementById('d-os-pag'); if(opEl) opEl.textContent=osPag;
+    if(document.getElementById('d-os-pag')) _kpiAnim('d-os-pag',osPag);
     const mvEl=document.getElementById('d-maisvendidos');
     if(mvEl){
       const lim=new Date(); lim.setDate(lim.getDate()-30);
@@ -26033,6 +26169,61 @@ async function verificarCotaIA(tipo){
 // Best-effort — uma falha aqui nunca quebra a experiência do usuário.
 async function registrarUsoIA(tipo){
   try{ await db.rpc('registrar_uso_ia', { p_tipo: tipo || 'ia' }); }catch(e){ /* silencioso */ }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   COTA MENSAL DE TOKENS DE IA — limite de tokens (custo real) por mês
+   • Independente da cota diária de CHAMADAS acima — as duas valem ao
+     mesmo tempo; o que estourar primeiro bloqueia.
+   • O LIMITE vem dos entitlements do plano: feature
+     'ai.monthly_token_limit' (número). -1 ou ausente = ilimitado.
+   • O USO DO MÊS vem do servidor via RPC minha_cota_ia_tokens().
+   • Cada consumo é registrado via RPC registrar_uso_ia_tokens(tokens,tipo).
+   ⚠️ ASSUNÇÃO TÉCNICA: a contagem de tokens por chamada depende das
+   Edge Functions diagnostico-ia/compat-ia devolverem quantos tokens
+   cada resposta gastou (campo esperado: data.tokens_usados — ver
+   PENDENCIAS_COTA_IA_TOKENS.md). Enquanto isso não estiver ajustado no
+   servidor, o registro aqui usa 0 (não quebra nada, só não conta
+   direito ainda — a cota de CHAMADAS acima continua protegendo).
+   Defensivo: se as RPCs ainda não existirem (migração não aplicada),
+   nada é bloqueado — o sistema continua funcionando normalmente.
+   ══════════════════════════════════════════════════════════════════ */
+
+// Consulta quantos tokens de IA esta empresa já usou NESTE MÊS.
+// Retorna número (>=0) ou null quando não deu para saber (modo tolerante).
+async function _tokensIAMes(){
+  try{
+    const { data, error } = await db.rpc('minha_cota_ia_tokens');
+    if(error) return null;
+    const row = Array.isArray(data) ? data[0] : data;
+    if(row && typeof row.tokens_usados === 'number') return row.tokens_usados;
+    if(row && typeof row.tokens_usados === 'string') return parseInt(row.tokens_usados,10) || 0;
+    if(!row) return 0; // sem linha ainda no mês = 0 usado
+    return null;
+  }catch(e){ return null; }
+}
+
+// PRÉ-CHECAGEM: chamar ANTES de consumir IA. Retorna true se pode seguir.
+// Se estourou a cota de tokens do mês, avisa o usuário e bloqueia.
+async function verificarCotaIATokens(tipo){
+  const limite = (typeof limiteFeature === 'function') ? limiteFeature('ai.monthly_token_limit') : -1;
+  if(limite === -1) return true;                  // ilimitado (ou sem dado) = libera
+  const usado = await _tokensIAMes();
+  if(usado === null) return true;                  // não conseguiu medir = tolerante, libera
+  const restante = limite - usado;
+  if(restante > 0){
+    if(restante <= Math.max(1000, limite*0.05)) notify(`Sua empresa já usou ${usado.toLocaleString('pt-BR')} de ${limite.toLocaleString('pt-BR')} tokens de IA disponíveis este mês.`, 'info', 5000);
+    return true;
+  }
+  notify(`Sua empresa atingiu o limite de ${limite.toLocaleString('pt-BR')} tokens de IA do plano este mês. O limite renova no início do próximo mês — fale com o suporte para aumentar.`, 'warn', 7000);
+  return false;
+}
+
+// REGISTRO: chamar DEPOIS de a consulta de IA dar certo, com os tokens
+// que a resposta informou terem sido gastos (0 se a Edge Function ainda
+// não devolve isso — ver assunção técnica acima). Best-effort.
+async function registrarUsoIATokens(tipo, tokens){
+  try{ await db.rpc('registrar_uso_ia_tokens', { p_tokens: Number(tokens)||0, p_tipo: tipo || 'ia' }); }catch(e){ /* silencioso */ }
 }
 
 function getPlanoAtual() {
