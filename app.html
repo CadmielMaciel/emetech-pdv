@@ -67,13 +67,13 @@ input,select,textarea,button{font-family:inherit;font-size:16px}
 
 /* ── LABELS / INPUTS ── */
 .lbl{display:block;font-size:11.5px;font-weight:700;color:var(--txt2);margin:15px 0 7px;text-transform:uppercase;letter-spacing:.6px}
-.inp{width:100%;border:1.5px solid var(--border);border-radius:13px;padding:14px 15px;font-size:16px;background:#fff;color:var(--txt);min-height:52px;transition:border-color .18s,box-shadow .18s}
+.inp,.mobile-input{width:100%;border:1.5px solid var(--border);border-radius:13px;padding:14px 15px;font-size:16px;background:#fff;color:var(--txt);min-height:52px;transition:border-color .18s,box-shadow .18s}
 .inp::placeholder{color:var(--txt3)}
 .inp:focus{outline:none;border-color:var(--pri);box-shadow:var(--ring)}
 textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 
 /* ── BUTTONS ── */
-.btn{width:100%;border:none;border-radius:14px;padding:15px;min-height:54px;font-size:16px;font-weight:700;letter-spacing:-.01em;color:#fff;background:linear-gradient(135deg,var(--pri),var(--pri2));cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;box-shadow:var(--glow);transition:transform .12s ease,box-shadow .18s,opacity .18s}
+.btn,.mobile-button{width:100%;border:none;border-radius:14px;padding:15px;min-height:54px;font-size:16px;font-weight:700;letter-spacing:-.01em;color:#fff;background:linear-gradient(135deg,var(--pri),var(--pri2));cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;box-shadow:var(--glow);transition:transform .12s ease,box-shadow .18s,opacity .18s}
 .btn i{font-size:18px}
 .btn:active{transform:scale(.975);box-shadow:0 6px 16px -8px rgba(91,63,232,.5)}
 .btn:disabled{opacity:.55;box-shadow:none}
@@ -88,17 +88,17 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 
 /* ── APP SHELL ── */
 #app{min-height:100dvh;padding-top:var(--sat)}
-.topbar{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--border2);padding:calc(11px + var(--sat)) 14px 11px;display:flex;align-items:center;gap:12px;z-index:20}
+.topbar,.mobile-header{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--border2);padding:calc(11px + var(--sat)) 14px 11px;display:flex;align-items:center;gap:12px;z-index:20}
 .topbar .back{font-size:22px;color:var(--pri);cursor:pointer;width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:12px;transition:background .15s}
 .topbar .back:active{background:var(--bg2)}
 .topbar h1{font-size:18px;font-weight:800;flex:1}
 .topbar .emp{font-size:11px;color:var(--txt3);font-weight:600;text-align:right;max-width:38%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.wrap{padding:18px 16px calc(28px + var(--sab));animation:screenIn .3s ease}
+.wrap,.mobile-page{padding:18px 16px calc(28px + var(--sab));animation:screenIn .3s ease}
 
 /* ── HOME ── */
 .home-hi{font-size:24px;font-weight:800;margin-bottom:3px}
 .home-sub{font-size:13.5px;color:var(--txt3);margin-bottom:22px;font-weight:500}
-.mod{display:flex;align-items:center;gap:15px;background:var(--card);border:1px solid var(--border2);border-radius:20px;padding:17px;margin-bottom:13px;cursor:pointer;box-shadow:var(--shadow);transition:transform .14s ease,box-shadow .18s}
+.mod,.mobile-action{display:flex;align-items:center;gap:15px;background:var(--card);border:1px solid var(--border2);border-radius:20px;padding:17px;margin-bottom:13px;cursor:pointer;box-shadow:var(--shadow);transition:transform .14s ease,box-shadow .18s}
 .mod:active{transform:scale(.98)}
 .mod:not(.soon):active{box-shadow:var(--glow)}
 .mod-ic{width:56px;height:56px;border-radius:17px;display:flex;align-items:center;justify-content:center;font-size:27px;flex-shrink:0;box-shadow:0 6px 16px -6px rgba(91,63,232,.28)}
@@ -109,11 +109,11 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 .soon .badge{font-size:9px;font-weight:800;background:var(--warn);color:#fff;border-radius:99px;padding:3px 8px;margin-left:6px;letter-spacing:.4px;vertical-align:middle}
 
 /* ── CARDS / FORMS ── */
-.card{background:var(--card);border:1px solid var(--border2);border-radius:var(--r);padding:17px;margin-bottom:14px;box-shadow:var(--shadow)}
+.card,.mobile-card{background:var(--card);border:1px solid var(--border2);border-radius:var(--r);padding:17px;margin-bottom:14px;box-shadow:var(--shadow)}
 .card-t{font-size:11px;font-weight:800;color:var(--pri);text-transform:uppercase;letter-spacing:.7px;margin-bottom:12px}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
 .row2>div{min-width:0}
-.bc-row{display:flex;gap:9px}
+.bc-row,.mobile-toolbar{display:flex;gap:9px}
 .bc-row .inp{flex:1;min-width:0}
 .icon-btn{background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;border:none;border-radius:13px;width:54px;min-height:52px;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;box-shadow:var(--glow);flex-shrink:0;transition:transform .12s}
 .icon-btn:active{transform:scale(.95)}
@@ -145,7 +145,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 /* pagamento / quantidade */
 .pg{border:1.5px solid var(--border);background:#fff;color:var(--txt2);border-radius:99px;padding:11px 17px;min-height:44px;font-size:13.5px;font-weight:600;cursor:pointer;transition:all .16s}
 .pg.on{background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;border-color:transparent;box-shadow:var(--glow)}
-.qty-b{width:38px;height:38px;border-radius:11px;border:1.5px solid var(--border);background:#fff;font-size:20px;font-weight:700;color:var(--pri);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .1s}
+.qty-b{width:42px;height:42px;border-radius:12px;border:1.5px solid var(--border);background:#fff;font-size:20px;font-weight:700;color:var(--pri);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .1s}
 .qty-b:active{transform:scale(.9);background:var(--bg2)}
 
 /* sucesso / QR / etiqueta */
@@ -213,6 +213,29 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 #sheet-mais,#sheet-os{animation:up .25s ease}
 #sheet-overlay,#sheet-os-overlay,#modal-pin-overlay,#modal-ios-overlay{animation:motionFadeIn .18s ease}
 
+/* ── FATIA 19: SISTEMA VISUAL MOBILE ──
+   Componentes que o spec pediu com nome próprio, mas que na prática já
+   existiam com outro nome (.wrap, .topbar, .card, .rc, .mod, .inp, .btn,
+   #bottom-nav, .bc-row, .os-badge) viraram ALIAS das classes que já
+   existiam (comma-selector, sem duplicar CSS) — dá pra usar tanto o
+   nome antigo quanto o novo. Só os que realmente não tinham equivalente
+   (.mobile-empty, .mobile-list, .mobile-fab) ganharam regra própria. */
+.motion-sheet{animation:up .25s ease}
+.mobile-empty{padding:32px 20px;text-align:center;color:var(--txt3)}
+.mobile-empty i{font-size:30px;display:block;margin-bottom:9px;opacity:.5;color:var(--pri)}
+.mobile-empty .me-t{font-size:13.5px;font-weight:600;color:var(--txt2);margin-bottom:4px}
+.mobile-empty .me-s{font-size:12px;line-height:1.5;margin-bottom:14px}
+.mobile-list{display:flex;flex-direction:column} /* espaçamento continua vindo do margin-bottom de cada .card — não duplica gap */
+/* botão circular de ação em destaque (scanner) — variante do .icon-btn
+   já existente, só arredondando totalmente e deixando mais "app nativo" */
+.mobile-fab{border-radius:50%!important}
+.mobile-fab:active{transform:scale(.93)}
+
+/* alerta de estoque crítico ganha um pulse bem sutil só no ícone — não
+   no card inteiro, pra não cansar a vista (mesmo critério usado no
+   index.html/admin.html: pulse só em alerta realmente crítico) */
+#home-alertas .aviso.critico i{animation:motionPulseSoft 2.4s ease-in-out infinite}
+
 @media print{
   body *{visibility:hidden!important}
   #etq-label,#etq-label *{visibility:visible!important}
@@ -221,7 +244,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 
 /* ── Fatia 9: BOTTOM NAVIGATION ── */
 #app{padding-bottom:calc(var(--navh) + var(--sab))}
-#bottom-nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--border2);padding:6px 4px calc(6px + var(--sab));z-index:55;box-shadow:0 -4px 20px -8px rgba(24,16,56,.12)}
+#bottom-nav,.mobile-bottom-nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--border2);padding:6px 4px calc(6px + var(--sab));z-index:55;box-shadow:0 -4px 20px -8px rgba(24,16,56,.12)}
 #bottom-nav .bn-it{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:52px;border:none;background:none;color:var(--txt3);font-size:10.5px;font-weight:700;cursor:pointer;border-radius:12px;padding:4px}
 #bottom-nav .bn-it i{font-size:21px}
 #bottom-nav .bn-it.on{color:var(--pri)}
@@ -231,8 +254,8 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 
 /* ── Fatia 9: FOLHA "MAIS" (bottom sheet) ── */
 #sheet-overlay{position:fixed;inset:0;background:rgba(10,6,30,.45);z-index:150;display:none}
-#sheet-mais{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-radius:22px 22px 0 0;padding:10px 16px calc(18px + var(--sab));z-index:151;display:none;box-shadow:0 -10px 40px rgba(0,0,0,.25);max-height:80vh;overflow-y:auto}
-#sheet-mais .sheet-handle{width:38px;height:4px;background:var(--border);border-radius:99px;margin:6px auto 14px}
+#sheet-mais,.mobile-sheet{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-radius:22px 22px 0 0;padding:10px 16px calc(18px + var(--sab));z-index:151;display:none;box-shadow:0 -10px 40px rgba(0,0,0,.25);max-height:80vh;overflow-y:auto}
+#sheet-mais .sheet-handle{width:38px;height:4px;background:var(--border);border-radius:99px;margin:6px auto 14px;padding:9px 30px;background-clip:content-box;box-sizing:content-box}
 #sheet-mais .sheet-it{display:flex;align-items:center;gap:14px;padding:13px 6px;border-radius:14px;cursor:pointer;color:var(--txt);font-weight:600;font-size:15px}
 #sheet-mais .sheet-it:active{background:var(--bg2)}
 #sheet-mais .sheet-it i{font-size:20px;color:var(--pri);width:24px;text-align:center}
@@ -247,7 +270,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 
 /* ── Fatia 9: cards de resumo do dia ── */
 .resumo-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:22px}
-.rc{background:var(--card);border:1px solid var(--border2);border-radius:16px;padding:13px;box-shadow:var(--shadow-sm)}
+.rc,.mobile-kpi{background:var(--card);border:1px solid var(--border2);border-radius:16px;padding:13px;box-shadow:var(--shadow-sm)}
 .rc-lbl{font-size:10.5px;color:var(--txt3);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
 .rc-val{font-family:'Syne',sans-serif;font-size:19px;font-weight:800;color:var(--txt)}
 .rc-val.locked{font-size:15px;color:var(--txt3);display:flex;align-items:center;gap:5px;cursor:pointer}
@@ -258,7 +281,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 
 /* ── Fatia 9: modal simples de PIN (autorização) ── */
 #modal-pin-overlay{position:fixed;inset:0;background:rgba(10,6,30,.5);z-index:160;display:none;align-items:flex-end;justify-content:center}
-#modal-pin{background:var(--card);border-radius:22px 22px 0 0;padding:22px 20px calc(22px + var(--sab));width:100%;max-width:460px;animation:up .25s ease}
+#modal-pin{background:var(--card);border-radius:22px 22px 0 0;padding:22px 20px calc(22px + var(--sab));width:100%;max-width:460px;animation:up .25s ease;max-height:85vh;overflow-y:auto}
 #modal-pin .mp-title{font-weight:800;font-size:16px;margin-bottom:4px}
 #modal-pin .mp-sub{font-size:12.5px;color:var(--txt3);margin-bottom:14px}
 
@@ -305,7 +328,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 
 /* ── Fatia 11A: tela Minhas OS ── */
 .os-card{cursor:pointer}
-.os-badge{font-size:10.5px;font-weight:800;padding:4px 9px;border-radius:8px;letter-spacing:.2px;flex-shrink:0}
+.os-badge,.mobile-status{font-size:10.5px;font-weight:800;padding:4px 9px;border-radius:8px;letter-spacing:.2px;flex-shrink:0}
 .os-badge.st-aguardando{background:#FEF3C7;color:#92600A}
 .os-badge.st-entregue{background:#DCFCE7;color:#166534}
 .os-badge.st-cancelada{background:#FEE2E2;color:#991B1B}
@@ -314,7 +337,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 /* ── Fatia 11A: bottom sheet de detalhe da OS (mesmo padrão do #sheet-mais) ── */
 #sheet-os-overlay{position:fixed;inset:0;background:rgba(10,6,30,.45);z-index:150;display:none}
 #sheet-os{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-radius:22px 22px 0 0;padding:10px 18px calc(20px + var(--sab));z-index:151;display:none;box-shadow:0 -10px 40px rgba(0,0,0,.25);max-height:86vh;overflow-y:auto}
-#sheet-os .sheet-handle{width:38px;height:4px;background:var(--border);border-radius:99px;margin:6px auto 14px}
+#sheet-os .sheet-handle{width:38px;height:4px;background:var(--border);border-radius:99px;margin:6px auto 14px;padding:9px 30px;background-clip:content-box;box-sizing:content-box}
 #sheet-os .osd-tit{font-size:18px;font-weight:800;margin-bottom:2px}
 #sheet-os .osd-sub{font-size:12.5px;color:var(--txt3);margin-bottom:14px}
 #sheet-os .osd-lbl{font-size:10.5px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 4px}
@@ -349,6 +372,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
   <!-- HOME -->
   <div class="wrap" id="scr-home">
     <div class="home-hi" id="hi">Olá 👋</div>
+    <div id="home-user-line" style="font-size:11px;color:var(--txt3);font-weight:600;margin-top:-1px;margin-bottom:3px"></div>
     <div class="home-sub">O que você quer fazer?</div>
 
     <div id="install-banner">
@@ -400,7 +424,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
     </div>
     <div id="recentes-wrap" class="hidden" style="margin-top:24px">
       <div style="font-size:12px;font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px">Cadastrados hoje</div>
-      <div id="recentes"></div>
+      <div id="recentes" class="mobile-list"></div>
     </div>
   </div>
 
@@ -411,21 +435,21 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
       <div>Cadastro rápido. Os <b>dados fiscais</b> (NCM, CFOP, origem) você completa depois no sistema, na aba <b>Produtos</b>, antes de vender com nota.</div>
     </div>
 
-    <div class="card">
+    <div class="card motion-fade-up" style="animation-delay:.03s">
       <div class="card-t">Fotos do produto</div>
       <label class="foto-add" for="p-foto"><i class="ti ti-camera"></i>Tirar foto / escolher</label>
       <input type="file" id="p-foto" accept="image/*" capture="environment" multiple class="hidden" onchange="addFotos(event)">
       <div class="thumbs" id="p-thumbs"></div>
     </div>
 
-    <div class="card">
+    <div class="card motion-fade-up" style="animation-delay:.07s">
       <div class="card-t">Identificação</div>
       <label class="lbl">Nome do produto *</label>
       <input class="inp" id="p-nome" placeholder="Ex.: Capa iPhone 11 Preta">
       <label class="lbl">Código de barras</label>
       <div class="bc-row">
         <input class="inp" id="p-bc" placeholder="Escaneie ou digite" inputmode="numeric">
-        <button class="icon-btn" onclick="abrirScanner()" title="Escanear"><i class="ti ti-scan"></i></button>
+        <button class="icon-btn mobile-fab" onclick="abrirScanner()" title="Escanear"><i class="ti ti-scan"></i></button>
       </div>
       <div class="row2">
         <div><label class="lbl">Categoria</label><input class="inp" id="p-cat" placeholder="Ex.: Acessório"></div>
@@ -433,7 +457,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
       </div>
     </div>
 
-    <div class="card">
+    <div class="card motion-fade-up" style="animation-delay:.11s">
       <div class="card-t">Preço e estoque</div>
       <div class="row2">
         <div><label class="lbl">Custo (R$)</label><input class="inp" id="p-custo" type="number" inputmode="decimal" placeholder="0,00"></div>
@@ -448,21 +472,21 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 
   <!-- OS RÁPIDA -->
   <div class="wrap hidden" id="scr-os">
-    <div class="card">
+    <div class="card motion-fade-up" style="animation-delay:.03s">
       <div class="card-t">Cliente</div>
       <label class="lbl">Nome do cliente *</label>
       <input class="inp" id="os-cli" placeholder="Quem trouxe o aparelho">
       <label class="lbl">WhatsApp do cliente</label>
       <input class="inp" id="os-fone" type="tel" inputmode="numeric" placeholder="(DDD) 9 9999-9999">
     </div>
-    <div class="card">
+    <div class="card motion-fade-up" style="animation-delay:.07s">
       <div class="card-t">Aparelho</div>
       <label class="lbl">Aparelho (marca/modelo) *</label>
       <input class="inp" id="os-aparelho" placeholder="Ex.: iPhone 11 128GB">
       <label class="lbl">Defeito relatado *</label>
       <textarea class="inp" id="os-defeito" rows="2" placeholder="O que o cliente relatou..."></textarea>
     </div>
-    <div class="card">
+    <div class="card motion-fade-up" style="animation-delay:.11s">
       <div class="card-t">Fotos do aparelho</div>
       <label class="foto-add" for="os-foto"><i class="ti ti-camera"></i>Tirar foto / escolher</label>
       <input type="file" id="os-foto" accept="image/*" capture="environment" multiple class="hidden" onchange="addOsFotos(event)">
@@ -488,19 +512,19 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
     <div class="bc-row" style="margin-bottom:14px">
       <input class="inp" id="osl-busca" placeholder="🔍 Buscar por cliente, número ou aparelho..." oninput="renderOsListaDebounced(this.value)">
     </div>
-    <div id="os-lista-list"></div>
+    <div id="os-lista-list" class="mobile-list"></div>
   </div>
 
   <!-- ESTOQUE -->
   <div class="wrap hidden" id="scr-estoque">
     <div class="bc-row" style="margin-bottom:14px">
       <input class="inp" id="est-busca" placeholder="🔍 Buscar produto..." oninput="renderEstoqueDebounced(this.value)">
-      <button class="icon-btn" onclick="abrirScanner('estoque')" title="Escanear para vender"><i class="ti ti-scan"></i></button>
+      <button class="icon-btn mobile-fab" onclick="abrirScanner('estoque')" title="Escanear para vender"><i class="ti ti-scan"></i></button>
     </div>
     <div class="filtro-row">
       <button class="pg motion-btn" id="chip-est-baixo" onclick="toggleFiltroEstoqueBaixo()"><i class="ti ti-alert-triangle" style="font-size:13px;margin-right:4px"></i>Só estoque baixo</button>
     </div>
-    <div id="estoque-list"></div>
+    <div id="estoque-list" class="mobile-list"></div>
   </div>
   <div class="wrap hidden" id="scr-venda">
     <div class="aviso" style="background:#ede9fe;border-color:var(--pri);color:var(--pri-d)">
@@ -536,7 +560,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
   <!-- CARRINHO -->
   <div class="wrap hidden" id="scr-cart">
     <div id="cart-caixa-aviso"></div>
-    <div id="cart-itens"></div>
+    <div id="cart-itens" class="mobile-list"></div>
     <div class="card">
       <label class="lbl">Cliente</label>
       <input class="inp" id="cart-cli" placeholder="Consumidor Final">
@@ -585,7 +609,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 <!-- Fatia 9: FOLHA "MAIS" -->
 <div id="sheet-overlay" onclick="fecharMais()"></div>
 <div id="sheet-mais">
-  <div class="sheet-handle"></div>
+  <div class="sheet-handle" onclick="fecharMais()" style="cursor:pointer"></div>
   <div class="sheet-it" onclick="fecharMais();abrir('venda')"><i class="ti ti-qrcode"></i>Venda rápida (link/QR)</div>
   <div class="sheet-it" onclick="fecharMais();abrir('os-lista')"><i class="ti ti-list-details"></i>Minhas OS</div>
   <div class="sheet-it" onclick="toggleTemaApp()"><i class="ti ti-moon" id="tema-ic"></i><span id="tema-lbl">Tema escuro</span></div>
@@ -597,7 +621,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 
 <!-- Fatia 9: passo a passo de instalação no iPhone/iPad (fica na tela até fechar) -->
 <div id="modal-ios-overlay" onclick="if(event.target===this)fecharInstrucaoIOS()">
-  <div id="modal-ios">
+  <div id="modal-ios" class="mobile-sheet">
     <div class="mp-title" id="ios-titulo">Como instalar no iPhone</div>
     <div class="mp-sub" id="ios-sub">O iPhone não deixa nenhum app instalar sozinho — são só 3 toques no Safari:</div>
     <div id="ios-passos"></div>
@@ -607,7 +631,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 
 <!-- Fatia 9: modal de PIN (Admin/Gerente) p/ liberar lucro do dia -->
 <div id="modal-pin-overlay" onclick="if(event.target===this)fecharPinModal()">
-  <div id="modal-pin">
+  <div id="modal-pin" class="mobile-sheet">
     <div class="mp-title">Autorização necessária</div>
     <div class="mp-sub">Digite o PIN de um Admin ou Gerente para ver o lucro estimado.</div>
     <input class="inp" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="pin-lucro-input" placeholder="••••" onkeydown="if(event.key==='Enter')confirmarPinLucro()">
@@ -619,8 +643,8 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 
 <!-- Fatia 11A: bottom sheet de detalhe de uma OS existente (Minhas OS) -->
 <div id="sheet-os-overlay" onclick="fecharDetalheOS()"></div>
-<div id="sheet-os">
-  <div class="sheet-handle"></div>
+<div id="sheet-os" class="mobile-sheet">
+  <div class="sheet-handle" onclick="fecharDetalheOS()" style="cursor:pointer"></div>
   <div class="osd-tit" id="osd-titulo">OS</div>
   <div class="osd-sub" id="osd-sub"></div>
 
@@ -732,9 +756,14 @@ async function carregarEmpresa(user){
   const {data:emp}=await comTimeout(db.from('empresas').select('id,nome,status').eq('auth_user_id',user.id).maybeSingle(),'empresa');
   if(!emp) throw new Error('Esta conta não é de uma empresa. Use o login da loja.');
   if(emp.status==='bloqueada') throw new Error('Empresa bloqueada. Fale com o suporte.');
-  G.empresa=emp; G.empresaId=emp.id;
+  G.empresa=emp; G.empresaId=emp.id; G.userEmail=user.email||'';
   $('emp-nome').textContent=emp.nome||'';
   $('hi').textContent='Olá 👋';
+  // Fatia 19: "usuário logado" pedido no spec — usa o e-mail da sessão
+  // autenticada (Supabase), não o G.operador (que é só um palpite pra
+  // liberar o PIN do lucro, não necessariamente quem está de fato
+  // logado neste aparelho — ver PENDENCIAS, seção sobre esse achado).
+  if($('home-user-line') && G.userEmail) $('home-user-line').textContent = 'Logado como '+G.userEmail;
   $('login').classList.add('hidden');
   $('app').classList.remove('hidden');
   $('bottom-nav').classList.remove('hidden');
@@ -808,7 +837,7 @@ function carregarAlertasHome(){
   }
   if(typeof G._estoqueBaixoCount==='number' && G._estoqueBaixoCount>0){
     const n=G._estoqueBaixoCount;
-    html+=`<div class="aviso click" onclick="G._estFiltroBaixo=true;abrir('estoque')"><i class="ti ti-alert-triangle"></i><div><b>${n} produto${n>1?'s':''}</b> com estoque baixo. Toque para ver.</div></div>`;
+    html+=`<div class="aviso click critico" onclick="G._estFiltroBaixo=true;abrir('estoque')"><i class="ti ti-alert-triangle"></i><div><b>${n} produto${n>1?'s':''}</b> com estoque baixo. Toque para ver.</div></div>`;
   }
   el.innerHTML=html;
 }
@@ -1221,8 +1250,8 @@ function renderOsLista(q){
   if(busca) list=list.filter(o=>((o.cliente_nome||'')+' '+(o.numero||'')+' '+(o.aparelho||'')).toLowerCase().includes(busca));
   if(!list.length){
     c.innerHTML = busca
-      ? '<div style="text-align:center;padding:24px;color:var(--txt3)">Nenhuma OS encontrada com esse termo.</div>'
-      : `<div style="text-align:center;padding:30px 20px"><div style="color:var(--txt3);margin-bottom:14px">Nenhuma OS aberta.</div><button class="btn" style="width:auto;padding:11px 22px;margin:0 auto" onclick="abrir('os')"><i class="ti ti-plus"></i>Criar OS rápida</button></div>`;
+      ? '<div class="mobile-empty motion-fade-in"><i class="ti ti-search-off"></i><div class="me-t">Nenhuma OS encontrada com esse termo.</div></div>'
+      : `<div class="mobile-empty motion-fade-in"><i class="ti ti-clipboard-off"></i><div class="me-t">Nenhuma OS aberta.</div><button class="btn" style="width:auto;padding:11px 22px;margin:6px auto 0" onclick="abrir('os')"><i class="ti ti-plus"></i>Criar OS rápida</button></div>`;
     return;
   }
   c.innerHTML=list.map(o=>{
@@ -1373,8 +1402,8 @@ function renderEstoque(q){
   if(busca) list=list.filter(p=>(p.nome||'').toLowerCase().includes(busca));
   if(!list.length){
     c.innerHTML = G._estFiltroBaixo
-      ? '<div style="text-align:center;padding:24px;color:var(--txt3)">Nenhum produto com estoque baixo. 🎉</div>'
-      : '<div style="text-align:center;padding:24px;color:var(--txt3)">Nenhum produto encontrado.</div>';
+      ? '<div class="mobile-empty motion-fade-in"><i class="ti ti-circle-check"></i><div class="me-t">Nenhum produto com estoque baixo. 🎉</div></div>'
+      : '<div class="mobile-empty motion-fade-in"><i class="ti ti-package-off"></i><div class="me-t">Nenhum produto encontrado.</div><div class="me-s">Use o scanner para localizar um produto rapidamente.</div></div>';
     return;
   }
   c.innerHTML=list.map(p=>{
@@ -1422,7 +1451,7 @@ function renderCart(){
   const av=$('cart-caixa-aviso');
   if(av) av.innerHTML = G.caixa ? '' : '<div class="aviso"><i class="ti ti-lock-open"></i><div><b>Nenhum caixa aberto.</b> Você ainda pode finalizar a venda, mas o ideal é abrir o caixa no sistema antes de vender.</div></div>';
   const c=$('cart-itens');
-  if(!G.cart.length){ c.innerHTML='<div style="text-align:center;padding:24px;color:var(--txt3)">Carrinho vazio.</div>'; $('cart-tot-b').textContent='R$ 0,00'; return; }
+  if(!G.cart.length){ c.innerHTML='<div class="mobile-empty motion-fade-in"><i class="ti ti-shopping-cart-off"></i><div class="me-t">Carrinho vazio.</div></div>'; $('cart-tot-b').textContent='R$ 0,00'; return; }
   c.innerHTML=G.cart.map(it=>`<div class="card" style="display:flex;align-items:center;gap:10px;padding:11px 13px">
     <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(it.nome)}</div><div style="font-size:12px;color:var(--txt3)">R$ ${it.preco.toLocaleString('pt-BR',{minimumFractionDigits:2})} un.</div></div>
     <div style="display:flex;align-items:center;gap:8px">
