@@ -92,10 +92,19 @@ let E=null, forma='entrega', _wppBtnHtml='';
 // sincronizarEntregas()/_cardEntrega()): para_agendar, agendada, em_rota, entregue,
 // cancelada. Não existe "Em separação"/"Não entregue" no sistema — não inventei.
 // "Aguardando pagamento" também não é um status aqui, é o campo separado `pago`.
+// Fatia 21: dois valores novos, gravados pelo app mobile do entregador —
+// 'proximo_destino' (ação manual, sem GPS real) e 'tentativa' (tentativa de
+// entrega registrada, não concluída). Mapeados aqui só como texto humano,
+// sem inventar nenhum status novo. ⚠️ ASSUNÇÃO TÉCNICA: não confirmei se a
+// RPC `entrega_publica` já devolve esses dois valores no campo `status` pro
+// portal público — se ela não devolver, o cliente simplesmente não vê essa
+// mudança aqui até a RPC ser ajustada (ver pendências no relatório).
 const ENTREGA_STATUS = {
   para_agendar:{label:'Pedido recebido',cor:'#d97706',bg:'#fdf0e0'},
   agendada:{label:'Entrega agendada',cor:'#1E5EFF',bg:'#eef3ff'},
   em_rota:{label:'Saiu para entrega',cor:'#1E5EFF',bg:'#eef3ff'},
+  proximo_destino:{label:'A caminho — perto de você',cor:'#1E5EFF',bg:'#eef3ff'},
+  tentativa:{label:'Tentativa de entrega — aguardando novo contato',cor:'#d97706',bg:'#fdf0e0'},
   entregue:{label:'Entregue',cor:'#16a34a',bg:'#e7f6ec'},
   cancelada:{label:'Cancelada',cor:'#8A8296',bg:'#efe9de'}
 };
@@ -127,7 +136,7 @@ function render(){
   // inventar rótulo nem herdar cor de outro status.
   const stKey = E.status;
   const st = stKey ? (ENTREGA_STATUS[stKey] || {label:stKey,cor:'#8A8296',bg:'#efe9de'}) : null;
-  const stPill = st ? `<span class="st-pill${stKey==='em_rota'?' pulse':''}" style="color:${st.cor};background:${st.bg}">${esc(st.label)}</span>` : '';
+  const stPill = st ? `<span class="st-pill${(stKey==='em_rota'||stKey==='proximo_destino')?' pulse':''}" style="color:${st.cor};background:${st.bg}">${esc(st.label)}</span>` : '';
 
   // Fatia 14: "previsto para" — só mostro se já existir uma data definida
   // (não é uma previsão inventada, é o próprio campo data_agendada/janela
