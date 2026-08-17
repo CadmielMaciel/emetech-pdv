@@ -716,6 +716,49 @@ select option { background: var(--bg2); }
 }
 .ct-var{display:inline-flex;align-items:center;padding:2px 8px;background:var(--pri-light);border:1px solid rgba(91,71,224,.2);border-radius:6px;font-size:11px;font-family:'DM Mono',monospace;color:var(--pri);cursor:pointer;transition:var(--trans);font-weight:600}
 .ct-var:hover{background:var(--pri);color:#fff}
+
+/* ═══ TOUR GUIADO (treinamento interativo estilo "spotlight") ═══
+   Mesma técnica/estrutura de index.html (recorte real via 4 tiras do
+   overlay + anel de destaque flutuante, nunca aplicado no elemento real
+   — evita qualquer risco de contexto de empilhamento quebrar o layout).
+   admin.html não tem os tokens --motion-*/--ease-* de index.html, então
+   usa durações fixas — a redução de movimento continua automática pelo
+   bloco @media(prefers-reduced-motion:reduce) já existente no topo deste
+   arquivo (zera transition-duration/animation-duration globalmente). */
+.tour-overlay-slice{position:fixed;background:rgba(4,2,10,.68);z-index:99990;pointer-events:auto;opacity:0;transition:opacity .2s ease,top .15s ease,left .15s ease,width .15s ease,height .15s ease}
+.tour-overlay-slice.tour-on{opacity:1}
+.tour-highlight{position:fixed;z-index:99991;pointer-events:none;border-radius:12px;outline:2.5px solid var(--pri);outline-offset:3px;box-shadow:0 0 0 5px var(--pri-light),0 0 26px var(--glow);animation:tourPulseAdm 1.8s ease-in-out infinite;opacity:0;transition:opacity .2s ease,top .15s ease,left .15s ease,width .15s ease,height .15s ease}
+.tour-highlight.tour-on{opacity:1}
+@keyframes tourPulseAdm{0%,100%{box-shadow:0 0 0 5px var(--pri-light),0 0 26px var(--glow)}50%{box-shadow:0 0 0 8px rgba(139,92,246,.08),0 0 34px rgba(139,92,246,.22)}}
+.tour-popover{position:fixed;z-index:99992;width:328px;max-width:calc(100vw - 24px);background:var(--bg2);color:var(--txt);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);padding:18px 20px 16px;opacity:0;transform:translateY(6px) scale(.98);transition:opacity .2s ease,transform .2s ease;pointer-events:none}
+.tour-popover.tour-on{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+.tour-popover-title{font-family:'Syne',sans-serif;font-weight:800;font-size:15.5px;color:var(--txt);margin-bottom:6px;padding-right:22px}
+.tour-popover-text{font-size:13px;line-height:1.55;color:var(--txt2);margin-bottom:14px}
+.tour-popover-close{position:absolute;top:12px;right:12px;width:26px;height:26px;border:none;background:none;color:var(--txt3);cursor:pointer;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;transition:background .1s ease,color .1s ease}
+.tour-popover-close:hover{background:var(--bg3);color:var(--txt)}
+.tour-popover-foot{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.tour-popover-progress{font-size:11px;color:var(--txt3);font-weight:600;white-space:nowrap}
+.tour-popover-dots{display:flex;gap:4px;margin-top:2px}
+.tour-popover-dot{width:5px;height:5px;border-radius:50%;background:var(--border2)}
+.tour-popover-dot.tour-dot-on{background:var(--pri);width:14px;border-radius:3px;transition:width .15s ease}
+.tour-popover-actions{display:flex;gap:8px}
+.tour-btn{border:none;border-radius:9px;padding:8px 14px;font-size:12.5px;font-weight:700;cursor:pointer;transition:transform .1s ease,background .15s ease}
+.tour-btn:active{transform:scale(.96)}
+.tour-btn-ghost{background:transparent;color:var(--txt3)}
+.tour-btn-ghost:hover{color:var(--txt)}
+.tour-btn-out{background:var(--bg3);color:var(--txt2)}
+.tour-btn-out:hover{background:var(--border)}
+.tour-btn-pri{background:var(--pri);color:#fff}
+.tour-btn-pri:hover{background:var(--pri2)}
+.tour-popover-skip{font-size:11px;color:var(--txt3);text-decoration:underline;cursor:pointer;background:none;border:none;padding:0;margin-top:10px;display:block}
+.tour-popover-skip:hover{color:var(--txt2)}
+@media (max-width:640px){
+  .tour-popover{left:0!important;right:0!important;bottom:0!important;top:auto!important;width:100%;max-width:100%;border-radius:18px 18px 0 0;transform:translateY(100%);padding:16px 18px calc(16px + env(safe-area-inset-bottom))}
+  .tour-popover.tour-on{transform:translateY(0)}
+  .tour-popover::before{content:'';position:absolute;top:8px;left:50%;transform:translateX(-50%);width:36px;height:4px;border-radius:99px;background:var(--border2)}
+  .tour-popover-title{margin-top:8px}
+  .tour-btn{padding:10px 16px;font-size:13px}
+}
 </style>
 </head>
 <body>
@@ -760,13 +803,13 @@ select option { background: var(--bg2); }
       <div class="sb-group" data-grp="visao">
         <div class="sb-sec sb-sec-toggle" onclick="toggleSbGroup('visao')"><i class="ti ti-chevron-down sb-chev"></i> Visão Geral</div>
         <div class="sb-group-body">
-          <div class="sb-item active" onclick="go('dashboard')"><i class="ti ti-layout-dashboard"></i> Dashboard</div>
+          <div class="sb-item active" onclick="go('dashboard')" data-tour="admin-dashboard"><i class="ti ti-layout-dashboard"></i> Dashboard</div>
         </div>
       </div>
       <div class="sb-group" data-grp="empresas">
         <div class="sb-sec sb-sec-toggle" onclick="toggleSbGroup('empresas')"><i class="ti ti-chevron-down sb-chev"></i> Empresas</div>
         <div class="sb-group-body">
-          <div class="sb-item" onclick="go('empresas')"><i class="ti ti-building-store"></i> Empresas</div>
+          <div class="sb-item" onclick="go('empresas')" data-tour="admin-empresas"><i class="ti ti-building-store"></i> Empresas</div>
           <div class="sb-item" onclick="go('saude')"><i class="ti ti-heart-rate-monitor"></i> Saúde dos Clientes</div>
           <div class="sb-item" onclick="go('onboarding')"><i class="ti ti-rocket"></i> Onboarding</div>
         </div>
@@ -774,9 +817,10 @@ select option { background: var(--bg2); }
       <div class="sb-group" data-grp="receita">
         <div class="sb-sec sb-sec-toggle" onclick="toggleSbGroup('receita')"><i class="ti ti-chevron-down sb-chev"></i> Receita SaaS</div>
         <div class="sb-group-body">
-          <div class="sb-item" onclick="go('financeiro')"><i class="ti ti-currency-dollar"></i> Financeiro SaaS</div>
+          <div class="sb-item" onclick="go('financeiro')" data-tour="admin-financeiro"><i class="ti ti-currency-dollar"></i> Financeiro SaaS</div>
           <div class="sb-item" onclick="go('cobrancas')"><i class="ti ti-receipt"></i> Cobranças</div>
-          <div class="sb-item" onclick="go('planos')"><i class="ti ti-credit-card"></i> Planos</div>
+          <div class="sb-item" onclick="go('planos')" data-tour="admin-planos"><i class="ti ti-credit-card"></i> Planos</div>
+          <div class="sb-item" onclick="go('ia_consumo')" data-tour="admin-ia"><i class="ti ti-sparkles"></i> Consumo de IA</div>
         </div>
       </div>
       <div class="sb-group" data-grp="comercial">
@@ -789,7 +833,7 @@ select option { background: var(--bg2); }
       <div class="sb-group" data-grp="compliance">
         <div class="sb-sec sb-sec-toggle" onclick="toggleSbGroup('compliance')"><i class="ti ti-chevron-down sb-chev"></i> Compliance</div>
         <div class="sb-group-body">
-          <div class="sb-item" onclick="go('lgpd')"><i class="ti ti-shield-check"></i> LGPD e Privacidade</div>
+          <div class="sb-item" onclick="go('lgpd')" data-tour="admin-termos"><i class="ti ti-shield-check"></i> LGPD e Privacidade</div>
           <div class="sb-item" onclick="go('cookies')"><i class="ti ti-cookie"></i> Cookies</div>
           <div class="sb-item" onclick="go('suporte');setTimeout(()=>document.getElementById('csaas-titulo')?.scrollIntoView({behavior:'smooth',block:'center'}),80)"><i class="ti ti-file-dollar"></i> Contrato SaaS</div>
         </div>
@@ -806,7 +850,7 @@ select option { background: var(--bg2); }
           <div class="sb-item" onclick="go('contratos_master')"><i class="ti ti-file-certificate"></i> Contratos Master</div>
           <div class="sb-item" onclick="go('whatsapp')"><i class="ti ti-brand-whatsapp"></i> WhatsApp</div>
           <div class="sb-item" onclick="go('updates')"><i class="ti ti-cloud-upload"></i> Updates</div>
-          <div class="sb-item" onclick="go('logs')"><i class="ti ti-activity"></i> Logs</div>
+          <div class="sb-item" onclick="go('logs')" data-tour="admin-logs"><i class="ti ti-activity"></i> Logs</div>
         </div>
       </div>
       <div class="sb-group" data-grp="sistema">
@@ -1181,7 +1225,7 @@ select option { background: var(--bg2); }
       <div class="page" id="page-planos">
         <div class="sec-hdr">
           <div class="sec-title">Planos e preços</div>
-          <button class="btn btn-pri btn-sm" onclick="openModal('modal-plano')">
+          <button class="btn btn-pri btn-sm" onclick="novoPlano()">
             <i class="ti ti-plus"></i> Novo plano
           </button>
         </div>
@@ -1203,6 +1247,76 @@ select option { background: var(--bg2); }
               <select id="assoc-plano-sel"></select>
             </div>
             <button class="btn btn-pri" onclick="associarPlano()"><i class="ti ti-check"></i> Aplicar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ PAGE: CONSUMO DE IA (Fatia 22) ══ -->
+      <div class="page" id="page-ia_consumo">
+        <div class="sec-hdr">
+          <div class="sec-title">Consumo de IA</div>
+          <button class="btn btn-out btn-sm" onclick="renderConsumoIA()"><i class="ti ti-refresh"></i> Atualizar</button>
+        </div>
+        <div style="font-size:12.5px;color:var(--txt2);margin-bottom:14px">
+          Consultas e tokens de IA consumidos por empresa, comparado ao limite do plano de cada uma. A chave de API nunca é exibida aqui.
+        </div>
+        <div class="kpi-grid" id="ia-kpis">
+          <div class="kpi-card"><div class="kpi-val" id="ia-kpi-consultas-hoje">—</div><div class="kpi-lbl">Consultas de IA hoje (todas as empresas)</div></div>
+          <div class="kpi-card"><div class="kpi-val" id="ia-kpi-tokens-mes">—</div><div class="kpi-lbl">Tokens consumidos este mês</div></div>
+          <div class="kpi-card"><div class="kpi-val" id="ia-kpi-perto-limite" style="color:var(--gold,#F59E0B)">—</div><div class="kpi-lbl">Empresas perto do limite</div></div>
+          <div class="kpi-card"><div class="kpi-val" id="ia-kpi-bloqueadas" style="color:var(--danger)">—</div><div class="kpi-lbl">Empresas bloqueadas de IA</div></div>
+        </div>
+        <div class="chart-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+            <div class="sec-title">Consumo por empresa</div>
+          </div>
+          <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">
+            <thead><tr style="border-bottom:1px solid var(--border);text-align:left;color:var(--txt3);font-size:11px;text-transform:uppercase">
+              <th style="padding:8px">Empresa</th><th>Plano</th><th>Consultas hoje</th><th>Limite/dia</th><th>Tokens mês</th><th>Limite/mês</th><th>Situação</th><th>Ação</th>
+            </tr></thead>
+            <tbody id="ia-consumo-tabela"><tr><td colspan="8" style="text-align:center;color:var(--txt3);padding:16px">Carregando...</td></tr></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- Override de IA por empresa -->
+      <div class="modal-overlay" id="modal-ia-override">
+        <div class="modal" style="max-width:420px">
+          <div class="modal-title"><i class="ti ti-adjustments"></i> Limite de IA — <span id="ia-ov-empresa-nome"></span></div>
+          <input type="hidden" id="ia-ov-empresa-id">
+          <div class="fg">
+            <label class="lbl" style="display:flex;align-items:center;gap:8px;cursor:pointer">
+              <input type="checkbox" id="ia-ov-bloqueado" style="width:16px;height:16px">
+              <span>Bloquear IA totalmente para esta empresa</span>
+            </label>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="fg">
+              <label class="lbl">Consultas extra / dia</label>
+              <input type="number" id="ia-ov-daily-req" min="0" placeholder="Padrão do plano">
+            </div>
+            <div class="fg">
+              <label class="lbl">Consultas extra / mês</label>
+              <input type="number" id="ia-ov-monthly-req" min="0" placeholder="Padrão do plano">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="fg">
+              <label class="lbl">Tokens extra / dia</label>
+              <input type="number" id="ia-ov-daily-tok" min="0" placeholder="Padrão do plano">
+            </div>
+            <div class="fg">
+              <label class="lbl">Tokens extra / mês</label>
+              <input type="number" id="ia-ov-monthly-tok" min="0" placeholder="Padrão do plano">
+            </div>
+          </div>
+          <div class="fg">
+            <label class="lbl">Motivo (fica registrado)</label>
+            <textarea id="ia-ov-motivo" rows="2" placeholder="Ex: cortesia comercial, cliente reclamou de limite baixo..."></textarea>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-out" onclick="closeModal('modal-ia-override')">Cancelar</button>
+            <button class="btn btn-pri" onclick="salvarOverrideIA()"><i class="ti ti-check"></i> Salvar</button>
           </div>
         </div>
       </div>
@@ -1584,6 +1698,14 @@ select option { background: var(--bg2); }
               </div>
             </div>
           </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:6px"><i class="ti ti-map-pin" style="color:var(--pri)"></i> Treinamento guiado</div>
+          <div style="font-size:12.5px;color:var(--txt2);margin-bottom:14px;max-width:560px">
+            Passeio guiado pelas principais áreas do painel master (Dashboard, Empresas, Planos, Consumo de IA, LGPD, Financeiro SaaS e Logs).
+          </div>
+          <button class="btn btn-out" onclick="startTour('admin')"><i class="ti ti-route"></i> Iniciar tour do painel admin</button>
         </div>
 
         <div class="sec-hdr" style="margin-top:24px"><div class="sec-title" style="color:var(--danger)"><i class="ti ti-alert-triangle"></i> Zona de perigo</div></div>
@@ -2058,6 +2180,57 @@ CREATE POLICY "master_all" ON admin_master FOR ALL USING (true) WITH CHECK (true
       <label class="lbl">Funcionalidades incluídas</label>
       <textarea id="plano-features" rows="3" placeholder="PDV, Estoque, OS, Crediário..."></textarea>
     </div>
+
+    <div style="margin-top:6px;padding-top:12px;border-top:1px solid var(--bd)">
+      <label class="lbl" style="display:flex;align-items:center;gap:8px;cursor:pointer">
+        <input type="checkbox" id="plano-ai-enabled" checked style="width:16px;height:16px">
+        <span><i class="ti ti-sparkles"></i> IA habilitada neste plano</span>
+      </label>
+    </div>
+    <div id="plano-ai-campos">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="fg">
+          <label class="lbl">Consultas IA / dia</label>
+          <input type="number" id="plano-ai-daily-req" min="0" placeholder="Ex: 30">
+        </div>
+        <div class="fg">
+          <label class="lbl">Consultas IA / mês (opcional)</label>
+          <input type="number" id="plano-ai-monthly-req" min="0" placeholder="Ilimitado se vazio">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="fg">
+          <label class="lbl">Tokens IA / dia (opcional)</label>
+          <input type="number" id="plano-ai-daily-tok" min="0" placeholder="Ilimitado se vazio">
+        </div>
+        <div class="fg">
+          <label class="lbl">Tokens IA / mês</label>
+          <input type="number" id="plano-ai-monthly-tok" min="0" placeholder="Ex: 200000">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="fg">
+          <label class="lbl">Modelo padrão</label>
+          <input type="text" id="plano-ai-model" placeholder="gemini-2.0-flash">
+        </div>
+        <div class="fg">
+          <label class="lbl">Máx. tokens de saída</label>
+          <input type="number" id="plano-ai-max-output" min="0" placeholder="2048">
+        </div>
+      </div>
+      <div class="fg">
+        <label class="lbl">Recursos de IA liberados</label>
+        <div style="display:flex;gap:16px;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+            <input type="checkbox" id="plano-ai-feat-compat" style="width:15px;height:15px"> Compatibilidade de peças
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+            <input type="checkbox" id="plano-ai-feat-diagnostico" style="width:15px;height:15px"> Diagnóstico assistido
+          </label>
+        </div>
+      </div>
+    </div>
+
     <div class="modal-footer">
       <button class="btn btn-out" onclick="closeModal('modal-plano')">Cancelar</button>
       <button class="btn btn-pri" onclick="salvarPlano()"><i class="ti ti-check"></i> Salvar</button>
@@ -2553,6 +2726,15 @@ function mapPlanoFromDb(r) {
     // Fatia 17 — aditivo, undefined até a migração ser rodada
     precoAnual: r.preco_anual != null ? Number(r.preco_anual) : null,
     descontoAnualPct: r.desconto_anual_pct != null ? Number(r.desconto_anual_pct) : null,
+    // Fatia 22 — limites de IA por plano (sql/fatia22_saas_selfservice_ia.sql)
+    aiEnabled: r.ai_enabled !== false,
+    aiDailyReqLimit: r.ai_daily_requests_limit ?? null,
+    aiMonthlyReqLimit: r.ai_monthly_requests_limit ?? null,
+    aiDailyTokLimit: r.ai_daily_tokens_limit ?? null,
+    aiMonthlyTokLimit: r.ai_monthly_tokens_limit ?? null,
+    aiModel: r.ai_model_default || 'gemini-2.0-flash',
+    aiMaxOutputTokens: r.ai_max_output_tokens ?? 2048,
+    aiFeatures: Array.isArray(r.ai_features_enabled) ? r.ai_features_enabled : [],
   };
 }
 async function getPlanos() {
@@ -2666,28 +2848,59 @@ async function salvarEntitlements() {
 function _erroColunaPlanoAnualInexistente(error) {
   return error && (error.code === '42703' || /column .*(preco_anual|desconto_anual_pct).*does not exist/i.test(error.message || ''));
 }
+// Fatia 22 — mesmo padrão defensivo, pros campos de IA (ai_*). Se a
+// migração sql/fatia22_saas_selfservice_ia.sql ainda não rodou, o admin
+// consegue salvar nome/preço/features normalmente — só os campos de IA
+// ficam de fora até a migração ser aplicada.
+function _erroColunaPlanoIAInexistente(error) {
+  return error && (error.code === '42703' || /column .*ai_(enabled|daily_requests_limit|monthly_requests_limit|daily_tokens_limit|monthly_tokens_limit|model_default|max_output_tokens|features_enabled).*does not exist/i.test(error.message || ''));
+}
 async function salvarPlanoDb(plano) {
   const payload = { nome: plano.nome, preco: plano.preco, usuarios: plano.usuarios, features: plano.features };
   if (plano.precoAnual !== undefined) payload.preco_anual = plano.precoAnual;
   if (plano.descontoAnualPct !== undefined) payload.desconto_anual_pct = plano.descontoAnualPct;
-  if (plano.id) {
-    let { error } = await db.from('planos').update(payload).eq('id', plano.id);
-    if (error && _erroColunaPlanoAnualInexistente(error)) {
-      const { preco_anual, desconto_anual_pct, ...semAnual } = payload;
-      ({ error } = await db.from('planos').update(semAnual).eq('id', plano.id));
-      if (!error) notify('Plano salvo, mas preço anual não foi gravado — rode sql/fatia17_admin_saas.sql.', 'warn', 7000);
+  if (plano.aiEnabled !== undefined) {
+    payload.ai_enabled = plano.aiEnabled;
+    payload.ai_daily_requests_limit = plano.aiDailyReqLimit;
+    payload.ai_monthly_requests_limit = plano.aiMonthlyReqLimit;
+    payload.ai_daily_tokens_limit = plano.aiDailyTokLimit;
+    payload.ai_monthly_tokens_limit = plano.aiMonthlyTokLimit;
+    payload.ai_model_default = plano.aiModel;
+    payload.ai_max_output_tokens = plano.aiMaxOutputTokens;
+    payload.ai_features_enabled = plano.aiFeatures;
+  }
+  const CAMPOS_IA = ['ai_enabled','ai_daily_requests_limit','ai_monthly_requests_limit','ai_daily_tokens_limit','ai_monthly_tokens_limit','ai_model_default','ai_max_output_tokens','ai_features_enabled'];
+  const CAMPOS_ANUAL = ['preco_anual','desconto_anual_pct'];
+
+  // Tenta gravar; se der erro de coluna inexistente (IA e/ou anual), vai
+  // removendo os campos problemáticos ACUMULATIVAMENTE (não perde a remoção
+  // anterior a cada nova tentativa) e tenta de novo, até 3 rodadas.
+  async function tentarGravar(fazerGravacao) {
+    let atual = { ...payload };
+    let avisoIA = false, avisoAnual = false;
+    for (let tentativa = 0; tentativa < 3; tentativa++) {
+      const { error } = await fazerGravacao(atual);
+      if (!error) {
+        if (avisoIA) notify('Plano salvo, mas os limites de IA não foram gravados — rode sql/fatia22_saas_selfservice_ia.sql.', 'warn', 7000);
+        if (avisoAnual) notify('Plano salvo, mas preço anual não foi gravado — rode sql/fatia17_admin_saas.sql.', 'warn', 7000);
+        return;
+      }
+      if (_erroColunaPlanoIAInexistente(error) && !avisoIA) {
+        avisoIA = true; CAMPOS_IA.forEach(k => delete atual[k]); continue;
+      }
+      if (_erroColunaPlanoAnualInexistente(error) && !avisoAnual) {
+        avisoAnual = true; CAMPOS_ANUAL.forEach(k => delete atual[k]); continue;
+      }
+      throw error; // erro real, ou já tentamos remover tudo que sabíamos remover
     }
-    if (error) throw error;
+  }
+
+  if (plano.id) {
+    await tentarGravar((p) => db.from('planos').update(p).eq('id', plano.id));
     return plano.id;
   } else {
     const id = 'plano_' + Date.now();
-    let { error } = await db.from('planos').insert({ id, ...payload });
-    if (error && _erroColunaPlanoAnualInexistente(error)) {
-      const { preco_anual, desconto_anual_pct, ...semAnual } = payload;
-      ({ error } = await db.from('planos').insert({ id, ...semAnual }));
-      if (!error) notify('Plano salvo, mas preço anual não foi gravado — rode sql/fatia17_admin_saas.sql.', 'warn', 7000);
-    }
-    if (error) throw error;
+    await tentarGravar((p) => db.from('planos').insert({ id, ...p }));
     return id;
   }
 }
@@ -2954,6 +3167,7 @@ async function iniciarApp() {
   atualizarBadgesSidebar();
   go('dashboard');
   initMotionReveal();
+  if(typeof verificarConviteTourAdmin==='function') verificarConviteTourAdmin();
 }
 
 // Recarrega todos os dados do Supabase para o estado global G (NOVO)
@@ -2994,6 +3208,7 @@ const PAGE_TITLES = {
   saude:     { title:'Saúde dos Clientes', icon:'ti-heart-rate-monitor' },
   cobrancas: { title:'Cobranças',    icon:'ti-receipt'          },
   planos:    { title:'Planos',       icon:'ti-credit-card'      },
+  ia_consumo:{ title:'Consumo de IA', icon:'ti-sparkles'        },
   contratos_master: { title:'Contratos & Termos — Globais', icon:'ti-file-certificate' },
   whatsapp:  { title:'WhatsApp',     icon:'ti-brand-whatsapp'   },
   updates:   { title:'Updates',      icon:'ti-cloud-upload'     },
@@ -3067,6 +3282,7 @@ function go(page) {
   if (page === 'financeiro') renderFinanceiro();
   if (page === 'onboarding') renderOnboarding();
   if (page === 'cobrancas') renderCobrancas();
+  if (page === 'ia_consumo') renderConsumoIA();
   if (page === 'whatsapp') renderWhatsapp();
   if (page === 'suporte'){ carregarSuporteConfig(); renderTicketsAdmin(); }
   if (page === 'contratos_master') renderContratosMaster();
@@ -3191,7 +3407,7 @@ async function acaoMassa(tipo){
   else if(tipo==='plano'){
     // Carrega planos disponíveis
     if(!G.planos||!G.planos.length){ try{ const {data}=await db.from('planos').select('*').order('preco'); G.planos=data||[]; }catch(e){} }
-    const opts=(G.planos||[]).map(p=>`<option value="${p.id||p.nome}">${p.nome} — R$ ${(parseFloat(p.preco)||0).toFixed(2)}/mês</option>`).join('');
+    const opts=(G.planos||[]).filter(p=>p.id!=='trial').map(p=>`<option value="${p.id||p.nome}">${p.nome} — R$ ${(parseFloat(p.preco)||0).toFixed(2)}/mês</option>`).join('');
     const html=`<div class="modal-title"><i class="ti ti-arrow-up-circle" style="color:var(--pri)"></i> Mudar plano em massa</div>
       <div style="font-size:13px;color:var(--txt2);margin-bottom:12px">${ids.length} empresa(s) selecionada(s).</div>
       <div class="fg"><label class="lbl">Novo plano</label><select id="massa-plano" style="width:100%">${opts||'<option>Sem planos cadastrados</option>'}</select></div>`;
@@ -4353,11 +4569,12 @@ async function popularSelectPlanos(selecionado){
   if(!G.planos || !G.planos.length){
     try{ G.planos = await getPlanos(); }catch(e){ G.planos=[]; }
   }
-  if(!G.planos.length){
+  const planosVisiveis = G.planos.filter(p => p.id !== 'trial'); // 'trial' é linha virtual de limites de IA, não é atribuível manualmente
+  if(!planosVisiveis.length){
     // Fallback: se não há planos cadastrados, mantém as opções básicas
     sel.innerHTML='<option value="basic">Básico</option><option value="pro">Pro</option><option value="enterprise">Enterprise</option>';
   } else {
-    sel.innerHTML=G.planos.map(p=>{
+    sel.innerHTML=planosVisiveis.map(p=>{
       const preco=parseFloat(p.preco)||0;
       const label=`${p.nome}${preco>0?` — R$ ${preco.toFixed(2)}/mês`:' — grátis'}`;
       return `<option value="${p.id||p.nome}">${label}</option>`;
@@ -5751,7 +5968,10 @@ function renderPlanos() {
   if (!grid) return;
 
   const cores = ['var(--pri)', 'var(--success)', 'var(--gold)'];
-  grid.innerHTML = G.planos.map((p, i) => `
+  // id='trial' é uma linha virtual (fatia 22) só pra resolver limites de IA
+  // durante o período de teste — não é um plano comprável, não mostra aqui.
+  const planosVisiveis = G.planos.filter(p => p.id !== 'trial');
+  grid.innerHTML = planosVisiveis.map((p, i) => `
     <div class="card" style="border-top:3px solid ${cores[i%cores.length]};position:relative">
       <div style="position:absolute;top:14px;right:14px;display:flex;gap:5px">
         <button class="btn btn-out btn-xs" onclick="abrirEntitlements('${p.id}')" title="Permissões do plano"><i class="ti ti-adjustments"></i></button>
@@ -5774,7 +5994,7 @@ function renderPlanos() {
   const assocEmp = document.getElementById('assoc-empresa-sel');
   const assocPlan = document.getElementById('assoc-plano-sel');
   if (assocEmp) assocEmp.innerHTML = G.empresas.map(e => `<option value="${e.id}">${e.nome}</option>`).join('');
-  if (assocPlan) assocPlan.innerHTML = G.planos.map(p => `<option value="${p.id}">${p.nome} — R$ ${p.preco}/mês</option>`).join('');
+  if (assocPlan) assocPlan.innerHTML = planosVisiveis.map(p => `<option value="${p.id}">${p.nome} — R$ ${p.preco}/mês</option>`).join('');
 
   renderPlanosReceita();
 }
@@ -5788,7 +6008,7 @@ async function renderPlanosReceita() {
   box.innerHTML = '<div style="color:var(--txt3);font-size:13px;text-align:center;padding:16px">Calculando...</div>';
   try {
     const inicioMes = new Date(); inicioMes.setDate(1); inicioMes.setHours(0,0,0,0);
-    const linhas = await Promise.all(G.planos.map(async p => {
+    const linhas = await Promise.all(G.planos.filter(p => p.id !== 'trial').map(async p => {
       const [{ count: ativos }, { count: cancelados30d }] = await Promise.all([
         db.from('empresas_status').select('id', { count: 'exact', head: true }).eq('plano', p.id).eq('status', 'ativa'),
         db.from('empresas').select('id', { count: 'exact', head: true }).eq('plano', p.id).eq('status', 'cancelada').gte('atualizado_em', inicioMes.toISOString()),
@@ -5813,6 +6033,182 @@ async function renderPlanosReceita() {
   }
 }
 
+// ── CONSUMO DE IA (Fatia 22) ────────────────────────────────────────────
+// Lê ai_usage + ai_limits_overrides (tabelas da migração
+// sql/fatia22_saas_selfservice_ia.sql) e cruza com o limite de cada
+// empresa (plano normal, ou a linha virtual id='trial' quando em teste).
+// Nunca lê/exibe segredo algum — só contagens e tokens.
+let _iaOverridesCache = {};
+
+function _erroTabelaIAInexistente(error) {
+  return error && (error.code === '42P01' || /relation ".*(ai_usage|ai_limits_overrides).*" does not exist/i.test(error.message || ''));
+}
+
+async function renderConsumoIA() {
+  const tbody = document.getElementById('ia-consumo-tabela');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--txt3);padding:16px">Carregando...</td></tr>';
+
+  if (!G.empresas || !G.empresas.length) { try { G.empresas = await getEmpresas(); } catch (e) {} }
+  if (!G.planos || !G.planos.length) { try { G.planos = await getPlanos(); } catch (e) {} }
+
+  const hoje = new Date();
+  const diaRef = hoje.toISOString().slice(0, 10);
+  const mesRef = diaRef.slice(0, 7);
+
+  let usoHoje = [], usoMes = [], overrides = [];
+  try {
+    const [rHoje, rMes, rOv] = await Promise.all([
+      db.from('ai_usage').select('empresa_id,request_count').eq('day_ref', diaRef),
+      db.from('ai_usage').select('empresa_id,total_tokens').eq('month_ref', mesRef),
+      db.from('ai_limits_overrides').select('*'),
+    ]);
+    if (rHoje.error && !_erroTabelaIAInexistente(rHoje.error)) throw rHoje.error;
+    if (rMes.error && !_erroTabelaIAInexistente(rMes.error)) throw rMes.error;
+    if (rOv.error && !_erroTabelaIAInexistente(rOv.error)) throw rOv.error;
+    if (_erroTabelaIAInexistente(rHoje.error) || _erroTabelaIAInexistente(rMes.error)) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--txt3);padding:16px">'
+        + 'As tabelas de IA ainda não existem neste banco — rode sql/fatia22_saas_selfservice_ia.sql.</td></tr>';
+      ['ia-kpi-consultas-hoje','ia-kpi-tokens-mes','ia-kpi-perto-limite','ia-kpi-bloqueadas'].forEach(id => document.getElementById(id).textContent = '—');
+      return;
+    }
+    usoHoje = rHoje.data || [];
+    usoMes = rMes.data || [];
+    overrides = _erroTabelaIAInexistente(rOv.error) ? [] : (rOv.data || []);
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--danger);padding:16px">Erro ao carregar consumo de IA: ${esc(e.message || '')}</td></tr>`;
+    return;
+  }
+
+  _iaOverridesCache = {};
+  overrides.forEach(o => { _iaOverridesCache[o.empresa_id] = o; });
+
+  const reqHojePorEmpresa = {};
+  usoHoje.forEach(r => { reqHojePorEmpresa[r.empresa_id] = (reqHojePorEmpresa[r.empresa_id] || 0) + (r.request_count || 0); });
+  const tokMesPorEmpresa = {};
+  usoMes.forEach(r => { tokMesPorEmpresa[r.empresa_id] = (tokMesPorEmpresa[r.empresa_id] || 0) + (r.total_tokens || 0); });
+
+  const planoTrial = G.planos.find(p => p.id === 'trial') || null;
+
+  const linhas = (G.empresas || []).filter(e => e.status !== 'cancelada').map(e => {
+    const isTrial = e.status === 'trial';
+    const plano = isTrial ? planoTrial : (G.planos || []).find(p => p.id === e.plano) || null;
+    const ov = _iaOverridesCache[e.id] || null;
+
+    const reqHoje = reqHojePorEmpresa[e.id] || 0;
+    const tokMes = tokMesPorEmpresa[e.id] || 0;
+    const limiteDiario = ov?.ai_daily_requests_limit ?? plano?.aiDailyReqLimit ?? null;
+    const limiteMensalTok = ov?.ai_monthly_tokens_limit ?? plano?.aiMonthlyTokLimit ?? null;
+
+    let situacao = { txt: 'OK', cor: 'var(--success)' };
+    const bloqueadoManual = ov?.ai_blocked === true;
+    const iaDesativada = plano ? plano.aiEnabled === false : false;
+    const pctDiario = limiteDiario ? reqHoje / limiteDiario : 0;
+    const pctMensal = limiteMensalTok ? tokMes / limiteMensalTok : 0;
+    if (bloqueadoManual) situacao = { txt: 'Bloqueada (manual)', cor: 'var(--danger)' };
+    else if (iaDesativada) situacao = { txt: 'IA desativada no plano', cor: 'var(--txt3)' };
+    else if (pctDiario >= 1 || pctMensal >= 1) situacao = { txt: 'Limite atingido', cor: 'var(--danger)' };
+    else if (pctDiario >= 0.8 || pctMensal >= 0.8) situacao = { txt: 'Perto do limite', cor: 'var(--gold,#F59E0B)' };
+
+    return { e, plano, isTrial, reqHoje, tokMes, limiteDiario, limiteMensalTok, situacao, bloqueadoManual };
+  }).sort((a, b) => b.tokMes - a.tokMes);
+
+  document.getElementById('ia-kpi-consultas-hoje').textContent = String(Object.values(reqHojePorEmpresa).reduce((s, v) => s + v, 0));
+  document.getElementById('ia-kpi-tokens-mes').textContent = Object.values(tokMesPorEmpresa).reduce((s, v) => s + v, 0).toLocaleString('pt-BR');
+  document.getElementById('ia-kpi-perto-limite').textContent = String(linhas.filter(l => l.situacao.txt === 'Perto do limite').length);
+  document.getElementById('ia-kpi-bloqueadas').textContent = String(linhas.filter(l => l.bloqueadoManual || l.situacao.txt === 'Limite atingido').length);
+
+  tbody.innerHTML = linhas.length ? linhas.map(l => `
+    <tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:8px">${esc(l.e.nome)}</td>
+      <td>${esc(l.plano?.nome || l.e.plano || '—')}${l.isTrial ? ' <span style="color:var(--txt3);font-size:11px">(trial)</span>' : ''}</td>
+      <td>${l.reqHoje}</td>
+      <td>${l.limiteDiario ?? 'ilimitado'}</td>
+      <td>${l.tokMes.toLocaleString('pt-BR')}</td>
+      <td>${l.limiteMensalTok ? l.limiteMensalTok.toLocaleString('pt-BR') : 'ilimitado'}</td>
+      <td><span style="color:${l.situacao.cor};font-weight:600">${l.situacao.txt}</span></td>
+      <td><button class="btn btn-out btn-xs" onclick="abrirOverrideIA('${l.e.id}')"><i class="ti ti-adjustments"></i> Ajustar</button></td>
+    </tr>
+  `).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--txt3);padding:16px">Nenhuma empresa encontrada.</td></tr>';
+}
+
+function abrirOverrideIA(empresaId) {
+  const e = (G.empresas || []).find(x => x.id === empresaId);
+  if (!e) return;
+  const ov = _iaOverridesCache[empresaId] || null;
+  document.getElementById('ia-ov-empresa-id').value = empresaId;
+  document.getElementById('ia-ov-empresa-nome').textContent = e.nome;
+  document.getElementById('ia-ov-bloqueado').checked = ov?.ai_blocked === true;
+  document.getElementById('ia-ov-daily-req').value = ov?.ai_daily_requests_limit ?? '';
+  document.getElementById('ia-ov-monthly-req').value = ov?.ai_monthly_requests_limit ?? '';
+  document.getElementById('ia-ov-daily-tok').value = ov?.ai_daily_tokens_limit ?? '';
+  document.getElementById('ia-ov-monthly-tok').value = ov?.ai_monthly_tokens_limit ?? '';
+  document.getElementById('ia-ov-motivo').value = ov?.reason || '';
+  openModal('modal-ia-override');
+}
+
+async function salvarOverrideIA() {
+  const empresaId = document.getElementById('ia-ov-empresa-id').value;
+  if (!empresaId) return;
+  const numOrNull = (elId) => {
+    const raw = document.getElementById(elId).value;
+    return raw !== '' ? parseInt(raw, 10) : null;
+  };
+  const payload = {
+    empresa_id: empresaId,
+    ai_blocked: document.getElementById('ia-ov-bloqueado').checked,
+    ai_daily_requests_limit: numOrNull('ia-ov-daily-req'),
+    ai_monthly_requests_limit: numOrNull('ia-ov-monthly-req'),
+    ai_daily_tokens_limit: numOrNull('ia-ov-daily-tok'),
+    ai_monthly_tokens_limit: numOrNull('ia-ov-monthly-tok'),
+    reason: document.getElementById('ia-ov-motivo').value.trim() || null,
+    updated_at: new Date().toISOString(),
+  };
+  setLoad(true);
+  try {
+    const { error } = await db.from('ai_limits_overrides').upsert(payload, { onConflict: 'empresa_id' });
+    if (error) {
+      if (_erroTabelaIAInexistente(error)) {
+        notify('Tabela ai_limits_overrides ainda não existe — rode sql/fatia22_saas_selfservice_ia.sql.', 'error', 7000);
+      } else throw error;
+      return;
+    }
+    const e = (G.empresas || []).find(x => x.id === empresaId);
+    addLog('ia', `Limite de IA ajustado manualmente para "${e?.nome || empresaId}"${payload.ai_blocked ? ' (IA bloqueada)' : ''}`, e?.nome, empresaId);
+    closeModal('modal-ia-override');
+    notify('✅ Limite de IA salvo!', 'success');
+    renderConsumoIA();
+  } catch (e) {
+    notify('Erro ao salvar limite de IA: ' + (e.message || ''), 'error');
+  } finally {
+    setLoad(false);
+  }
+}
+
+function _resetCamposPlanoIA() {
+  document.getElementById('plano-ai-enabled').checked = true;
+  document.getElementById('plano-ai-daily-req').value = '';
+  document.getElementById('plano-ai-monthly-req').value = '';
+  document.getElementById('plano-ai-daily-tok').value = '';
+  document.getElementById('plano-ai-monthly-tok').value = '';
+  document.getElementById('plano-ai-model').value = '';
+  document.getElementById('plano-ai-max-output').value = '';
+  document.getElementById('plano-ai-feat-compat').checked = false;
+  document.getElementById('plano-ai-feat-diagnostico').checked = false;
+}
+
+function novoPlano() {
+  document.getElementById('plano-id').value = '';
+  document.getElementById('plano-nome').value = '';
+  document.getElementById('plano-preco').value = '';
+  document.getElementById('plano-usuarios').value = '';
+  document.getElementById('plano-preco-anual').value = '';
+  document.getElementById('plano-desconto-anual').value = '';
+  document.getElementById('plano-features').value = '';
+  _resetCamposPlanoIA();
+  openModal('modal-plano');
+}
+
 function editarPlano(id) {
   const p = G.planos.find(x => x.id === id);
   if (!p) return;
@@ -5823,6 +6219,16 @@ function editarPlano(id) {
   document.getElementById('plano-preco-anual').value = p.precoAnual ?? '';
   document.getElementById('plano-desconto-anual').value = p.descontoAnualPct ?? '';
   document.getElementById('plano-features').value = p.features;
+  document.getElementById('plano-ai-enabled').checked = p.aiEnabled !== false;
+  document.getElementById('plano-ai-daily-req').value = p.aiDailyReqLimit ?? '';
+  document.getElementById('plano-ai-monthly-req').value = p.aiMonthlyReqLimit ?? '';
+  document.getElementById('plano-ai-daily-tok').value = p.aiDailyTokLimit ?? '';
+  document.getElementById('plano-ai-monthly-tok').value = p.aiMonthlyTokLimit ?? '';
+  document.getElementById('plano-ai-model').value = p.aiModel || '';
+  document.getElementById('plano-ai-max-output').value = p.aiMaxOutputTokens ?? '';
+  const feats = Array.isArray(p.aiFeatures) ? p.aiFeatures : [];
+  document.getElementById('plano-ai-feat-compat').checked = feats.includes('compat_ia');
+  document.getElementById('plano-ai-feat-diagnostico').checked = feats.includes('diagnostico_ia');
   openModal('modal-plano');
 }
 
@@ -5839,9 +6245,28 @@ async function salvarPlano() {
 
   if (!nome) { notify('Nome obrigatório.', 'error'); return; }
 
+  const aiEnabled = document.getElementById('plano-ai-enabled').checked;
+  const numOrNull = (elId) => {
+    const raw = document.getElementById(elId).value;
+    return raw !== '' ? parseInt(raw, 10) : null;
+  };
+  const aiDailyReqLimit    = numOrNull('plano-ai-daily-req');
+  const aiMonthlyReqLimit  = numOrNull('plano-ai-monthly-req');
+  const aiDailyTokLimit    = numOrNull('plano-ai-daily-tok');
+  const aiMonthlyTokLimit  = numOrNull('plano-ai-monthly-tok');
+  const aiModel            = document.getElementById('plano-ai-model').value.trim() || 'gemini-2.0-flash';
+  const aiMaxOutputTokens  = numOrNull('plano-ai-max-output') ?? 2048;
+  const aiFeatures = [];
+  if (document.getElementById('plano-ai-feat-compat').checked) aiFeatures.push('compat_ia');
+  if (document.getElementById('plano-ai-feat-diagnostico').checked) aiFeatures.push('diagnostico_ia');
+
   setLoad(true);
   try {
-    await salvarPlanoDb({ id: id || null, nome, preco, usuarios, features, precoAnual, descontoAnualPct });
+    await salvarPlanoDb({
+      id: id || null, nome, preco, usuarios, features, precoAnual, descontoAnualPct,
+      aiEnabled, aiDailyReqLimit, aiMonthlyReqLimit, aiDailyTokLimit, aiMonthlyTokLimit,
+      aiModel, aiMaxOutputTokens, aiFeatures,
+    });
     G.planos = await getPlanos();
     document.getElementById('plano-id').value = '';
     closeModal('modal-plano');
@@ -7600,6 +8025,305 @@ async function salvarCookieConfig(){
   }catch(e){
     st.textContent='Rode a migração fatia17_admin_saas.sql primeiro.'; st.style.color='var(--danger)';
   }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TOUR GUIADO (Painel Admin) — mesmo motor "spotlight" do index.html,
+   adaptado pro admin.html. Persistência: SOMENTE localStorage
+   (intencional — o admin.html é o painel master interno, não tem
+   empresa_id/EID() nem garantia de que toda conta master tenha linha
+   em usuarios/tours_status; ver relatório de entrega). Nunca toca nos
+   elementos reais (não aplica z-index/classe neles), então não quebra
+   layout nem funções existentes. Alvo ausente/escondido = passo pulado
+   automaticamente, sem travar e sem erro técnico visível.
+   ══════════════════════════════════════════════════════════════ */
+const TOURS = {
+  admin: [
+    { target:'[data-tour="admin-dashboard"]', title:'Dashboard Master', text:'Visão geral de todas as empresas: faturamento da plataforma, empresas ativas, inadimplência e saúde geral do SaaS.', position:'right' },
+    { target:'[data-tour="admin-empresas"]', title:'Empresas', text:'Gerencie todas as empresas (tenants) cadastradas na plataforma — planos, status, acesso e dados de cada uma.', position:'right' },
+    { target:'[data-tour="admin-planos"]', title:'Planos', text:'Configure os planos disponíveis, preços, limites e recursos liberados para cada nível de assinatura.', position:'right' },
+    { target:'[data-tour="admin-ia"]', title:'Consumo de IA / Limites de IA', text:'Acompanhe o consumo de IA por empresa e ajuste os limites de uso conforme o plano contratado.', position:'right' },
+    { target:'[data-tour="admin-termos"]', title:'Termos e Compliance (LGPD)', text:'Gerencie termos, política de privacidade, cookies e conformidade com a LGPD para todas as empresas.', position:'right' },
+    { target:'[data-tour="admin-financeiro"]', title:'Financeiro SaaS', text:'Controle a receita da plataforma, cobranças recebidas e a situação financeira geral do negócio.', position:'right' },
+    { target:'[data-tour="admin-logs"]', title:'Logs e Auditoria', text:'Consulte o histórico de ações administrativas realizadas no painel master, para auditoria e rastreabilidade.', position:'right' },
+  ],
+};
+
+let _tour = { nome:null, passo:0, ativo:false };
+let _tourDom = null;
+
+function _tourEnsureDom(){
+  if(_tourDom) return _tourDom;
+  const mkSlice = () => { const d=document.createElement('div'); d.className='tour-overlay-slice'; document.body.appendChild(d); return d; };
+  const ring = document.createElement('div');
+  ring.className='tour-highlight'; ring.id='tour-highlight-ring';
+  document.body.appendChild(ring);
+
+  const pop = document.createElement('div');
+  pop.className='tour-popover'; pop.id='tour-popover';
+  pop.setAttribute('role','dialog');
+  pop.setAttribute('aria-modal','true');
+  pop.setAttribute('aria-live','polite');
+  pop.setAttribute('tabindex','-1');
+  document.body.appendChild(pop);
+
+  _tourDom = {
+    slices: { top:mkSlice(), bottom:mkSlice(), left:mkSlice(), right:mkSlice() },
+    ring, pop,
+  };
+  return _tourDom;
+}
+
+function _tourResolveTarget(step){
+  try{
+    const el = document.querySelector(step.target);
+    if(!el) return null;
+    const rect = el.getBoundingClientRect();
+    if(rect.width===0 && rect.height===0) return null;
+    if(el.offsetParent===null && getComputedStyle(el).position!=='fixed') return null;
+    return el;
+  }catch(e){ console.warn('[tour] seletor inválido, pulando etapa:', step.target, e); return null; }
+}
+
+function _tourHasStepAt(steps, i){ return i>=0 && i<steps.length && !!_tourResolveTarget(steps[i]); }
+
+function startTour(nome, opts){
+  opts = opts || {};
+  const steps = TOURS[nome];
+  if(!steps || !steps.length){ console.warn('[tour] tour desconhecido:', nome); return; }
+  _tourEnsureDom();
+  _tour.nome = nome;
+  _tour.ativo = true;
+  const saved = loadTourProgress(nome);
+  _tour.passo = (opts.resume && saved.status==='in_progress' && saved.passo>0) ? saved.passo : 0;
+  document.addEventListener('keydown', _tourKeyHandler);
+  window.addEventListener('resize', _tourReflow);
+  window.addEventListener('scroll', _tourReflow, true);
+  _tourHideInviteAdmin();
+  saveTourProgress(nome, 'in_progress', _tour.passo);
+  renderTourStep();
+}
+
+function renderTourStep(){
+  if(!_tour.ativo) return;
+  const steps = TOURS[_tour.nome];
+  if(!steps){ closeTour(); return; }
+  while(_tour.passo < steps.length){
+    const step = steps[_tour.passo];
+    const el = _tourResolveTarget(step);
+    if(el){ _tourShowStep(step, el); return; }
+    console.warn('[tour] etapa sem elemento disponível, pulando:', step.target);
+    _tour.passo++;
+  }
+  finishTour();
+}
+
+function _tourShowStep(step, el){
+  const dom = _tourEnsureDom();
+  const steps = TOURS[_tour.nome];
+  const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  el.scrollIntoView({ behavior: reduced?'auto':'smooth', block:'center', inline:'nearest' });
+
+  const posicionar = () => {
+    const rect = el.getBoundingClientRect();
+    _tourPositionHighlight(rect);
+    _tourPositionPopover(rect, step.position || 'right');
+  };
+  setTimeout(posicionar, reduced ? 0 : 260);
+
+  const temAnterior = (() => { for(let i=_tour.passo-1;i>=0;i--) if(_tourHasStepAt(steps,i)) return true; return false; })();
+  const temProxima  = (() => { for(let i=_tour.passo+1;i<steps.length;i++) if(_tourHasStepAt(steps,i)) return true; return false; })();
+
+  dom.pop.innerHTML = `
+    <button class="tour-popover-close" aria-label="Fechar tour" onclick="closeTour()"><i class="ti ti-x"></i></button>
+    <div class="tour-popover-title">${esc(step.title)}</div>
+    <div class="tour-popover-text">${esc(step.text)}</div>
+    <div class="tour-popover-foot">
+      <div>
+        <div class="tour-popover-progress">${_tour.passo+1} de ${steps.length}</div>
+        <div class="tour-popover-dots">${steps.map((_,i)=>`<span class="tour-popover-dot${i===_tour.passo?' tour-dot-on':''}"></span>`).join('')}</div>
+      </div>
+      <div class="tour-popover-actions">
+        ${temAnterior ? `<button class="tour-btn tour-btn-ghost" onclick="prevTourStep()">Voltar</button>` : ''}
+        ${temProxima
+          ? `<button class="tour-btn tour-btn-pri" onclick="nextTourStep()">Avançar</button>`
+          : `<button class="tour-btn tour-btn-pri" onclick="finishTour()">Concluir</button>`}
+      </div>
+    </div>
+    <button class="tour-popover-skip" onclick="closeTour({skip:true})">Pular tour</button>
+  `;
+
+  [dom.slices.top, dom.slices.bottom, dom.slices.left, dom.slices.right, dom.ring, dom.pop].forEach(elx => elx.classList.add('tour-on'));
+  dom.pop.focus({ preventScroll:true });
+  saveTourProgress(_tour.nome, 'in_progress', _tour.passo);
+}
+
+function _tourPositionHighlight(rect){
+  const dom = _tourEnsureDom();
+  const pad = 6;
+  const holeTop = Math.max(0, rect.top-pad), holeLeft = Math.max(0, rect.left-pad);
+  const holeRight = rect.right+pad, holeBottom = rect.bottom+pad;
+  const vw = window.innerWidth, vh = window.innerHeight;
+
+  Object.assign(dom.ring.style, { top:holeTop+'px', left:holeLeft+'px', width:Math.max(0,rect.width+pad*2)+'px', height:Math.max(0,rect.height+pad*2)+'px' });
+
+  Object.assign(dom.slices.top.style,    { top:'0px', left:'0px', width:vw+'px', height:holeTop+'px' });
+  Object.assign(dom.slices.bottom.style, { top:Math.min(vh,holeBottom)+'px', left:'0px', width:vw+'px', height:Math.max(0,vh-holeBottom)+'px' });
+  Object.assign(dom.slices.left.style,   { top:holeTop+'px', left:'0px', width:holeLeft+'px', height:Math.max(0,holeBottom-holeTop)+'px' });
+  Object.assign(dom.slices.right.style,  { top:holeTop+'px', left:Math.min(vw,holeRight)+'px', width:Math.max(0,vw-holeRight)+'px', height:Math.max(0,holeBottom-holeTop)+'px' });
+}
+
+function _tourPositionPopover(rect, prefer){
+  const dom = _tourEnsureDom();
+  const pop = dom.pop;
+  if(window.innerWidth <= 640) return;
+  const margin = 14;
+  const pw = pop.offsetWidth || 328, ph = pop.offsetHeight || 170;
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const fits = {
+    right:  (vw-rect.right)  >= pw+margin,
+    left:   rect.left        >= pw+margin,
+    bottom: (vh-rect.bottom) >= ph+margin,
+    top:    rect.top         >= ph+margin,
+  };
+  let pos = fits[prefer] ? prefer : (['right','left','bottom','top'].find(p=>fits[p]) || 'bottom');
+  const clamp = (v,min,max) => Math.min(Math.max(v,min), Math.max(min,max));
+  let top, left;
+  if(pos==='right'){ left = rect.right+margin; top = clamp(rect.top, margin, vh-ph-margin); }
+  else if(pos==='left'){ left = rect.left-pw-margin; top = clamp(rect.top, margin, vh-ph-margin); }
+  else if(pos==='bottom'){ top = rect.bottom+margin; left = clamp(rect.left, margin, vw-pw-margin); }
+  else { top = rect.top-ph-margin; left = clamp(rect.left, margin, vw-pw-margin); }
+  if(!isFinite(top) || !isFinite(left)){ top = margin; left = vw-pw-margin; }
+  pop.style.top = Math.max(margin, top)+'px';
+  pop.style.left = Math.max(margin, Math.min(left, vw-pw-margin))+'px';
+}
+
+let _tourReflowPendente = false;
+function _tourReflow(){
+  if(!_tour.ativo || _tourReflowPendente) return;
+  _tourReflowPendente = true;
+  requestAnimationFrame(() => {
+    _tourReflowPendente = false;
+    if(!_tour.ativo) return;
+    const steps = TOURS[_tour.nome];
+    const step = steps && steps[_tour.passo];
+    if(!step) return;
+    const el = _tourResolveTarget(step);
+    if(!el){ renderTourStep(); return; }
+    const rect = el.getBoundingClientRect();
+    _tourPositionHighlight(rect);
+    _tourPositionPopover(rect, step.position || 'right');
+  });
+}
+
+function nextTourStep(){ if(!_tour.ativo) return; _tour.passo++; renderTourStep(); }
+
+function prevTourStep(){
+  if(!_tour.ativo) return;
+  const steps = TOURS[_tour.nome];
+  for(let i=_tour.passo-1;i>=0;i--){
+    if(_tourHasStepAt(steps,i)){ _tour.passo = i; renderTourStep(); return; }
+  }
+}
+
+function closeTour(opts){
+  opts = opts || {};
+  if(!_tour.ativo) return;
+  const nome = _tour.nome;
+  const passo = _tour.passo;
+  _tour.ativo = false;
+  document.removeEventListener('keydown', _tourKeyHandler);
+  window.removeEventListener('resize', _tourReflow);
+  window.removeEventListener('scroll', _tourReflow, true);
+  if(_tourDom){
+    [_tourDom.slices.top, _tourDom.slices.bottom, _tourDom.slices.left, _tourDom.slices.right, _tourDom.ring, _tourDom.pop].forEach(el => el.classList.remove('tour-on'));
+  }
+  saveTourProgress(nome, opts.skip ? 'skipped' : 'in_progress', passo);
+}
+
+function finishTour(){
+  if(!_tour.ativo) return;
+  const nome = _tour.nome;
+  _tour.ativo = false;
+  document.removeEventListener('keydown', _tourKeyHandler);
+  window.removeEventListener('resize', _tourReflow);
+  window.removeEventListener('scroll', _tourReflow, true);
+  if(_tourDom){
+    [_tourDom.slices.top, _tourDom.slices.bottom, _tourDom.slices.left, _tourDom.slices.right, _tourDom.ring, _tourDom.pop].forEach(el => el.classList.remove('tour-on'));
+  }
+  saveTourProgress(nome, 'completed', 0);
+  if(typeof notify==='function') notify('🎉 Treinamento concluído! Agora você já conhece as principais áreas do painel master.', 'success', 5000);
+}
+
+function _tourKeyHandler(e){
+  if(!_tour.ativo) return;
+  if(e.key==='Escape'){ e.preventDefault(); closeTour(); }
+  else if(e.key==='Enter'){ e.preventDefault(); nextTourStep(); }
+}
+
+// ── Persistência: SOMENTE localStorage (decisão intencional pro
+//    admin.html — painel master, sem empresa_id/EID(); ver relatório) ──
+function _tourLocalKey(nome, sufixo){ return `misu_tour_${nome}_${sufixo}`; }
+function saveTourProgress(nome, status, passo){
+  try{
+    localStorage.setItem(_tourLocalKey(nome,'status'), status);
+    localStorage.setItem(_tourLocalKey(nome,'step'), String(passo||0));
+    if(status==='completed') localStorage.setItem(_tourLocalKey(nome,'completed_at'), new Date().toISOString());
+  }catch(e){ /* localStorage indisponível — segue só em memória nesta sessão */ }
+}
+function loadTourProgress(nome){
+  let status='not_started', passo=0;
+  try{
+    status = localStorage.getItem(_tourLocalKey(nome,'status')) || 'not_started';
+    passo = parseInt(localStorage.getItem(_tourLocalKey(nome,'step'))||'0',10) || 0;
+  }catch(e){}
+  return { status, passo };
+}
+
+// ── Convite automático no primeiro acesso ao painel admin ─────────────
+function _tourEnsureInviteDomAdmin(){
+  let el = document.getElementById('tour-invite');
+  if(el) return el;
+  el = document.createElement('div');
+  el.id = 'tour-invite'; el.className = 'tour-invite';
+  el.setAttribute('role','dialog');
+  el.setAttribute('aria-live','polite');
+  el.innerHTML = `
+    <div class="tour-invite-title"><i class="ti ti-map-2" style="color:var(--pri)"></i><span class="tour-invite-title-txt">Quer fazer um tour rápido pelo painel admin?</span></div>
+    <div class="tour-invite-text">Em menos de 1 minuto você conhece as áreas principais do painel master.</div>
+    <div class="tour-invite-actions">
+      <button class="tour-btn tour-btn-pri tour-invite-btn-ok">Começar tour</button>
+      <button class="tour-btn tour-btn-out" onclick="_tourHideInviteAdmin()">Agora não</button>
+    </div>
+    <button class="tour-popover-skip" onclick="_tourNaoMostrarConviteAdminNovamente()">Não mostrar novamente</button>
+  `;
+  document.body.appendChild(el);
+  return el;
+}
+function _tourHideInviteAdmin(){ const el=document.getElementById('tour-invite'); if(el) el.classList.remove('tour-on'); }
+function _tourNaoMostrarConviteAdminNovamente(){
+  try{ localStorage.setItem('misu_tour_admin_convite_oculto','1'); }catch(e){}
+  _tourHideInviteAdmin();
+}
+function verificarConviteTourAdmin(){
+  try{
+    const saved = loadTourProgress('admin');
+    if(saved.status==='completed' || saved.status==='skipped') return;
+    try{ if(localStorage.getItem('misu_tour_admin_convite_oculto')==='1') return; }catch(e){}
+    setTimeout(() => {
+      if(_tour.ativo) return;
+      const retomar = saved.status==='in_progress' && saved.passo>0;
+      const el = _tourEnsureInviteDomAdmin();
+      el.querySelector('.tour-invite-title-txt').textContent = retomar ? 'Continuar o tour do painel admin?' : 'Quer fazer um tour rápido pelo painel admin?';
+      el.querySelector('.tour-invite-text').textContent = retomar
+        ? 'Você começou o tour guiado e ainda não terminou — quer continuar de onde parou?'
+        : 'Em menos de 1 minuto você conhece as áreas principais do painel master.';
+      const btnOk = el.querySelector('.tour-invite-btn-ok');
+      btnOk.textContent = retomar ? 'Continuar tour' : 'Começar tour';
+      btnOk.onclick = () => { _tourHideInviteAdmin(); startTour('admin', { resume:retomar }); };
+      requestAnimationFrame(() => el.classList.add('tour-on'));
+    }, 1400);
+  }catch(e){ console.warn('[tour] convite inicial (admin) falhou (não bloqueia o sistema):', e); }
 }
 </script>
 <div class="modal-overlay" id="modal-qr-empresa">
