@@ -316,6 +316,17 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 #modal-ios{background:var(--card);border-radius:22px 22px 0 0;padding:22px 20px calc(22px + var(--sab));width:100%;max-width:460px;animation:up .25s ease;max-height:85vh;overflow-y:auto}
 #modal-ios .mp-title{font-weight:800;font-size:17px;margin-bottom:4px}
 #modal-ios .mp-sub{font-size:13px;color:var(--txt3);margin-bottom:16px;line-height:1.4}
+
+/* ── Fatia 21: modais novos (Pessoas/Entregador) — mesmo padrão visual dos já existentes ── */
+#modal-quemusa-overlay,#modal-pin-op-overlay,#modal-pessoa-overlay,#modal-confirma-overlay,#modal-tentativa-overlay{position:fixed;inset:0;background:rgba(10,6,30,.5);z-index:165;display:none;align-items:flex-end;justify-content:center;animation:motionFadeIn .18s ease}
+#modal-quemusa,#modal-pin-op,#modal-pessoa,#modal-confirma,#modal-tentativa{background:var(--card);border-radius:22px 22px 0 0;padding:22px 20px calc(22px + var(--sab));width:100%;max-width:460px;animation:up .25s ease;max-height:85vh;overflow-y:auto}
+#modal-quemusa .mp-title,#modal-pin-op .mp-title,#modal-pessoa .mp-title,#modal-confirma .mp-title,#modal-tentativa .mp-title{font-weight:800;font-size:16px;margin-bottom:4px}
+#modal-quemusa .mp-sub,#modal-pin-op .mp-sub,#modal-pessoa .mp-sub,#modal-confirma .mp-sub,#modal-tentativa .mp-sub{font-size:12.5px;color:var(--txt3);margin-bottom:14px}
+.quemusa-btn{display:flex;align-items:center;gap:10px;width:100%;padding:13px 15px;border-radius:13px;border:1.5px solid var(--border);background:#fff;font-weight:700;font-size:14px;cursor:pointer;text-align:left;color:var(--txt)}
+.quemusa-btn i{color:var(--pri);font-size:18px}
+#sheet-entrega-overlay{position:fixed;inset:0;background:rgba(10,6,30,.45);z-index:150;display:none}
+#sheet-entrega{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-radius:22px 22px 0 0;padding:10px 18px calc(20px + var(--sab));z-index:151;display:none;box-shadow:0 -10px 40px rgba(0,0,0,.25);max-height:86vh;overflow-y:auto}
+#sheet-entrega .sheet-handle{width:38px;height:4px;background:var(--border);border-radius:99px;margin:6px auto 14px;padding:9px 30px;background-clip:content-box;box-sizing:content-box}
 .ios-passo{display:flex;gap:13px;align-items:flex-start;margin-bottom:16px}
 .ios-passo-n{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .ios-passo-t{font-size:14px;font-weight:600;line-height:1.4;padding-top:3px}
@@ -632,6 +643,22 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
     </div>
     <button class="btn" style="margin-top:16px" onclick="imprimirEtiqueta()"><i class="ti ti-printer"></i>Imprimir etiqueta</button>
   </div>
+
+  <!-- Fatia 21: PESSOAS / USUÁRIOS DA EMPRESA (só Admin/Gerente) -->
+  <div class="wrap hidden" id="scr-pessoas">
+    <div class="aviso" style="background:#ede9fe;border-color:var(--pri);color:var(--pri-d)">
+      <i class="ti ti-info-circle"></i>
+      <div>Funcionário acessa por <b>nome + PIN</b> neste celular — não precisa de e-mail nem senha próprios.</div>
+    </div>
+    <button class="btn" style="margin-bottom:14px" onclick="abrirNovaPessoa()"><i class="ti ti-user-plus"></i>Novo usuário</button>
+    <div id="pessoas-list" class="mobile-list"></div>
+  </div>
+
+  <!-- Fatia 21: MINHAS ENTREGAS (perfil Entregador; Admin/Gerente veem todas) -->
+  <div class="wrap hidden" id="scr-entregas">
+    <div class="filtro-row" id="ent-filtros"></div>
+    <div id="entregas-mob-list" class="mobile-list"></div>
+  </div>
 </div>
 
   <!-- BARRA DO CARRINHO -->
@@ -653,11 +680,14 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 <div id="sheet-overlay" onclick="fecharMais()"></div>
 <div id="sheet-mais">
   <div class="sheet-handle" onclick="fecharMais()" style="cursor:pointer"></div>
-  <div class="sheet-it" onclick="fecharMais();abrir('venda')"><i class="ti ti-qrcode"></i>Venda rápida (link/QR)</div>
-  <div class="sheet-it" onclick="fecharMais();abrir('os-lista')"><i class="ti ti-list-details"></i>Minhas OS</div>
+  <div class="sheet-it" id="sheet-venda-rapida" onclick="fecharMais();abrir('venda')"><i class="ti ti-qrcode"></i>Venda rápida (link/QR)</div>
+  <div class="sheet-it" id="sheet-minhas-os" onclick="fecharMais();abrir('os-lista')"><i class="ti ti-list-details"></i>Minhas OS</div>
+  <div class="sheet-it" id="sheet-entregas-mais" style="display:none" onclick="fecharMais();abrir('entregas')"><i class="ti ti-truck"></i>Minhas Entregas</div>
+  <div class="sheet-it" id="sheet-pessoas" style="display:none" onclick="fecharMais();abrir('pessoas')"><i class="ti ti-users"></i>Pessoas da Empresa</div>
   <div class="sheet-it" onclick="toggleTemaApp()"><i class="ti ti-moon" id="tema-ic"></i><span id="tema-lbl">Tema escuro</span></div>
   <div class="sheet-it" id="sheet-instalar" style="display:none" onclick="instalarPWA()"><i class="ti ti-download"></i>Instalar aplicativo</div>
   <div class="sheet-it" id="sheet-suporte" style="display:none" onclick="abrirSuporte()"><i class="ti ti-headset"></i>Suporte</div>
+  <div class="sheet-it" onclick="fecharMais();trocarUsuarioDispositivo()"><i class="ti ti-user-switch"></i>Trocar usuário deste celular</div>
   <hr>
   <div class="sheet-it danger" onclick="doLogout()"><i class="ti ti-logout"></i>Sair</div>
 </div>
@@ -681,6 +711,133 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
     <div id="pin-lucro-erro" style="color:var(--danger);font-size:12.5px;margin-top:8px;min-height:16px"></div>
     <button class="btn" style="margin-top:10px" onclick="confirmarPinLucro()"><i class="ti ti-check"></i>Confirmar</button>
     <button class="btn btn-ghost" style="margin-top:6px" onclick="fecharPinModal()">Cancelar</button>
+  </div>
+</div>
+
+<!-- Fatia 21: "Quem está usando este celular?" — identificação real do
+     funcionário no aparelho (antes G.operador era só um palpite). Aparece
+     uma vez por dispositivo (fica lembrado) até alguém trocar. -->
+<div id="modal-quemusa-overlay">
+  <div id="modal-quemusa">
+    <div class="mp-title">Quem está usando este celular?</div>
+    <div class="mp-sub">Escolha seu nome. Se você tiver PIN cadastrado, vamos pedir pra confirmar.</div>
+    <div id="quemusa-lista" style="display:flex;flex-direction:column;gap:8px;margin-top:6px;max-height:50vh;overflow-y:auto"></div>
+  </div>
+</div>
+
+<!-- PIN de confirmação de identidade (Fatia 21) — diferente do PIN de lucro:
+     aqui confirma quem é a pessoa, não libera um dado específico. -->
+<div id="modal-pin-op-overlay">
+  <div id="modal-pin-op">
+    <div class="mp-title" id="pin-op-titulo">Confirme seu PIN</div>
+    <div class="mp-sub">Digite seu PIN de 4 dígitos.</div>
+    <input class="inp" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" id="pin-op-input" placeholder="••••" onkeydown="if(event.key==='Enter')confirmarPinOperador()">
+    <div id="pin-op-erro" style="color:var(--danger);font-size:12.5px;margin-top:8px;min-height:16px"></div>
+    <button class="btn" style="margin-top:10px" onclick="confirmarPinOperador()"><i class="ti ti-check"></i>Confirmar</button>
+    <button class="btn btn-ghost" style="margin-top:6px" onclick="fecharPinOperador()">Voltar</button>
+  </div>
+</div>
+
+<!-- Fatia 21: cadastro/edição de usuário da empresa (Pessoas) -->
+<div id="modal-pessoa-overlay" onclick="if(event.target===this)fecharModalPessoa()">
+  <div id="modal-pessoa">
+    <div class="mp-title" id="pessoa-titulo">Novo usuário</div>
+    <input type="hidden" id="ps-id">
+    <label class="lbl">Nome *</label>
+    <input class="inp" id="ps-nome" placeholder="Nome completo">
+    <label class="lbl">Telefone / WhatsApp</label>
+    <input class="inp" id="ps-telefone" type="tel" inputmode="numeric" placeholder="(DDD) 9 9999-9999">
+    <label class="lbl">Perfil *</label>
+    <select class="inp" id="ps-role">
+      <option value="operador">Operador de Caixa</option>
+      <option value="tecnico">Técnico</option>
+      <option value="entregador">Entregador</option>
+      <option value="gerente">Gerente</option>
+    </select>
+    <label class="lbl">PIN (4 dígitos) <span id="ps-pin-hint" style="font-weight:400;color:var(--txt3)"></span></label>
+    <input class="inp" id="ps-pin" inputmode="numeric" maxlength="6" placeholder="ex: 1234">
+    <label class="lbl">Status</label>
+    <select class="inp" id="ps-ativo"><option value="true">Ativo</option><option value="false">Inativo</option></select>
+    <div id="pessoa-erro" style="color:var(--danger);font-size:12.5px;margin-top:6px;min-height:16px"></div>
+    <button class="btn" style="margin-top:10px" onclick="salvarPessoa()"><i class="ti ti-device-floppy"></i>Salvar</button>
+    <button class="btn btn-ghost" style="margin-top:6px" onclick="fecharModalPessoa()">Cancelar</button>
+  </div>
+</div>
+
+<!-- Fatia 21: detalhe de uma entrega (Minhas Entregas) — bottom sheet, mesmo padrão do #sheet-os -->
+<div id="sheet-entrega-overlay" onclick="fecharDetalheEntrega()"></div>
+<div id="sheet-entrega">
+  <div class="sheet-handle" onclick="fecharDetalheEntrega()" style="cursor:pointer"></div>
+  <div class="osd-tit" id="ent-titulo">Entrega</div>
+  <div class="osd-sub" id="ent-status-lbl"></div>
+
+  <div class="osd-lbl">Cliente</div>
+  <div class="osd-val" id="ent-cliente">—</div>
+
+  <div class="osd-lbl">Endereço</div>
+  <div class="osd-val" id="ent-endereco">—</div>
+
+  <div class="osd-lbl">Item / pedido</div>
+  <div class="osd-val" id="ent-descricao">—</div>
+
+  <div class="osd-lbl" id="ent-previsao-lbl" style="display:none">Previsão</div>
+  <div class="osd-val" id="ent-previsao" style="display:none">—</div>
+
+  <div id="ent-acoes" style="margin-top:16px;display:flex;flex-direction:column;gap:8px"></div>
+  <div id="ent-telefone-acoes" style="margin-top:10px"></div>
+</div>
+
+<!-- Fatia 21: confirmação de entrega — assinatura / código / simples, conforme config da empresa -->
+<div id="modal-confirma-overlay">
+  <div id="modal-confirma" style="max-height:90vh;overflow-y:auto">
+    <div class="mp-title">Confirmar entrega</div>
+    <div class="mp-sub" id="confirma-sub">Valor: —</div>
+
+    <div id="confirma-bloco-assinatura" style="display:none">
+      <label class="lbl">Nome de quem recebeu *</label>
+      <input class="inp" id="cf-recebedor" placeholder="Nome de quem assinou">
+      <label class="lbl">Assinatura do cliente</label>
+      <canvas id="cf-assinatura-canvas" width="300" height="150" style="width:100%;height:150px;border:1.5px solid var(--border);border-radius:12px;touch-action:none;background:#fff"></canvas>
+      <button class="btn btn-out" style="margin-top:8px" onclick="limparAssinatura()"><i class="ti ti-eraser"></i>Limpar assinatura</button>
+    </div>
+
+    <div id="confirma-bloco-codigo" style="display:none">
+      <label class="lbl">Código/palavra-chave informado pelo cliente *</label>
+      <input class="inp" id="cf-codigo" placeholder="Digite o código" autocomplete="off">
+      <div id="cf-codigo-erro" style="color:var(--danger);font-size:12.5px;margin-top:6px;min-height:16px"></div>
+    </div>
+
+    <div id="confirma-bloco-simples" style="display:none">
+      <label class="lbl">Nome de quem recebeu</label>
+      <input class="inp" id="cf-recebedor-simples" placeholder="Nome de quem recebeu (opcional)">
+    </div>
+
+    <label class="lbl">Observação (opcional)</label>
+    <textarea class="inp" id="cf-obs" rows="2" placeholder="Ex.: recebido na portaria"></textarea>
+
+    <button class="btn" style="margin-top:12px" onclick="finalizarConfirmacaoEntrega()"><i class="ti ti-check"></i>Confirmar entrega</button>
+    <button class="btn btn-ghost" style="margin-top:6px" onclick="fecharConfirmaEntrega()">Cancelar</button>
+  </div>
+</div>
+
+<!-- Fatia 21: tentativa de entrega -->
+<div id="modal-tentativa-overlay">
+  <div id="modal-tentativa">
+    <div class="mp-title">Registrar tentativa de entrega</div>
+    <label class="lbl">Motivo *</label>
+    <select class="inp" id="tv-motivo">
+      <option value="ausente">Cliente ausente</option>
+      <option value="endereco_nao_localizado">Endereço não localizado</option>
+      <option value="recusou">Cliente recusou</option>
+      <option value="sem_pagamento">Falta de pagamento</option>
+      <option value="outro">Outro motivo</option>
+    </select>
+    <label class="lbl">Observação</label>
+    <textarea class="inp" id="tv-obs" rows="2" placeholder="Detalhe o que aconteceu"></textarea>
+    <label class="lbl">Foto (opcional)</label>
+    <input type="file" id="tv-foto" accept="image/*" capture="environment">
+    <button class="btn" style="margin-top:10px" onclick="salvarTentativaEntrega()"><i class="ti ti-check"></i>Registrar tentativa</button>
+    <button class="btn btn-ghost" style="margin-top:6px" onclick="fecharTentativaEntrega()">Cancelar</button>
   </div>
 </div>
 
@@ -810,30 +967,41 @@ async function carregarEmpresa(user){
   $('login').classList.add('hidden');
   $('app').classList.remove('hidden');
   $('bottom-nav').classList.remove('hidden');
-  goHome();
+  await carregarContexto();
+  // Fatia 21: antes disso, G.operador era só um palpite (primeiro admin/gerente
+  // da lista) — agora é identificado de verdade (cache no aparelho + PIN de
+  // quem tem PIN cadastrado). Só depois disso a tela inicial é mostrada,
+  // porque o que aparece nela muda conforme o perfil (ex.: Entregador).
+  resolverOperadorDispositivo();
   carregarMarca(emp.id);
   carregarRecentes();
-  carregarContexto();
-  carregarResumoDia();
   carregarConfigSuporte();
   _atualizarIconeTema();
 }
 
-/* ── CONTEXTO DE VENDA (caixa aberto + operador) ── */
+/* ── CONTEXTO DE VENDA (caixa aberto + lista de funcionários) ── */
 async function carregarContexto(){
   try{
     const {data:cx}=await comTimeout(db.from('caixas').select('id').eq('empresa_id',G.empresaId).eq('status','aberto').order('criado_em',{ascending:false}).limit(1),'caixa');
     G.caixa=(cx&&cx[0])||null;
   }catch(_){ G.caixa=null; }
   try{
-    // Fatia 9: também traz o pin (só id/role/pin/ativo, nada sensível além do
-    // próprio PIN de 4 dígitos, já usado no desktop pra troca de perfil) —
-    // usado no gate de PIN pra revelar o lucro estimado do dia.
-    const {data:us}=await comTimeout(db.from('usuarios').select('id,nome,role,pin,ativo').eq('empresa_id',G.empresaId).order('nome').limit(60),'usuarios');
-    const arr=us||[];
-    G.usuarios=arr;
-    G.operador=arr.find(u=>['admin','admin_master','gerente'].includes(u.role))||arr[0]||null;
-  }catch(_){ G.operador=null; G.usuarios=[]; }
+    // Fatia 9/21: também traz pin/telefone (nada além do que Admin/Gerente já
+    // vê no sistema desktop) — usado no gate de PIN do lucro e agora também
+    // na identificação de quem está usando o celular e na área Pessoas.
+    // 'telefone' é coluna nova (migração Fatia 21) — se ainda não rodou,
+    // cai pra seleção antiga em vez de quebrar a lista inteira de usuários.
+    let us=null;
+    try{
+      const r=await comTimeout(db.from('usuarios').select('id,nome,telefone,role,pin,ativo').eq('empresa_id',G.empresaId).order('nome').limit(200),'usuarios');
+      if(r.error) throw r.error;
+      us=r.data;
+    }catch(_e1){
+      const r2=await comTimeout(db.from('usuarios').select('id,nome,role,pin,ativo').eq('empresa_id',G.empresaId).order('nome').limit(200),'usuarios');
+      us=r2.data;
+    }
+    G.usuarios=us||[];
+  }catch(_){ G.usuarios=[]; }
 }
 
 /* ── Fatia 9: RESUMO DO DIA (tela inicial) ──
@@ -1028,25 +1196,27 @@ async function carregarRecentes(){
 // telas sem item correspondente (carrinho, sucesso, etiqueta, venda rápida)
 // simplesmente não destacam nada — o usuário volta pela seta ou pelo próprio nav.
 function _marcarNavAtivo(scr){
-  const mapa={home:'inicio',estoque:'vender',cart:'vender',os:'os','os-lista':'os',produto:'produto'};
+  const mapa={home:'inicio',estoque:'vender',cart:'vender',os:'os','os-lista':'os',produto:'produto',entregas:'entregas'};
   const alvo=mapa[scr]||null;
   document.querySelectorAll('#bottom-nav .bn-it').forEach(b=>b.classList.remove('on'));
   if(alvo) $('bn-'+alvo)?.classList.add('on');
 }
 function abrir(scr){
-  ['home','produto','os','os-ok','os-lista','venda','venda-ok','estoque','cart','etiqueta','pgpendente'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
+  ['home','produto','os','os-ok','os-lista','venda','venda-ok','estoque','cart','etiqueta','pgpendente','pessoas','entregas'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
   $('scr-'+scr).classList.remove('hidden');
   $('btn-back').classList.remove('hidden');
-  $('scr-title').textContent = ({produto:'Cadastrar Produto',os:'OS Rápida','os-lista':'Minhas OS',venda:'Venda Rápida',estoque:'Estoque',cart:'Carrinho',etiqueta:'Etiqueta',pgpendente:'Pagamento'})[scr]||scr;
+  $('scr-title').textContent = ({produto:'Cadastrar Produto',os:'OS Rápida','os-lista':'Minhas OS',venda:'Venda Rápida',estoque:'Estoque',cart:'Carrinho',etiqueta:'Etiqueta',pgpendente:'Pagamento',pessoas:'Pessoas da Empresa',entregas:'Minhas Entregas'})[scr]||scr;
   if(scr==='estoque') abrirEstoque();
   if(scr==='cart') renderCart();
   if(scr==='os-lista') abrirOsLista();
+  if(scr==='pessoas') abrirPessoas();
+  if(scr==='entregas') abrirEntregas();
   if(scr!=='pgpendente') pararPollingCobranca();
   _marcarNavAtivo(scr);
 }
 function goHome(){
   pararPollingCobranca();
-  ['produto','os','os-ok','os-lista','venda','venda-ok','estoque','cart','etiqueta','pgpendente'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
+  ['produto','os','os-ok','os-lista','venda','venda-ok','estoque','cart','etiqueta','pgpendente','pessoas','entregas'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
   $('scr-home').classList.remove('hidden');
   $('btn-back').classList.add('hidden');
   $('scr-title').textContent='Início';
@@ -1774,6 +1944,451 @@ function abrirEtiqueta(id){
   }catch(_){ if($('etq-bc')) $('etq-bc').outerHTML='<div style="font-size:11px;color:#999;padding:8px">Sem código de barras válido para etiqueta</div>'; }
 }
 function imprimirEtiqueta(){ window.print(); }
+
+/* ══════════════════════════════════════════════════════════════════════
+   FATIA 21 — Usuários da empresa, perfil Entregador e logística mobile
+   ══════════════════════════════════════════════════════════════════════ */
+
+function _isAdminGer(){ return !!(G.operador && ['admin','admin_master','gerente'].includes(G.operador.role)); }
+function _isEntregador(){ return !!(G.operador && G.operador.role==='entregador'); }
+
+/* ── Identificação real de quem está usando o celular ─────────────────
+   Antes, G.operador era só um palpite (primeiro admin/gerente da lista) —
+   usado só pro gate de PIN do lucro. Isso não bastava pra restringir de
+   verdade o perfil Entregador (ele não pode ver financeiro, nem entregas
+   de outro entregador). Agora: pergunta uma vez por aparelho (fica
+   lembrado até alguém trocar pela folha "Mais"), e confirma com PIN quem
+   tiver PIN cadastrado. Continua sendo uma camada de identificação no
+   cliente (mesma sessão Supabase da empresa por trás — não é uma conta
+   própria por funcionário), mas agora é uma escolha confirmada, não um
+   palpite. ── */
+function _empresaOpKey(){ return 'misu_op_'+(G.empresaId||''); }
+function resolverOperadorDispositivo(){
+  const salvoId=localStorage.getItem(_empresaOpKey());
+  if(salvoId){
+    const u=(G.usuarios||[]).find(x=>x.id===salvoId && x.ativo);
+    if(u){ G.operador=u; aplicarModoPerfil(); goHome(); return; }
+  }
+  abrirEscolhaOperador();
+}
+function abrirEscolhaOperador(){
+  const lista=(G.usuarios||[]).filter(u=>u.ativo);
+  if(!lista.length){
+    // Sem usuários cadastrados ainda — não trava o app, segue sem perfil restrito (como antes desta fatia).
+    G.operador=null; aplicarModoPerfil(); goHome(); return;
+  }
+  $('quemusa-lista').innerHTML=lista.map(u=>`<button class="quemusa-btn" onclick="selecionarOperador('${u.id}')"><i class="ti ti-user"></i>${u.nome}</button>`).join('');
+  $('modal-quemusa-overlay').style.display='flex';
+}
+let _pendingOperadorId=null;
+function selecionarOperador(id){
+  const u=(G.usuarios||[]).find(x=>x.id===id); if(!u) return;
+  _pendingOperadorId=id;
+  if(!u.pin){ _confirmarOperadorFinal(u); return; } // sem PIN cadastrado: só identifica (mesmo nível de confiança de hoje)
+  $('modal-quemusa-overlay').style.display='none';
+  $('pin-op-titulo').textContent='PIN de '+u.nome;
+  $('pin-op-input').value=''; $('pin-op-erro').textContent='';
+  $('modal-pin-op-overlay').style.display='flex';
+  setTimeout(()=>$('pin-op-input')?.focus(),150);
+}
+function fecharPinOperador(){ $('modal-pin-op-overlay').style.display='none'; abrirEscolhaOperador(); }
+function confirmarPinOperador(){
+  const u=(G.usuarios||[]).find(x=>x.id===_pendingOperadorId); if(!u) return;
+  const pin=($('pin-op-input').value||'').trim();
+  if(pin!==String(u.pin||'')){ $('pin-op-erro').textContent='PIN incorreto.'; return; }
+  $('modal-pin-op-overlay').style.display='none';
+  _confirmarOperadorFinal(u);
+}
+function _confirmarOperadorFinal(u){
+  G.operador=u;
+  try{ localStorage.setItem(_empresaOpKey(), u.id); }catch(_){}
+  $('modal-quemusa-overlay').style.display='none';
+  aplicarModoPerfil();
+  goHome();
+}
+function trocarUsuarioDispositivo(){
+  try{ localStorage.removeItem(_empresaOpKey()); }catch(_){}
+  G.operador=null;
+  abrirEscolhaOperador();
+}
+
+/* ── Aplica a UI certa pro perfil identificado. Entregador: esconde
+   Vender/OS/Produto/Estoque e o resumo financeiro; mostra "Entregas" no
+   lugar. Qualquer outro perfil: tudo igual a antes desta fatia. ── */
+function aplicarModoPerfil(){
+  const entregador=_isEntregador(), adminGer=_isAdminGer();
+
+  ['bn-vender','bn-os','bn-produto'].forEach(id=>{ const el=$(id); if(el) el.style.display=entregador?'none':''; });
+  let bnEnt=$('bn-entregas');
+  if(!bnEnt){
+    bnEnt=document.createElement('button');
+    bnEnt.className='bn-it'; bnEnt.id='bn-entregas';
+    bnEnt.innerHTML='<i class="ti ti-truck"></i>Entregas';
+    bnEnt.setAttribute('onclick',"abrir('entregas')");
+    $('bottom-nav').insertBefore(bnEnt, $('bn-mais'));
+  }
+  bnEnt.style.display=entregador?'':'none';
+
+  const sv=$('sheet-venda-rapida'); if(sv) sv.style.display=entregador?'none':'';
+  const so=$('sheet-minhas-os'); if(so) so.style.display=entregador?'none':'';
+  const se=$('sheet-entregas-mais'); if(se) se.style.display=(entregador||adminGer)?'':'none';
+  const sp=$('sheet-pessoas'); if(sp) sp.style.display=adminGer?'':'none';
+
+  const rg=$('resumo-grid'); if(rg) rg.style.display=entregador?'none':'';
+  const ha=$('home-alertas'); if(ha) ha.style.display=entregador?'none':'';
+  document.querySelectorAll('#scr-home .qa-row,#scr-home > .mod').forEach(el=>{ el.style.display=entregador?'none':''; });
+
+  let entHome=$('home-entregador-resumo');
+  if(entregador){
+    if(!entHome){
+      entHome=document.createElement('div');
+      entHome.id='home-entregador-resumo'; entHome.className='mod';
+      entHome.setAttribute('onclick',"abrir('entregas')");
+      entHome.innerHTML=`<div class="mod-ic" style="background:#ede9fe;color:#5B3FE8">🚚</div>
+        <div><div class="mod-t">Minhas Entregas</div><div class="mod-d" id="ent-resumo-txt">Ver entregas atribuídas a você</div></div>
+        <i class="ti ti-chevron-right"></i>`;
+      $('scr-home').appendChild(entHome);
+    }
+    entHome.style.display='';
+    carregarResumoEntregador();
+  } else if(entHome){ entHome.style.display='none'; }
+
+  // Financeiro (vendas/lucro do dia) só carrega se o perfil pode ver — Entregador nunca vê.
+  if(!entregador) carregarResumoDia();
+}
+async function carregarResumoEntregador(){
+  if(!G.operador) return;
+  try{
+    const {data}=await db.from('entregas').select('id,status').eq('empresa_id',G.empresaId).eq('entregador_id',G.operador.id).not('status','in','("entregue","cancelada")');
+    const n=(data||[]).length;
+    const el=$('ent-resumo-txt'); if(el) el.textContent = n ? (n+' entrega'+(n>1?'s':'')+' pendente'+(n>1?'s':'')) : 'Nenhuma entrega pendente no momento';
+  }catch(_){ /* silencioso — o card ainda funciona, só sem o contador */ }
+}
+
+/* ── PESSOAS DA EMPRESA (só Admin/Gerente) ────────────────────────────── */
+const ENT_ROLE_LBL={admin:'Administrador',admin_master:'Master',gerente:'Gerente',operador:'Operador de Caixa',tecnico:'Técnico',entregador:'Entregador'};
+function abrirPessoas(){
+  const btnNovo=document.querySelector('#scr-pessoas > .btn');
+  if(!_isAdminGer()){
+    if(btnNovo) btnNovo.classList.add('hidden');
+    $('pessoas-list').innerHTML='<div style="text-align:center;padding:24px;color:var(--txt3);font-size:13px">Só administradores e gerentes acessam esta área.</div>';
+    return;
+  }
+  if(btnNovo) btnNovo.classList.remove('hidden');
+  renderPessoas();
+}
+function renderPessoas(){
+  const lista=G.usuarios||[];
+  $('pessoas-list').innerHTML = lista.length ? lista.map(u=>{
+    const rl=ENT_ROLE_LBL[u.role]||u.role;
+    return `<div class="os-card" style="border:1px solid var(--border2);border-radius:14px;padding:13px;margin-bottom:10px;background:var(--card)">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:start">
+        <div>
+          <div style="font-weight:700;font-size:14px">${u.nome}</div>
+          <div style="font-size:12px;color:var(--txt3);margin-top:2px">${rl}${u.telefone?(' · '+u.telefone):''}</div>
+        </div>
+        <span class="os-badge ${u.ativo?'st-entregue':'st-cancelada'}">${u.ativo?'Ativo':'Inativo'}</span>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:10px">
+        <button class="btn btn-out btn-sm" style="flex:1" onclick="abrirEditarPessoa('${u.id}')"><i class="ti ti-edit"></i>Editar</button>
+        ${u.role!=='admin'?`<button class="btn ${u.ativo?'btn-out':'btn-ok'} btn-sm" style="flex:1" onclick="togglePessoaAtiva('${u.id}')"><i class="ti ti-${u.ativo?'lock':'lock-open'}"></i>${u.ativo?'Desativar':'Ativar'}</button>`:''}
+      </div>
+    </div>`;
+  }).join('') : '<div style="text-align:center;padding:24px;color:var(--txt3);font-size:13px">Nenhum usuário cadastrado.</div>';
+}
+function abrirNovaPessoa(){
+  if(!_isAdminGer()) return;
+  $('ps-id').value=''; $('ps-nome').value=''; $('ps-telefone').value=''; $('ps-role').value='operador'; $('ps-pin').value=''; $('ps-ativo').value='true';
+  $('ps-pin-hint').textContent=''; $('pessoa-erro').textContent='';
+  $('pessoa-titulo').textContent='Novo usuário';
+  $('modal-pessoa-overlay').style.display='flex';
+}
+function abrirEditarPessoa(id){
+  if(!_isAdminGer()) return;
+  const u=(G.usuarios||[]).find(x=>x.id===id); if(!u) return;
+  $('ps-id').value=u.id; $('ps-nome').value=u.nome; $('ps-telefone').value=u.telefone||''; $('ps-role').value=u.role; $('ps-pin').value='';
+  $('ps-pin-hint').textContent = u.pin ? '— deixe em branco pra manter' : '— sem PIN ainda';
+  $('ps-ativo').value=u.ativo?'true':'false';
+  $('pessoa-erro').textContent='';
+  $('pessoa-titulo').textContent='Editar usuário';
+  $('modal-pessoa-overlay').style.display='flex';
+}
+function fecharModalPessoa(){ $('modal-pessoa-overlay').style.display='none'; }
+async function salvarPessoa(){
+  if(!_isAdminGer()) return;
+  const nome=($('ps-nome').value||'').trim();
+  const telefone=($('ps-telefone').value||'').trim();
+  const role=$('ps-role').value;
+  const pin=($('ps-pin').value||'').trim();
+  const ativo=$('ps-ativo').value==='true';
+  const editId=$('ps-id').value;
+  if(!nome){ $('pessoa-erro').textContent='Informe o nome.'; return; }
+  if(pin && !/^\d{4,6}$/.test(pin)){ $('pessoa-erro').textContent='O PIN deve ter de 4 a 6 dígitos.'; return; }
+  if(!editId && !pin){ $('pessoa-erro').textContent='Defina um PIN para o novo funcionário.'; return; }
+  try{
+    if(editId){
+      const patch={nome, telefone:telefone||null, role, ativo};
+      if(pin) patch.pin=pin;
+      let r=await db.from('usuarios').update(patch).eq('id',editId);
+      if(r.error && /telefone|column|schema cache/i.test(r.error.message||'')){ delete patch.telefone; r=await db.from('usuarios').update(patch).eq('id',editId); }
+      if(r.error) throw r.error;
+    } else {
+      let r=await db.from('usuarios').insert({nome, telefone:telefone||null, role, pin, ativo, empresa_id:G.empresaId});
+      if(r.error && /telefone|column|schema cache/i.test(r.error.message||'')){ r=await db.from('usuarios').insert({nome, role, pin, ativo, empresa_id:G.empresaId}); }
+      if(r.error) throw r.error;
+    }
+    const {data}=await db.from('usuarios').select('id,nome,telefone,role,pin,ativo').eq('empresa_id',G.empresaId).order('nome');
+    G.usuarios=data||G.usuarios;
+    fecharModalPessoa();
+    notify(editId?'Usuário atualizado!':'Usuário criado!','ok');
+    renderPessoas();
+  }catch(e){ $('pessoa-erro').textContent=msgAmigavel(e,'Não foi possível salvar.'); }
+}
+async function togglePessoaAtiva(id){
+  if(!_isAdminGer()) return;
+  const u=(G.usuarios||[]).find(x=>x.id===id); if(!u) return;
+  if(!confirm((u.ativo?'Desativar':'Ativar')+' '+u.nome+'?')) return;
+  try{
+    const {error}=await db.from('usuarios').update({ativo:!u.ativo}).eq('id',id);
+    if(error) throw error;
+    u.ativo=!u.ativo;
+    renderPessoas();
+  }catch(e){ notify(msgAmigavel(e,'Não foi possível atualizar.'),'err'); }
+}
+
+/* ── MINHAS ENTREGAS ───────────────────────────────────────────────────
+   Entregador: só vê as suas (filtro na própria consulta, não só na tela).
+   Admin/Gerente: vê todas as entregas da empresa. Qualquer outro perfil
+   não deveria nem chegar aqui (sem link de acesso na UI), mas por
+   segurança a consulta também nega por padrão se não houver operador
+   identificado. ── */
+const ENT_STATUS_LBL={para_agendar:'Para agendar',agendada:'Agendada',em_rota:'Saiu para entrega',proximo_destino:'Próximo do destino',tentativa:'Tentativa de entrega',retirada:'Retirada',entregue:'Entregue',cancelada:'Cancelada'};
+const ENT_FILTROS_MOB=[['pendentes','Em andamento'],['entregues','Entregues'],['todas','Todas']];
+let G_entFiltroMob='pendentes';
+async function abrirEntregas(){
+  const cont=$('entregas-mob-list');
+  if(!G.operador){ cont.innerHTML='<div style="text-align:center;padding:20px;color:var(--txt3);font-size:13px">Identifique-se primeiro (Mais → Trocar usuário).</div>'; $('ent-filtros').innerHTML=''; return; }
+  cont.innerHTML='<div style="text-align:center;padding:20px;color:var(--txt3)"><div class="spinner" style="margin:0 auto"></div></div>';
+  try{
+    let q=db.from('entregas').select('*').eq('empresa_id',G.empresaId);
+    if(!_isAdminGer()) q=q.eq('entregador_id',G.operador.id);
+    const {data,error}=await comTimeout(q.order('data_agendada',{ascending:true,nullsFirst:false}),'entregas');
+    if(error) throw error;
+    G.entregasMob=data||[];
+  }catch(e){
+    G.entregasMob=[];
+    cont.innerHTML='<div style="text-align:center;padding:20px;color:var(--txt3);font-size:13px">Não foi possível carregar agora.</div>';
+    console.error('[MISU MOBILE][entregas]',e);
+    return;
+  }
+  renderFiltrosEntregasMob();
+  renderEntregasMob();
+}
+function renderFiltrosEntregasMob(){
+  $('ent-filtros').innerHTML=ENT_FILTROS_MOB.map(([k,l])=>`<button class="pg motion-btn${G_entFiltroMob===k?' on':''}" onclick="setFiltroEntregasMob('${k}')">${l}</button>`).join('');
+}
+function setFiltroEntregasMob(k){ G_entFiltroMob=k; renderFiltrosEntregasMob(); renderEntregasMob(); }
+function _cardEntregaMob(e){
+  const st=ENT_STATUS_LBL[e.status]||e.status;
+  const endTxt=e.forma==='retirada'?'Retirada na loja':(e.endereco||'Endereço não informado');
+  const dono=_isAdminGer()&&e.entregador_nome?`<div style="font-size:11px;color:var(--pri);margin-top:3px"><i class="ti ti-truck"></i> ${e.entregador_nome}</div>`:'';
+  return `<div class="os-card" style="border:1px solid var(--border2);border-radius:14px;padding:13px;margin-bottom:10px;background:var(--card)" onclick="abrirDetalheEntrega('${e.id}')">
+    <div style="display:flex;justify-content:space-between;gap:8px;align-items:start">
+      <div style="font-weight:700;font-size:14px">${e.cliente_nome||'Cliente'}</div>
+      <span class="os-badge st-outro">${st}</span>
+    </div>
+    <div style="font-size:12.5px;color:var(--txt2);margin-top:3px">${e.descricao||''}</div>
+    <div style="font-size:11.5px;color:var(--txt3);margin-top:5px"><i class="ti ti-map-pin"></i> ${endTxt}</div>
+    ${dono}
+  </div>`;
+}
+function renderEntregasMob(){
+  const lista=(G.entregasMob||[]).filter(e=>{
+    if(e.status==='cancelada') return false;
+    if(G_entFiltroMob==='entregues') return e.status==='entregue';
+    if(G_entFiltroMob==='pendentes') return e.status!=='entregue';
+    return true;
+  });
+  $('entregas-mob-list').innerHTML=lista.length?lista.map(_cardEntregaMob).join(''):'<div style="text-align:center;padding:24px;color:var(--txt3);font-size:13px">Nenhuma entrega aqui.</div>';
+}
+
+let _entregaAtualId=null;
+function abrirDetalheEntrega(id){
+  const e=(G.entregasMob||[]).find(x=>x.id===id); if(!e) return;
+  _entregaAtualId=id;
+  $('ent-titulo').textContent=e.cliente_nome||'Entrega';
+  $('ent-status-lbl').textContent=ENT_STATUS_LBL[e.status]||e.status;
+  $('ent-cliente').textContent=e.cliente_nome||'—';
+  $('ent-endereco').textContent=e.forma==='retirada'?'Retirada na loja':(e.endereco||'—');
+  $('ent-descricao').textContent=e.descricao||'—';
+  if(e.data_agendada){
+    $('ent-previsao-lbl').style.display=''; $('ent-previsao').style.display='';
+    $('ent-previsao').textContent=e.data_agendada.split('-').reverse().join('/')+(e.janela?(' · '+e.janela):'');
+  } else { $('ent-previsao-lbl').style.display='none'; $('ent-previsao').style.display='none'; }
+
+  const podeAgir=_isAdminGer()||(G.operador&&e.entregador_id===G.operador.id);
+  let acoes='';
+  if(podeAgir && e.status!=='entregue' && e.status!=='cancelada'){
+    if(e.forma!=='retirada'){
+      if(e.status==='para_agendar'||e.status==='agendada') acoes+=`<button class="btn btn-ok" onclick="marcarStatusEntrega('em_rota')"><i class="ti ti-route"></i>Saiu para entrega</button>`;
+      if(e.status==='em_rota') acoes+=`<button class="btn btn-out" onclick="marcarStatusEntrega('proximo_destino')"><i class="ti ti-map-pin"></i>Próximo do destino</button>`;
+    }
+    acoes+=`<button class="btn btn-ok" onclick="abrirConfirmarEntrega()"><i class="ti ti-check"></i>Confirmar entrega</button>`;
+    if(e.forma!=='retirada') acoes+=`<button class="btn btn-out" onclick="abrirTentativaEntrega()"><i class="ti ti-alert-triangle"></i>Registrar tentativa</button>`;
+  } else if(e.status==='entregue'){
+    acoes=`<div style="font-size:12.5px;color:var(--txt3);text-align:center;padding:8px">Entregue${e.entregue_em?(' em '+new Date(e.entregue_em).toLocaleString('pt-BR')):''}${e.recebido_por?(' · recebido por '+e.recebido_por):''}</div>`;
+  } else if(!podeAgir){
+    acoes=`<div style="font-size:12.5px;color:var(--txt3);text-align:center;padding:8px">Esta entrega não está atribuída a você.</div>`;
+  }
+  $('ent-acoes').innerHTML=acoes;
+  $('ent-telefone-acoes').innerHTML=e.telefone?`<button class="btn btn-out" style="width:100%" onclick="whatsappEntregaMob()"><i class="ti ti-brand-whatsapp"></i>Falar com o cliente</button>`:'';
+
+  $('sheet-entrega-overlay').style.display='block';
+  $('sheet-entrega').style.display='block';
+}
+function fecharDetalheEntrega(){ $('sheet-entrega-overlay').style.display='none'; $('sheet-entrega').style.display='none'; }
+function whatsappEntregaMob(){
+  const e=(G.entregasMob||[]).find(x=>x.id===_entregaAtualId); if(!e||!e.telefone) return;
+  const tel=String(e.telefone).replace(/\D/g,'');
+  window.open(`https://wa.me/55${tel}?text=${encodeURIComponent('Olá '+(e.cliente_nome||'')+'! Sobre sua entrega: '+(e.descricao||'')+'.')}`,'_blank');
+}
+async function marcarStatusEntrega(status){
+  const e=(G.entregasMob||[]).find(x=>x.id===_entregaAtualId); if(!e) return;
+  const patch={status, atualizado_em:new Date().toISOString()};
+  if(status==='proximo_destino') patch.proximo_destino_em=new Date().toISOString();
+  try{
+    const {error}=await db.from('entregas').update(patch).eq('id',e.id);
+    if(error) throw error;
+    Object.assign(e,patch);
+    notify(status==='em_rota'?'Saiu para entrega!':'Marcado como próximo do destino.','ok');
+    abrirDetalheEntrega(e.id);
+    renderEntregasMob();
+  }catch(err){ notify(msgAmigavel(err,'Não foi possível atualizar a entrega.'),'err'); }
+}
+
+/* ── Confirmação de entrega: assinatura / código / simples, conforme
+   empresas.config_entrega. Não é rastreio em tempo real — cada passo é uma
+   ação manual do entregador, como pedido. ── */
+async function carregarConfigEntregaMob(){
+  if(G._entConfig) return G._entConfig;
+  try{
+    const {data}=await db.from('empresas').select('config_entrega').eq('id',G.empresaId).maybeSingle();
+    G._entConfig=data?.config_entrega||{exigir_assinatura:false,exigir_codigo:false};
+  }catch(_){ G._entConfig={exigir_assinatura:false,exigir_codigo:false}; }
+  return G._entConfig;
+}
+let _assinaturaDesenhando=false, _assinaturaTeveTraco=false;
+function _setupCanvasAssinatura(){
+  const cv=$('cf-assinatura-canvas'); if(!cv) return;
+  const ctx=cv.getContext('2d');
+  const rect=cv.getBoundingClientRect();
+  cv.width=rect.width||300; cv.height=150;
+  ctx.clearRect(0,0,cv.width,cv.height);
+  ctx.lineWidth=2.2; ctx.lineCap='round'; ctx.strokeStyle='#1A1230';
+  _assinaturaTeveTraco=false;
+  let last=null;
+  function pos(ev){ const r=cv.getBoundingClientRect(); const t=ev.touches?ev.touches[0]:ev; return {x:t.clientX-r.left,y:t.clientY-r.top}; }
+  function start(ev){ ev.preventDefault(); _assinaturaDesenhando=true; last=pos(ev); }
+  function move(ev){ if(!_assinaturaDesenhando) return; ev.preventDefault(); const p=pos(ev); ctx.beginPath(); ctx.moveTo(last.x,last.y); ctx.lineTo(p.x,p.y); ctx.stroke(); last=p; _assinaturaTeveTraco=true; }
+  function end(){ _assinaturaDesenhando=false; }
+  cv.ontouchstart=start; cv.ontouchmove=move; cv.ontouchend=end;
+  cv.onmousedown=start; cv.onmousemove=move; cv.onmouseup=end; cv.onmouseleave=end;
+}
+function limparAssinatura(){
+  const cv=$('cf-assinatura-canvas'); if(!cv) return;
+  cv.getContext('2d').clearRect(0,0,cv.width,cv.height);
+  _assinaturaTeveTraco=false;
+}
+async function abrirConfirmarEntrega(){
+  const e=(G.entregasMob||[]).find(x=>x.id===_entregaAtualId); if(!e) return;
+  fecharDetalheEntrega();
+  const cfg=await carregarConfigEntregaMob();
+  $('confirma-sub').textContent=(e.cliente_nome||'')+' — '+(e.descricao||'');
+  $('confirma-bloco-assinatura').style.display=cfg.exigir_assinatura?'':'none';
+  $('confirma-bloco-codigo').style.display=(cfg.exigir_codigo&&!cfg.exigir_assinatura)?'':'none';
+  $('confirma-bloco-simples').style.display=(!cfg.exigir_assinatura&&!cfg.exigir_codigo)?'':'none';
+  $('cf-codigo').value=''; $('cf-codigo-erro').textContent=''; $('cf-obs').value=''; $('cf-recebedor').value=''; $('cf-recebedor-simples').value='';
+  if(cfg.exigir_assinatura) setTimeout(_setupCanvasAssinatura,50);
+  $('modal-confirma-overlay').style.display='flex';
+}
+function fecharConfirmaEntrega(){ $('modal-confirma-overlay').style.display='none'; }
+async function finalizarConfirmacaoEntrega(){
+  const e=(G.entregasMob||[]).find(x=>x.id===_entregaAtualId); if(!e) return;
+  const cfg=G._entConfig||{};
+  const patch={status:'entregue', entregue_em:new Date().toISOString(), confirmado_por:(G.operador&&G.operador.id)||null};
+  const obs=($('cf-obs').value||'').trim();
+  if(obs) patch.observacoes=(e.observacoes?e.observacoes+' | ':'')+obs;
+  let recebidoPor='';
+
+  if(cfg.exigir_assinatura){
+    recebidoPor=($('cf-recebedor').value||'').trim();
+    if(!recebidoPor){ notify('Informe o nome de quem recebeu.','warn'); return; }
+    if(!_assinaturaTeveTraco){ notify('Peça pro cliente assinar na tela antes de confirmar.','warn'); return; }
+    try{
+      const cv=$('cf-assinatura-canvas');
+      const blob=await new Promise(res=>cv.toBlob(res,'image/png'));
+      const path=`${G.empresaId}/${e.id}/assinatura_${Date.now()}.png`;
+      const {error:upErr}=await db.storage.from('entregas-comprovantes').upload(path,blob,{contentType:'image/png',upsert:true});
+      if(upErr) throw upErr;
+      patch.assinatura_url=path;
+    }catch(err){ notify(msgAmigavel(err,'Não foi possível salvar a assinatura. Confira sua conexão e tente de novo.'),'err'); return; }
+  } else if(cfg.exigir_codigo){
+    const digitado=($('cf-codigo').value||'').trim();
+    if(!digitado){ $('cf-codigo-erro').textContent='Digite o código informado pelo cliente.'; return; }
+    if(!e.codigo_confirmacao){ $('cf-codigo-erro').textContent='Esta entrega ainda não tem código gerado. Peça pra reenviarem o link de confirmação.'; return; }
+    if((e.codigo_tentativas||0)>=5){ $('cf-codigo-erro').textContent='Muitas tentativas erradas. Peça ajuda ao gerente.'; return; }
+    if(digitado!==String(e.codigo_confirmacao)){
+      const nt=(e.codigo_tentativas||0)+1; e.codigo_tentativas=nt;
+      try{ await db.from('entregas').update({codigo_tentativas:nt}).eq('id',e.id); }catch(_){}
+      $('cf-codigo-erro').textContent='Código incorreto. Tentativas: '+nt+'/5.';
+      return;
+    }
+  } else {
+    recebidoPor=($('cf-recebedor-simples').value||'').trim();
+  }
+  if(recebidoPor) patch.recebido_por=recebidoPor;
+
+  try{
+    const {error}=await db.from('entregas').update(patch).eq('id',e.id);
+    if(error) throw error;
+    Object.assign(e,patch);
+    fecharConfirmaEntrega();
+    notify('✅ Entrega confirmada!','ok');
+    renderEntregasMob();
+  }catch(err){ notify(msgAmigavel(err,'Não foi possível confirmar a entrega.'),'err'); }
+}
+
+/* ── Tentativa de entrega ── */
+function abrirTentativaEntrega(){
+  fecharDetalheEntrega();
+  $('tv-motivo').value='ausente'; $('tv-obs').value=''; $('tv-foto').value='';
+  $('modal-tentativa-overlay').style.display='flex';
+}
+function fecharTentativaEntrega(){ $('modal-tentativa-overlay').style.display='none'; }
+async function salvarTentativaEntrega(){
+  const e=(G.entregasMob||[]).find(x=>x.id===_entregaAtualId); if(!e) return;
+  const motivo=$('tv-motivo').value;
+  const observacao=($('tv-obs').value||'').trim();
+  let foto_url=null;
+  try{
+    const f=$('tv-foto').files&&$('tv-foto').files[0];
+    if(f){
+      const ext=(f.name.split('.').pop()||'jpg').toLowerCase();
+      const path=`${G.empresaId}/${e.id}/tentativa_${Date.now()}.${ext}`;
+      const {error:upErr}=await db.storage.from('entregas-comprovantes').upload(path,f,{contentType:f.type,upsert:false});
+      if(!upErr) foto_url=path;
+    }
+    const {error:tErr}=await db.from('tentativas_entrega').insert({empresa_id:G.empresaId, entrega_id:e.id, entregador_id:(G.operador&&G.operador.id)||null, entregador_nome:(G.operador&&G.operador.nome)||null, motivo, observacao:observacao||null, foto_url});
+    if(tErr) throw tErr;
+    const patch={status:'tentativa', atualizado_em:new Date().toISOString()};
+    const {error}=await db.from('entregas').update(patch).eq('id',e.id);
+    if(error) throw error;
+    Object.assign(e,patch);
+    fecharTentativaEntrega();
+    notify('Tentativa registrada.','ok');
+    renderEntregasMob();
+  }catch(err){ notify(msgAmigavel(err,'Não foi possível registrar a tentativa.'),'err'); }
+}
 
 /* ── BOOT: restaura sessão (com timeout, sem travar) ── */
 (async()=>{
