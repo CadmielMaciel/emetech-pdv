@@ -254,7 +254,14 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 
 /* ── Fatia 9: FOLHA "MAIS" (bottom sheet) ── */
 #sheet-overlay{position:fixed;inset:0;background:rgba(10,6,30,.45);z-index:150;display:none}
-#sheet-mais,.mobile-sheet{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-radius:22px 22px 0 0;padding:10px 16px calc(18px + var(--sab));z-index:151;display:none;box-shadow:0 -10px 40px rgba(0,0,0,.25);max-height:80vh;overflow-y:auto}
+#sheet-mais{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-radius:22px 22px 0 0;padding:10px 16px calc(18px + var(--sab));z-index:151;display:none;box-shadow:0 -10px 40px rgba(0,0,0,.25);max-height:80vh;overflow-y:auto}
+/* .mobile-sheet: mesma aparência de #sheet-mais, mas SEM "display:none" —
+   um bug real da Fatia 19 veio de compartilhar display:none aqui: qualquer
+   elemento que ganhasse essa classe sem ter seu próprio display gerenciado
+   por inline style (JS) ficava invisível pra sempre. #modal-pin/#modal-ios
+   caíram nessa (corrigido). A partir de agora, quem usar .mobile-sheet
+   precisa continuar controlando show/hide como já fazia antes. */
+.mobile-sheet{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-radius:22px 22px 0 0;padding:10px 16px calc(18px + var(--sab));z-index:151;box-shadow:0 -10px 40px rgba(0,0,0,.25);max-height:80vh;overflow-y:auto}
 #sheet-mais .sheet-handle{width:38px;height:4px;background:var(--border);border-radius:99px;margin:6px auto 14px;padding:9px 30px;background-clip:content-box;box-sizing:content-box}
 #sheet-mais .sheet-it{display:flex;align-items:center;gap:14px;padding:13px 6px;border-radius:14px;cursor:pointer;color:var(--txt);font-weight:600;font-size:15px}
 #sheet-mais .sheet-it:active{background:var(--bg2)}
@@ -621,7 +628,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 
 <!-- Fatia 9: passo a passo de instalação no iPhone/iPad (fica na tela até fechar) -->
 <div id="modal-ios-overlay" onclick="if(event.target===this)fecharInstrucaoIOS()">
-  <div id="modal-ios" class="mobile-sheet">
+  <div id="modal-ios">
     <div class="mp-title" id="ios-titulo">Como instalar no iPhone</div>
     <div class="mp-sub" id="ios-sub">O iPhone não deixa nenhum app instalar sozinho — são só 3 toques no Safari:</div>
     <div id="ios-passos"></div>
@@ -631,7 +638,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 
 <!-- Fatia 9: modal de PIN (Admin/Gerente) p/ liberar lucro do dia -->
 <div id="modal-pin-overlay" onclick="if(event.target===this)fecharPinModal()">
-  <div id="modal-pin" class="mobile-sheet">
+  <div id="modal-pin">
     <div class="mp-title">Autorização necessária</div>
     <div class="mp-sub">Digite o PIN de um Admin ou Gerente para ver o lucro estimado.</div>
     <input class="inp" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="pin-lucro-input" placeholder="••••" onkeydown="if(event.key==='Enter')confirmarPinLucro()">
@@ -643,7 +650,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 
 <!-- Fatia 11A: bottom sheet de detalhe de uma OS existente (Minhas OS) -->
 <div id="sheet-os-overlay" onclick="fecharDetalheOS()"></div>
-<div id="sheet-os" class="mobile-sheet">
+<div id="sheet-os">
   <div class="sheet-handle" onclick="fecharDetalheOS()" style="cursor:pointer"></div>
   <div class="osd-tit" id="osd-titulo">OS</div>
   <div class="osd-sub" id="osd-sub"></div>
