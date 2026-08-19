@@ -169,6 +169,29 @@ footer a{color:var(--pri);text-decoration:none}
     <div class="fg"><label>Nome da loja</label><input id="cad-empresa" placeholder="Ex.: TechCell Assistência"></div>
     <div class="fg"><label>Seu nome</label><input id="cad-nome" placeholder="Seu nome completo"></div>
     <div class="fg"><label>E-mail</label><input id="cad-email" type="email" placeholder="voce@suaempresa.com"></div>
+    <div class="fg">
+      <label>CNPJ da loja <span style="font-weight:400;color:var(--txt3)">(se já tiver)</span></label>
+      <input id="cad-cnpj" placeholder="00.000.000/0000-00" inputmode="numeric" oninput="_maskDoc(this,14)">
+    </div>
+    <div class="fg"><label>Seu CPF</label><input id="cad-cpf" placeholder="000.000.000-00" inputmode="numeric" oninput="_maskDoc(this,11)"></div>
+    <p style="font-size:11.5px;color:var(--txt3);margin:-7px 0 13px">Usamos esses dados para identificar sua loja, liberar o teste grátis e evitar uso duplicado do período gratuito.</p>
+    <div class="fg">
+      <label>Seu WhatsApp/celular</label>
+      <div style="display:flex;gap:8px">
+        <input id="cad-telefone" placeholder="(00) 00000-0000" inputmode="numeric" style="flex:1" oninput="_maskTelefone(this)">
+        <button type="button" class="btn btn-out" id="cad-btn-sms" style="white-space:nowrap;padding:11px 14px;font-size:12.5px" onclick="solicitarCodigoSms()">Verificar</button>
+      </div>
+      <p style="font-size:11px;color:var(--txt3);margin-top:5px">Enviamos um código de 6 dígitos por SMS pra confirmar que este número é seu.</p>
+    </div>
+    <div class="fg" id="cad-sms-row" style="display:none">
+      <label>Código recebido por SMS</label>
+      <div style="display:flex;gap:8px">
+        <input id="cad-sms-codigo" placeholder="000000" inputmode="numeric" maxlength="6" style="flex:1;letter-spacing:3px">
+        <button type="button" class="btn btn-pri" style="white-space:nowrap;padding:11px 14px;font-size:12.5px" onclick="confirmarCodigoSms()">Confirmar</button>
+      </div>
+      <p class="form-erro" id="cad-sms-erro" style="margin-top:6px"></p>
+      <p style="font-size:11px;color:var(--ok);margin-top:5px;display:none" id="cad-sms-ok"><i class="ti ti-circle-check"></i> Número verificado.</p>
+    </div>
     <div class="fg"><label>Senha</label><input id="cad-senha" type="password" placeholder="Mínimo 8 caracteres"></div>
 
     <div class="chk-row">
@@ -203,6 +226,21 @@ footer a{color:var(--pri);text-decoration:none}
   </div>
 </div>
 
+<!-- ═══ MODAL DE TRIAL JÁ UTILIZADO (bloqueio anti-abuso, oferta sem trial) ═══ -->
+<div class="modal-overlay" id="modal-trialbloq-overlay">
+  <div class="modal" style="text-align:center;position:relative">
+    <button class="modal-close" onclick="document.getElementById('modal-trialbloq-overlay').classList.remove('show')"><i class="ti ti-x"></i></button>
+    <div style="font-size:38px;margin-bottom:6px">🙌</div>
+    <h3>Esse período gratuito já foi usado</h3>
+    <p class="sub">Identificamos que este período gratuito já foi utilizado. Mas boa notícia: você pode assinar agora com <b>20% de desconto no primeiro mês</b>, sem trial, direto no plano.</p>
+    <div style="display:flex;flex-direction:column;gap:9px;margin-top:16px">
+      <button class="btn btn-pri btn-block" onclick="document.getElementById('modal-trialbloq-overlay').classList.remove('show');abrirCadastro('assinar', _planoEscolhido||'pro')"><i class="ti ti-discount-2"></i> Assinar com desconto</button>
+      <a class="btn btn-out btn-block" href="https://wa.me/5575999999999" target="_blank" style="text-decoration:none">Falar com suporte</a>
+      <a class="btn btn-ghost btn-block" href="/index.html" style="text-decoration:none">Entrar em uma conta existente</a>
+    </div>
+  </div>
+</div>
+
 <!-- ═══ Cookie banner (sem checkbox pré-marcado — aceitar/recusar explícito) ═══ -->
 <div id="cookie-banner">
   Usamos cookies essenciais para o funcionamento do site. Cookies de análise/marketing só são ativados com o seu consentimento.
@@ -220,6 +258,127 @@ const SURL = 'https://icgfpfwcnhkjglrmnuca.supabase.co';
 const SKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljZ2ZwZndjbmhramdscm1udWNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwODA2OTEsImV4cCI6MjA5NTY1NjY5MX0.xDGiGCIlqXaqdWhWo0NoNi_XUdlw5raCogO_Jnc0ezw';
 const db = supabase.createClient(SURL, SKEY);
 const FUNCTIONS_URL = SURL.replace('.supabase.co', '.functions.supabase.co');
+
+/* ── Fatia 22 — anti-abuso de trial ────────────────────────────────────
+   Máscaras de CNPJ/CPF e telefone, coleta de fingerprint de dispositivo
+   (silenciosa, só combina sinais que o navegador já expõe — nada de libs
+   pagas de terceiros), fluxo de verificação por SMS e a checagem de
+   elegibilidade (verificar_elegibilidade_trial, RPC no Postgres — roda no
+   servidor, não pode ser manipulada por aqui). ── */
+
+function _maskDoc(input, maxDigits){
+  let v = input.value.replace(/\D/g,'').slice(0, maxDigits);
+  if(maxDigits === 11){ // CPF
+    v = v.replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2');
+  } else { // CNPJ
+    v = v.replace(/^(\d{2})(\d)/,'$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/,'$1.$2.$3').replace(/\.(\d{3})(\d)/,'.$1/$2').replace(/(\d{4})(\d{1,2})$/,'$1-$2');
+  }
+  input.value = v;
+}
+function _maskTelefone(input){
+  let v = input.value.replace(/\D/g,'').slice(0,11);
+  v = v.replace(/^(\d{2})(\d)/,'($1) $2').replace(/(\d{5})(\d{1,4})$/,'$1-$2');
+  input.value = v;
+}
+function _soDigitos(v){ return (v||'').replace(/\D/g,''); }
+
+/* Fingerprint leve: combina sinais já disponíveis no navegador (idioma,
+   fuso, resolução, plataforma, núcleos de CPU) + um hash de canvas — não
+   identifica a pessoa sozinho, é só mais um sinal pro score. Se o
+   navegador bloquear algo (ex.: canvas em modo privado), seguimos sem
+   travar o cadastro — dispositivo nunca bloqueia sozinho mesmo. */
+function _coletarFingerprint(){
+  try{
+    let canvasSig = '';
+    try{
+      const c = document.createElement('canvas'); c.width=200; c.height=40;
+      const ctx = c.getContext('2d');
+      ctx.textBaseline='top'; ctx.font='14px Arial'; ctx.fillText('misu-fp-22::' + navigator.userAgent, 2, 2);
+      canvasSig = c.toDataURL();
+    }catch(_){}
+    const partes = [
+      navigator.userAgent || '', navigator.language || '',
+      (Intl.DateTimeFormat().resolvedOptions().timeZone) || '',
+      `${screen.width}x${screen.height}x${screen.colorDepth}`,
+      navigator.platform || '', navigator.hardwareConcurrency || '',
+      canvasSig,
+    ].join('|');
+    return partes;
+  }catch(_){ return null; }
+}
+
+/* ── SMS: solicitar código ── */
+let _telefoneVerificado = false;
+let _ultimoTelefoneEnviado = null;
+async function solicitarCodigoSms(){
+  const btn = document.getElementById('cad-btn-sms');
+  const tel = _soDigitos(document.getElementById('cad-telefone').value);
+  const erroBox = document.getElementById('cad-erro');
+  erroBox.style.display = 'none';
+  if(tel.length < 10){ erroBox.textContent = 'Informe um celular válido com DDD.'; erroBox.style.display='block'; return; }
+  btn.disabled = true; const txtOriginal = btn.textContent; btn.textContent = 'Enviando...';
+  try{
+    const resp = await fetch(`${FUNCTIONS_URL}/enviar-sms-verificacao`, {
+      method:'POST', headers:{'Content-Type':'application/json','apikey':SKEY},
+      body: JSON.stringify({ telefone: tel }),
+    });
+    const data = await resp.json().catch(()=>({}));
+    if(!resp.ok || !data.ok){
+      erroBox.textContent = data.error || 'Não foi possível enviar o SMS agora. Tente novamente em instantes.';
+      erroBox.style.display = 'block';
+      return;
+    }
+    _ultimoTelefoneEnviado = tel;
+    document.getElementById('cad-sms-row').style.display = 'block';
+    document.getElementById('cad-sms-ok').style.display = 'none';
+    document.getElementById('cad-sms-erro').style.display = 'none';
+    // Cooldown de 30s antes de deixar reenviar, pra não virar spam/custo.
+    let restante = 30;
+    btn.textContent = `Reenviar (${restante}s)`;
+    const iv = setInterval(()=>{
+      restante--;
+      if(restante <= 0){ clearInterval(iv); btn.disabled=false; btn.textContent='Reenviar código'; }
+      else btn.textContent = `Reenviar (${restante}s)`;
+    }, 1000);
+  }catch(e){
+    erroBox.textContent = 'Não foi possível conectar agora. Confira sua internet e tente de novo.';
+    erroBox.style.display = 'block';
+    btn.disabled = false; btn.textContent = txtOriginal;
+  }
+}
+
+/* ── SMS: confirmar código digitado ── */
+async function confirmarCodigoSms(){
+  const smsErro = document.getElementById('cad-sms-erro');
+  const smsOk = document.getElementById('cad-sms-ok');
+  smsErro.style.display = 'none';
+  const codigo = document.getElementById('cad-sms-codigo').value.trim();
+  if(!_ultimoTelefoneEnviado){ smsErro.textContent = 'Solicite o código primeiro.'; smsErro.style.display='block'; return; }
+  if(codigo.length !== 6){ smsErro.textContent = 'Digite os 6 dígitos recebidos por SMS.'; smsErro.style.display='block'; return; }
+  try{
+    const { data, error } = await db.rpc('sms_validar_codigo', { p_telefone: _ultimoTelefoneEnviado, p_codigo: codigo });
+    if(error){ smsErro.textContent = 'Não foi possível validar agora. Tente de novo.'; smsErro.style.display='block'; return; }
+    if(!data || !data.valido){
+      const motivos = {
+        codigo_incorreto: 'Código incorreto. Confira e tente de novo.',
+        codigo_expirado: 'Esse código expirou. Toque em "Reenviar" pra receber um novo.',
+        muitas_tentativas: 'Muitas tentativas com esse código. Solicite um novo.',
+        nenhum_codigo_pendente: 'Solicite o código antes de confirmar.',
+      };
+      smsErro.textContent = motivos[data && data.motivo] || 'Código inválido.';
+      smsErro.style.display = 'block';
+      return;
+    }
+    _telefoneVerificado = true;
+    smsOk.style.display = 'block';
+    document.getElementById('cad-telefone').disabled = true;
+    document.getElementById('cad-btn-sms').disabled = true;
+    document.getElementById('cad-sms-codigo').disabled = true;
+  }catch(e){
+    smsErro.textContent = 'Não foi possível conectar agora. Tente de novo.';
+    smsErro.style.display = 'block';
+  }
+}
 
 /* ── Versões dos documentos exibidas/registradas no aceite. Ajuste aqui
    toda vez que o texto de termos/privacidade/contrato mudar de verdade —
@@ -299,6 +458,9 @@ async function enviarCadastro(){
   const nomeEmpresa = document.getElementById('cad-empresa').value.trim();
   const nomeUsuario = document.getElementById('cad-nome').value.trim();
   const email = document.getElementById('cad-email').value.trim();
+  const cnpj = _soDigitos(document.getElementById('cad-cnpj').value);
+  const cpf = _soDigitos(document.getElementById('cad-cpf').value);
+  const telefone = _soDigitos(document.getElementById('cad-telefone').value);
   const senha = document.getElementById('cad-senha').value;
   const aceitouTermos = document.getElementById('cad-chk-termos').checked;
   const aceitouContrato = document.getElementById('cad-chk-contrato').checked;
@@ -307,19 +469,51 @@ async function enviarCadastro(){
   if(nomeEmpresa.length<2) erros.push('Informe o nome da loja.');
   if(nomeUsuario.length<2) erros.push('Informe seu nome.');
   if(!emailValido(email)) erros.push('E-mail inválido.');
+  if(cpf.length !== 11) erros.push('Informe um CPF válido (é usado só para liberar o teste e evitar duplicidade).');
+  if(cnpj.length > 0 && cnpj.length !== 14) erros.push('CNPJ inválido — confira os números ou deixe em branco se ainda não tiver.');
+  if(telefone.length < 10) erros.push('Informe um celular válido com DDD.');
+  if(!_telefoneVerificado || telefone !== _ultimoTelefoneEnviado) erros.push('Confirme o código de verificação enviado por SMS antes de continuar.');
   if(senha.length<8) erros.push('A senha precisa ter no mínimo 8 caracteres.');
   if(!aceitouTermos || !aceitouContrato) erros.push('É necessário aceitar os termos e o contrato para continuar.');
   if(erros.length){ erroBox.textContent = erros[0]; erroBox.style.display='block'; return; }
 
   const btn = document.getElementById('cad-btn-enviar'); const txt = document.getElementById('cad-btn-texto');
-  btn.disabled = true; txt.innerHTML = '<span class="spinner"></span> Criando sua conta...';
+  btn.disabled = true; txt.innerHTML = '<span class="spinner"></span> Verificando elegibilidade...';
 
   try{
+    /* ── Fatia 22: checagem de elegibilidade ANTES de criar a conta ──
+       Roda no Postgres (verificar_elegibilidade_trial), não pode ser
+       manipulada por aqui. Só bloqueia com 2+ sinais fortes combinados —
+       nunca por um sinal isolado (ex.: só reinstalar o navegador não
+       bloqueia ninguém). ── */
+    const deviceFingerprint = _coletarFingerprint();
+    const { data: elegibilidade, error: erroElegibilidade } = await db.rpc('verificar_elegibilidade_trial', {
+      p_cnpj: cnpj || null,
+      p_cpf_responsavel: cpf,
+      p_telefone: telefone,
+      p_email: email,
+      p_device_fingerprint: deviceFingerprint,
+      p_ip: null, // capturado no lado do servidor quando disponível; não confiamos em IP relatado pelo client.
+      p_origem: 'web',
+    });
+    if(!erroElegibilidade && elegibilidade && elegibilidade.elegivel === false){
+      btn.disabled = false; txt.innerHTML = '<i class="ti ti-rocket"></i> Criar minha conta';
+      document.getElementById('modal-cadastro-overlay').classList.remove('show');
+      document.getElementById('modal-trialbloq-overlay').classList.add('show');
+      return;
+    }
+    // Se a checagem falhar por erro técnico (RPC fora do ar, etc.), não
+    // travamos o cadastro por causa disso — seguimos e deixamos a
+    // signup-empresa como última linha de defesa, exatamente como estava
+    // antes desta fatia.
+
+    txt.innerHTML = '<span class="spinner"></span> Criando sua conta...';
     const resp = await fetch(`${FUNCTIONS_URL}/signup-empresa`, {
       method:'POST',
       headers:{ 'Content-Type':'application/json', 'apikey': SKEY },
       body: JSON.stringify({
         nomeEmpresa, nomeUsuario, email, senha,
+        cnpj: cnpj || null, cpfResponsavel: cpf, telefone,
         modo: _modoCadastro, planoDesejado: _planoEscolhido || 'basico',
         veioDeExitIntent: !!window._veioDeExitIntentAtual,
         aceites: {
@@ -336,6 +530,19 @@ async function enviarCadastro(){
       erroBox.style.display='block';
       return;
     }
+
+    // Promove o registro provisório de trial_consumidos pra 'confirmado' e
+    // vincula o empresa_id, se o backend retornou um. Melhor esforço: se
+    // isso falhar, o registro fica 'provisorio' — ainda bloqueia reuso
+    // igual, só sem o vínculo. Nunca deixamos isso travar o redirecionamento.
+    try{
+      await db.rpc('f22_confirmar_trial_consumido', {
+        p_empresa_id: data.empresa_id || null,
+        p_cnpj: cnpj || null, p_cpf_responsavel: cpf, p_telefone: telefone,
+        p_email: email, p_device_fingerprint: deviceFingerprint,
+      });
+    }catch(_){}
+
     // "Assinar agora": a conta nasce em trial (signup-empresa não gera
     // cobrança) — o index.html é quem abre o fluxo REAL de troca de plano
     // (selecionarPlano → gerar-cobranca, o mesmo que um cliente já logado
