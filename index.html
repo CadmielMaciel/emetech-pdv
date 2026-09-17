@@ -11628,6 +11628,53 @@ async function finalizeSale(){
   }
 
   setLoad(true);
+  // ── FIX (revisão 2026-09): a venda agora é gravada ANTES de baixar o estoque.
+  // Antes, o estoque saía primeiro e a venda era inserida depois — se a rede caísse
+  // exatamente nesse meio-tempo, a venda ia pra fila offline mas o estoque já tinha
+  // sido debitado, e ao sincronizar depois o estoque era debitado DE NOVO (baixa dupla).
+  // Também podia arquivar item único (celular/IMEI) sem a venda existir, se o insert
+  // falhasse por erro de dado. Com a venda gravada primeiro, nenhum dos dois acontece:
+  // se o insert falhar, o estoque nunca chega a ser tocado.
+  try{
+    const {data:vendaInserida,error}=await db.from('vendas').insert(venda).select().single();
+    if(error){
+      // Log detalhado para ajudar diagnóstico (visível no console do navegador)
+      console.error('Erro Supabase ao inserir venda:',error.code,error.message,error.details,error.hint);
+      throw error;
+    }
+    // Usa o id retornado pelo banco (necessário para vincular troca, crediário etc.)
+    if(vendaInserida?.id) venda.id=vendaInserida.id;
+  }catch(e){
+    setLoad(false);
+    const msg=e?.message||'';
+    const code=e?.code||'';
+    // Erros conhecidos que NÃO devem ir para fila offline (problema de dado, não de rede)
+    const errosDeDado=['23502','23503','23514','42703','42601','PGRST'];
+    const erroConhecido=errosDeDado.some(c=>code.startsWith(c)||msg.includes(c));
+    if(erroConhecido){
+      // Erro de schema/dado — avisar sem guardar offline (guardar offline propagaria o dado inválido).
+      // Estoque não foi tocado, então não há nada para desfazer.
+      notify(`Erro ao salvar venda: ${msg}. Verifique o console (F12) para detalhes.`,'error',8000);
+      somErro();
+      return; // NÃO abre modal de venda concluída com dado inválido
+    }
+    // Erro de rede/timeout ao tentar gravar a venda — estoque ainda intacto (nunca foi debitado),
+    // então é seguro guardar offline: quando sincronizar, o estoque será debitado uma única vez.
+    await offAddVenda(venda);
+    await updatePendingBadge();
+    notify('Falha de conexão: venda guardada para sincronizar assim que a internet voltar.','warn',5000);
+    somErro();
+    G.vendas.unshift({...venda,criado_em:new Date().toISOString(),_pendente_offline:true});
+    document.getElementById('vok-info').textContent=`${G.cart.length} item(s) · ${cliNome}`+(_resumoPagamentoPDV()?` · ✓ Pago em ${_resumoPagamentoPDV()}`:'');
+    document.getElementById('vok-total').textContent=fmt(total);
+    document.getElementById('vok-troco').textContent=troco>0?`Troco: ${fmt(troco)}`:'';
+    openModal('modal-venda-ok');renderDashboard();
+    return;
+  }
+
+  // Venda já gravada com sucesso no banco — agora sim baixa o estoque item a item.
+  // Se algo falhar aqui, a venda NÃO volta pra fila offline (ela já existe no banco,
+  // reenviar duplicaria a venda); só avisamos o operador para conferir o estoque manualmente.
   try{
     for(const ci of G.cart){
       const p=G.produtos.find(x=>x.id===ci.id);
@@ -11655,38 +11702,9 @@ async function finalizeSale(){
         }
       }
     }
-    const {data:vendaInserida,error}=await db.from('vendas').insert(venda).select().single();
-    if(error){
-      // Log detalhado para ajudar diagnóstico (visível no console do navegador)
-      console.error('Erro Supabase ao inserir venda:',error.code,error.message,error.details,error.hint);
-      throw error;
-    }
-    // Usa o id retornado pelo banco (necessário para vincular troca, crediário etc.)
-    if(vendaInserida?.id) venda.id=vendaInserida.id;
   }catch(e){
-    setLoad(false);
-    const msg=e?.message||'';
-    const code=e?.code||'';
-    // Erros conhecidos que NÃO devem ir para fila offline (problema de dado, não de rede)
-    const errosDeDado=['23502','23503','23514','42703','42601','PGRST'];
-    const erroConhecido=errosDeDado.some(c=>code.startsWith(c)||msg.includes(c));
-    if(erroConhecido){
-      // Erro de schema/dado — avisar sem guardar offline (guardar offline propagaria o dado inválido)
-      notify(`Erro ao salvar venda: ${msg}. Verifique o console (F12) para detalhes.`,'error',8000);
-      somErro();
-      return; // NÃO abre modal de venda concluída com dado inválido
-    }
-    // Erro de rede/timeout — guarda offline pra não perder a venda
-    await offAddVenda(venda);
-    await updatePendingBadge();
-    notify('Falha de conexão: venda guardada para sincronizar assim que a internet voltar.','warn',5000);
-    somErro();
-    G.vendas.unshift({...venda,criado_em:new Date().toISOString(),_pendente_offline:true});
-    document.getElementById('vok-info').textContent=`${G.cart.length} item(s) · ${cliNome}`+(_resumoPagamentoPDV()?` · ✓ Pago em ${_resumoPagamentoPDV()}`:'');
-    document.getElementById('vok-total').textContent=fmt(total);
-    document.getElementById('vok-troco').textContent=troco>0?`Troco: ${fmt(troco)}`:'';
-    openModal('modal-venda-ok');renderDashboard();
-    return;
+    console.error('Venda gravada, mas falha ao baixar estoque:',e);
+    notify('⚠️ Venda concluída, mas houve falha ao baixar o estoque de algum item. Confira o estoque manualmente.','warn',7000);
   }
   setLoad(false);
   // ── ENTRADA DO APARELHO USADO NO ESTOQUE (corrige bug: a troca abatia o valor
