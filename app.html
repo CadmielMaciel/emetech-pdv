@@ -1985,19 +1985,42 @@ async function confirmarPagamentoManual(){
 // Só aqui a venda é gravada de fato e o estoque sai — depois de confirmado o pagamento.
 async function concluirVendaPendente(){
   const vp=G.vendaPendente; if(!vp) return;
+  // FIX (revisão 2026-09): trava contra chamadas concorrentes. O polling automático
+  // (a cada 5s), o botão "Verificar agora" e a confirmação manual podiam chamar esta
+  // função quase ao mesmo tempo (ex.: o polling detecta "pago" no exato instante em
+  // que o operador clica "Confirmar manualmente"), duplicando a venda e a baixa de estoque.
+  if(G._concluindoVenda) return;
+  G._concluindoVenda=true;
   pararPollingCobranca();
   const btn=$('pg-btn-confirmar'); if(btn){ btn.disabled=true; btn.innerHTML='<div class="spinner"></div>Concluindo...'; }
   try{
     const venda={ empresa_id:G.empresaId, cliente_nome:vp.cliente, operador_id:G.operador?.id||null,
       operador_nome:G.operador?.nome||'MISU MOBILE', caixa_id:G.caixa?.id||null, itens:vp.itens,
       subtotal:vp.total, desconto_pct:0, total:vp.total, pagamento:vp.forma, status:'concluida' };
-    try{ await db.from('vendas').insert(venda); }
-    catch(e){ notify('Pagamento confirmado, mas não consegui registrar a venda no sistema. Anote manualmente e avise o suporte.','warn',7000); }
-    await baixarEstoqueItens(vp.itens, vp.gateway==='pix_proprio'?'Venda por Pix (app MISU MOBILE)':'Venda por InfinitePay (app MISU MOBILE)');
+    const {error}=await db.from('vendas').insert(venda);
+    if(error){
+      // FIX (revisão 2026-09): antes, mesmo com erro aqui, o código seguia em frente e
+      // baixava o estoque de qualquer forma — ficava estoque debitado sem nenhuma venda
+      // correspondente registrada. Agora, se a venda não grava, o estoque não é tocado
+      // e a cobrança continua pendente para o operador tentar de novo.
+      console.error('Erro ao inserir venda (app):',error);
+      notify('Pagamento confirmado, mas não consegui registrar a venda no sistema. Tente novamente em instantes (botão "Verificar pagamento agora") ou avise o suporte.','warn',7500);
+      return;
+    }
+    try{
+      await baixarEstoqueItens(vp.itens, vp.gateway==='pix_proprio'?'Venda por Pix (app MISU MOBILE)':'Venda por InfinitePay (app MISU MOBILE)');
+    }catch(e){
+      // Venda já gravada com sucesso — não desfazemos nem repetimos; só avisamos para conferência manual.
+      console.error('Venda gravada, mas falha ao baixar estoque (app):',e);
+      notify('⚠️ Venda registrada, mas houve falha ao baixar o estoque. Confira o estoque manualmente.','warn',7000);
+    }
     notify('✅ Pagamento confirmado, venda registrada e estoque baixado!','ok');
     G.vendaPendente=null; limparCarrinho(); goHome();
   }catch(e){ notify(msgAmigavel(e,'Não foi possível concluir a venda.'),'err'); }
-  finally{ if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-check"></i>Confirmar pagamento recebido'; } }
+  finally{
+    G._concluindoVenda=false;
+    if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-check"></i>Confirmar pagamento recebido'; }
+  }
 }
 
 function cancelarPagamentoPendente(){
