@@ -154,6 +154,11 @@ input,select,textarea,button{font-family:inherit;font-size:16px}
    mais abaixo no arquivo), então quem pediu menos movimento não as vê animar. */
 #login{position:fixed;inset:0;overflow:hidden;background:linear-gradient(155deg,var(--pri-d),var(--pri) 52%,var(--pri2));display:flex;align-items:center;justify-content:center;padding:24px;z-index:100}
 #login::before{content:"";position:absolute;inset:0;background:radial-gradient(85% 55% at 50% 0%,rgba(255,255,255,.20),transparent 60%);pointer-events:none}
+/* Revisão 2026-09: bloqueio de tela local do aparelho — mesmo visual do
+   login (reaproveita .login-blob/.login-card/etc.), mas por cima de TUDO
+   (inclusive do #app já carregado), já que trava o aparelho, não a conta. */
+#applock{position:fixed;inset:0;overflow:hidden;background:linear-gradient(155deg,var(--pri-d),var(--pri) 52%,var(--pri2));display:flex;align-items:center;justify-content:center;padding:24px;z-index:9995}
+#applock::before{content:"";position:absolute;inset:0;background:radial-gradient(85% 55% at 50% 0%,rgba(255,255,255,.20),transparent 60%);pointer-events:none}
 .login-blob{position:absolute;border-radius:50%;filter:blur(50px);pointer-events:none;animation:loginFloat 16s ease-in-out infinite}
 .login-blob.b1{width:240px;height:240px;background:rgba(255,255,255,.28);top:-70px;left:-60px}
 .login-blob.b2{width:210px;height:210px;background:rgba(124,92,255,.55);bottom:-60px;right:-50px;animation-delay:-5.5s}
@@ -430,10 +435,10 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 #modal-ios .mp-sub{font-size:13px;color:var(--txt3);margin-bottom:16px;line-height:1.4}
 
 /* ── Fatia 21: modais novos (Pessoas/Entregador) — mesmo padrão visual dos já existentes ── */
-#modal-quemusa-overlay,#modal-pin-op-overlay,#modal-pessoa-overlay,#modal-confirma-overlay,#modal-tentativa-overlay{position:fixed;inset:0;background:rgba(10,6,30,.5);z-index:165;display:none;align-items:flex-end;justify-content:center;animation:motionFadeIn .18s ease}
-#modal-quemusa,#modal-pin-op,#modal-pessoa,#modal-confirma,#modal-tentativa{background:var(--card);border-radius:22px 22px 0 0;padding:22px 20px calc(22px + var(--sab));width:100%;max-width:460px;animation:up .25s ease;max-height:85vh;overflow-y:auto}
-#modal-quemusa .mp-title,#modal-pin-op .mp-title,#modal-pessoa .mp-title,#modal-confirma .mp-title,#modal-tentativa .mp-title{font-weight:800;font-size:16px;margin-bottom:4px}
-#modal-quemusa .mp-sub,#modal-pin-op .mp-sub,#modal-pessoa .mp-sub,#modal-confirma .mp-sub,#modal-tentativa .mp-sub{font-size:12.5px;color:var(--txt3);margin-bottom:14px}
+#modal-quemusa-overlay,#modal-pin-op-overlay,#modal-pessoa-overlay,#modal-confirma-overlay,#modal-tentativa-overlay,#modal-meupin-overlay,#modal-applock-setup-overlay{position:fixed;inset:0;background:rgba(10,6,30,.5);z-index:165;display:none;align-items:flex-end;justify-content:center;animation:motionFadeIn .18s ease}
+#modal-quemusa,#modal-pin-op,#modal-pessoa,#modal-confirma,#modal-tentativa,#modal-meupin,#modal-applock-setup{background:var(--card);border-radius:22px 22px 0 0;padding:22px 20px calc(22px + var(--sab));width:100%;max-width:460px;animation:up .25s ease;max-height:85vh;overflow-y:auto}
+#modal-quemusa .mp-title,#modal-pin-op .mp-title,#modal-pessoa .mp-title,#modal-confirma .mp-title,#modal-tentativa .mp-title,#modal-meupin .mp-title,#modal-applock-setup .mp-title{font-weight:800;font-size:16px;margin-bottom:4px}
+#modal-quemusa .mp-sub,#modal-pin-op .mp-sub,#modal-pessoa .mp-sub,#modal-confirma .mp-sub,#modal-tentativa .mp-sub,#modal-meupin .mp-sub,#modal-applock-setup .mp-sub{font-size:12.5px;color:var(--txt3);margin-bottom:14px}
 .quemusa-btn{display:flex;align-items:center;gap:10px;width:100%;padding:13px 15px;border-radius:13px;border:1.5px solid var(--border);background:#fff;font-weight:700;font-size:14px;cursor:pointer;text-align:left;color:var(--txt)}
 .quemusa-btn i{color:var(--pri);font-size:18px}
 #sheet-entrega-overlay{position:fixed;inset:0;background:rgba(10,6,30,.45);z-index:150;display:none}
@@ -549,6 +554,31 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
     </div>
     <div id="l-err" class="l-err"></div>
     <button class="btn motion-fade-up" id="l-btn" onclick="doLogin()" style="margin-top:18px;animation-delay:.17s"><i class="ti ti-lock"></i>Entrar</button>
+  </div>
+</div>
+
+<!-- Revisão 2026-09 (PIN para celular, parte 1/2): bloqueio de tela local
+     deste aparelho. Independente do login por e-mail/senha (Supabase) e do
+     PIN de identificação do operador (G.operador.pin, guardado no banco em
+     "usuarios") — este PIN fica só no localStorage deste celular, com hash
+     (não texto puro). Aparece por cima de tudo quando ativado em
+     Perfil → Segurança, tanto ao abrir o app quanto ao voltar de segundo
+     plano (ver bloco "BLOQUEIO DO APARELHO" no script). -->
+<div id="applock" class="hidden">
+  <div class="login-blob b1" aria-hidden="true"></div>
+  <div class="login-blob b2" aria-hidden="true"></div>
+  <div class="login-blob b3" aria-hidden="true"></div>
+  <div class="login-card">
+    <div class="login-mark motion-fade-up" style="animation-delay:.02s"><i class="ti ti-lock"></i></div>
+    <div class="login-logo motion-fade-up" style="animation-delay:.05s">Aparelho bloqueado</div>
+    <div class="login-sub motion-fade-up" style="animation-delay:.08s">Digite o PIN deste celular para continuar</div>
+    <div class="input-group motion-fade-up" style="animation-delay:.11s">
+      <i class="ti ti-lock input-icon"></i>
+      <input class="inp inp-icon" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" id="applock-input" placeholder="PIN do aparelho" aria-label="PIN do aparelho" onkeydown="if(event.key==='Enter')confirmarApplock()">
+    </div>
+    <div id="applock-erro" class="l-err"></div>
+    <button class="btn motion-fade-up" id="applock-btn" onclick="confirmarApplock()" style="animation-delay:.14s"><i class="ti ti-lock-open"></i>Desbloquear</button>
+    <button class="btn btn-ghost motion-fade-up" style="animation-delay:.17s" onclick="_applockEsqueci()">Esqueci o PIN</button>
   </div>
 </div>
 
@@ -853,6 +883,21 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
       <div class="sheet-it danger" onclick="doLogout()"><i class="ti ti-logout"></i>Sair</div>
     </div>
 
+    <!-- Revisão 2026-09 (PIN para celular, parte 2/2): PIN de identificação
+         do próprio operador (mesmo campo "usuarios.pin" já usado em "Quem
+         está usando este celular?" e no PIN de lucro — ver PENDÊNCIAS sobre
+         a política de RLS dessa tabela) + bloqueio de tela local deste
+         aparelho (guardado só no localStorage, ver #applock acima). -->
+    <div class="perfil-secao-t">Segurança</div>
+    <div class="card">
+      <div class="sheet-it" onclick="abrirMeuPin()"><i class="ti ti-key"></i><span style="flex:1">Meu PIN de identificação</span><span id="meupin-status" style="font-size:11.5px;color:var(--txt3)">—</span></div>
+      <div class="sheet-it" id="applock-row" onclick="toggleApplock()" role="switch" aria-checked="false" aria-label="Bloqueio do app neste celular">
+        <i class="ti ti-shield-lock"></i>
+        <span id="applock-lbl" style="flex:1">Bloqueio do app neste celular</span>
+        <span class="switch-fake" id="applock-switch" aria-hidden="true"></span>
+      </div>
+    </div>
+
     <div class="perfil-secao-t">Ajuda</div>
     <div class="card">
       <div class="sheet-it" id="sheet-tour" onclick="startTour('mobile')"><i class="ti ti-route"></i>Tour guiado do app</div>
@@ -930,6 +975,43 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
     <div id="pin-op-erro" style="color:var(--danger);font-size:12.5px;margin-top:8px;min-height:16px"></div>
     <button class="btn" style="margin-top:10px" onclick="confirmarPinOperador()"><i class="ti ti-check"></i>Confirmar</button>
     <button class="btn btn-ghost" style="margin-top:6px" onclick="fecharPinOperador()">Voltar</button>
+  </div>
+</div>
+
+<!-- Revisão 2026-09: operador define/troca o próprio PIN de identificação
+     (Perfil → Segurança → Meu PIN de identificação) — grava em
+     "usuarios.pin", o mesmo campo usado no modal acima e no PIN de lucro. -->
+<div id="modal-meupin-overlay" onclick="if(event.target===this)fecharMeuPin()">
+  <div id="modal-meupin">
+    <div class="mp-title">Meu PIN</div>
+    <div class="mp-sub" id="meupin-sub">Defina um PIN de 4 a 6 dígitos para se identificar mais rápido neste aparelho.</div>
+    <div id="meupin-atual-row" style="display:none">
+      <input class="inp" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" id="meupin-atual" placeholder="PIN atual" style="margin-bottom:10px">
+    </div>
+    <input class="inp" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" id="meupin-novo" placeholder="Novo PIN" style="margin-bottom:10px">
+    <input class="inp" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" id="meupin-novo2" placeholder="Confirme o novo PIN">
+    <div id="meupin-erro" style="color:var(--danger);font-size:12.5px;margin-top:8px;min-height:16px"></div>
+    <button class="btn" style="margin-top:6px" onclick="salvarMeuPin()"><i class="ti ti-check"></i>Salvar</button>
+    <button class="btn btn-ghost" style="margin-top:6px" onclick="fecharMeuPin()">Cancelar</button>
+  </div>
+</div>
+
+<!-- Revisão 2026-09: ativar/desativar o bloqueio de tela local deste
+     aparelho (Perfil → Segurança → Bloqueio do app neste celular). -->
+<div id="modal-applock-setup-overlay" onclick="if(event.target===this)fecharApplockSetup()">
+  <div id="modal-applock-setup">
+    <div class="mp-title" id="applock-setup-title">Criar PIN do aparelho</div>
+    <div class="mp-sub" id="applock-setup-sub">Escolha um PIN de 4 a 6 dígitos para bloquear o app neste celular.</div>
+    <div id="applock-setup-remover-row" style="display:none">
+      <input class="inp" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" id="applock-setup-atual" placeholder="PIN atual do aparelho" style="margin-bottom:10px">
+    </div>
+    <div id="applock-setup-criar-row">
+      <input class="inp" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" id="applock-setup-novo" placeholder="Novo PIN" style="margin-bottom:10px">
+      <input class="inp" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" id="applock-setup-novo2" placeholder="Confirme o novo PIN">
+    </div>
+    <div id="applock-setup-erro" style="color:var(--danger);font-size:12.5px;margin-top:8px;min-height:16px"></div>
+    <button class="btn" style="margin-top:6px" onclick="confirmarApplockSetup()"><i class="ti ti-check"></i>Confirmar</button>
+    <button class="btn btn-ghost" style="margin-top:6px" onclick="fecharApplockSetup()">Cancelar</button>
   </div>
 </div>
 
@@ -1163,6 +1245,167 @@ function toggleSenhaVisivel(){
   btn.setAttribute('aria-label', vaiMostrar?'Ocultar senha':'Mostrar senha');
   btn.setAttribute('aria-pressed', vaiMostrar?'true':'false');
 }
+
+/* ── BLOQUEIO DO APARELHO (Revisão 2026-09, "PIN para celular" parte 1/2) ──
+   Trava de tela local deste celular, independente do login por e-mail/senha
+   (Supabase, abaixo) e independente do PIN de identificação do operador
+   (usuarios.pin, no banco — ver "Meu PIN" mais abaixo e Pessoas). Fica só
+   no localStorage deste aparelho: não sincroniza entre celulares e não tem
+   recuperação por e-mail — "Esqueci o PIN" desloga e remove o bloqueio,
+   forçando login normal de novo (ver _applockEsqueci()).
+   O PIN nunca é guardado em texto puro: é um hash SHA-256 (Web Crypto) com
+   salt aleatório. Se o navegador não tiver Web Crypto disponível (só ocorre
+   fora de contexto seguro — http sem ser localhost — o que não deveria
+   acontecer em produção, já que o app usa Service Worker/PWA, que já exige
+   HTTPS), cai num hash simples (FNV-1a) só pra nunca deixar o PIN em texto
+   puro no localStorage; é uma proteção fraca nesse caso, mas nunca pior do
+   que o texto puro. */
+const APPLOCK_HASH_KEY='misu_applock_hash';
+const APPLOCK_SALT_KEY='misu_applock_salt';
+const APPLOCK_BG_LIMIT_MS=30000; // assunção de UX (não pedida pelo usuário): relock só após 30s em segundo plano, pra não incomodar em trocas rápidas de app
+function _applockAtivo(){ try{ return !!localStorage.getItem(APPLOCK_HASH_KEY); }catch(_){ return false; } }
+function _hashFallbackFNV(str){
+  let h=0x811c9dc5;
+  for(let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=(h*0x01000193)>>>0; }
+  return 'fnv'+h.toString(16);
+}
+async function _hashPin(pin, saltHex){
+  const raw=saltHex+':'+pin;
+  try{
+    if(window.crypto?.subtle){
+      const buf=await crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw));
+      return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+    }
+  }catch(_){}
+  return _hashFallbackFNV(raw);
+}
+function _applockRandomSalt(){
+  try{ const arr=new Uint8Array(16); crypto.getRandomValues(arr); return Array.from(arr).map(b=>b.toString(16).padStart(2,'0')).join(''); }
+  catch(_){ return String(Date.now())+Math.random().toString(16).slice(2); }
+}
+function mostrarApplock(){
+  $('applock-input').value=''; $('applock-erro').textContent='';
+  $('applock').classList.remove('hidden');
+  setTimeout(()=>$('applock-input')?.focus(),150);
+}
+async function confirmarApplock(){
+  const pin=($('applock-input').value||'').trim();
+  if(!pin){ $('applock-erro').textContent='Digite o PIN.'; return; }
+  const salt=(()=>{ try{ return localStorage.getItem(APPLOCK_SALT_KEY)||''; }catch(_){ return ''; } })();
+  const hashArmazenado=(()=>{ try{ return localStorage.getItem(APPLOCK_HASH_KEY)||''; }catch(_){ return ''; } })();
+  const hash=await _hashPin(pin, salt);
+  if(hash!==hashArmazenado){ $('applock-erro').textContent='PIN incorreto.'; return; }
+  $('applock').classList.add('hidden');
+  $('app').classList.remove('hidden');
+  $('bottom-nav').classList.remove('hidden');
+  _applockHiddenAt=null;
+}
+function _applockEsqueci(){
+  if(!confirm('Esqueceu o PIN do aparelho? Isso vai encerrar a sessão e remover o bloqueio — você precisará entrar de novo com e-mail e senha.')) return;
+  try{ localStorage.removeItem(APPLOCK_HASH_KEY); localStorage.removeItem(APPLOCK_SALT_KEY); }catch(_){}
+  $('applock').classList.add('hidden');
+  doLogout();
+}
+function _atualizarUIApplock(){
+  const on=_applockAtivo();
+  const sw=$('applock-switch'), row=$('applock-row');
+  if(sw) sw.classList.toggle('on', on);
+  if(row) row.setAttribute('aria-checked', on?'true':'false');
+}
+let _applockSetupModo='criar';
+function toggleApplock(){ _applockAtivo() ? _applockAbrirRemover() : _applockAbrirCriar(); }
+function _applockAbrirCriar(){
+  _applockSetupModo='criar';
+  $('applock-setup-remover-row').style.display='none';
+  $('applock-setup-criar-row').style.display='';
+  $('applock-setup-title').textContent='Criar PIN do aparelho';
+  $('applock-setup-sub').textContent='Escolha um PIN de 4 a 6 dígitos para bloquear o app neste celular.';
+  $('applock-setup-atual').value=''; $('applock-setup-novo').value=''; $('applock-setup-novo2').value=''; $('applock-setup-erro').textContent='';
+  $('modal-applock-setup-overlay').style.display='flex';
+}
+function _applockAbrirRemover(){
+  _applockSetupModo='remover';
+  $('applock-setup-remover-row').style.display='';
+  $('applock-setup-criar-row').style.display='none';
+  $('applock-setup-title').textContent='Remover bloqueio do aparelho';
+  $('applock-setup-sub').textContent='Digite o PIN atual do aparelho para desativar o bloqueio.';
+  $('applock-setup-atual').value=''; $('applock-setup-novo').value=''; $('applock-setup-novo2').value=''; $('applock-setup-erro').textContent='';
+  $('modal-applock-setup-overlay').style.display='flex';
+}
+function fecharApplockSetup(){ $('modal-applock-setup-overlay').style.display='none'; }
+async function confirmarApplockSetup(){
+  if(_applockSetupModo==='criar'){
+    const novo=($('applock-setup-novo').value||'').trim();
+    const novo2=($('applock-setup-novo2').value||'').trim();
+    if(!/^\d{4,6}$/.test(novo)){ $('applock-setup-erro').textContent='O PIN deve ter de 4 a 6 dígitos.'; return; }
+    if(novo!==novo2){ $('applock-setup-erro').textContent='Os PINs não conferem.'; return; }
+    const salt=_applockRandomSalt();
+    const hash=await _hashPin(novo, salt);
+    try{ localStorage.setItem(APPLOCK_SALT_KEY, salt); localStorage.setItem(APPLOCK_HASH_KEY, hash); }
+    catch(_){ $('applock-setup-erro').textContent='Não foi possível salvar (armazenamento local indisponível).'; return; }
+    $('modal-applock-setup-overlay').style.display='none';
+    _atualizarUIApplock();
+    notify('Bloqueio do aparelho ativado!','ok');
+  } else {
+    const atual=($('applock-setup-atual').value||'').trim();
+    if(!atual){ $('applock-setup-erro').textContent='Digite o PIN atual do aparelho.'; return; }
+    const salt=(()=>{ try{ return localStorage.getItem(APPLOCK_SALT_KEY)||''; }catch(_){ return ''; } })();
+    const hashArmazenado=(()=>{ try{ return localStorage.getItem(APPLOCK_HASH_KEY)||''; }catch(_){ return ''; } })();
+    const hash=await _hashPin(atual, salt);
+    if(hash!==hashArmazenado){ $('applock-setup-erro').textContent='PIN incorreto.'; return; }
+    try{ localStorage.removeItem(APPLOCK_HASH_KEY); localStorage.removeItem(APPLOCK_SALT_KEY); }catch(_){}
+    $('modal-applock-setup-overlay').style.display='none';
+    _atualizarUIApplock();
+    notify('Bloqueio do aparelho desativado.','ok');
+  }
+}
+
+/* ── MEU PIN (Revisão 2026-09, "PIN para celular" parte 2/2) ──
+   Autoatendimento: o próprio operador (G.operador, identificado via "Quem
+   está usando este celular?") define/troca seu PIN de identificação sem
+   precisar de um Admin/Gerente pela tela Pessoas. Mesmo campo
+   "usuarios.pin" já usado em confirmarPinOperador()/confirmarPinLucro().
+   ASSUNÇÃO TÉCNICA — precisa validar: isto assume que a política de RLS da
+   tabela "usuarios" no Supabase permite que um usuário autenticado
+   atualize sua PRÓPRIA linha (pelo menos a coluna pin). Se a política atual
+   só permitir update por admin/gerente (mesmo nível de quem acessa
+   Pessoas), operadores comuns vão ver "Não foi possível salvar o PIN" aqui
+   até essa política ser ajustada no banco — não encontrei no código deste
+   arquivo a definição da policy pra confirmar de um jeito ou de outro. */
+function _atualizarMeuPinStatus(){
+  const el=$('meupin-status'); if(!el) return;
+  el.textContent = (G.operador && G.operador.pin) ? 'Definido' : 'Não definido';
+}
+function abrirMeuPin(){
+  if(!G.operador){ notify('Identifique-se no aparelho primeiro (Perfil → Trocar usuário deste celular).','err'); return; }
+  const temPin=!!G.operador.pin;
+  $('meupin-atual-row').style.display = temPin ? '' : 'none';
+  $('meupin-sub').textContent = temPin
+    ? 'Digite seu PIN atual e o novo PIN de 4 a 6 dígitos.'
+    : 'Defina um PIN de 4 a 6 dígitos para se identificar mais rápido neste aparelho.';
+  $('meupin-atual').value=''; $('meupin-novo').value=''; $('meupin-novo2').value=''; $('meupin-erro').textContent='';
+  $('modal-meupin-overlay').style.display='flex';
+}
+function fecharMeuPin(){ $('modal-meupin-overlay').style.display='none'; }
+async function salvarMeuPin(){
+  const u=G.operador; if(!u){ fecharMeuPin(); return; }
+  const atual=($('meupin-atual').value||'').trim();
+  const novo=($('meupin-novo').value||'').trim();
+  const novo2=($('meupin-novo2').value||'').trim();
+  if(u.pin && atual!==String(u.pin)){ $('meupin-erro').textContent='PIN atual incorreto.'; return; }
+  if(!/^\d{4,6}$/.test(novo)){ $('meupin-erro').textContent='O novo PIN deve ter de 4 a 6 dígitos.'; return; }
+  if(novo!==novo2){ $('meupin-erro').textContent='Os PINs não conferem.'; return; }
+  try{
+    const {error}=await db.from('usuarios').update({pin:novo}).eq('id',u.id);
+    if(error) throw error;
+    u.pin=novo;
+    const cached=(G.usuarios||[]).find(x=>x.id===u.id); if(cached) cached.pin=novo;
+    fecharMeuPin();
+    _atualizarMeuPinStatus();
+    notify('PIN atualizado!','ok');
+  }catch(e){ $('meupin-erro').textContent=msgAmigavel(e,'Não foi possível salvar o PIN.'); }
+}
+
 async function doLogin(){
   const em=$('l-email').value.trim(), pw=$('l-pass').value, err=$('l-err'), btn=$('l-btn');
   err.style.display='none';
@@ -1201,8 +1444,16 @@ async function carregarEmpresa(user){
   // logado neste aparelho — ver PENDENCIAS, seção sobre esse achado).
   if($('home-user-line') && G.userEmail) $('home-user-line').textContent = 'Logado como '+G.userEmail;
   $('login').classList.add('hidden');
-  $('app').classList.remove('hidden');
-  $('bottom-nav').classList.remove('hidden');
+  // Revisão 2026-09: se o bloqueio local do aparelho estiver ativo (Perfil →
+  // Segurança), o #app fica escondido atrás do #applock até o PIN do
+  // aparelho ser confirmado (ver confirmarApplock()) — mesmo em sessão já
+  // autenticada no Supabase (boot automático, sem passar pelo #login).
+  if(_applockAtivo()){
+    mostrarApplock();
+  } else {
+    $('app').classList.remove('hidden');
+    $('bottom-nav').classList.remove('hidden');
+  }
   await carregarContexto();
   // Fatia 21: antes disso, G.operador era só um palpite (primeiro admin/gerente
   // da lista) — agora é identificado de verdade (cache no aparelho + PIN de
@@ -1587,6 +1838,8 @@ function abrirPerfilScreen(){
   _aplicarFonteUI();
   _atualizarUIContraste();
   _atualizarAvatarPerfil();
+  _atualizarUIApplock();
+  _atualizarMeuPinStatus();
 }
 
 /* ── Fatia 9: LOGOUT SEGURO ──
@@ -3033,6 +3286,24 @@ function verificarConviteTourMobile(){
     }, 1400);
   }catch(e){ console.warn('[tour] convite inicial (mobile) falhou (não bloqueia o sistema):', e); }
 }
+
+/* ── Revisão 2026-09: relock do bloqueio do aparelho ao voltar de segundo
+   plano (app minimizado, tela apagada, troca de app) — só pede o PIN de
+   novo se ficou mais de APPLOCK_BG_LIMIT_MS em segundo plano, pra não
+   incomodar em trocas rápidas (ex.: copiar um código de outro app). Só
+   entra em ação se já passou do login (G.empresa definido). ── */
+let _applockHiddenAt=null;
+document.addEventListener('visibilitychange', ()=>{
+  if(document.hidden){ _applockHiddenAt=Date.now(); return; }
+  const estavaEscondido=_applockHiddenAt;
+  _applockHiddenAt=null;
+  if(!estavaEscondido || !G.empresa || !_applockAtivo()) return;
+  if($('applock') && !$('applock').classList.contains('hidden')) return; // já travado
+  if((Date.now()-estavaEscondido) <= APPLOCK_BG_LIMIT_MS) return;
+  $('app').classList.add('hidden');
+  $('bottom-nav').classList.add('hidden');
+  mostrarApplock();
+});
 
 /* ── BOOT: restaura sessão (com timeout, sem travar) ── */
 (async()=>{
