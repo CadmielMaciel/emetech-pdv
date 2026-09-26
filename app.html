@@ -12,6 +12,18 @@ try{
   var _temaSalvoApp = localStorage.getItem('misu_tema');
   if(_temaSalvoApp==='dark'||_temaSalvoApp==='light') document.documentElement.setAttribute('data-theme',_temaSalvoApp);
 }catch(e){}
+/* Acessibilidade (revisão 2026-09): mesmo princípio do tema acima — aplica
+   tamanho de fonte e alto contraste salvos ANTES de renderizar, pra não
+   "piscar" no tamanho/contraste padrão e só depois pular pro que o usuário
+   escolheu. */
+try{
+  var _fonteSalvaApp = localStorage.getItem('misu_fontsize');
+  if(['sm','md','lg','xl'].includes(_fonteSalvaApp)) document.documentElement.setAttribute('data-fontsize',_fonteSalvaApp);
+}catch(e){}
+try{
+  var _contrasteSalvoApp = localStorage.getItem('misu_contraste');
+  if(_contrasteSalvoApp==='alto') document.documentElement.setAttribute('data-contraste','alto');
+}catch(e){}
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
@@ -57,13 +69,21 @@ try{
 :root{
   --pri:#5B3FE8;--pri2:#7C5CFF;--pri-d:#3D2596;
   --bg:#F3F1FB;--bg2:#ECE8F8;--card:#fff;
-  --txt:#191338;--txt2:#5A5280;--txt3:#9C95B6;
+  --txt:#191338;--txt2:#5A5280;
+  /* Revisão 2026-09 (acessibilidade): #9C95B6 media só ~2.6:1 de contraste
+     sobre o fundo claro — abaixo do mínimo de 4,5:1 (WCAG AA) pra texto
+     normal. #6A6390 mede ~4,9–5,5:1 nos mesmos fundos, mantendo a mesma
+     tonalidade roxo-acinzentada. */
+  --txt3:#6A6390;
   --border:#E7E2F3;--border2:#EFEBF8;
   --ok:#16A34A;--warn:#F59E0B;--danger:#DC2626;
   --sab:env(safe-area-inset-bottom,0px);--sat:env(safe-area-inset-top,0px);
-  --shadow-sm:0 1px 2px rgba(24,16,56,.05);
-  --shadow:0 2px 6px rgba(24,16,56,.05),0 10px 30px -12px rgba(24,16,56,.16);
-  --glow:0 10px 26px -8px rgba(91,63,232,.45);
+  /* Revisão 2026-09: sombras mais discretas (menos "glow" colorido, mais
+     plano/limpo) — mesma hierarquia visual, com menos ruído. */
+  --shadow-sm:0 1px 2px rgba(24,16,56,.04);
+  --shadow:0 1px 3px rgba(24,16,56,.04),0 8px 20px -14px rgba(24,16,56,.12)
+  ;
+  --glow:0 4px 14px -4px rgba(91,63,232,.30);
   --ring:0 0 0 4px rgba(91,63,232,.12);
   --r:16px;
   --navh:64px;
@@ -71,11 +91,44 @@ try{
 /* Fatia 9: tema escuro — mesma paleta e mesma chave (misu_tema) do sistema desktop */
 [data-theme="dark"]{
   --bg:#070B1A;--bg2:#0B1228;--card:#101A38;
-  --txt:#EAF0FF;--txt2:#A8BAE8;--txt3:#6B7FB8;
+  --txt:#EAF0FF;--txt2:#A8BAE8;
+  /* Revisão 2026-09: #6B7FB8 media ~4,4:1 sobre --card no escuro, abaixo do
+     ideal — #8DA0D6 sobe pra ~6,6:1 mantendo a mesma família de cor. */
+  --txt3:#8DA0D6;
   --border:#1B2A55;--border2:#25376B;
-  --shadow-sm:0 1px 2px rgba(0,0,0,.35);
-  --shadow:0 2px 6px rgba(0,0,0,.35),0 10px 30px -12px rgba(0,0,0,.55);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.3);
+  --shadow:0 1px 3px rgba(0,0,0,.3),0 8px 20px -14px rgba(0,0,0,.5);
 }
+
+/* ── Revisão 2026-09: ACESSIBILIDADE (tamanho de fonte, alto contraste,
+   foco visível pra teclado/leitor de tela) ──
+   Tamanho de fonte: o app inteiro usa px fixo (não rem), então reescrever
+   centenas de regras seria arriscado demais pra fazer com segurança agora.
+   Em vez disso, usa `zoom` (padrão de fato em Chrome/Safari/Edge — a
+   imensa maioria de quem abre este app pelo celular; não afeta Firefox
+   desktop, irrelevante aqui) escalando o corpo inteiro de forma consistente
+   (layout, toque e rolagem escalam juntos, diferente de `transform:scale`). */
+html[data-fontsize="sm"] body{zoom:.93}
+html[data-fontsize="lg"] body{zoom:1.13}
+html[data-fontsize="xl"] body{zoom:1.28}
+
+/* Alto contraste: reforça bordas e contraste de texto, remove sombras/
+   gradientes decorativos que podem "lavar" o contraste visual. */
+:root[data-contraste="alto"]{
+  --txt2:#241F45;--txt3:#3F3968;--border:#B9B0DE;--border2:#B9B0DE;
+}
+[data-theme="dark"][data-contraste="alto"]{
+  --txt2:#DCE6FF;--txt3:#C7D4F5;--border:#3A4E8C;--border2:#3A4E8C;
+}
+:root[data-contraste="alto"] .btn,:root[data-contraste="alto"] .mod,:root[data-contraste="alto"] .card,:root[data-contraste="alto"] .rc,:root[data-contraste="alto"] .qa-btn{box-shadow:none!important;border-width:2px}
+:root[data-contraste="alto"] .btn{background:var(--pri-d)}
+
+/* Foco visível (teclado, leitor de tela, controle por switch) — muitos
+   elementos clicáveis do app são divs/spans com onclick (não nativamente
+   focáveis); o script de retrofit de acessibilidade no fim do arquivo dá
+   tabindex/role a eles, e esta regra garante que o foco apareça de forma
+   clara em qualquer um desses elementos. */
+button:focus-visible,[role="button"]:focus-visible,[role="switch"]:focus-visible,a:focus-visible,.mod:focus-visible,.qa-btn:focus-visible,.sheet-it:focus-visible,.rc:focus-visible,.avatar-btn:focus-visible{outline:2.5px solid var(--pri);outline-offset:2px;border-radius:12px}
 [data-theme="dark"] .login-card,[data-theme="dark"] .success-ic{background:var(--card)}
 [data-theme="dark"] .inp{background:var(--card);color:var(--txt)}
 [data-theme="dark"] .btn-out{background:var(--card)}
@@ -92,12 +145,30 @@ input,select,textarea,button{font-family:inherit;font-size:16px}
 @keyframes pop{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
 .login-logo,.topbar h1,.home-hi{font-family:'Syne',sans-serif;letter-spacing:-.02em}
 
-/* ── LOGIN ── */
-#login{position:fixed;inset:0;background:linear-gradient(155deg,var(--pri-d),var(--pri) 52%,var(--pri2));display:flex;align-items:center;justify-content:center;padding:24px;z-index:100}
+/* ── LOGIN ──
+   Revisão 2026-09: layout mais dinâmico, inspirado em telas de login tipo
+   Lovable — manchas de gradiente flutuando devagar atrás do card, marca com
+   monograma, campos com ícone embutido em vez de rótulo separado, olho pra
+   mostrar/ocultar senha. As manchas (.login-blob) já respeitam o
+   "kill-switch" global de prefers-reduced-motion (regra `*{animation:none}`
+   mais abaixo no arquivo), então quem pediu menos movimento não as vê animar. */
+#login{position:fixed;inset:0;overflow:hidden;background:linear-gradient(155deg,var(--pri-d),var(--pri) 52%,var(--pri2));display:flex;align-items:center;justify-content:center;padding:24px;z-index:100}
 #login::before{content:"";position:absolute;inset:0;background:radial-gradient(85% 55% at 50% 0%,rgba(255,255,255,.20),transparent 60%);pointer-events:none}
+.login-blob{position:absolute;border-radius:50%;filter:blur(50px);pointer-events:none;animation:loginFloat 16s ease-in-out infinite}
+.login-blob.b1{width:240px;height:240px;background:rgba(255,255,255,.28);top:-70px;left:-60px}
+.login-blob.b2{width:210px;height:210px;background:rgba(124,92,255,.55);bottom:-60px;right:-50px;animation-delay:-5.5s}
+.login-blob.b3{width:150px;height:150px;background:rgba(255,255,255,.18);bottom:16%;left:-45px;animation-delay:-10s}
+@keyframes loginFloat{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(16px,-20px) scale(1.07)}}
 .login-card{position:relative;background:#fff;border-radius:26px;padding:34px 26px calc(28px + var(--sab));width:100%;max-width:400px;box-shadow:0 30px 70px -20px rgba(30,10,80,.5),0 2px 8px rgba(0,0,0,.06);animation:pop .4s ease}
-.login-logo{font-size:28px;font-weight:800;color:var(--pri);text-align:center;text-shadow:0 6px 20px rgba(91,63,232,.28)}
-.login-sub{text-align:center;font-size:13px;color:var(--txt3);margin:5px 0 24px;font-weight:500}
+.login-mark{width:54px;height:54px;border-radius:17px;background:linear-gradient(135deg,var(--pri),var(--pri2));display:flex;align-items:center;justify-content:center;margin:0 auto 14px;box-shadow:0 10px 24px -8px rgba(91,63,232,.4);color:#fff;font-family:'Syne',sans-serif;font-weight:800;font-size:21px}
+.login-logo{font-size:24px;font-weight:800;color:var(--pri);text-align:center}
+.login-sub{text-align:center;font-size:13px;color:var(--txt3);margin:5px 0 26px;font-weight:500}
+.input-group{position:relative}
+.input-group+.input-group{margin-top:13px}
+.input-icon{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:var(--txt3);font-size:18px;pointer-events:none}
+.inp-icon{padding-left:44px}
+.input-eye{position:absolute;right:5px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--txt3);width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px}
+.input-eye:active{background:var(--bg2)}
 
 /* ── LABELS / INPUTS ── */
 .lbl{display:block;font-size:11.5px;font-weight:700;color:var(--txt2);margin:15px 0 7px;text-transform:uppercase;letter-spacing:.6px}
@@ -126,12 +197,37 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 .topbar .back{font-size:22px;color:var(--pri);cursor:pointer;width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:12px;transition:background .15s}
 .topbar .back:active{background:var(--bg2)}
 .topbar h1{font-size:18px;font-weight:800;flex:1}
-.topbar .emp{font-size:11px;color:var(--txt3);font-weight:600;text-align:right;max-width:38%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .wrap,.mobile-page{padding:18px 16px calc(28px + var(--sab));animation:screenIn .3s ease}
 
+/* ── Revisão 2026-09: ícone de perfil na topbar (substitui o nome da
+   empresa por um avatar com as iniciais de quem está usando o celular —
+   tocar nele abre a tela de Perfil/Configurações) ── */
+.avatar-btn{width:36px;height:36px;border-radius:50%;border:none;background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;font-weight:800;font-size:13px;letter-spacing:.2px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;box-shadow:0 2px 8px -2px rgba(91,63,232,.4);transition:transform .12s}
+.avatar-btn:active{transform:scale(.92)}
+
+/* ── Revisão 2026-09: tela de Perfil (conta, aparência, ajuda) ── */
+.perfil-card{display:flex;flex-direction:column;align-items:center;text-align:center;padding:22px 16px 24px}
+.avatar-lg{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;font-weight:800;font-size:25px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;box-shadow:0 8px 20px -6px rgba(91,63,232,.35)}
+.perfil-nome{font-family:'Syne',sans-serif;font-weight:800;font-size:19px;letter-spacing:-.01em}
+.perfil-cargo{font-size:12px;color:var(--pri);font-weight:700;margin-top:3px;text-transform:uppercase;letter-spacing:.5px}
+.perfil-empresa{font-size:12.5px;color:var(--txt3);margin-top:7px}
+.perfil-secao-t{font-size:11px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:.6px;margin:6px 2px 8px}
+.fonte-stepper{display:flex;align-items:center;gap:8px}
+.fonte-btn{border:1.5px solid var(--border);background:var(--bg2);color:var(--pri);font-weight:800;font-size:13px;width:34px;height:34px;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.fonte-btn:active{transform:scale(.92)}
+.fonte-lbl{font-size:11.5px;color:var(--txt3);font-weight:600;min-width:64px;text-align:center}
+.switch-fake{width:38px;height:22px;border-radius:99px;background:var(--border);position:relative;display:inline-block;transition:background .18s;flex-shrink:0}
+.switch-fake::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .18s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.switch-fake.on{background:var(--pri)}
+.switch-fake.on::after{transform:translateX(16px)}
+
 /* ── HOME ── */
-.home-hi{font-size:24px;font-weight:800;margin-bottom:3px}
-.home-sub{font-size:13.5px;color:var(--txt3);margin-bottom:22px;font-weight:500}
+/* Revisão 2026-09: hierarquia mais limpa — saudação maior/mais respirada,
+   subtítulo mais discreto, "eyebrows" de seção (.home-secao-t) marcando
+   cada bloco do dashboard, no mesmo espírito de painéis tipo Lovable. */
+.home-hi{font-size:26px;font-weight:800;margin-bottom:4px;letter-spacing:-.02em}
+.home-sub{font-size:13.5px;color:var(--txt3);margin-bottom:26px;font-weight:500}
+.home-secao-t{font-size:11px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:.6px;margin:0 2px 10px}
 .mod,.mobile-action{display:flex;align-items:center;gap:15px;background:var(--card);border:1px solid var(--border2);border-radius:20px;padding:17px;margin-bottom:13px;cursor:pointer;box-shadow:var(--shadow);transition:transform .14s ease,box-shadow .18s}
 .mod:active{transform:scale(.98)}
 .mod:not(.soon):active{box-shadow:var(--glow)}
@@ -297,10 +393,11 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
    precisa continuar controlando show/hide como já fazia antes. */
 .mobile-sheet{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-radius:22px 22px 0 0;padding:10px 16px calc(18px + var(--sab));z-index:151;box-shadow:0 -10px 40px rgba(0,0,0,.25);max-height:80vh;overflow-y:auto}
 #sheet-mais .sheet-handle{width:38px;height:4px;background:var(--border);border-radius:99px;margin:6px auto 14px;padding:9px 30px;background-clip:content-box;box-sizing:content-box}
-#sheet-mais .sheet-it{display:flex;align-items:center;gap:14px;padding:13px 6px;border-radius:14px;cursor:pointer;color:var(--txt);font-weight:600;font-size:15px}
-#sheet-mais .sheet-it:active{background:var(--bg2)}
-#sheet-mais .sheet-it i{font-size:20px;color:var(--pri);width:24px;text-align:center}
-#sheet-mais .sheet-it.danger i,#sheet-mais .sheet-it.danger{color:var(--danger)}
+#sheet-mais .sheet-it,#scr-perfil .sheet-it{display:flex;align-items:center;gap:14px;padding:13px 6px;border-radius:14px;cursor:pointer;color:var(--txt);font-weight:600;font-size:15px}
+#sheet-mais .sheet-it:active,#scr-perfil .sheet-it:active{background:var(--bg2)}
+#sheet-mais .sheet-it i,#scr-perfil .sheet-it i{font-size:20px;color:var(--pri);width:24px;text-align:center}
+#sheet-mais .sheet-it.danger i,#sheet-mais .sheet-it.danger,#scr-perfil .sheet-it.danger i,#scr-perfil .sheet-it.danger{color:var(--danger)}
+#scr-perfil .card{padding:6px 10px;margin-bottom:22px}
 #sheet-mais hr{border:none;border-top:1px solid var(--border2);margin:6px 0}
 
 /* ── Fatia 9: banner de instalação PWA ── */
@@ -310,9 +407,9 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 #install-banner button{background:rgba(255,255,255,.18);border:1.5px solid rgba(255,255,255,.4);color:#fff;border-radius:10px;padding:8px 12px;font-size:12.5px;font-weight:700;cursor:pointer;flex-shrink:0}
 
 /* ── Fatia 9: cards de resumo do dia ── */
-.resumo-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:22px}
-.rc,.mobile-kpi{background:var(--card);border:1px solid var(--border2);border-radius:16px;padding:13px;box-shadow:var(--shadow-sm)}
-.rc-lbl{font-size:10.5px;color:var(--txt3);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
+.resumo-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:28px}
+.rc,.mobile-kpi{background:var(--card);border:1px solid var(--border2);border-radius:16px;padding:14px;box-shadow:var(--shadow-sm)}
+.rc-lbl{font-size:10.5px;color:var(--txt3);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
 .rc-val{font-family:'Syne',sans-serif;font-size:19px;font-weight:800;color:var(--txt)}
 .rc-val.locked{font-size:15px;color:var(--txt3);display:flex;align-items:center;gap:5px;cursor:pointer}
 .rc-val.empty{font-size:12.5px;font-weight:600;color:var(--txt3);line-height:1.3}
@@ -434,25 +531,36 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 
 <!-- LOGIN -->
 <div id="login">
+  <div class="login-blob b1" aria-hidden="true"></div>
+  <div class="login-blob b2" aria-hidden="true"></div>
+  <div class="login-blob b3" aria-hidden="true"></div>
   <div class="login-card">
-    <div class="login-logo">MISU MOBILE</div>
-    <div class="login-sub">Cadastro rápido pelo celular</div>
-    <label class="lbl">E-mail</label>
-    <input class="inp" type="email" id="l-email" placeholder="seu@email.com" autocomplete="username">
-    <label class="lbl">Senha</label>
-    <input class="inp" type="password" id="l-pass" placeholder="••••••••" autocomplete="current-password">
+    <div class="login-mark motion-fade-up" style="animation-delay:.02s">M</div>
+    <div class="login-logo motion-fade-up" style="animation-delay:.05s">MISU MOBILE</div>
+    <div class="login-sub motion-fade-up" style="animation-delay:.08s">Cadastro rápido pelo celular</div>
+    <div class="input-group motion-fade-up" style="animation-delay:.11s">
+      <i class="ti ti-mail input-icon"></i>
+      <input class="inp inp-icon" type="email" id="l-email" placeholder="seu@email.com" autocomplete="username" aria-label="E-mail">
+    </div>
+    <div class="input-group motion-fade-up" style="animation-delay:.14s">
+      <i class="ti ti-lock input-icon"></i>
+      <input class="inp inp-icon" type="password" id="l-pass" placeholder="••••••••" autocomplete="current-password" aria-label="Senha" style="padding-right:44px">
+      <button type="button" class="input-eye" id="l-pass-eye" onclick="toggleSenhaVisivel()" aria-label="Mostrar senha" aria-pressed="false"><i class="ti ti-eye" id="l-pass-eye-ic"></i></button>
+    </div>
     <div id="l-err" class="l-err"></div>
-    <button class="btn" id="l-btn" onclick="doLogin()" style="margin-top:18px"><i class="ti ti-lock"></i>Entrar</button>
+    <button class="btn motion-fade-up" id="l-btn" onclick="doLogin()" style="margin-top:18px;animation-delay:.17s"><i class="ti ti-lock"></i>Entrar</button>
   </div>
 </div>
 
 <!-- APP -->
 <div id="app" class="hidden">
   <div class="topbar">
-    <i class="ti ti-arrow-left back hidden" id="btn-back" onclick="goHome()"></i>
+    <i class="ti ti-arrow-left back hidden" id="btn-back" onclick="goHome()" role="button" tabindex="0" aria-label="Voltar" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();goHome();}"></i>
     <h1 id="scr-title">Início</h1>
     <img id="topbar-logo" class="hidden" style="height:26px;width:26px;object-fit:contain;border-radius:7px">
-    <div class="emp" id="emp-nome"></div>
+    <!-- Revisão 2026-09: no lugar do nome da empresa, um avatar com as
+         iniciais de quem está usando o celular — tocar abre Perfil/Config. -->
+    <button class="avatar-btn" id="perfil-btn" onclick="abrir('perfil')" aria-label="Perfil e configurações"><span id="avatar-iniciais">--</span></button>
   </div>
 
   <!-- HOME -->
@@ -468,6 +576,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
     </div>
 
     <!-- Fatia 9: resumo do dia — só contagens/status não sensíveis; lucro fica atrás de PIN -->
+    <div class="home-secao-t" id="resumo-secao-t">Resumo de hoje</div>
     <div class="resumo-grid" id="resumo-grid">
       <div class="rc"><div class="rc-lbl">Vendas hoje</div><div class="rc-val" id="rc-vendas"><span class="motion-shimmer" style="display:inline-block;width:52px;height:15px"></span></div></div>
       <div class="rc" id="rc-caixa-box"><div class="rc-lbl">Caixa</div><div class="rc-val" id="rc-caixa"><span class="motion-shimmer" style="display:inline-block;width:44px;height:15px"></span></div></div>
@@ -708,6 +817,49 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
     <div class="filtro-row" id="ent-filtros"></div>
     <div id="entregas-mob-list" class="mobile-list"></div>
   </div>
+
+  <!-- Revisão 2026-09: PERFIL — conta, aparência e ajuda (aberto pelo avatar
+       da topbar). Reúne o que antes estava espalhado na folha "Mais". -->
+  <div class="wrap hidden" id="scr-perfil">
+    <div class="perfil-card">
+      <div class="avatar-lg" id="perfil-avatar-lg">--</div>
+      <div class="perfil-nome" id="perfil-nome">—</div>
+      <div class="perfil-cargo" id="perfil-cargo">—</div>
+      <div class="perfil-empresa" id="perfil-empresa">—</div>
+    </div>
+
+    <div class="perfil-secao-t">Aparência</div>
+    <div class="card">
+      <div class="sheet-it" onclick="toggleTemaApp()"><i class="ti ti-moon" id="tema-ic"></i><span id="tema-lbl" style="flex:1">Tema escuro</span></div>
+      <div class="sheet-it" style="cursor:default">
+        <i class="ti ti-text-size"></i>
+        <span style="flex:1">Tamanho do texto</span>
+        <div class="fonte-stepper">
+          <button type="button" class="fonte-btn" onclick="ajustarFonteApp(-1)" aria-label="Diminuir tamanho do texto">A-</button>
+          <span id="fonte-lbl" class="fonte-lbl">Padrão</span>
+          <button type="button" class="fonte-btn" onclick="ajustarFonteApp(1)" aria-label="Aumentar tamanho do texto">A+</button>
+        </div>
+      </div>
+      <div class="sheet-it" id="contraste-row" onclick="toggleContrasteApp()" role="switch" aria-checked="false" aria-label="Alto contraste">
+        <i class="ti ti-contrast"></i>
+        <span id="contraste-lbl" style="flex:1">Alto contraste</span>
+        <span class="switch-fake" id="contraste-switch" aria-hidden="true"></span>
+      </div>
+    </div>
+
+    <div class="perfil-secao-t">Conta</div>
+    <div class="card">
+      <div class="sheet-it" onclick="trocarUsuarioDispositivo()"><i class="ti ti-user-switch"></i>Trocar usuário deste celular</div>
+      <div class="sheet-it danger" onclick="doLogout()"><i class="ti ti-logout"></i>Sair</div>
+    </div>
+
+    <div class="perfil-secao-t">Ajuda</div>
+    <div class="card">
+      <div class="sheet-it" id="sheet-tour" onclick="startTour('mobile')"><i class="ti ti-route"></i>Tour guiado do app</div>
+      <div class="sheet-it" id="sheet-instalar" style="display:none" onclick="instalarPWA()"><i class="ti ti-download"></i>Instalar aplicativo</div>
+      <div class="sheet-it" id="sheet-suporte" style="display:none" onclick="abrirSuporte()"><i class="ti ti-headset"></i>Suporte</div>
+    </div>
+  </div>
 </div>
 
   <!-- BARRA DO CARRINHO -->
@@ -733,13 +885,6 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
   <div class="sheet-it" id="sheet-minhas-os" onclick="fecharMais();abrir('os-lista')"><i class="ti ti-list-details"></i>Minhas OS</div>
   <div class="sheet-it" id="sheet-entregas-mais" data-tour="mobile-entregas" style="display:none" onclick="fecharMais();abrir('entregas')"><i class="ti ti-truck"></i>Minhas Entregas</div>
   <div class="sheet-it" id="sheet-pessoas" style="display:none" onclick="fecharMais();abrir('pessoas')"><i class="ti ti-users"></i>Pessoas da Empresa</div>
-  <div class="sheet-it" onclick="toggleTemaApp()"><i class="ti ti-moon" id="tema-ic"></i><span id="tema-lbl">Tema escuro</span></div>
-  <div class="sheet-it" id="sheet-tour" onclick="fecharMais();startTour('mobile')"><i class="ti ti-route"></i>Tour guiado do app</div>
-  <div class="sheet-it" id="sheet-instalar" style="display:none" onclick="instalarPWA()"><i class="ti ti-download"></i>Instalar aplicativo</div>
-  <div class="sheet-it" id="sheet-suporte" style="display:none" onclick="abrirSuporte()"><i class="ti ti-headset"></i>Suporte</div>
-  <div class="sheet-it" onclick="fecharMais();trocarUsuarioDispositivo()"><i class="ti ti-user-switch"></i>Trocar usuário deste celular</div>
-  <hr>
-  <div class="sheet-it danger" onclick="doLogout()"><i class="ti ti-logout"></i>Sair</div>
 </div>
 
 <!-- Fatia 9: passo a passo de instalação no iPhone/iPad (fica na tela até fechar) -->
@@ -1008,6 +1153,16 @@ function motionBump(el){
 function debounce(fn, ms){ let t; return function(...a){ clearTimeout(t); t=setTimeout(()=>fn.apply(this,a), ms); }; }
 
 /* ── LOGIN ── */
+// Revisão 2026-09: olho de mostrar/ocultar senha no campo de login.
+function toggleSenhaVisivel(){
+  const inp=$('l-pass'), btn=$('l-pass-eye'), ic=$('l-pass-eye-ic');
+  if(!inp||!btn||!ic) return;
+  const vaiMostrar=inp.type==='password';
+  inp.type=vaiMostrar?'text':'password';
+  ic.className='ti '+(vaiMostrar?'ti-eye-off':'ti-eye');
+  btn.setAttribute('aria-label', vaiMostrar?'Ocultar senha':'Mostrar senha');
+  btn.setAttribute('aria-pressed', vaiMostrar?'true':'false');
+}
 async function doLogin(){
   const em=$('l-email').value.trim(), pw=$('l-pass').value, err=$('l-err'), btn=$('l-btn');
   err.style.display='none';
@@ -1035,7 +1190,10 @@ async function carregarEmpresa(user){
   if(!emp) throw new Error('Esta conta não é de uma empresa. Use o login da loja.');
   if(emp.status==='bloqueada') throw new Error('Empresa bloqueada. Fale com o suporte.');
   G.empresa=emp; G.empresaId=emp.id; G.userEmail=user.email||'';
-  $('emp-nome').textContent=emp.nome||'';
+  // Revisão 2026-09: nome da empresa saiu da topbar (virou avatar de perfil);
+  // ainda usa emp.nome como identificação provisória do avatar até
+  // resolverOperadorDispositivo() identificar quem é de fato (mais abaixo).
+  _atualizarAvatarPerfil();
   $('hi').textContent='Olá 👋';
   // Fatia 19: "usuário logado" pedido no spec — usa o e-mail da sessão
   // autenticada (Supabase), não o G.operador (que é só um palpite pra
@@ -1234,6 +1392,47 @@ if(_isIOSApp && !_jaInstaladoApp){
   const si=$('sheet-instalar'); if(si) si.style.display='flex';
 }
 
+/* ── Revisão 2026-09: RETROFIT DE ACESSIBILIDADE ──
+   Boa parte dos elementos clicáveis do app (.mod, .qa-btn, .sheet-it, .rc,
+   cards) são divs/spans com onclick — por padrão, elementos assim NÃO
+   recebem foco de teclado nem são anunciados como clicáveis por leitor de
+   tela. Reescrever cada um manualmente pra button seria a solução ideal,
+   mas arriscado demais fazer em massa agora (muitos têm layout específico
+   feito em cima de div). Em vez disso, isso varre o DOM e, em qualquer
+   elemento com onclick que ainda não seja nativamente focável, adiciona
+   tabindex="0" + role="button" (quando não já tiver algum role específico,
+   ex.: role="switch" no toggle de alto contraste) + suporte a Enter/Espaço.
+   Roda uma vez ao carregar e de novo sempre que uma tela é re-renderizada
+   (as listas do app são recriadas via innerHTML), via MutationObserver. */
+function _a11yRetrofitEl(el){
+  if(!el.hasAttribute || !el.hasAttribute('onclick')) return;
+  if(el.matches('button,a[href],input,select,textarea,[tabindex]')) return;
+  el.setAttribute('tabindex','0');
+  if(!el.hasAttribute('role')) el.setAttribute('role','button');
+  if(!el._a11yKeyBound){
+    el._a11yKeyBound=true;
+    el.addEventListener('keydown',function(e){
+      if(e.key==='Enter'||e.key===' '||e.key==='Spacebar'){ e.preventDefault(); el.click(); }
+    });
+  }
+}
+function _a11yRetrofit(root){
+  try{ (root||document).querySelectorAll('[onclick]').forEach(_a11yRetrofitEl); }catch(_){}
+}
+try{
+  _a11yRetrofit();
+  const _moA11y=new MutationObserver(function(muts){
+    muts.forEach(function(m){
+      m.addedNodes.forEach(function(n){
+        if(!n || n.nodeType!==1) return;
+        _a11yRetrofitEl(n);
+        if(n.querySelectorAll) _a11yRetrofit(n);
+      });
+    });
+  });
+  _moA11y.observe(document.body,{childList:true,subtree:true});
+}catch(_){}
+
 /* ── SINCRONIZAÇÃO DE MARCA (cores + logo da empresa) ── */
 function aplicarPaletaApp(p){
   if(!p) return;
@@ -1281,21 +1480,22 @@ function _marcarNavAtivo(scr){
   if(alvo) $('bn-'+alvo)?.classList.add('on');
 }
 function abrir(scr){
-  ['home','produto','os','os-ok','os-lista','venda','venda-ok','estoque','cart','etiqueta','pgpendente','pessoas','entregas'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
+  ['home','produto','os','os-ok','os-lista','venda','venda-ok','estoque','cart','etiqueta','pgpendente','pessoas','entregas','perfil'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
   $('scr-'+scr).classList.remove('hidden');
   $('btn-back').classList.remove('hidden');
-  $('scr-title').textContent = ({produto:'Cadastrar Produto',os:'OS Rápida','os-lista':'Minhas OS',venda:'Venda Rápida',estoque:'Estoque',cart:'Carrinho',etiqueta:'Etiqueta',pgpendente:'Pagamento',pessoas:'Pessoas da Empresa',entregas:'Minhas Entregas'})[scr]||scr;
+  $('scr-title').textContent = ({produto:'Cadastrar Produto',os:'OS Rápida','os-lista':'Minhas OS',venda:'Venda Rápida',estoque:'Estoque',cart:'Carrinho',etiqueta:'Etiqueta',pgpendente:'Pagamento',pessoas:'Pessoas da Empresa',entregas:'Minhas Entregas',perfil:'Perfil'})[scr]||scr;
   if(scr==='estoque') abrirEstoque();
   if(scr==='cart') renderCart();
   if(scr==='os-lista') abrirOsLista();
   if(scr==='pessoas') abrirPessoas();
   if(scr==='entregas') abrirEntregas();
+  if(scr==='perfil') abrirPerfilScreen();
   if(scr!=='pgpendente') pararPollingCobranca();
   _marcarNavAtivo(scr);
 }
 function goHome(){
   pararPollingCobranca();
-  ['produto','os','os-ok','os-lista','venda','venda-ok','estoque','cart','etiqueta','pgpendente','pessoas','entregas'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
+  ['produto','os','os-ok','os-lista','venda','venda-ok','estoque','cart','etiqueta','pgpendente','pessoas','entregas','perfil'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
   $('scr-home').classList.remove('hidden');
   $('btn-back').classList.add('hidden');
   $('scr-title').textContent='Início';
@@ -1325,6 +1525,68 @@ function toggleTemaApp(){
   document.documentElement.setAttribute('data-theme',novo);
   try{ localStorage.setItem('misu_tema',novo); }catch(_){}
   _atualizarIconeTema();
+}
+
+/* ── Revisão 2026-09: TAMANHO DE FONTE (acessibilidade) ──
+   4 níveis, salvos em 'misu_fontsize' (mesmo padrão do tema). Ver comentário
+   no CSS (bloco :root) sobre por que usa `zoom` em vez de reescrever font-size
+   em rem em centenas de regras espalhadas pelo arquivo. */
+const FONTE_NIVEIS=['sm','md','lg','xl'];
+const FONTE_LABELS={sm:'Pequeno',md:'Padrão',lg:'Grande',xl:'Extra grande'};
+function _fonteAtual(){
+  const v=document.documentElement.getAttribute('data-fontsize');
+  return FONTE_NIVEIS.includes(v)?v:'md';
+}
+function _aplicarFonteUI(){
+  const lbl=$('fonte-lbl'); if(lbl) lbl.textContent=FONTE_LABELS[_fonteAtual()];
+}
+function ajustarFonteApp(delta){
+  let idx=FONTE_NIVEIS.indexOf(_fonteAtual())+delta;
+  idx=Math.max(0,Math.min(FONTE_NIVEIS.length-1,idx));
+  const novo=FONTE_NIVEIS[idx];
+  document.documentElement.setAttribute('data-fontsize',novo);
+  try{ localStorage.setItem('misu_fontsize',novo); }catch(_){}
+  _aplicarFonteUI();
+}
+
+/* ── Revisão 2026-09: ALTO CONTRASTE (acessibilidade) ── */
+function _contrasteAtivo(){ return document.documentElement.getAttribute('data-contraste')==='alto'; }
+function _atualizarUIContraste(){
+  const on=_contrasteAtivo();
+  const lbl=$('contraste-lbl'), sw=$('contraste-switch'), row=$('contraste-row');
+  if(lbl) lbl.textContent='Alto contraste'+(on?' (ativado)':'');
+  if(sw) sw.classList.toggle('on',on);
+  if(row) row.setAttribute('aria-checked', on?'true':'false');
+}
+function toggleContrasteApp(){
+  const novo=_contrasteAtivo()?'normal':'alto';
+  document.documentElement.setAttribute('data-contraste',novo);
+  try{ localStorage.setItem('misu_contraste',novo); }catch(_){}
+  _atualizarUIContraste();
+}
+
+/* ── Revisão 2026-09: AVATAR/PERFIL (substitui o nome da empresa na topbar) ── */
+function _iniciaisDe(nome){
+  const partes=String(nome||'').trim().split(/\s+/).filter(Boolean);
+  if(!partes.length) return '?';
+  if(partes.length===1) return partes[0].slice(0,2).toUpperCase();
+  return (partes[0][0]+partes[partes.length-1][0]).toUpperCase();
+}
+const CARGO_LABELS={admin:'Administrador',admin_master:'Administrador',gerente:'Gerente',entregador:'Entregador'};
+function _atualizarAvatarPerfil(){
+  const nomeExibicao=(G.operador&&G.operador.nome)||G.empresa?.nome||G.userEmail||'';
+  const ini=_iniciaisDe(nomeExibicao);
+  const a1=$('avatar-iniciais'); if(a1) a1.textContent=ini;
+  const a2=$('perfil-avatar-lg'); if(a2) a2.textContent=ini;
+  const pn=$('perfil-nome'); if(pn) pn.textContent=(G.operador&&G.operador.nome)||G.userEmail||'Usuário';
+  const pc=$('perfil-cargo'); if(pc) pc.textContent=(G.operador&&CARGO_LABELS[G.operador.role])||(G.operador?'Operador':'Não identificado neste celular');
+  const pe=$('perfil-empresa'); if(pe) pe.textContent=G.empresa?.nome||'';
+}
+function abrirPerfilScreen(){
+  _atualizarIconeTema();
+  _aplicarFonteUI();
+  _atualizarUIContraste();
+  _atualizarAvatarPerfil();
 }
 
 /* ── Fatia 9: LOGOUT SEGURO ──
@@ -2120,6 +2382,7 @@ function trocarUsuarioDispositivo(){
    lugar. Qualquer outro perfil: tudo igual a antes desta fatia. ── */
 function aplicarModoPerfil(){
   const entregador=_isEntregador(), adminGer=_isAdminGer();
+  _atualizarAvatarPerfil();
 
   ['bn-vender','bn-os','bn-produto'].forEach(id=>{ const el=$(id); if(el) el.style.display=entregador?'none':''; });
   let bnEnt=$('bn-entregas');
@@ -2138,6 +2401,7 @@ function aplicarModoPerfil(){
   const sp=$('sheet-pessoas'); if(sp) sp.style.display=adminGer?'':'none';
 
   const rg=$('resumo-grid'); if(rg) rg.style.display=entregador?'none':'';
+  const rgt=$('resumo-secao-t'); if(rgt) rgt.style.display=entregador?'none':'';
   const ha=$('home-alertas'); if(ha) ha.style.display=entregador?'none':'';
   document.querySelectorAll('#scr-home .qa-row,#scr-home > .mod').forEach(el=>{ el.style.display=entregador?'none':''; });
 
