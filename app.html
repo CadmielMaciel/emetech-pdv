@@ -480,6 +480,49 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
    de resumo acima: só acrescenta brilho, nunca muda cor de texto no claro. */
 [data-theme="dark"] #scr-home .fin-card{box-shadow:0 0 0 1px color-mix(in oklab,var(--border2) 80%,transparent),0 0 24px -10px color-mix(in oklab,var(--pri) 16%,transparent)}
 [data-theme="dark"] #scr-home .fin-stat-val:not(.locked){text-shadow:0 0 10px color-mix(in oklab,var(--pri) 40%,transparent)}
+.fin-ver-rel{display:flex;align-items:center;justify-content:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--pri);text-align:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--border2);cursor:pointer}
+.fin-ver-rel i{font-size:15px}
+
+/* ── Revisão 2026-09: tela "Relatórios" no mobile (Resumo/DRE completo,
+   Produtos, Técnicos, Clientes, Pagamentos) — restante do que já existe em
+   Relatórios no desktop (index.html), restrito a Admin/Gerente. Ver
+   comentário grande junto ao HTML (#scr-relatorios) e às funções JS
+   (carregarRelatoriosMobile() e vizinhas). ── */
+.rel-periodo-row{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;margin-bottom:10px}
+.rel-periodo-row::-webkit-scrollbar{display:none}
+.rel-custom-toggle{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--pri);font-weight:700;cursor:pointer;margin-bottom:10px}
+.rel-custom-datas{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.rel-custom-datas .inp{flex:1;min-width:0;font-size:12.5px;padding:9px 10px}
+.rel-custom-datas span{font-size:12px;color:var(--txt3);flex-shrink:0}
+.rel-tabs-row{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;margin-bottom:14px}
+.rel-tabs-row::-webkit-scrollbar{display:none}
+.rel-tab{border:1.5px solid var(--border);background:var(--bg2);color:var(--txt2);font-weight:700;font-size:12px;padding:8px 13px;border-radius:99px;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.rel-tab.on{background:linear-gradient(135deg,var(--pri),var(--pri2));border-color:transparent;color:#fff}
+.rel-export-row{display:flex;gap:9px;margin-bottom:16px}
+.btn-rel-exp{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;border:1.5px solid var(--border);background:var(--card);color:var(--txt2);font-weight:700;font-size:12.5px;padding:11px;border-radius:13px;cursor:pointer}
+.btn-rel-exp:active{transform:scale(.97)}
+.rel-pane.hidden{display:none}
+.rel-chart-wrap{max-width:100%;margin:0 auto 4px}
+.rel-chart-sm{max-width:190px}
+.rel-row{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--border2)}
+.rel-row:last-child{border-bottom:none}
+.rel-row .rel-pos{font-weight:800;font-size:12px;color:var(--txt3);width:24px;flex-shrink:0;text-align:center}
+.rel-row .rel-nm{flex:1;min-width:0}
+.rel-row .rel-nm-t{font-weight:700;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rel-row .rel-nm-d{font-size:11px;color:var(--txt3);margin-top:2px}
+.rel-row .rel-vl{text-align:right;flex-shrink:0}
+.rel-row .rel-vl-t{font-weight:800;font-size:13.5px}
+.rel-row .rel-vl-d{font-size:11px;color:var(--txt3);margin-top:2px}
+.rel-dre-line{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border2)}
+.rel-dre-line:last-child{border-bottom:none}
+.rel-dre-line .lbl{font-size:12.5px;color:var(--txt2);font-weight:600}
+.rel-dre-line .val{font-weight:800;font-size:13.5px}
+.rel-dre-line.big .lbl{font-size:13.5px;font-weight:700;color:var(--txt)}
+.rel-dre-line.big .val{font-size:15.5px}
+.rel-dre-line.result{background:var(--bg2);border-radius:10px;padding:11px;margin-top:4px;border-bottom:none}
+.rel-margem{font-size:11px;color:var(--txt3);text-align:right;margin-top:-4px;margin-bottom:8px}
+[data-theme="dark"] #scr-relatorios .card{box-shadow:0 0 0 1px color-mix(in oklab,var(--border2) 80%,transparent),0 0 20px -12px color-mix(in oklab,var(--pri) 14%,transparent)}
+[data-theme="dark"] #scr-relatorios .rel-dre-line.result{box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--pri) 30%,transparent)}
 
 /* ── Fatia 9: modal simples de PIN (autorização) ── */
 #modal-pin-overlay{position:fixed;inset:0;background:rgba(10,6,30,.5);z-index:160;display:none;align-items:flex-end;justify-content:center}
@@ -716,6 +759,15 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
       <div class="fin-secao-t">Formas de pagamento</div>
       <div class="fin-chart-wrap"><canvas id="fin-chart" height="170"></canvas></div>
       <div class="fin-legend" id="fin-legend"></div>
+      <!-- Revisão 2026-09: entrada pra tela "Relatórios" completa (DRE com
+           despesas/taxas/comissões, Produtos, Técnicos, Clientes, Pagamentos
+           com exportação). Só aparece pra Admin/Gerente — mesma restrição
+           que a página "Relatórios" já tem no desktop (index.html, ~linha
+           7772: relatorios:['admin','gerente']). Escondido por padrão aqui;
+           aplicarModoPerfil() decide se mostra. -->
+      <div class="fin-ver-rel" id="fin-ver-relatorio" style="display:none" onclick="abrir('relatorios')">
+        Ver relatório completo <i class="ti ti-arrow-right"></i>
+      </div>
     </div>
 
     <div class="mod" onclick="abrir('produto')">
@@ -989,6 +1041,15 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
       </div>
     </div>
 
+    <!-- Revisão 2026-09: acesso à tela "Relatórios" completa. Mesma
+         restrição do menu "Relatórios" do desktop (index.html, ~linha 2469 e
+         ~linha 7772: só admin/gerente) — item escondido por padrão,
+         aplicarModoPerfil() decide se mostra. -->
+    <div class="perfil-secao-t" id="perfil-secao-gestao" style="display:none">Gestão</div>
+    <div class="card" id="perfil-card-gestao" style="display:none">
+      <div class="sheet-it" onclick="abrir('relatorios')"><i class="ti ti-chart-bar"></i>Relatórios</div>
+    </div>
+
     <div class="perfil-secao-t">Ajuda</div>
     <div class="card">
       <div class="sheet-it" id="sheet-tour" onclick="startTour('mobile')"><i class="ti ti-route"></i>Tour guiado do app</div>
@@ -996,6 +1057,90 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
       <div class="sheet-it" id="sheet-suporte" style="display:none" onclick="abrirSuporte()"><i class="ti ti-headset"></i>Suporte</div>
     </div>
   </div>
+
+<!-- Revisão 2026-09: tela "Relatórios" (Resumo/DRE completo, Produtos,
+     Técnicos, Clientes, Pagamentos) — porta pro celular o restante do que
+     já existe em Relatórios no desktop (index.html), restrito a
+     Admin/Gerente (mesma regra do menu do desktop). Ver comentário grande
+     junto às funções JS (carregarRelatoriosMobile() e vizinhas). -->
+<div class="wrap hidden" id="scr-relatorios">
+  <div id="rel-sem-acesso" class="aviso" style="display:none"><i class="ti ti-lock"></i><div>Esta área é restrita a Admin/Gerente.</div></div>
+
+  <div id="rel-conteudo">
+    <div class="home-secao-t">Período</div>
+    <div class="rel-periodo-row" id="rel-periodo-chips">
+      <button type="button" class="fin-btn" data-p="hoje" onclick="setRelMobPeriodo('hoje')">Hoje</button>
+      <button type="button" class="fin-btn" data-p="semana" onclick="setRelMobPeriodo('semana')">7 dias</button>
+      <button type="button" class="fin-btn on" data-p="mes" onclick="setRelMobPeriodo('mes')">Mês</button>
+      <button type="button" class="fin-btn" data-p="ano" onclick="setRelMobPeriodo('ano')">Ano</button>
+      <button type="button" class="fin-btn" data-p="tudo" onclick="setRelMobPeriodo('tudo')">Tudo</button>
+    </div>
+    <div class="rel-custom-toggle" onclick="toggleRelPersonalizado()"><i class="ti ti-calendar"></i><span>Período personalizado</span></div>
+    <div class="rel-custom-datas hidden" id="rel-custom-datas">
+      <input type="date" class="inp" id="rel-de" onchange="_onRelDatasCustom()">
+      <span>até</span>
+      <input type="date" class="inp" id="rel-ate" onchange="_onRelDatasCustom()">
+    </div>
+    <div class="fin-periodo" id="rel-periodo-label"></div>
+
+    <div class="rel-tabs-row" id="rel-tabs">
+      <button type="button" class="rel-tab on" data-t="resumo" onclick="relMobTab('resumo')">Resumo</button>
+      <button type="button" class="rel-tab" data-t="produtos" onclick="relMobTab('produtos')">Produtos</button>
+      <button type="button" class="rel-tab" data-t="tecnicos" onclick="relMobTab('tecnicos')">Técnicos</button>
+      <button type="button" class="rel-tab" data-t="clientes" onclick="relMobTab('clientes')">Clientes</button>
+      <button type="button" class="rel-tab" data-t="pagamentos" onclick="relMobTab('pagamentos')">Pagamentos</button>
+    </div>
+
+    <div class="rel-export-row">
+      <button type="button" class="btn-rel-exp" onclick="exportarRelatorioMobileCSV()"><i class="ti ti-file-spreadsheet"></i>CSV</button>
+      <button type="button" class="btn-rel-exp" onclick="exportarRelatorioMobilePDF()"><i class="ti ti-printer"></i>Imprimir / PDF</button>
+    </div>
+
+    <div class="rel-pane" id="rel-pane-resumo">
+      <div class="card">
+        <div class="card-t">Resultado do período</div>
+        <div id="rel-dre-body"><span class="motion-shimmer" style="display:block;width:100%;height:140px;border-radius:10px"></span></div>
+      </div>
+    </div>
+
+    <div class="rel-pane hidden" id="rel-pane-produtos">
+      <div class="card">
+        <div class="card-t">Mais vendidos (por faturamento)</div>
+        <div class="rel-chart-wrap"><canvas id="rel-chart-prod" height="190"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-t">Margem por produto</div>
+        <div id="rel-prod-lista"></div>
+      </div>
+    </div>
+
+    <div class="rel-pane hidden" id="rel-pane-tecnicos">
+      <div class="card">
+        <div class="card-t">OS por status</div>
+        <div class="rel-chart-wrap rel-chart-sm"><canvas id="rel-chart-os-status" height="160"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-t">Ranking de técnicos</div>
+        <div id="rel-tec-lista"></div>
+      </div>
+    </div>
+
+    <div class="rel-pane hidden" id="rel-pane-clientes">
+      <div class="card">
+        <div class="card-t">Ranking de clientes</div>
+        <div id="rel-cli-lista"></div>
+      </div>
+    </div>
+
+    <div class="rel-pane hidden" id="rel-pane-pagamentos">
+      <div class="card">
+        <div class="card-t">Formas de pagamento</div>
+        <div class="rel-chart-wrap"><canvas id="rel-chart-pag" height="190"></canvas></div>
+        <div class="fin-legend" id="rel-pag-legend"></div>
+      </div>
+    </div>
+  </div>
+</div>
 </div>
 
   <!-- BARRA DO CARRINHO -->
@@ -1589,13 +1734,17 @@ async function carregarContexto(){
     // na identificação de quem está usando o celular e na área Pessoas.
     // 'telefone' é coluna nova (migração Fatia 21) — se ainda não rodou,
     // cai pra seleção antiga em vez de quebrar a lista inteira de usuários.
+    // Revisão 2026-09 (Relatórios): também traz 'comissao_pct' — mesma
+    // coluna que o desktop já usa (index.html) pra calcular a comissão de
+    // técnico no DRE/Relatórios; sem ela, a tela de Relatórios do celular
+    // simplesmente calcula comissão=0 (fallback seguro, não quebra nada).
     let us=null;
     try{
-      const r=await comTimeout(db.from('usuarios').select('id,nome,telefone,role,pin,ativo').eq('empresa_id',G.empresaId).order('nome').limit(200),'usuarios');
+      const r=await comTimeout(db.from('usuarios').select('id,nome,telefone,role,pin,ativo,comissao_pct').eq('empresa_id',G.empresaId).order('nome').limit(200),'usuarios');
       if(r.error) throw r.error;
       us=r.data;
     }catch(_e1){
-      const r2=await comTimeout(db.from('usuarios').select('id,nome,role,pin,ativo').eq('empresa_id',G.empresaId).order('nome').limit(200),'usuarios');
+      const r2=await comTimeout(db.from('usuarios').select('id,nome,role,pin,ativo,comissao_pct').eq('empresa_id',G.empresaId).order('nome').limit(200),'usuarios');
       us=r2.data;
     }
     G.usuarios=us||[];
@@ -1774,14 +1923,21 @@ async function carregarFinanceiro(){
     const leg=$('fin-legend'); if(leg) leg.innerHTML='<div class="fin-empty">Não foi possível carregar.</div>';
   }
 }
-function _renderFinPagamentos(vendas){
-  // mesmo mapeamento de rótulos/cores do renderRelPagamentos() (index.html, ~linha 18967/18985)
-  const pL={dinheiro:'Dinheiro',pix:'Pix',cartao:'Cartão',misto:'Misto',fiado:'Fiado',crediario:'Crediário'};
-  const cores=['#1E5EFF','#10B981','#3B82F6','#F59E0B','#EF4444','#8B5CF6'];
+// Mesmo mapeamento de rótulos/cores do renderRelPagamentos() (index.html,
+// ~linha 18900/18985) — extraído como helper compartilhado entre o card
+// "Financeiro" da Home e a aba "Pagamentos" da tela Relatórios (Revisão
+// 2026-09), pra não duplicar essa lógica em dois lugares.
+const PAG_LABELS={dinheiro:'Dinheiro',pix:'Pix',cartao:'Cartão',misto:'Misto',fiado:'Fiado',crediario:'Crediário'};
+const PAG_CORES=['#1E5EFF','#10B981','#3B82F6','#F59E0B','#EF4444','#8B5CF6'];
+function _aggPagamentos(vendas){
   const agg={};
   vendas.forEach(v=>{ const k=v.pagamento||'outro'; if(!agg[k])agg[k]={qtd:0,total:0}; agg[k].qtd++; agg[k].total+=Number(v.total)||0; });
   const rows=Object.entries(agg).sort((a,b)=>b[1].total-a[1].total);
   const totalGeral=rows.reduce((s,[,d])=>s+d.total,0);
+  return {rows,totalGeral};
+}
+function _renderFinPagamentos(vendas){
+  const {rows,totalGeral}=_aggPagamentos(vendas);
   const leg=$('fin-legend');
   const canvas=$('fin-chart');
   if(!rows.length){
@@ -1789,14 +1945,381 @@ function _renderFinPagamentos(vendas){
     if(_finChart){ _finChart.destroy(); _finChart=null; }
     return;
   }
-  const labels=rows.map(([k])=>pL[k]||k);
+  const labels=rows.map(([k])=>PAG_LABELS[k]||k);
   const dataVals=rows.map(([,d])=>d.total);
-  const bg=rows.map((_,i)=>cores[i%cores.length]);
-  if(leg) leg.innerHTML=rows.map(([k,d],i)=>`<div class="fin-legend-item"><span class="dot" style="background:${cores[i%cores.length]}"></span><span class="nm">${pL[k]||k}</span><span class="vl">${totalGeral>0?(d.total/totalGeral*100).toFixed(0):0}%</span></div>`).join('');
+  const bg=rows.map((_,i)=>PAG_CORES[i%PAG_CORES.length]);
+  if(leg) leg.innerHTML=rows.map(([k,d],i)=>`<div class="fin-legend-item"><span class="dot" style="background:${PAG_CORES[i%PAG_CORES.length]}"></span><span class="nm">${PAG_LABELS[k]||k}</span><span class="vl">${totalGeral>0?(d.total/totalGeral*100).toFixed(0):0}%</span></div>`).join('');
   if(canvas && typeof Chart!=='undefined'){
     if(_finChart) _finChart.destroy();
     _finChart=new Chart(canvas,{type:'doughnut',data:{labels,datasets:[{data:dataVals,backgroundColor:bg,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});
   }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Revisão 2026-09 — TELA "RELATÓRIOS" (mobile) ────────────────────────
+   Pedido do usuário: trazer pro celular "o restante do index" que ainda
+   não tinha vindo no card "Financeiro" da Home — o resto do DRE completo
+   (despesas/taxas/comissões), os relatórios de Produtos/Técnicos/Clientes,
+   e exportação (CSV/PDF).
+
+   Reaproveita a MESMA lógica de cálculo do desktop (index.html), não
+   inventa nada novo:
+     • Resumo (DRE completo): mesma fórmula de _calcDRE()/renderDRE()
+       (index.html, ~linha 19004/19054) — agora com despesas (contas_pagar
+       pagas), taxas de cartão (vendas.pagamentos, quando a taxa não é
+       repassada ao cliente) e comissões de técnico (ordens_servico ×
+       usuarios.comissao_pct), chegando no Lucro líquido estimado completo
+       (o card "Financeiro" da Home mostra só o lucro bruto, mais simples).
+     • Produtos: mesma agregação de _aggProdutos()/renderRelProdutos()
+       (index.html, ~linha 18835) a partir de vendas.itens — top produtos
+       por faturamento (gráfico) e margem por produto (lista). Não trouxe a
+       Curva ABC nem "Sem giro" desta primeira leva — ver nota abaixo.
+     • Técnicos: mesma lógica de renderRelOS() (index.html, ~linha 18766) —
+       OS por status (gráfico) e ranking de técnicos (concluídas, em
+       aberto, faturado, ticket médio), a partir de ordens_servico.
+     • Clientes: mesma lógica de renderRelClientes() (index.html, ~linha
+       18804) — ranking por total gasto, ticket médio e última compra, a
+       partir de vendas.cliente_nome. NÃO inclui a contagem de "clientes
+       novos no período" do desktop, que depende de uma consulta à tabela
+       clientes que o celular não usa em nenhum outro lugar — assunção
+       técnica, avaliar se vale trazer essa consulta também.
+     • Pagamentos: mesma agregação já usada no card Financeiro da Home
+       (_aggPagamentos(), extraída acima), só que aqui com o filtro
+       completo de período da tela (Hoje/7 dias/Mês/Ano/Tudo/personalizado)
+       em vez de só Dia/Mês/Ano.
+     • Períodos: mesmo atalho de setRelPeriodo() do desktop (index.html,
+       ~linha 18747) — Hoje/7 dias/Mês/Ano/Tudo — mais um período
+       personalizado (duas datas), que no desktop já existe via os campos
+       r-de/r-ate por trás dos mesmos atalhos.
+     • Exportar CSV: mesmo formato do branch CSV de exportarDRE()
+       (index.html, ~linha 19031) — ponto e vírgula, BOM, vírgula decimal
+       brasileira.
+     • Exportar PDF: mesma técnica de pdfImprimir() (index.html, ~linha
+       24112) — injeta um HTML próprio num iframe oculto e chama
+       contentWindow.print(); no celular isso abre o fluxo nativo de
+       impressão/"Salvar como PDF" do navegador, já que o app.html não tem
+       o modal de preview de PDF (#modal-pdf-viewer) que o desktop tem.
+
+   Segurança: a tela inteira (e os dois pontos de entrada — "Ver relatório
+   completo" no card Financeiro da Home, e "Relatórios" em Perfil) só
+   aparece pra Admin/Gerente — MESMA restrição que a página Relatórios já
+   tem no desktop (index.html, ~linha 7772: relatorios:['admin','gerente']).
+   Diferente do "Lucro" da Home (que fica atrás de um PIN mas visível pra
+   qualquer operador tentar), aqui o controle é por role, igual ao desktop
+   — não expõe nem a entrada do menu pra quem não tem o cargo certo.
+
+   Volume de dados: como o celular não mantém um G.vendas/G.os/G.pagar em
+   cache como o desktop, cada aba busca direto do Supabase, com limites
+   (vendas: 3000 no período; OS e contas pagas: 2000 cada, sem filtro de
+   data no servidor — o filtro de período é aplicado no cliente, igual o
+   desktop faz com o G.os/G.pagar já carregados). Assunção técnica: uma
+   loja com volume muito alto pode em tese ultrapassar esses limites,
+   principalmente no período "Tudo" — não tenho como confirmar o volume
+   real de cada loja. ══════════════════════════════════════════════════ */
+let G_relMobPeriodo='mes';
+let G_relMobCustom=false;
+let G_relMobRangeCustom=null;
+let G_relMobTab='resumo';
+const _relCharts={};
+let _relMobDRE=null;
+let _relMobUltimaCarga=null;
+let _relMobProdRows=[];
+let _relMobTecRows=[];
+let _relMobCliRows=[];
+let _relMobPagRows=[];
+
+function _relMobRange(p){
+  const hoje=new Date();
+  let ini,fim=new Date(hoje); fim.setHours(23,59,59,999);
+  if(p==='hoje'){ ini=new Date(hoje); ini.setHours(0,0,0,0); }
+  else if(p==='semana'){ ini=new Date(hoje); ini.setDate(ini.getDate()-6); ini.setHours(0,0,0,0); }
+  else if(p==='ano'){ ini=new Date(hoje.getFullYear(),0,1,0,0,0,0); fim=new Date(hoje.getFullYear(),11,31,23,59,59,999); }
+  else if(p==='tudo'){ ini=new Date(2000,0,1,0,0,0,0); }
+  else { ini=new Date(hoje.getFullYear(),hoje.getMonth(),1,0,0,0,0); fim=new Date(hoje.getFullYear(),hoje.getMonth()+1,0,23,59,59,999); }
+  return {ini,fim};
+}
+function _relMobRangeAtual(){ return G_relMobCustom && G_relMobRangeCustom ? G_relMobRangeCustom : _relMobRange(G_relMobPeriodo); }
+
+function setRelMobPeriodo(p){
+  G_relMobPeriodo=p;
+  G_relMobCustom=false;
+  $('rel-custom-datas')?.classList.add('hidden');
+  const de=$('rel-de'), ate=$('rel-ate'); if(de)de.value=''; if(ate)ate.value='';
+  document.querySelectorAll('#rel-periodo-chips .fin-btn').forEach(b=>b.classList.toggle('on', b.dataset.p===p));
+  carregarRelatoriosMobile();
+}
+function toggleRelPersonalizado(){ $('rel-custom-datas')?.classList.toggle('hidden'); }
+function _onRelDatasCustom(){
+  const de=$('rel-de')?.value, ate=$('rel-ate')?.value;
+  if(!de || !ate) return;
+  G_relMobCustom=true;
+  G_relMobRangeCustom={ ini:new Date(de+'T00:00:00'), fim:new Date(ate+'T23:59:59.999') };
+  document.querySelectorAll('#rel-periodo-chips .fin-btn').forEach(b=>b.classList.remove('on'));
+  carregarRelatoriosMobile();
+}
+function relMobTab(t){
+  G_relMobTab=t;
+  document.querySelectorAll('#rel-tabs .rel-tab').forEach(b=>b.classList.toggle('on', b.dataset.t===t));
+  document.querySelectorAll('.rel-pane').forEach(p=>p.classList.toggle('hidden', p.id!=='rel-pane-'+t));
+}
+
+function abrirRelatoriosMobile(){
+  const semAcesso=!_isAdminGer();
+  const bloco=$('rel-sem-acesso'), conteudo=$('rel-conteudo');
+  if(bloco) bloco.style.display=semAcesso?'flex':'none';
+  if(conteudo) conteudo.style.display=semAcesso?'none':'';
+  if(semAcesso) return; // defesa extra — os pontos de entrada já ficam escondidos pra quem não é admin/gerente
+  carregarRelatoriosMobile();
+}
+
+async function carregarRelatoriosMobile(){
+  if(!G.empresaId || !_isAdminGer()) return;
+  const r=_relMobRangeAtual();
+  const pl=$('rel-periodo-label');
+  if(pl) pl.textContent=r.ini.toLocaleDateString('pt-BR')+' a '+r.fim.toLocaleDateString('pt-BR');
+  try{
+    const [vRes,pRes,oRes]=await Promise.all([
+      comTimeout(db.from('vendas').select('total,lucro,custo_total,pagamento,status,tipo,criado_em,itens,cliente_nome,pagamentos').eq('empresa_id',G.empresaId).gte('criado_em',r.ini.toISOString()).lte('criado_em',r.fim.toISOString()).limit(3000),'relatórios vendas'),
+      comTimeout(db.from('contas_pagar').select('status,data_pagamento,data_vencimento,valor_pago,valor_original').eq('empresa_id',G.empresaId).eq('status','pago').order('data_pagamento',{ascending:false}).limit(2000),'relatórios contas'),
+      comTimeout(db.from('ordens_servico').select('id,tecnico_id,tecnico_nome,status,total,valor,criado_em,data_conclusao,atualizado_em').eq('empresa_id',G.empresaId).order('criado_em',{ascending:false}).limit(2000),'relatórios os'),
+    ]);
+    const vendas=vRes.data||[];
+    const pagarPagas=pRes.data||[];
+    const os=oRes.data||[];
+    _relMobUltimaCarga={vendas,pagarPagas,os,r};
+    _renderRelMobResumo(vendas,pagarPagas,os,r);
+    _renderRelMobProdutos(vendas);
+    _renderRelMobTecnicos(os,r);
+    _renderRelMobClientes(vendas);
+    _renderRelMobPagamentos(vendas);
+  }catch(e){
+    const el=$('rel-dre-body'); if(el) el.innerHTML='<div class="fin-empty">Não foi possível carregar os relatórios.</div>';
+  }
+}
+
+function _renderRelMobResumo(vendas,pagarPagas,os,r){
+  function inR(dt){ if(!dt) return false; const d=new Date(dt); return d>=r.ini && d<=r.fim; }
+  const vs=vendas.filter(v=>v.status!=='cancelada' && inR(v.criado_em));
+  const receita=vs.reduce((s,v)=>s+(Number(v.total)||0),0);
+  const cmv=vs.reduce((s,v)=>s+(Number(v.custo_total)||0),0);
+  const lucroBruto=vs.reduce((s,v)=>s+(v.lucro!=null?Number(v.lucro):((Number(v.total)||0)-(Number(v.custo_total)||0))),0);
+  const despesas=pagarPagas.filter(c=>inR(c.data_pagamento||c.data_vencimento)).reduce((s,c)=>s+(Number(c.valor_pago!=null?c.valor_pago:c.valor_original)||0),0);
+  let taxas=0;
+  vs.forEach(v=>{ let ps=v.pagamentos; if(typeof ps==='string'){ try{ps=JSON.parse(ps);}catch(_){ps=[];} } if(!Array.isArray(ps))return;
+    ps.forEach(p=>{ const forma=String(p.forma||p.modalidade||'').toLowerCase();
+      if((forma.indexOf('cart')>=0||forma==='credito'||forma==='debito') && p.taxa && !p.repassar){ taxas += (Number(p.valor)||0)*(Number(p.taxa)||0)/100; } }); });
+  let comissoes=0;
+  const pctMap={};
+  (G.usuarios||[]).forEach(u=>{ pctMap[u.id]=Number(u.comissao_pct||0); });
+  os.forEach(o=>{ if(o.status==='Cancelada')return; if(!(o.status==='Entregue'||o.status==='Ag. Pagamento'||o.status==='Pronto'))return;
+    const dt=o.data_conclusao||o.atualizado_em||o.criado_em; if(!inR(dt))return; const pct=pctMap[o.tecnico_id]||0; comissoes += (Number(o.total)||0)*pct/100; });
+  const lucroLiq=lucroBruto-despesas-taxas-comissoes;
+  const mb=receita>0?(lucroBruto/receita*100):0;
+  const ml=receita>0?(lucroLiq/receita*100):0;
+  _relMobDRE={receita,cmv,lucroBruto,despesas,taxas,comissoes,lucroLiq,mb,ml,nVendas:vs.length};
+  const el=$('rel-dre-body'); if(!el) return;
+  if(vs.length===0 && despesas===0){ el.innerHTML='<div class="fin-empty">Sem movimento no período.</div>'; return; }
+  function fmtR(v){ return 'R$ '+Math.abs(Number(v)||0).toLocaleString('pt-BR',{minimumFractionDigits:2}); }
+  function linha(lbl,val,opts){ opts=opts||{};
+    return `<div class="rel-dre-line${opts.big?' big':''}${opts.result?' result':''}"><span class="lbl">${lbl}</span><span class="val" style="color:${opts.color||(val<0?'var(--danger)':'var(--txt)')}">${opts.sign&&val>0?'− ':''}${fmtR(val)}</span></div>`;
+  }
+  el.innerHTML=
+    linha('Receita bruta (faturamento)',receita,{big:true})
+    +linha('(−) Custo dos produtos vendidos',cmv,{sign:true})
+    +linha('= Lucro bruto',lucroBruto,{big:true,color:lucroBruto>=0?'var(--ok)':'var(--danger)'})
+    +`<div class="rel-margem">Margem bruta: ${mb.toFixed(1)}%</div>`
+    +linha('(−) Despesas (contas pagas)',despesas,{sign:true})
+    +linha('(−) Taxas de cartão (estimado)',taxas,{sign:true})
+    +linha('(−) Comissões (estimado)',comissoes,{sign:true})
+    +linha('= Lucro líquido estimado',lucroLiq,{big:true,result:true,color:lucroLiq>=0?'var(--ok)':'var(--danger)'})
+    +`<div class="rel-margem">Margem líquida estimada: ${ml.toFixed(1)}%</div>`;
+}
+
+function _aggProdutosMobile(vendas){
+  const m={};
+  vendas.filter(v=>v.status!=='cancelada' && v.tipo!=='servico_os').forEach(v=>(v.itens||[]).forEach(i=>{
+    const k=i.nome||'—';
+    if(!m[k])m[k]={nome:k,qty:0,fat:0,custo:0};
+    const q=Number(i.qty)||0;
+    m[k].qty+=q; m[k].fat+=(Number(i.preco)||0)*q; m[k].custo+=(Number(i.custo)||0)*q;
+  }));
+  return Object.values(m).map(p=>({...p,lucro:p.fat-p.custo,margem:p.fat>0?(p.fat-p.custo)/p.fat*100:0}));
+}
+function _renderRelMobProdutos(vendas){
+  const prods=_aggProdutosMobile(vendas);
+  const ordFat=[...prods].sort((a,b)=>b.fat-a.fat);
+  _relMobProdRows=ordFat;
+  const top8=ordFat.slice(0,8);
+  const c=$('rel-chart-prod');
+  if(_relCharts.prod){ _relCharts.prod.destroy(); _relCharts.prod=null; }
+  if(c && typeof Chart!=='undefined' && top8.length){
+    _relCharts.prod=new Chart(c,{type:'bar',data:{labels:top8.map(p=>p.nome),datasets:[{data:top8.map(p=>p.fat),backgroundColor:'#5B3FE8',borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:9}}},y:{ticks:{font:{size:10}}}}}});
+  }
+  const el=$('rel-prod-lista'); if(!el) return;
+  if(!ordFat.length){ el.innerHTML='<div class="fin-empty">Sem vendas de produto no período.</div>'; return; }
+  el.innerHTML=ordFat.slice(0,30).map((p,i)=>`<div class="rel-row">
+    <div class="rel-pos">${i+1}º</div>
+    <div class="rel-nm"><div class="rel-nm-t">${esc(p.nome)}</div><div class="rel-nm-d">${p.qty} un · custo R$ ${p.custo.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>
+    <div class="rel-vl"><div class="rel-vl-t">R$ ${p.fat.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div><div class="rel-vl-d">margem ${p.margem.toFixed(1)}%</div></div>
+  </div>`).join('');
+}
+
+function _renderRelMobTecnicos(os,r){
+  const osR=os.filter(o=>{ const d=o.criado_em; if(!d) return false; const t=new Date(d); return t>=r.ini && t<=r.fim; });
+  const porStatus={};
+  osR.forEach(o=>{ const s=o.status||'—'; porStatus[s]=(porStatus[s]||0)+1; });
+  const cores=['#F59E0B','#3B82F6','#16A34A','#5B3FE8','#DC2626','#8B5CF6','#6B7280'];
+  const c=$('rel-chart-os-status');
+  if(_relCharts.osStatus){ _relCharts.osStatus.destroy(); _relCharts.osStatus=null; }
+  if(c && typeof Chart!=='undefined' && Object.keys(porStatus).length){
+    _relCharts.osStatus=new Chart(c,{type:'doughnut',data:{labels:Object.keys(porStatus),datasets:[{data:Object.values(porStatus),backgroundColor:cores}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:9}}}}}});
+  }
+  const tec={};
+  osR.forEach(o=>{ const t=o.tecnico_nome||'—'; if(!tec[t])tec[t]={concl:0,aberto:0,fat:0};
+    if(o.status==='Entregue'){ tec[t].concl++; tec[t].fat+=Number(o.total)||Number(o.valor)||0; }
+    else if(!['Cancelada','Cancelado'].includes(o.status)){ tec[t].aberto++; } });
+  const rows=Object.entries(tec).map(([nome,d])=>({nome,...d,ticket:d.concl?d.fat/d.concl:0})).sort((a,b)=>b.concl-a.concl);
+  _relMobTecRows=rows;
+  const el=$('rel-tec-lista'); if(!el) return;
+  if(!rows.length){ el.innerHTML='<div class="fin-empty">Sem OS no período.</div>'; return; }
+  el.innerHTML=rows.map((rr,i)=>`<div class="rel-row">
+    <div class="rel-pos">${i===0?'🏆':(i+1)+'º'}</div>
+    <div class="rel-nm"><div class="rel-nm-t">${esc(rr.nome)}</div><div class="rel-nm-d">${rr.concl} concluída${rr.concl!==1?'s':''} · ${rr.aberto} em aberto</div></div>
+    <div class="rel-vl"><div class="rel-vl-t">R$ ${rr.fat.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div><div class="rel-vl-d">tkt R$ ${rr.ticket.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>
+  </div>`).join('');
+}
+
+function _renderRelMobClientes(vendas){
+  const vs=vendas.filter(v=>v.status!=='cancelada' && v.tipo!=='servico_os');
+  const agg={};
+  vs.forEach(v=>{ const k=v.cliente_nome||'Não informado'; if(!agg[k])agg[k]={qtd:0,total:0,ultima:null};
+    agg[k].qtd++; agg[k].total+=Number(v.total)||0;
+    if(!agg[k].ultima || v.criado_em>agg[k].ultima) agg[k].ultima=v.criado_em; });
+  const rows=Object.entries(agg).map(([nome,d])=>({nome,...d,ticket:d.qtd?d.total/d.qtd:0})).sort((a,b)=>b.total-a.total);
+  _relMobCliRows=rows;
+  const el=$('rel-cli-lista'); if(!el) return;
+  if(!rows.length){ el.innerHTML='<div class="fin-empty">Sem vendas no período.</div>'; return; }
+  el.innerHTML=rows.slice(0,30).map((rr,i)=>`<div class="rel-row">
+    <div class="rel-pos">${i===0?'🏆':(i+1)+'º'}</div>
+    <div class="rel-nm"><div class="rel-nm-t">${esc(rr.nome)}</div><div class="rel-nm-d">${rr.qtd} compra${rr.qtd!==1?'s':''} · última ${rr.ultima?new Date(rr.ultima).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}):'—'}</div></div>
+    <div class="rel-vl"><div class="rel-vl-t">R$ ${rr.total.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div><div class="rel-vl-d">tkt R$ ${rr.ticket.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>
+  </div>`).join('');
+}
+
+function _renderRelMobPagamentos(vendas){
+  const vs=vendas.filter(v=>v.status!=='cancelada' && v.tipo!=='servico_os');
+  const {rows,totalGeral}=_aggPagamentos(vs);
+  _relMobPagRows=rows;
+  const leg=$('rel-pag-legend');
+  const c=$('rel-chart-pag');
+  if(_relCharts.pag){ _relCharts.pag.destroy(); _relCharts.pag=null; }
+  if(!rows.length){ if(leg) leg.innerHTML='<div class="fin-empty">Sem vendas no período.</div>'; return; }
+  const labels=rows.map(([k])=>PAG_LABELS[k]||k);
+  const dataVals=rows.map(([,d])=>d.total);
+  const bg=rows.map((_,i)=>PAG_CORES[i%PAG_CORES.length]);
+  if(leg) leg.innerHTML=rows.map(([k,d],i)=>`<div class="fin-legend-item"><span class="dot" style="background:${PAG_CORES[i%PAG_CORES.length]}"></span><span class="nm">${PAG_LABELS[k]||k}</span><span class="vl">${totalGeral>0?(d.total/totalGeral*100).toFixed(0):0}%</span></div>`).join('');
+  if(c && typeof Chart!=='undefined'){
+    _relCharts.pag=new Chart(c,{type:'doughnut',data:{labels,datasets:[{data:dataVals,backgroundColor:bg,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:9}}}}}});
+  }
+}
+
+/* ── Exportar CSV (mesmo formato do branch CSV de exportarDRE(), index.html ~linha 19031) ── */
+function _relMobBaixarCSV(nome,linhas){
+  const csv=linhas.map(rr=>rr.map(c=>'"'+String(c==null?'':c).replace(/"/g,'""')+'"').join(';')).join('\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=nome+'.csv'; a.click();
+  if(typeof notify==='function') notify('CSV exportado.','ok');
+}
+function exportarRelatorioMobileCSV(){
+  const r=_relMobRangeAtual();
+  const periodo=r.ini.toLocaleDateString('pt-BR')+' a '+r.fim.toLocaleDateString('pt-BR');
+  const dec=v=>(Number(v)||0).toFixed(2).replace('.',',');
+  const dataArq=r.ini.toISOString().slice(0,10);
+  if(G_relMobTab==='resumo'){
+    const d=_relMobDRE||{};
+    _relMobBaixarCSV('Resumo_'+dataArq,[
+      ['Resumo financeiro (MISU MOBILE)'],['Período',periodo],[],
+      ['Item','Valor (R$)'],
+      ['Receita bruta (faturamento)',dec(d.receita)],
+      ['Custo dos produtos vendidos',dec(d.cmv)],
+      ['Lucro bruto',dec(d.lucroBruto)],
+      ['Despesas (contas pagas)',dec(d.despesas)],
+      ['Taxas de cartão (estimado)',dec(d.taxas)],
+      ['Comissões (estimado)',dec(d.comissoes)],
+      ['Lucro líquido estimado',dec(d.lucroLiq)],
+      [],['Margem bruta',(d.mb||0).toFixed(1)+'%'],['Margem líquida estimada',(d.ml||0).toFixed(1)+'%'],
+    ]);
+  } else if(G_relMobTab==='produtos'){
+    _relMobBaixarCSV('Produtos_'+dataArq,[
+      ['Produtos — '+periodo],[],['Produto','Qtd','Faturamento','Custo','Lucro','Margem %'],
+      ...(_relMobProdRows||[]).map(p=>[p.nome,p.qty,dec(p.fat),dec(p.custo),dec(p.lucro),p.margem.toFixed(1)]),
+    ]);
+  } else if(G_relMobTab==='tecnicos'){
+    _relMobBaixarCSV('Tecnicos_'+dataArq,[
+      ['Técnicos — '+periodo],[],['Técnico','Concluídas','Em aberto','Faturado','Ticket médio'],
+      ...(_relMobTecRows||[]).map(t=>[t.nome,t.concl,t.aberto,dec(t.fat),dec(t.ticket)]),
+    ]);
+  } else if(G_relMobTab==='clientes'){
+    _relMobBaixarCSV('Clientes_'+dataArq,[
+      ['Clientes — '+periodo],[],['Cliente','Compras','Total','Ticket médio','Última compra'],
+      ...(_relMobCliRows||[]).map(c=>[c.nome,c.qtd,dec(c.total),dec(c.ticket),c.ultima?new Date(c.ultima).toLocaleDateString('pt-BR'):'—']),
+    ]);
+  } else if(G_relMobTab==='pagamentos'){
+    _relMobBaixarCSV('Pagamentos_'+dataArq,[
+      ['Formas de pagamento — '+periodo],[],['Forma','Qtd','Total (R$)'],
+      ...(_relMobPagRows||[]).map(([k,dd])=>[PAG_LABELS[k]||k,dd.qtd,dec(dd.total)]),
+    ]);
+  }
+}
+
+/* ── Exportar/Imprimir PDF (mesma técnica de pdfImprimir(), index.html ~linha 24112) ── */
+function _relMobPrintIframe(html){
+  try{
+    let fr=document.getElementById('rel-print-iframe');
+    if(!fr){ fr=document.createElement('iframe'); fr.id='rel-print-iframe'; fr.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden'; document.body.appendChild(fr); }
+    const doc=fr.contentWindow.document;
+    doc.open(); doc.write(html); doc.close();
+    setTimeout(()=>{ try{ fr.contentWindow.focus(); fr.contentWindow.print(); }catch(e){ const w=window.open('','_blank'); if(w){ w.document.write(html); } } },450);
+  }catch(e){ try{ const w=window.open('','_blank'); if(w){ w.document.write(html); } }catch(_){} }
+}
+function exportarRelatorioMobilePDF(){
+  const r=_relMobRangeAtual();
+  const periodo=r.ini.toLocaleDateString('pt-BR')+' a '+r.fim.toLocaleDateString('pt-BR');
+  const loja=(G.empresa&&(G.empresa.nome_fantasia||G.empresa.razao_social))||'Minha Loja';
+  const emissao=new Date().toLocaleString('pt-BR');
+  const tituloTab={resumo:'Resumo financeiro',produtos:'Produtos',tecnicos:'Técnicos',clientes:'Clientes',pagamentos:'Formas de pagamento'}[G_relMobTab]||'Relatório';
+  const fmtR=v=>'R$ '+(Number(v)||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
+  let corpo='';
+  if(G_relMobTab==='resumo'){
+    const d=_relMobDRE||{};
+    const linhas=[['Receita bruta (faturamento)',d.receita],['(-) Custo dos produtos vendidos',d.cmv],['= Lucro bruto',d.lucroBruto],['(-) Despesas (contas pagas)',d.despesas],['(-) Taxas de cartão (estimado)',d.taxas],['(-) Comissões (estimado)',d.comissoes],['= Lucro líquido estimado',d.lucroLiq]];
+    corpo='<table style="width:100%;border-collapse:collapse;font-size:13px">'+linhas.map(l=>{ const res=String(l[0]).charAt(0)==='='; return `<tr><td style="padding:7px 4px;border-bottom:1px solid #eee;${res?'font-weight:700':''}">${esc(l[0])}</td><td style="padding:7px 4px;border-bottom:1px solid #eee;text-align:right;${res?'font-weight:700':''}">${fmtR(l[1])}</td></tr>`; }).join('')+'</table>'
+      +`<div style="font-size:12px;color:#555;margin-top:10px">Margem bruta: ${(d.mb||0).toFixed(1)}% · Margem líquida estimada: ${(d.ml||0).toFixed(1)}%</div>`;
+  } else if(G_relMobTab==='produtos'){
+    corpo='<table style="width:100%;border-collapse:collapse;font-size:12px"><tr><th style="text-align:left;padding:6px 4px;border-bottom:2px solid #333">Produto</th><th style="padding:6px 4px;border-bottom:2px solid #333">Qtd</th><th style="padding:6px 4px;border-bottom:2px solid #333">Faturamento</th><th style="padding:6px 4px;border-bottom:2px solid #333">Margem</th></tr>'
+      +(_relMobProdRows||[]).map(p=>`<tr><td style="padding:5px 4px;border-bottom:1px solid #eee">${esc(p.nome)}</td><td style="text-align:center;padding:5px 4px;border-bottom:1px solid #eee">${p.qty}</td><td style="text-align:right;padding:5px 4px;border-bottom:1px solid #eee">${fmtR(p.fat)}</td><td style="text-align:right;padding:5px 4px;border-bottom:1px solid #eee">${p.margem.toFixed(1)}%</td></tr>`).join('')
+      +'</table>';
+  } else if(G_relMobTab==='tecnicos'){
+    corpo='<table style="width:100%;border-collapse:collapse;font-size:12px"><tr><th style="text-align:left;padding:6px 4px;border-bottom:2px solid #333">Técnico</th><th style="padding:6px 4px;border-bottom:2px solid #333">Concluídas</th><th style="padding:6px 4px;border-bottom:2px solid #333">Em aberto</th><th style="padding:6px 4px;border-bottom:2px solid #333">Faturado</th></tr>'
+      +(_relMobTecRows||[]).map(t=>`<tr><td style="padding:5px 4px;border-bottom:1px solid #eee">${esc(t.nome)}</td><td style="text-align:center;padding:5px 4px;border-bottom:1px solid #eee">${t.concl}</td><td style="text-align:center;padding:5px 4px;border-bottom:1px solid #eee">${t.aberto}</td><td style="text-align:right;padding:5px 4px;border-bottom:1px solid #eee">${fmtR(t.fat)}</td></tr>`).join('')
+      +'</table>';
+  } else if(G_relMobTab==='clientes'){
+    corpo='<table style="width:100%;border-collapse:collapse;font-size:12px"><tr><th style="text-align:left;padding:6px 4px;border-bottom:2px solid #333">Cliente</th><th style="padding:6px 4px;border-bottom:2px solid #333">Compras</th><th style="padding:6px 4px;border-bottom:2px solid #333">Total</th></tr>'
+      +(_relMobCliRows||[]).map(c=>`<tr><td style="padding:5px 4px;border-bottom:1px solid #eee">${esc(c.nome)}</td><td style="text-align:center;padding:5px 4px;border-bottom:1px solid #eee">${c.qtd}</td><td style="text-align:right;padding:5px 4px;border-bottom:1px solid #eee">${fmtR(c.total)}</td></tr>`).join('')
+      +'</table>';
+  } else if(G_relMobTab==='pagamentos'){
+    corpo='<table style="width:100%;border-collapse:collapse;font-size:12px"><tr><th style="text-align:left;padding:6px 4px;border-bottom:2px solid #333">Forma</th><th style="padding:6px 4px;border-bottom:2px solid #333">Qtd</th><th style="padding:6px 4px;border-bottom:2px solid #333">Total</th></tr>'
+      +(_relMobPagRows||[]).map(([k,dd])=>`<tr><td style="padding:5px 4px;border-bottom:1px solid #eee">${esc(PAG_LABELS[k]||k)}</td><td style="text-align:center;padding:5px 4px;border-bottom:1px solid #eee">${dd.qtd}</td><td style="text-align:right;padding:5px 4px;border-bottom:1px solid #eee">${fmtR(dd.total)}</td></tr>`).join('')
+      +'</table>';
+  }
+  const html=`<!doctype html><html><head><meta charset="utf-8"><title>${esc(tituloTab)}</title></head><body style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;color:#111;padding:16px">
+    <h2 style="margin:0 0 2px">${esc(loja)}</h2>
+    <div style="font-size:13px;color:#555">${esc(tituloTab)} — MISU MOBILE</div>
+    <div style="font-size:12px;color:#666;margin:6px 0 14px">Período: ${periodo} · Emitido em ${emissao}</div>
+    ${corpo}
+    <div style="font-size:11px;color:#888;margin-top:14px;border-top:1px solid #eee;padding-top:8px">Relatório gerencial — pode não substituir a apuração contábil oficial. Itens "estimado" calculados a partir dos dados disponíveis.</div>
+  </body></html>`;
+  _relMobPrintIframe(html);
 }
 
 /* ── Fatia 9: SUPORTE (mesma fonte usada no sistema desktop: app_config) ── */
@@ -1969,22 +2492,23 @@ function _marcarNavAtivo(scr){
   if(alvo) $('bn-'+alvo)?.classList.add('on');
 }
 function abrir(scr){
-  ['home','produto','os','os-ok','os-lista','venda','venda-ok','estoque','cart','etiqueta','pgpendente','pessoas','entregas','perfil'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
+  ['home','produto','os','os-ok','os-lista','venda','venda-ok','estoque','cart','etiqueta','pgpendente','pessoas','entregas','perfil','relatorios'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
   $('scr-'+scr).classList.remove('hidden');
   $('btn-back').classList.remove('hidden');
-  $('scr-title').textContent = ({produto:'Cadastrar Produto',os:'OS Rápida','os-lista':'Minhas OS',venda:'Venda Rápida',estoque:'Estoque',cart:'Carrinho',etiqueta:'Etiqueta',pgpendente:'Pagamento',pessoas:'Pessoas da Empresa',entregas:'Minhas Entregas',perfil:'Perfil'})[scr]||scr;
+  $('scr-title').textContent = ({produto:'Cadastrar Produto',os:'OS Rápida','os-lista':'Minhas OS',venda:'Venda Rápida',estoque:'Estoque',cart:'Carrinho',etiqueta:'Etiqueta',pgpendente:'Pagamento',pessoas:'Pessoas da Empresa',entregas:'Minhas Entregas',perfil:'Perfil',relatorios:'Relatórios'})[scr]||scr;
   if(scr==='estoque') abrirEstoque();
   if(scr==='cart') renderCart();
   if(scr==='os-lista') abrirOsLista();
   if(scr==='pessoas') abrirPessoas();
   if(scr==='entregas') abrirEntregas();
   if(scr==='perfil') abrirPerfilScreen();
+  if(scr==='relatorios') abrirRelatoriosMobile();
   if(scr!=='pgpendente') pararPollingCobranca();
   _marcarNavAtivo(scr);
 }
 function goHome(){
   pararPollingCobranca();
-  ['produto','os','os-ok','os-lista','venda','venda-ok','estoque','cart','etiqueta','pgpendente','pessoas','entregas','perfil'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
+  ['produto','os','os-ok','os-lista','venda','venda-ok','estoque','cart','etiqueta','pgpendente','pessoas','entregas','perfil','relatorios'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
   $('scr-home').classList.remove('hidden');
   $('btn-back').classList.add('hidden');
   $('scr-title').textContent='Início';
@@ -2898,6 +3422,12 @@ function aplicarModoPerfil(){
   // dos outros módulos financeiros da Home: Entregador não vê.
   const fst=$('fin-secao-t'); if(fst) fst.style.display=entregador?'none':'';
   const fdc=$('fin-dash-card'); if(fdc) fdc.style.display=entregador?'none':'';
+  // Revisão 2026-09: "Ver relatório completo" (Home) e "Relatórios" (Perfil)
+  // só aparecem pra Admin/Gerente — mesma restrição do menu "Relatórios" do
+  // desktop (index.html: relatorios:['admin','gerente']).
+  const fvr=$('fin-ver-relatorio'); if(fvr) fvr.style.display=adminGer?'':'none';
+  const psg=$('perfil-secao-gestao'); if(psg) psg.style.display=adminGer?'':'none';
+  const pcg=$('perfil-card-gestao'); if(pcg) pcg.style.display=adminGer?'':'none';
   document.querySelectorAll('#scr-home .qa-row,#scr-home > .mod').forEach(el=>{ el.style.display=entregador?'none':''; });
 
   let entHome=$('home-entregador-resumo');
