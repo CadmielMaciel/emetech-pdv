@@ -200,7 +200,7 @@ input,select,textarea,button{font-family:inherit;font-size:16px}
 .input-group{position:relative}
 .input-group+.input-group{margin-top:13px}
 .input-icon{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:var(--txt3);font-size:18px;pointer-events:none}
-.inp-icon{padding-left:44px}
+.inp.inp-icon{padding-left:44px}
 .input-eye{position:absolute;right:5px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--txt3);width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px}
 .input-eye:active{background:var(--bg2)}
 
@@ -768,26 +768,10 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
       <div class="fin-legend" id="fin-legend"></div>
     </div>
 
-    <div class="mod" onclick="abrir('produto')">
-      <div class="mod-ic" style="background:#ede9fe;color:#5B3FE8">📦</div>
-      <div><div class="mod-t">Cadastrar Produto</div><div class="mod-d">Foto, código de barras e salvar na loja</div></div>
-      <i class="ti ti-chevron-right"></i>
-    </div>
-    <div class="mod" onclick="abrir('os')">
-      <div class="mod-ic" style="background:#dbeafe;color:#2563eb">🔧</div>
-      <div><div class="mod-t">OS Rápida</div><div class="mod-d">Aparelho, fotos e link pro cliente</div></div>
-      <i class="ti ti-chevron-right"></i>
-    </div>
-    <div class="mod" onclick="abrir('venda')">
-      <div class="mod-ic" style="background:#dcfce7;color:#16a34a">🛒</div>
-      <div><div class="mod-t">Venda Rápida</div><div class="mod-d">Link/QR de pagamento no WhatsApp</div></div>
-      <i class="ti ti-chevron-right"></i>
-    </div>
-    <div class="mod" onclick="abrir('estoque')">
-      <div class="mod-ic" style="background:#fef9c3;color:#ca8a04">📊</div>
-      <div><div class="mod-t">Ver Estoque</div><div class="mod-d">Consultar quantidades da loja</div></div>
-      <i class="ti ti-chevron-right"></i>
-    </div>
+    <!-- Revisão 2026-09: os 4 cards de atalho (Cadastrar Produto, OS
+         Rápida, Venda Rápida, Ver Estoque) saíram da Home e foram pra
+         folha "Mais" (pedido do usuário), pro mesmo lugar de "Venda
+         rápida (link/QR)" que já morava lá — ver #sheet-mais. -->
     <div id="recentes-wrap" class="hidden" style="margin-top:24px">
       <div style="font-size:12px;font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px">Cadastrados hoje</div>
       <div id="recentes" class="mobile-list"></div>
@@ -1166,7 +1150,15 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 <div id="sheet-overlay" onclick="fecharMais()"></div>
 <div id="sheet-mais">
   <div class="sheet-handle" onclick="fecharMais()" style="cursor:pointer"></div>
+  <!-- Revisão 2026-09: "Venda Rápida", "OS Rápida", "Ver Estoque" e
+       "Cadastrar Produto" saíram dos cards da Home e vieram pra cá (pedido
+       do usuário) — mesmos destinos de sempre (abrir('venda'/'os'/
+       'estoque'/'produto')), só mudou de onde se acessa. Escondidos pro
+       Entregador, mesma regra que já valia pros cards na Home. -->
   <div class="sheet-it" id="sheet-venda-rapida" onclick="fecharMais();abrir('venda')"><i class="ti ti-qrcode"></i>Venda rápida (link/QR)</div>
+  <div class="sheet-it" id="sheet-os-rapida" onclick="fecharMais();abrir('os')"><i class="ti ti-tool"></i>OS Rápida</div>
+  <div class="sheet-it" id="sheet-ver-estoque" onclick="fecharMais();abrir('estoque')"><i class="ti ti-clipboard-list"></i>Ver Estoque</div>
+  <div class="sheet-it" id="sheet-cadastrar-produto" onclick="fecharMais();abrir('produto')"><i class="ti ti-package"></i>Cadastrar Produto</div>
   <div class="sheet-it" id="sheet-minhas-os" onclick="fecharMais();abrir('os-lista')"><i class="ti ti-list-details"></i>Minhas OS</div>
   <div class="sheet-it" id="sheet-entregas-mais" data-tour="mobile-entregas" style="display:none" onclick="fecharMais();abrir('entregas')"><i class="ti ti-truck"></i>Minhas Entregas</div>
   <div class="sheet-it" id="sheet-pessoas" style="display:none" onclick="fecharMais();abrir('pessoas')"><i class="ti ti-users"></i>Pessoas da Empresa</div>
@@ -3419,6 +3411,12 @@ function aplicarModoPerfil(){
 
   const sv=$('sheet-venda-rapida'); if(sv) sv.style.display=entregador?'none':'';
   const so=$('sheet-minhas-os'); if(so) so.style.display=entregador?'none':'';
+  // Revisão 2026-09: "OS Rápida"/"Ver Estoque"/"Cadastrar Produto" saíram
+  // dos cards da Home e vieram pra folha Mais — mesma regra de sempre pro
+  // Entregador (não vende, não cria OS nem cadastra produto).
+  const sor=$('sheet-os-rapida'); if(sor) sor.style.display=entregador?'none':'';
+  const sve=$('sheet-ver-estoque'); if(sve) sve.style.display=entregador?'none':'';
+  const scp=$('sheet-cadastrar-produto'); if(scp) scp.style.display=entregador?'none':'';
   const se=$('sheet-entregas-mais'); if(se) se.style.display=(entregador||adminGer)?'':'none';
   const sp=$('sheet-pessoas'); if(sp) sp.style.display=adminGer?'':'none';
   // Revisão 2026-09: "Relatórios" saiu do acesso rápido da Home e passou a
