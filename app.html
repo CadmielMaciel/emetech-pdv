@@ -65,6 +65,10 @@ try{
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+<!-- Revisão 2026-09: Chart.js pro gráfico de pizza do dashboard financeiro
+     da Home — mesma versão/CDN já usada no index.html (linha 42), pra ficar
+     igual ao desktop. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root{
   --pri:#5B3FE8;--pri2:#7C5CFF;--pri-d:#3D2596;
@@ -99,6 +103,31 @@ try{
   --shadow-sm:0 1px 2px rgba(0,0,0,.3);
   --shadow:0 1px 3px rgba(0,0,0,.3),0 8px 20px -14px rgba(0,0,0,.5);
 }
+
+/* ═══ Revisão 2026-09 — "Neon Ledger" na tela Início do celular (tema escuro) ═══
+   Mesmo pedido já aplicado no Dashboard do desktop, mas o pedido real do
+   usuário é focado no mobile — por isso o glow aqui, na tela Início
+   (#scr-home), que é o equivalente mobile do Dashboard. Escopo: só esta
+   tela, só no tema escuro já existente (o claro não muda, e as regras de
+   cor já existentes de --ok/--warn/--danger em light+dark continuam
+   intocadas — isto só ACRESCENTA um glow, nunca muda cor de texto fora
+   do tema escuro). --pri (roxo da marca) fica no card de Lucro (o "hero"
+   desta tela, igual ao Dashboard do desktop); os demais reaproveitam
+   --ok/--warn que o próprio carregarResumoDia()/JS já usa pra Caixa e
+   Estoque baixo (glow-ok/glow-warn abaixo cobrem tanto os estados fixos
+   quanto os que o JS troca em tempo real, sem precisar mexer em nenhuma
+   função). */
+[data-theme="dark"] #scr-home .rc{box-shadow:0 0 0 1px color-mix(in oklab,var(--border2) 80%,transparent),0 0 24px -10px color-mix(in oklab,var(--pri) 16%,transparent)}
+[data-theme="dark"] #scr-home .rc.ok,[data-theme="dark"] #scr-home .rc.glow-ok{box-shadow:0 0 0 1px color-mix(in oklab,var(--ok) 35%,transparent),0 0 22px -4px color-mix(in oklab,var(--ok) 42%,transparent),inset 0 0 16px -10px color-mix(in oklab,var(--ok) 28%,transparent)}
+[data-theme="dark"] #scr-home .rc.warn,[data-theme="dark"] #scr-home .rc.glow-warn{box-shadow:0 0 0 1px color-mix(in oklab,var(--warn) 38%,transparent),0 0 22px -4px color-mix(in oklab,var(--warn) 42%,transparent),inset 0 0 16px -10px color-mix(in oklab,var(--warn) 28%,transparent)}
+[data-theme="dark"] #scr-home .rc.danger{box-shadow:0 0 0 1px color-mix(in oklab,var(--danger) 38%,transparent),0 0 22px -4px color-mix(in oklab,var(--danger) 42%,transparent),inset 0 0 16px -10px color-mix(in oklab,var(--danger) 28%,transparent)}
+[data-theme="dark"] #scr-home .rc.glow-pri{box-shadow:0 0 0 1px color-mix(in oklab,var(--pri) 40%,transparent),0 0 26px -4px color-mix(in oklab,var(--pri) 48%,transparent),inset 0 0 20px -10px color-mix(in oklab,var(--pri) 32%,transparent)}
+[data-theme="dark"] #scr-home .rc.ok .rc-val,[data-theme="dark"] #scr-home .rc.glow-ok .rc-val{text-shadow:0 0 12px color-mix(in oklab,var(--ok) 55%,transparent)}
+[data-theme="dark"] #scr-home .rc.warn .rc-val,[data-theme="dark"] #scr-home .rc.glow-warn .rc-val{text-shadow:0 0 12px color-mix(in oklab,var(--warn) 55%,transparent)}
+/* Lucro: o brilho só aparece depois de desbloqueado (:not(.locked)) — enquanto
+   trancado, o cadeado fica discreto, sem chamar atenção pra um número que
+   ainda não apareceu. */
+[data-theme="dark"] #scr-home #rc-lucro:not(.locked){text-shadow:0 0 14px color-mix(in oklab,var(--pri) 55%,transparent);color:var(--pri)}
 
 /* ── Revisão 2026-09: ACESSIBILIDADE (tamanho de fonte, alto contraste,
    foco visível pra teclado/leitor de tela) ──
@@ -422,6 +451,36 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 .rc.danger .rc-val{color:var(--danger)}
 .rc.ok .rc-val{color:var(--ok)}
 
+/* ── Revisão 2026-09: dashboard financeiro na Home (mobile) — mesmo cálculo
+   do DRE/relatório de formas de pagamento do desktop (index.html), com
+   filtro de período (Dia/Mês/Ano) e gráfico de pizza. Ver comentário maior
+   junto ao HTML (#fin-dash-card) e às funções JS (carregarFinanceiro()). ── */
+.fin-card{background:var(--card);border:1px solid var(--border2);border-radius:var(--r);padding:16px;margin-bottom:28px;box-shadow:var(--shadow)}
+.fin-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:2px;flex-wrap:wrap}
+.fin-tit{font-weight:800;font-size:14px;display:flex;align-items:center;gap:7px}
+.fin-tit i{color:var(--pri);font-size:17px}
+.fin-filtros{display:flex;gap:6px;flex-shrink:0}
+.fin-btn{border:1.5px solid var(--border);background:var(--bg2);color:var(--txt2);font-weight:700;font-size:11.5px;padding:6px 10px;border-radius:99px;cursor:pointer;transition:background .15s,color .15s,border-color .15s}
+.fin-btn.on{background:linear-gradient(135deg,var(--pri),var(--pri2));border-color:transparent;color:#fff}
+.fin-periodo{font-size:11px;color:var(--txt3);margin:6px 0 14px}
+.fin-stats{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:18px}
+.fin-stat{background:var(--bg2);border-radius:14px;padding:12px}
+.fin-stat-lbl{font-size:10.5px;color:var(--txt3);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
+.fin-stat-val{font-family:'Syne',sans-serif;font-size:17px;font-weight:800;color:var(--txt)}
+.fin-stat-val.locked{font-size:12.5px;color:var(--txt3);display:flex;align-items:center;gap:5px;cursor:pointer;font-family:inherit;font-weight:700}
+.fin-secao-t{font-size:11px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px;margin:4px 0 10px}
+.fin-chart-wrap{max-width:170px;margin:0 auto 14px}
+.fin-legend{display:flex;flex-direction:column;gap:8px}
+.fin-legend-item{display:flex;align-items:center;gap:8px;font-size:12.5px}
+.fin-legend-item .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.fin-legend-item .nm{flex:1;color:var(--txt2);font-weight:600}
+.fin-legend-item .vl{font-weight:800;color:var(--txt)}
+.fin-empty{font-size:12.5px;color:var(--txt3);text-align:center;padding:16px 0}
+/* Neon Ledger (tema escuro) — mesmo espírito do glow já aplicado nos cards
+   de resumo acima: só acrescenta brilho, nunca muda cor de texto no claro. */
+[data-theme="dark"] #scr-home .fin-card{box-shadow:0 0 0 1px color-mix(in oklab,var(--border2) 80%,transparent),0 0 24px -10px color-mix(in oklab,var(--pri) 16%,transparent)}
+[data-theme="dark"] #scr-home .fin-stat-val:not(.locked){text-shadow:0 0 10px color-mix(in oklab,var(--pri) 40%,transparent)}
+
 /* ── Fatia 9: modal simples de PIN (autorização) ── */
 #modal-pin-overlay{position:fixed;inset:0;background:rgba(10,6,30,.5);z-index:160;display:none;align-items:flex-end;justify-content:center}
 #modal-pin{background:var(--card);border-radius:22px 22px 0 0;padding:22px 20px calc(22px + var(--sab));width:100%;max-width:460px;animation:up .25s ease;max-height:85vh;overflow-y:auto}
@@ -435,10 +494,10 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 #modal-ios .mp-sub{font-size:13px;color:var(--txt3);margin-bottom:16px;line-height:1.4}
 
 /* ── Fatia 21: modais novos (Pessoas/Entregador) — mesmo padrão visual dos já existentes ── */
-#modal-quemusa-overlay,#modal-pin-op-overlay,#modal-pessoa-overlay,#modal-confirma-overlay,#modal-tentativa-overlay,#modal-meupin-overlay,#modal-applock-setup-overlay{position:fixed;inset:0;background:rgba(10,6,30,.5);z-index:165;display:none;align-items:flex-end;justify-content:center;animation:motionFadeIn .18s ease}
-#modal-quemusa,#modal-pin-op,#modal-pessoa,#modal-confirma,#modal-tentativa,#modal-meupin,#modal-applock-setup{background:var(--card);border-radius:22px 22px 0 0;padding:22px 20px calc(22px + var(--sab));width:100%;max-width:460px;animation:up .25s ease;max-height:85vh;overflow-y:auto}
-#modal-quemusa .mp-title,#modal-pin-op .mp-title,#modal-pessoa .mp-title,#modal-confirma .mp-title,#modal-tentativa .mp-title,#modal-meupin .mp-title,#modal-applock-setup .mp-title{font-weight:800;font-size:16px;margin-bottom:4px}
-#modal-quemusa .mp-sub,#modal-pin-op .mp-sub,#modal-pessoa .mp-sub,#modal-confirma .mp-sub,#modal-tentativa .mp-sub,#modal-meupin .mp-sub,#modal-applock-setup .mp-sub{font-size:12.5px;color:var(--txt3);margin-bottom:14px}
+#modal-quemusa-overlay,#modal-pin-op-overlay,#modal-pessoa-overlay,#modal-confirma-overlay,#modal-tentativa-overlay,#modal-meupin-overlay,#modal-applock-setup-overlay,#modal-abrecaixa-overlay{position:fixed;inset:0;background:rgba(10,6,30,.5);z-index:165;display:none;align-items:flex-end;justify-content:center;animation:motionFadeIn .18s ease}
+#modal-quemusa,#modal-pin-op,#modal-pessoa,#modal-confirma,#modal-tentativa,#modal-meupin,#modal-applock-setup,#modal-abrecaixa{background:var(--card);border-radius:22px 22px 0 0;padding:22px 20px calc(22px + var(--sab));width:100%;max-width:460px;animation:up .25s ease;max-height:85vh;overflow-y:auto}
+#modal-quemusa .mp-title,#modal-pin-op .mp-title,#modal-pessoa .mp-title,#modal-confirma .mp-title,#modal-tentativa .mp-title,#modal-meupin .mp-title,#modal-applock-setup .mp-title,#modal-abrecaixa .mp-title{font-weight:800;font-size:16px;margin-bottom:4px}
+#modal-quemusa .mp-sub,#modal-pin-op .mp-sub,#modal-pessoa .mp-sub,#modal-confirma .mp-sub,#modal-tentativa .mp-sub,#modal-meupin .mp-sub,#modal-applock-setup .mp-sub,#modal-abrecaixa .mp-sub{font-size:12.5px;color:var(--txt3);margin-bottom:14px}
 .quemusa-btn{display:flex;align-items:center;gap:10px;width:100%;padding:13px 15px;border-radius:13px;border:1.5px solid var(--border);background:#fff;font-weight:700;font-size:14px;cursor:pointer;text-align:left;color:var(--txt)}
 .quemusa-btn i{color:var(--pri);font-size:18px}
 #sheet-entrega-overlay{position:fixed;inset:0;background:rgba(10,6,30,.45);z-index:150;display:none}
@@ -608,11 +667,11 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
     <!-- Fatia 9: resumo do dia — só contagens/status não sensíveis; lucro fica atrás de PIN -->
     <div class="home-secao-t" id="resumo-secao-t">Resumo de hoje</div>
     <div class="resumo-grid" id="resumo-grid">
-      <div class="rc"><div class="rc-lbl">Vendas hoje</div><div class="rc-val" id="rc-vendas"><span class="motion-shimmer" style="display:inline-block;width:52px;height:15px"></span></div></div>
+      <div class="rc glow-ok"><div class="rc-lbl">Vendas hoje</div><div class="rc-val" id="rc-vendas"><span class="motion-shimmer" style="display:inline-block;width:52px;height:15px"></span></div></div>
       <div class="rc" id="rc-caixa-box"><div class="rc-lbl">Caixa</div><div class="rc-val" id="rc-caixa"><span class="motion-shimmer" style="display:inline-block;width:44px;height:15px"></span></div></div>
-      <div class="rc" id="rc-os-box"><div class="rc-lbl">OS em aberto</div><div class="rc-val" id="rc-os"><span class="motion-shimmer" style="display:inline-block;width:24px;height:15px"></span></div></div>
+      <div class="rc glow-warn" id="rc-os-box"><div class="rc-lbl">OS em aberto</div><div class="rc-val" id="rc-os"><span class="motion-shimmer" style="display:inline-block;width:24px;height:15px"></span></div></div>
       <div class="rc" id="rc-estoque-box"><div class="rc-lbl">Estoque baixo</div><div class="rc-val" id="rc-estbaixo"><span class="motion-shimmer" style="display:inline-block;width:24px;height:15px"></span></div></div>
-      <div class="rc" style="grid-column:1/-1" id="rc-lucro-box">
+      <div class="rc glow-pri" style="grid-column:1/-1" id="rc-lucro-box">
         <div class="rc-lbl">Lucro estimado hoje</div>
         <div class="rc-val locked" id="rc-lucro" onclick="pedirPinParaLucro()"><i class="ti ti-lock"></i> Toque para ver (PIN de Admin/Gerente)</div>
       </div>
@@ -625,6 +684,38 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
     <div class="qa-row">
       <div class="qa-btn" data-tour="mobile-scanner" onclick="abrirScanner('estoque')"><i class="ti ti-scan"></i>Scanner</div>
       <div class="qa-btn" onclick="abrir('os-lista')"><i class="ti ti-list-details"></i>Minhas OS</div>
+    </div>
+
+    <!-- Revisão 2026-09: dashboard financeiro (mesma lógica do desktop —
+         index.html: _calcDRE()/renderRelPagamentos() — ver comentário
+         completo junto às funções JS carregarFinanceiro()/_renderFinPagamentos()).
+         Faturamento aberto (mesmo critério do card "Vendas hoje" acima);
+         Lucro atrás do PIN de Admin/Gerente (mesmo modal do card "Lucro
+         estimado hoje"). Escondido pro Entregador em aplicarModoPerfil(). -->
+    <div class="home-secao-t" id="fin-secao-t">Financeiro</div>
+    <div class="fin-card" id="fin-dash-card">
+      <div class="fin-head">
+        <div class="fin-tit"><i class="ti ti-chart-pie"></i>Resumo financeiro</div>
+        <div class="fin-filtros" id="fin-filtros">
+          <button type="button" class="fin-btn" data-f="hoje" onclick="setFinFiltro('hoje')">Dia</button>
+          <button type="button" class="fin-btn on" data-f="mes" onclick="setFinFiltro('mes')">Mês</button>
+          <button type="button" class="fin-btn" data-f="ano" onclick="setFinFiltro('ano')">Ano</button>
+        </div>
+      </div>
+      <div class="fin-periodo" id="fin-periodo"></div>
+      <div class="fin-stats">
+        <div class="fin-stat">
+          <div class="fin-stat-lbl">Faturamento</div>
+          <div class="fin-stat-val" id="fin-faturamento"><span class="motion-shimmer" style="display:inline-block;width:60px;height:15px"></span></div>
+        </div>
+        <div class="fin-stat">
+          <div class="fin-stat-lbl">Lucro</div>
+          <div class="fin-stat-val locked" id="fin-lucro" onclick="pedirPinParaLucro()"><i class="ti ti-lock"></i> Toque p/ ver</div>
+        </div>
+      </div>
+      <div class="fin-secao-t">Formas de pagamento</div>
+      <div class="fin-chart-wrap"><canvas id="fin-chart" height="170"></canvas></div>
+      <div class="fin-legend" id="fin-legend"></div>
     </div>
 
     <div class="mod" onclick="abrir('produto')">
@@ -993,6 +1084,25 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
     <div id="meupin-erro" style="color:var(--danger);font-size:12.5px;margin-top:8px;min-height:16px"></div>
     <button class="btn" style="margin-top:6px" onclick="salvarMeuPin()"><i class="ti ti-check"></i>Salvar</button>
     <button class="btn btn-ghost" style="margin-top:6px" onclick="fecharMeuPin()">Cancelar</button>
+  </div>
+</div>
+
+<!-- Revisão 2026-09: abertura de caixa (antes só existia no desktop/index.html)
+     — sugerida sozinha ao entrar no perfil quando ninguém abriu o caixa da
+     loja ainda hoje (ver aplicarModoPerfil()/_talvezAutoAbrirCaixaMobile()).
+     Grava nas mesmas tabelas "caixas"/"movimentacoes_caixa" do index.html,
+     pra ficar um caixa só, compartilhado entre desktop e celular. -->
+<div id="modal-abrecaixa-overlay" onclick="if(event.target===this)fecharAbrirCaixaModal()">
+  <div id="modal-abrecaixa">
+    <div class="mp-title"><i class="ti ti-lock-open"></i> Abrir caixa</div>
+    <div class="mp-sub">Nenhum caixa aberto ainda hoje. Informe o valor de abertura para começar a vender.</div>
+    <label class="lbl" style="margin-top:0">Valor de abertura (R$)</label>
+    <input class="inp" type="number" id="cx-ab-val" value="0" step="0.01" min="0" inputmode="decimal" style="margin-bottom:10px">
+    <label class="lbl">Observações (opcional)</label>
+    <input class="inp" type="text" id="cx-ab-obs" placeholder="Opcional...">
+    <div id="cx-ab-erro" style="color:var(--danger);font-size:12.5px;margin-top:8px;min-height:16px"></div>
+    <button class="btn" style="margin-top:6px" onclick="confirmarAberturaCaixaMobile()"><i class="ti ti-check"></i>Abrir caixa</button>
+    <button class="btn btn-ghost" style="margin-top:6px" onclick="fecharAbrirCaixaModal()">Agora não</button>
   </div>
 </div>
 
@@ -1559,6 +1669,134 @@ function confirmarPinLucro(){
   el.classList.remove('locked');
   el.textContent='R$ '+(Number(_lucroHojeCache)||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
   el.onclick=null;
+  // Revisão 2026-09: o mesmo PIN de Admin/Gerente também revela o Lucro do
+  // novo card "Financeiro" (mesma permissão, um card a mais na Home).
+  _finLucroDesbloqueado=true;
+  const elF=$('fin-lucro');
+  if(elF){
+    elF.classList.remove('locked');
+    elF.onclick=null;
+    elF.textContent='R$ '+(Number(_finLucroCache)||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
+  }
+}
+
+/* ── Revisão 2026-09: DASHBOARD FINANCEIRO na Home (mobile) ──────────────
+   Pedido do usuário: "coloque o dashboard que tem no index, também! a parte
+   financeira antes do módulo cadastrar produtos, com gráfico em pizza e com
+   filtro no canto superior direito para mês/dia/ano, (formas de pagamento)
+   faturamento e lucro etc".
+   Isto REAPROVEITA a lógica de cálculo que já existe no desktop
+   (index.html), não inventa uma conta nova:
+     • Faturamento/Lucro: mesmo filtro de _calcDRE() (index.html, função
+       por volta da linha 19004) — considera vendas com status !== 'cancelada'
+       dentro do período. "Lucro" aqui é o lucro BRUTO (vendas.lucro, ou
+       total-custo_total quando lucro vier nulo) — o MESMO cálculo que o
+       card "Lucro estimado hoje" logo acima já usa (carregarResumoDia() /
+       _lucroHojeCache), só que estendido pros períodos Mês/Ano. NÃO inclui
+       despesas/taxas/comissões como o DRE completo do desktop, porque isso
+       exigiria consultar contas_pagar e ordens_servico também — fora do
+       que foi pedido ("faturamento e lucro", não "o DRE inteiro").
+       assunção técnica — se o usuário quiser o lucro líquido completo
+       (com despesas/taxas/comissões), precisa confirmar se vale trazer
+       essas consultas extras pro celular também.
+     • Formas de pagamento: mesmo critério de renderRelPagamentos()
+       (index.html, ~linha 18965) — agrupa por vendas.pagamento, excluindo
+       status='cancelada' e tipo='servico_os' (serviço de OS pago no caixa
+       é tratado à parte no desktop, não entra nessa distribuição).
+     • Períodos "Dia/Mês/Ano": mesmo atalho de setRelPeriodo() usado em
+       Relatórios no desktop (index.html, ~linha 18747) — Dia=hoje,
+       Mês=mês corrente, Ano=ano corrente. (O DRE do desktop usa outro
+       filtro — Hoje/Mês/Mês passado/30 dias — usei o de Relatórios aqui
+       porque bate com o que foi pedido: "mes dia ano".)
+   Segurança: Faturamento fica aberto pra qualquer operador (mesmo critério
+   já usado no card "Vendas hoje", que também mostra o total em R$). Lucro
+   fica atrás do PIN de Admin/Gerente, reaproveitando o MESMO modal/checagem
+   do card "Lucro estimado hoje" (ver confirmarPinLucro() acima). O card
+   inteiro fica escondido pro Entregador (ver aplicarModoPerfil()), mesma
+   regra dos outros módulos financeiros da Home.
+   O celular não mantém um G.vendas em cache como o desktop (index.html
+   carrega até 150 vendas pra memória; o app.html é mais leve), então aqui
+   é feita uma consulta direta ao Supabase por período, limitada a 2000
+   linhas — suficiente pra uma loja normal olhar dia/mês/ano, mas uma loja
+   com volume muito alto pode, em tese, ultrapassar esse limite no filtro
+   "Ano"; assunção técnica — não tenho como validar volume real de vendas
+   de cada loja. */
+let G_finFiltro='mes';
+let _finLucroCache=null;
+let _finLucroDesbloqueado=false;
+let _finChart=null;
+function _finRange(f){
+  const hoje=new Date();
+  let ini,fim;
+  if(f==='hoje'){ ini=new Date(hoje); ini.setHours(0,0,0,0); fim=new Date(hoje); fim.setHours(23,59,59,999); }
+  else if(f==='ano'){ ini=new Date(hoje.getFullYear(),0,1,0,0,0,0); fim=new Date(hoje.getFullYear(),11,31,23,59,59,999); }
+  else { ini=new Date(hoje.getFullYear(),hoje.getMonth(),1,0,0,0,0); fim=new Date(hoje.getFullYear(),hoje.getMonth()+1,0,23,59,59,999); }
+  return {ini,fim};
+}
+function setFinFiltro(f){
+  G_finFiltro=f;
+  document.querySelectorAll('#fin-filtros .fin-btn').forEach(b=>b.classList.toggle('on', b.dataset.f===f));
+  carregarFinanceiro();
+}
+async function carregarFinanceiro(){
+  if(_isEntregador()) return;
+  const box=$('fin-dash-card'); if(!box) return;
+  document.querySelectorAll('#fin-filtros .fin-btn').forEach(b=>b.classList.toggle('on', b.dataset.f===G_finFiltro));
+  const r=_finRange(G_finFiltro);
+  const pl=$('fin-periodo');
+  if(pl) pl.textContent = r.ini.toDateString()===r.fim.toDateString()
+    ? r.ini.toLocaleDateString('pt-BR')
+    : r.ini.toLocaleDateString('pt-BR')+' a '+r.fim.toLocaleDateString('pt-BR');
+  const fatEl=$('fin-faturamento'), lucEl=$('fin-lucro');
+  try{
+    const {data,error}=await comTimeout(db.from('vendas').select('total,lucro,custo_total,pagamento,status,tipo,criado_em').eq('empresa_id',G.empresaId).gte('criado_em',r.ini.toISOString()).lte('criado_em',r.fim.toISOString()).limit(2000),'financeiro');
+    if(error) throw error;
+    const todas=data||[];
+    // mesmo filtro do _calcDRE (index.html): só exclui 'cancelada'
+    const dreSet=todas.filter(v=>v.status!=='cancelada');
+    const faturamento=dreSet.reduce((s,v)=>s+(Number(v.total)||0),0);
+    _finLucroCache=dreSet.reduce((s,v)=>s+(v.lucro!=null?Number(v.lucro):((Number(v.total)||0)-(Number(v.custo_total)||0))),0);
+    if(fatEl) fatEl.textContent='R$ '+faturamento.toLocaleString('pt-BR',{minimumFractionDigits:2});
+    if(lucEl){
+      if(_finLucroDesbloqueado){
+        lucEl.classList.remove('locked'); lucEl.onclick=null;
+        lucEl.textContent='R$ '+(Number(_finLucroCache)||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
+      } else {
+        lucEl.classList.add('locked'); lucEl.onclick=pedirPinParaLucro;
+        lucEl.innerHTML='<i class="ti ti-lock"></i> Toque p/ ver';
+      }
+    }
+    // mesmo filtro do renderRelPagamentos (index.html): exclui 'cancelada' e tipo 'servico_os'
+    const pagSet=todas.filter(v=>v.status!=='cancelada' && v.tipo!=='servico_os');
+    _renderFinPagamentos(pagSet);
+  }catch(_){
+    if(fatEl) fatEl.textContent='—';
+    const leg=$('fin-legend'); if(leg) leg.innerHTML='<div class="fin-empty">Não foi possível carregar.</div>';
+  }
+}
+function _renderFinPagamentos(vendas){
+  // mesmo mapeamento de rótulos/cores do renderRelPagamentos() (index.html, ~linha 18967/18985)
+  const pL={dinheiro:'Dinheiro',pix:'Pix',cartao:'Cartão',misto:'Misto',fiado:'Fiado',crediario:'Crediário'};
+  const cores=['#1E5EFF','#10B981','#3B82F6','#F59E0B','#EF4444','#8B5CF6'];
+  const agg={};
+  vendas.forEach(v=>{ const k=v.pagamento||'outro'; if(!agg[k])agg[k]={qtd:0,total:0}; agg[k].qtd++; agg[k].total+=Number(v.total)||0; });
+  const rows=Object.entries(agg).sort((a,b)=>b[1].total-a[1].total);
+  const totalGeral=rows.reduce((s,[,d])=>s+d.total,0);
+  const leg=$('fin-legend');
+  const canvas=$('fin-chart');
+  if(!rows.length){
+    if(leg) leg.innerHTML='<div class="fin-empty">Sem vendas no período.</div>';
+    if(_finChart){ _finChart.destroy(); _finChart=null; }
+    return;
+  }
+  const labels=rows.map(([k])=>pL[k]||k);
+  const dataVals=rows.map(([,d])=>d.total);
+  const bg=rows.map((_,i)=>cores[i%cores.length]);
+  if(leg) leg.innerHTML=rows.map(([k,d],i)=>`<div class="fin-legend-item"><span class="dot" style="background:${cores[i%cores.length]}"></span><span class="nm">${pL[k]||k}</span><span class="vl">${totalGeral>0?(d.total/totalGeral*100).toFixed(0):0}%</span></div>`).join('');
+  if(canvas && typeof Chart!=='undefined'){
+    if(_finChart) _finChart.destroy();
+    _finChart=new Chart(canvas,{type:'doughnut',data:{labels,datasets:[{data:dataVals,backgroundColor:bg,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});
+  }
 }
 
 /* ── Fatia 9: SUPORTE (mesma fonte usada no sistema desktop: app_config) ── */
@@ -2656,6 +2894,10 @@ function aplicarModoPerfil(){
   const rg=$('resumo-grid'); if(rg) rg.style.display=entregador?'none':'';
   const rgt=$('resumo-secao-t'); if(rgt) rgt.style.display=entregador?'none':'';
   const ha=$('home-alertas'); if(ha) ha.style.display=entregador?'none':'';
+  // Revisão 2026-09: dashboard financeiro (card "Financeiro") — mesma regra
+  // dos outros módulos financeiros da Home: Entregador não vê.
+  const fst=$('fin-secao-t'); if(fst) fst.style.display=entregador?'none':'';
+  const fdc=$('fin-dash-card'); if(fdc) fdc.style.display=entregador?'none':'';
   document.querySelectorAll('#scr-home .qa-row,#scr-home > .mod').forEach(el=>{ el.style.display=entregador?'none':''; });
 
   let entHome=$('home-entregador-resumo');
@@ -2674,7 +2916,51 @@ function aplicarModoPerfil(){
   } else if(entHome){ entHome.style.display='none'; }
 
   // Financeiro (vendas/lucro do dia) só carrega se o perfil pode ver — Entregador nunca vê.
-  if(!entregador) carregarResumoDia();
+  if(!entregador){ carregarResumoDia(); carregarFinanceiro(); }
+
+  // Revisão 2026-09: sugere abrir caixa agora que já se sabe quem é o
+  // operador — cobre os três jeitos de chegar aqui (aparelho já lembrado,
+  // PIN confirmado, ou nenhum usuário cadastrado ainda) porque todos
+  // passam por aplicarModoPerfil(). Ver _talvezAutoAbrirCaixaMobile().
+  setTimeout(()=>{ try{ _talvezAutoAbrirCaixaMobile(); }catch(_){} }, 350);
+}
+
+/* ── Revisão 2026-09: abertura de caixa pelo celular ──────────────────────
+   Antes disso, o app.html só LIA se havia caixa aberto (G.caixa) — quem
+   quisesse abrir precisava usar o desktop. Agora o próprio celular também
+   abre, gravando nas mesmas tabelas "caixas"/"movimentacoes_caixa" do
+   index.html (mesmos campos do confirmarAbertura() de lá), pra ficar um
+   caixa só, compartilhado entre desktop e celular.
+   Gatilho: ao entrar no perfil (chamada no fim de aplicarModoPerfil()), se
+   ninguém abriu o caixa da loja ainda hoje e o perfil não é Entregador
+   (Entregador não vende — mesma regra que já esconde "Vender" pra ele). */
+function _talvezAutoAbrirCaixaMobile(){
+  if(!G.operador) return;
+  if(G.caixa) return; // já tem caixa aberto (deste ou de outro perfil/dispositivo)
+  if(_isEntregador()) return;
+  if(G._cxAutoPromptShownMobile) return; // já sugerido nesta sessão de perfil — não insiste
+  if($('modal-abrecaixa-overlay')?.style.display==='flex') return;
+  G._cxAutoPromptShownMobile=true;
+  abrirCaixaModalMobile();
+}
+function abrirCaixaModalMobile(){
+  $('cx-ab-val').value='0'; $('cx-ab-obs').value=''; $('cx-ab-erro').textContent='';
+  $('modal-abrecaixa-overlay').style.display='flex';
+}
+function fecharAbrirCaixaModal(){ $('modal-abrecaixa-overlay').style.display='none'; }
+async function confirmarAberturaCaixaMobile(){
+  if(!G.operador){ fecharAbrirCaixaModal(); return; }
+  const val=parseFloat($('cx-ab-val').value)||0;
+  const obs=($('cx-ab-obs').value||'').trim();
+  try{
+    const {data,error}=await db.from('caixas').insert({empresa_id:G.empresaId, operador_id:G.operador.id, operador_nome:G.operador.nome, valor_abertura:val, observacoes:obs||null}).select().single();
+    if(error) throw error;
+    await db.from('movimentacoes_caixa').insert({empresa_id:G.empresaId, caixa_id:data.id, tipo:'abertura', valor:val, descricao:'Abertura de caixa', usuario_id:G.operador.id, usuario_nome:G.operador.nome});
+    G.caixa=data;
+    fecharAbrirCaixaModal();
+    notify('Caixa aberto com sucesso!','ok');
+    carregarResumoDia();
+  }catch(e){ $('cx-ab-erro').textContent=msgAmigavel(e,'Não foi possível abrir o caixa.'); }
 }
 async function carregarResumoEntregador(){
   if(!G.operador) return;
