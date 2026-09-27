@@ -290,11 +290,16 @@ try{
 
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
-  --pri:#1E5EFF;--pri2:#3D8BFF;--pri-light:#E8EFFF;--pri-dark:#0A2FA8;
+  /* Revisão 2026-09 (melhoria de design, base app.html/Lovable): paleta
+     trocada de azul+bege pra roxo+violeta, seguindo o mesmo caminho já
+     aplicado no app.html (mobile) — mesmos nomes de variável de sempre,
+     só os valores mudaram, então nada que já usa var(--pri) etc. precisa
+     ser tocado individualmente. */
+  --pri:#5B3FE8;--pri2:#7C5CFF;--pri-light:#EEE9FB;--pri-dark:#3D2596;
   --accent:#E8915B;--accent-soft:#FBEEE3;
-  --bg:#F5F2EC;--bg2:#FFFFFF;--surface:#FDFBF8;--surface2:#EFE9DF;
-  --txt:#1E1530;--txt2:#54487A;--txt3:#9585B8;--txt4:#C4B8DB;
-  --border:#E6DED3;--border2:#D8CEC2;
+  --bg:#F3F1FB;--bg2:#FFFFFF;--surface:#FCFBFF;--surface2:#EFE9FB;
+  --txt:#191338;--txt2:#5A5280;--txt3:#6A6390;--txt4:#B5A9D9;
+  --border:#E7E2F3;--border2:#D6CBEA;
   --success:#10B981;--danger:#EF4444;--warn:#F59E0B;--info:#3B82F6;
   --radius:14px;--radius-lg:22px;
   --shadow:0 2px 12px rgba(74,54,110,.08);
@@ -443,7 +448,7 @@ try{
   .tour-btn{padding:10px 16px;font-size:13px}
   .tour-invite{left:12px;right:12px;bottom:12px;width:auto}
 }
-[data-theme="dark"]{--bg:#070B1A;--bg2:#0B1228;--surface:#101A38;--surface2:#152147;--txt:#EAF0FF;--txt2:#A8BAE8;--txt3:#6B7FB8;--txt4:#3A4A78;--border:#1B2A55;--border2:#25376B;--pri-light:#0F2058;--accent:#E8915B;--accent-soft:#3A2218;
+[data-theme="dark"]{--bg:#070B1A;--bg2:#0B1228;--surface:#101A38;--surface2:#152147;--txt:#EAF0FF;--txt2:#A8BAE8;--txt3:#6B7FB8;--txt4:#3A4A78;--border:#1B2A55;--border2:#25376B;--pri-light:#241A47;--accent:#E8915B;--accent-soft:#3A2218;
 --shadow:0 2px 12px rgba(0,0,0,.25);
 --shadow-lg:0 8px 28px rgba(0,0,0,.36);
 --shadow-card:0 1px 3px rgba(0,0,0,.18),0 2px 10px rgba(0,0,0,.2);}
@@ -451,7 +456,7 @@ try{
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:10px}
 ::-webkit-scrollbar-thumb:hover{background:var(--txt4)}
-body{font-family:'DM Sans',sans-serif;background:var(--bg);background-image:radial-gradient(ellipse 1400px 700px at 105% -5%, rgba(232,145,91,.06), transparent 58%),radial-gradient(ellipse 1100px 600px at -8% 108%, rgba(61,139,255,.07), transparent 52%),radial-gradient(ellipse 600px 400px at 50% 50%, rgba(30,94,255,.025), transparent 70%);background-attachment:fixed;color:var(--txt);min-height:100vh;overflow:hidden;transition:background .3s,color .3s}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);background-image:radial-gradient(ellipse 1400px 700px at 105% -5%, rgba(232,145,91,.05), transparent 58%),radial-gradient(ellipse 1100px 600px at -8% 108%, rgba(124,92,255,.08), transparent 52%),radial-gradient(ellipse 600px 400px at 50% 50%, rgba(91,63,232,.03), transparent 70%);background-attachment:fixed;color:var(--txt);min-height:100vh;overflow:hidden;transition:background .3s,color .3s}
 
 /* ── Polimento aconchegante + acessibilidade ── */
 ::selection{background:rgba(232,145,91,.28);color:var(--txt)}
@@ -462,20 +467,36 @@ button,.btn,.card,.tag,input,select,textarea{transition:var(--trans)}
 .btn:active{transform:translateY(1px)}
 .card{transition:box-shadow .25s ease, transform .25s ease, border-color .25s ease}
 
-/* LOGIN */
-.ls{position:fixed;inset:0;background:linear-gradient(145deg,var(--pri-dark) 0%,var(--pri) 45%,var(--pri2) 100%);display:flex;align-items:center;justify-content:center;z-index:9999;transition:opacity .4s}
+/* LOGIN — Revisão 2026-09 (melhoria de design, base app.html/Lovable):
+   mesmo tratamento visual já aplicado no login do app.html — manchas de
+   gradiente flutuando atrás do card, campos com ícone embutido, olho pra
+   mostrar/ocultar senha. .l-icon continua intocado (é onde a logo da
+   empresa, branca ou personalizada por tenant, é trocada via JS em
+   atualizarLogoLoginReal()/resetLogo() — não é um "monograma" fixo). */
+.ls{position:fixed;inset:0;overflow:hidden;background:linear-gradient(145deg,var(--pri-dark) 0%,var(--pri) 45%,var(--pri2) 100%);display:flex;align-items:center;justify-content:center;z-index:9999;transition:opacity .4s}
+.ls::before{content:"";position:absolute;inset:0;background:radial-gradient(85% 55% at 50% 0%,rgba(255,255,255,.18),transparent 60%);pointer-events:none}
 .ls.hidden{opacity:0;pointer-events:none}
-.lb{background:#fff;border-radius:26px;padding:42px 40px;width:100%;max-width:400px;box-shadow:0 32px 80px rgba(0,0,0,.28),0 0 0 1px rgba(255,255,255,.08);animation:fi var(--motion-slow) var(--ease-enter)}
+.l-blob{position:absolute;border-radius:50%;filter:blur(60px);pointer-events:none;animation:lBlobFloat 18s ease-in-out infinite}
+.l-blob.b1{width:320px;height:320px;background:rgba(255,255,255,.22);top:-90px;left:-70px}
+.l-blob.b2{width:280px;height:280px;background:rgba(124,92,255,.5);bottom:-80px;right:-60px;animation-delay:-6s}
+.l-blob.b3{width:200px;height:200px;background:rgba(255,255,255,.14);bottom:12%;left:-60px;animation-delay:-11s}
+@keyframes lBlobFloat{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(18px,-22px) scale(1.06)}}
+.lb{position:relative;background:#fff;border-radius:26px;padding:42px 40px;width:100%;max-width:400px;box-shadow:0 32px 80px rgba(30,10,80,.32),0 0 0 1px rgba(255,255,255,.08);animation:fi var(--motion-slow) var(--ease-enter)}
 .l-icon{width:100px;height:100px;background:none;border-radius:0;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;box-shadow:none}
 .l-icon span{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:#fff}
 .l-title{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:#1A0F3C;text-align:center;letter-spacing:.5px;text-transform:uppercase}
 .l-sub{font-size:13px;color:#9D8FC5;text-align:center;margin-top:3px;margin-bottom:26px}
 .l-err{background:#FEF2F2;color:#EF4444;border:1px solid #FECACA;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:600;margin-bottom:14px;display:none;animation:motionShake .4s var(--ease-standard)}
 .l-lbl{display:block;font-size:11.5px;font-weight:700;color:#5C4F8A;margin-bottom:5px;text-transform:uppercase;letter-spacing:.6px}
+.l-input-group{position:relative}
+.l-input-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#9D8FC5;font-size:16px;pointer-events:none}
+.l-input-eye{position:absolute;right:4px;top:50%;transform:translateY(-50%);background:none;border:none;color:#9D8FC5;width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px}
+.l-input-eye:hover{background:var(--pri-light)}
 .l-inp{width:100%;padding:12px 14px;border:1.5px solid #E4DEFF;border-radius:11px;font-size:14px;font-family:'DM Sans',sans-serif;color:#1A0F3C;outline:none;margin-bottom:14px;transition:border-color .2s,box-shadow .2s}
-.l-inp:focus{border-color:#1E5EFF;box-shadow:0 0 0 3.5px rgba(30,94,255,.14)}
-.l-btn{width:100%;padding:13px;background:linear-gradient(135deg,#1E5EFF,#3D8BFF);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 16px rgba(30,94,255,.32)}
-.l-btn:hover{opacity:.93;transform:translateY(-1px);box-shadow:0 8px 24px rgba(30,94,255,.4)}.l-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+.lb .l-inp.l-inp-icon{padding-left:40px}
+.l-inp:focus{border-color:var(--pri);box-shadow:0 0 0 3.5px rgba(91,63,232,.14)}
+.l-btn{width:100%;padding:13px;background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 16px rgba(91,63,232,.32)}
+.l-btn:hover{opacity:.93;transform:translateY(-1px);box-shadow:0 8px 24px rgba(91,63,232,.4)}.l-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
 
 /* ── BLOQUEIO / ACESSO SUSPENSO (NOVO) ── */
 .bq-screen{position:fixed;inset:0;background:linear-gradient(135deg,#1A0F3C,#2A1D50 60%,#0F0A1E);display:flex;align-items:center;justify-content:center;z-index:10000;padding:20px}
@@ -2306,17 +2327,27 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
 
 <!-- LOGIN -->
 <div class="ls" id="ls">
+  <div class="l-blob b1" aria-hidden="true"></div>
+  <div class="l-blob b2" aria-hidden="true"></div>
+  <div class="l-blob b3" aria-hidden="true"></div>
   <div class="lb">
     <div class="l-icon" style="background:none;box-shadow:none;width:130px;height:130px;border-radius:0">
-      <img src="/icon-512.png" style="width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 6px 24px rgba(30,94,255,.45))" alt="MISU SYS">
+      <img src="/icon-512.png" style="width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 6px 24px rgba(91,63,232,.45))" alt="MISU SYS">
     </div>
-    <div class="l-title" style="letter-spacing:2px">MISU <span style="background:linear-gradient(135deg,#1E5EFF,#3D8BFF);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">SYS</span></div>
+    <div class="l-title" style="letter-spacing:2px">MISU <span style="background:linear-gradient(135deg,#5B3FE8,#7C5CFF);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">SYS</span></div>
     <div class="l-sub">Sistema oficial da Misu Tech — ERP & PDV</div>
     <div id="l-err" class="l-err"></div>
     <label class="l-lbl">E-mail</label>
-    <input class="l-inp" type="email" id="l-email" placeholder="seu@email.com">
+    <div class="l-input-group">
+      <i class="ti ti-mail l-input-icon"></i>
+      <input class="l-inp l-inp-icon" type="email" id="l-email" placeholder="seu@email.com" autocomplete="username">
+    </div>
     <label class="l-lbl">Senha</label>
-    <input class="l-inp" type="password" id="l-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+    <div class="l-input-group">
+      <i class="ti ti-lock l-input-icon"></i>
+      <input class="l-inp l-inp-icon" type="password" id="l-pass" placeholder="••••••••" autocomplete="current-password" style="padding-right:40px" onkeydown="if(event.key==='Enter')doLogin()">
+      <button type="button" class="l-input-eye" id="l-pass-eye" onclick="toggleSenhaLogin()" aria-label="Mostrar senha" aria-pressed="false"><i class="ti ti-eye" id="l-pass-eye-ic"></i></button>
+    </div>
     <div id="turnstile-box" style="margin:12px 0 0;justify-content:center;display:none"></div>
     <button class="l-btn" id="l-btn" onclick="doLogin()"><i class="ti ti-lock" style="font-size:17px"></i>Entrar</button>
     <div style="text-align:center;margin-top:12px"><a href="javascript:void(0)" onclick="abrirRecuperarSenha()" style="font-size:12.5px;color:#9D8FC5;text-decoration:underline;cursor:pointer">Esqueci minha senha</a></div>
@@ -2447,7 +2478,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
       <div class="logo-badge" style="background:none;box-shadow:none;padding:0;gap:12px">
         <div class="logo-icon" id="sb-logo-icon" style="background:none;box-shadow:none"><img src="/icon-192.png" style="width:100%;height:100%;object-fit:contain" alt="MISU SYS"></div>
         <div class="logo-texts">
-          <div class="logo-text" style="line-height:1.15;letter-spacing:1.5px">MISU <span style="color:#3D8BFF">SYS</span></div>
+          <div class="logo-text" style="line-height:1.15;letter-spacing:1.5px">MISU <span style="color:#7C5CFF">SYS</span></div>
           <div class="logo-sub">Sistema oficial Misu Tech</div>
         </div>
       </div>
@@ -7881,6 +7912,20 @@ function mostrarTravaLogin(){
   }
   tick();
   _lockTimer=setInterval(tick,1000);
+}
+
+// Revisão 2026-09 (melhoria de design, base app.html): olho de mostrar/
+// ocultar senha no campo de login — mesmo comportamento já existente no
+// login do app.html (toggleSenhaVisivel), só com nome próprio aqui pra não
+// colidir com nada do desktop.
+function toggleSenhaLogin(){
+  const inp=document.getElementById('l-pass'), btn=document.getElementById('l-pass-eye'), ic=document.getElementById('l-pass-eye-ic');
+  if(!inp||!btn||!ic) return;
+  const vaiMostrar=inp.type==='password';
+  inp.type=vaiMostrar?'text':'password';
+  ic.className='ti '+(vaiMostrar?'ti-eye-off':'ti-eye');
+  btn.setAttribute('aria-label', vaiMostrar?'Ocultar senha':'Mostrar senha');
+  btn.setAttribute('aria-pressed', vaiMostrar?'true':'false');
 }
 
 async function doLogin(){
