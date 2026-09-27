@@ -413,6 +413,15 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 #bottom-nav .bn-it i{font-size:21px}
 #bottom-nav .bn-it.on{color:var(--pri)}
 #bottom-nav .bn-it:active{background:var(--bg2)}
+/* Revisão 2026-09: botão "+" central da barra (abre a folha "Mais") —
+   elevado acima da barra, círculo maior, cor diferente dos demais itens
+   (gradiente --pri/--pri2, igual ao .avatar-btn) pra se destacar como a
+   ação principal do meio, no mesmo espírito de menu inferior com "+"
+   central usado como referência de design nesta conta. */
+#bottom-nav .bn-plus{flex:0 0 auto;width:56px;height:56px;margin:-24px 8px 0;border-radius:50%;border:none;background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;box-shadow:0 8px 20px -6px rgba(91,63,232,.55),0 0 0 4px var(--bg);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .12s;flex-shrink:0}
+#bottom-nav .bn-plus i{font-size:26px}
+#bottom-nav .bn-plus:active{transform:scale(.93)}
+[data-theme="dark"] #bottom-nav .bn-plus{box-shadow:0 8px 22px -6px color-mix(in oklab,var(--pri) 55%,transparent),0 0 0 4px var(--bg),0 0 20px -8px color-mix(in oklab,var(--pri) 45%,transparent)}
 /* esconde a barra do carrinho por cima do bottom-nav quando ambos aparecem */
 #cart-bar{bottom:calc(var(--navh) + 10px + var(--sab))!important}
 
@@ -480,8 +489,6 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
    de resumo acima: só acrescenta brilho, nunca muda cor de texto no claro. */
 [data-theme="dark"] #scr-home .fin-card{box-shadow:0 0 0 1px color-mix(in oklab,var(--border2) 80%,transparent),0 0 24px -10px color-mix(in oklab,var(--pri) 16%,transparent)}
 [data-theme="dark"] #scr-home .fin-stat-val:not(.locked){text-shadow:0 0 10px color-mix(in oklab,var(--pri) 40%,transparent)}
-.fin-ver-rel{display:flex;align-items:center;justify-content:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--pri);text-align:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--border2);cursor:pointer}
-.fin-ver-rel i{font-size:15px}
 
 /* ── Revisão 2026-09: tela "Relatórios" no mobile (Resumo/DRE completo,
    Produtos, Técnicos, Clientes, Pagamentos) — restante do que já existe em
@@ -759,15 +766,6 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
       <div class="fin-secao-t">Formas de pagamento</div>
       <div class="fin-chart-wrap"><canvas id="fin-chart" height="170"></canvas></div>
       <div class="fin-legend" id="fin-legend"></div>
-      <!-- Revisão 2026-09: entrada pra tela "Relatórios" completa (DRE com
-           despesas/taxas/comissões, Produtos, Técnicos, Clientes, Pagamentos
-           com exportação). Só aparece pra Admin/Gerente — mesma restrição
-           que a página "Relatórios" já tem no desktop (index.html, ~linha
-           7772: relatorios:['admin','gerente']). Escondido por padrão aqui;
-           aplicarModoPerfil() decide se mostra. -->
-      <div class="fin-ver-rel" id="fin-ver-relatorio" style="display:none" onclick="abrir('relatorios')">
-        Ver relatório completo <i class="ti ti-arrow-right"></i>
-      </div>
     </div>
 
     <div class="mod" onclick="abrir('produto')">
@@ -1150,12 +1148,18 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
   </div>
 
 <!-- Fatia 9: NAVEGAÇÃO INFERIOR (máx. 5 itens, sempre com "Mais" p/ tema/instalar/sair) -->
+<!-- Revisão 2026-09: "Mais" saiu do fim da barra e virou o botão "+" grande
+     do meio (pedido do usuário) — mesmo espírito de menu inferior com "+"
+     central usado em apps de referência (ex. prompt "Alvorada" discutido
+     nesta mesma conta): 2 itens à esquerda, o "+" elevado no centro, 2 à
+     direita. onclick continua o mesmo (abrirMais()), só mudou o visual e
+     a posição. -->
 <div id="bottom-nav" class="hidden">
   <button class="bn-it on" id="bn-inicio" data-tour="mobile-inicio" onclick="goHome()"><i class="ti ti-home"></i>Início</button>
   <button class="bn-it" id="bn-vender" data-tour="mobile-vender" onclick="abrir('estoque')"><i class="ti ti-shopping-cart"></i>Vender</button>
+  <button class="bn-plus" id="bn-mais" onclick="abrirMais()" aria-label="Mais opções"><i class="ti ti-plus"></i></button>
   <button class="bn-it" id="bn-os" data-tour="mobile-os" onclick="abrir('os')"><i class="ti ti-tool"></i>OS</button>
   <button class="bn-it" id="bn-produto" data-tour="mobile-estoque" onclick="abrir('produto')"><i class="ti ti-package"></i>Produto</button>
-  <button class="bn-it" id="bn-mais" onclick="abrirMais()"><i class="ti ti-dots"></i>Mais</button>
 </div>
 
 <!-- Fatia 9: FOLHA "MAIS" -->
@@ -1166,6 +1170,9 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
   <div class="sheet-it" id="sheet-minhas-os" onclick="fecharMais();abrir('os-lista')"><i class="ti ti-list-details"></i>Minhas OS</div>
   <div class="sheet-it" id="sheet-entregas-mais" data-tour="mobile-entregas" style="display:none" onclick="fecharMais();abrir('entregas')"><i class="ti ti-truck"></i>Minhas Entregas</div>
   <div class="sheet-it" id="sheet-pessoas" style="display:none" onclick="fecharMais();abrir('pessoas')"><i class="ti ti-users"></i>Pessoas da Empresa</div>
+  <!-- Revisão 2026-09: "Relatórios" saiu do acesso rápido da Home e passou
+       pra cá (pedido do usuário) — só Admin/Gerente, ver aplicarModoPerfil(). -->
+  <div class="sheet-it" id="sheet-relatorios-mais" style="display:none" onclick="fecharMais();abrir('relatorios')"><i class="ti ti-chart-bar"></i>Relatórios</div>
 </div>
 
 <!-- Fatia 9: passo a passo de instalação no iPhone/iPad (fica na tela até fechar) -->
@@ -3414,6 +3421,11 @@ function aplicarModoPerfil(){
   const so=$('sheet-minhas-os'); if(so) so.style.display=entregador?'none':'';
   const se=$('sheet-entregas-mais'); if(se) se.style.display=(entregador||adminGer)?'':'none';
   const sp=$('sheet-pessoas'); if(sp) sp.style.display=adminGer?'':'none';
+  // Revisão 2026-09: "Relatórios" saiu do acesso rápido da Home e passou a
+  // ficar só na folha "Mais" (pedido do usuário) — mesma restrição de
+  // sempre: só Admin/Gerente, igual à página Relatórios do desktop
+  // (index.html: relatorios:['admin','gerente']).
+  const srm=$('sheet-relatorios-mais'); if(srm) srm.style.display=adminGer?'':'none';
 
   const rg=$('resumo-grid'); if(rg) rg.style.display=entregador?'none':'';
   const rgt=$('resumo-secao-t'); if(rgt) rgt.style.display=entregador?'none':'';
@@ -3422,10 +3434,8 @@ function aplicarModoPerfil(){
   // dos outros módulos financeiros da Home: Entregador não vê.
   const fst=$('fin-secao-t'); if(fst) fst.style.display=entregador?'none':'';
   const fdc=$('fin-dash-card'); if(fdc) fdc.style.display=entregador?'none':'';
-  // Revisão 2026-09: "Ver relatório completo" (Home) e "Relatórios" (Perfil)
-  // só aparecem pra Admin/Gerente — mesma restrição do menu "Relatórios" do
-  // desktop (index.html: relatorios:['admin','gerente']).
-  const fvr=$('fin-ver-relatorio'); if(fvr) fvr.style.display=adminGer?'':'none';
+  // Revisão 2026-09: "Relatórios" (Perfil) — mesma restrição do menu
+  // "Relatórios" do desktop (index.html: relatorios:['admin','gerente']).
   const psg=$('perfil-secao-gestao'); if(psg) psg.style.display=adminGer?'':'none';
   const pcg=$('perfil-card-gestao'); if(pcg) pcg.style.display=adminGer?'':'none';
   document.querySelectorAll('#scr-home .qa-row,#scr-home > .mod').forEach(el=>{ el.style.display=entregador?'none':''; });
