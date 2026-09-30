@@ -290,16 +290,15 @@ try{
 
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
-  /* Revisão 2026-09 (melhoria de design, base app.html/Lovable): paleta
-     trocada de azul+bege pra roxo+violeta, seguindo o mesmo caminho já
-     aplicado no app.html (mobile) — mesmos nomes de variável de sempre,
-     só os valores mudaram, então nada que já usa var(--pri) etc. precisa
-     ser tocado individualmente. */
-  --pri:#5B3FE8;--pri2:#7C5CFF;--pri-light:#EEE9FB;--pri-dark:#3D2596;
+  /* Revisão 2026-09: paleta voltou pro azul original a pedido do usuário
+     (a tentativa de roxo/violeta baseada no app.html não ficou como
+     queria) — só a tela de login manteve o layout novo (manchas, ícones
+     embutidos, olho de senha), agora recolorido de volta pro azul. */
+  --pri:#1E5EFF;--pri2:#3D8BFF;--pri-light:#E8EFFF;--pri-dark:#0A2FA8;
   --accent:#E8915B;--accent-soft:#FBEEE3;
-  --bg:#F3F1FB;--bg2:#FFFFFF;--surface:#FCFBFF;--surface2:#EFE9FB;
-  --txt:#191338;--txt2:#5A5280;--txt3:#6A6390;--txt4:#B5A9D9;
-  --border:#E7E2F3;--border2:#D6CBEA;
+  --bg:#F5F2EC;--bg2:#FFFFFF;--surface:#FDFBF8;--surface2:#EFE9DF;
+  --txt:#1E1530;--txt2:#54487A;--txt3:#9585B8;--txt4:#C4B8DB;
+  --border:#E6DED3;--border2:#D8CEC2;
   --success:#10B981;--danger:#EF4444;--warn:#F59E0B;--info:#3B82F6;
   --radius:14px;--radius-lg:22px;
   --shadow:0 2px 12px rgba(74,54,110,.08);
@@ -448,7 +447,7 @@ try{
   .tour-btn{padding:10px 16px;font-size:13px}
   .tour-invite{left:12px;right:12px;bottom:12px;width:auto}
 }
-[data-theme="dark"]{--bg:#070B1A;--bg2:#0B1228;--surface:#101A38;--surface2:#152147;--txt:#EAF0FF;--txt2:#A8BAE8;--txt3:#6B7FB8;--txt4:#3A4A78;--border:#1B2A55;--border2:#25376B;--pri-light:#241A47;--accent:#E8915B;--accent-soft:#3A2218;
+[data-theme="dark"]{--bg:#070B1A;--bg2:#0B1228;--surface:#101A38;--surface2:#152147;--txt:#EAF0FF;--txt2:#A8BAE8;--txt3:#6B7FB8;--txt4:#3A4A78;--border:#1B2A55;--border2:#25376B;--pri-light:#0F2058;--accent:#E8915B;--accent-soft:#3A2218;
 --shadow:0 2px 12px rgba(0,0,0,.25);
 --shadow-lg:0 8px 28px rgba(0,0,0,.36);
 --shadow-card:0 1px 3px rgba(0,0,0,.18),0 2px 10px rgba(0,0,0,.2);}
@@ -456,7 +455,7 @@ try{
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:10px}
 ::-webkit-scrollbar-thumb:hover{background:var(--txt4)}
-body{font-family:'DM Sans',sans-serif;background:var(--bg);background-image:radial-gradient(ellipse 1400px 700px at 105% -5%, rgba(232,145,91,.05), transparent 58%),radial-gradient(ellipse 1100px 600px at -8% 108%, rgba(124,92,255,.08), transparent 52%),radial-gradient(ellipse 600px 400px at 50% 50%, rgba(91,63,232,.03), transparent 70%);background-attachment:fixed;color:var(--txt);min-height:100vh;overflow:hidden;transition:background .3s,color .3s}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);background-image:radial-gradient(ellipse 1400px 700px at 105% -5%, rgba(232,145,91,.06), transparent 58%),radial-gradient(ellipse 1100px 600px at -8% 108%, rgba(61,139,255,.07), transparent 52%),radial-gradient(ellipse 600px 400px at 50% 50%, rgba(30,94,255,.025), transparent 70%);background-attachment:fixed;color:var(--txt);min-height:100vh;overflow:hidden;transition:background .3s,color .3s}
 
 /* ── Polimento aconchegante + acessibilidade ── */
 ::selection{background:rgba(232,145,91,.28);color:var(--txt)}
@@ -478,10 +477,10 @@ button,.btn,.card,.tag,input,select,textarea{transition:var(--trans)}
 .ls.hidden{opacity:0;pointer-events:none}
 .l-blob{position:absolute;border-radius:50%;filter:blur(60px);pointer-events:none;animation:lBlobFloat 18s ease-in-out infinite}
 .l-blob.b1{width:320px;height:320px;background:rgba(255,255,255,.22);top:-90px;left:-70px}
-.l-blob.b2{width:280px;height:280px;background:rgba(124,92,255,.5);bottom:-80px;right:-60px;animation-delay:-6s}
+.l-blob.b2{width:280px;height:280px;background:rgba(61,139,255,.5);bottom:-80px;right:-60px;animation-delay:-6s}
 .l-blob.b3{width:200px;height:200px;background:rgba(255,255,255,.14);bottom:12%;left:-60px;animation-delay:-11s}
 @keyframes lBlobFloat{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(18px,-22px) scale(1.06)}}
-.lb{position:relative;background:#fff;border-radius:26px;padding:42px 40px;width:100%;max-width:400px;box-shadow:0 32px 80px rgba(30,10,80,.32),0 0 0 1px rgba(255,255,255,.08);animation:fi var(--motion-slow) var(--ease-enter)}
+.lb{position:relative;background:#fff;border-radius:26px;padding:42px 40px;width:100%;max-width:400px;box-shadow:0 32px 80px rgba(0,0,0,.28),0 0 0 1px rgba(255,255,255,.08);animation:fi var(--motion-slow) var(--ease-enter)}
 .l-icon{width:100px;height:100px;background:none;border-radius:0;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;box-shadow:none}
 .l-icon span{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:#fff}
 .l-title{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:#1A0F3C;text-align:center;letter-spacing:.5px;text-transform:uppercase}
@@ -489,14 +488,14 @@ button,.btn,.card,.tag,input,select,textarea{transition:var(--trans)}
 .l-err{background:#FEF2F2;color:#EF4444;border:1px solid #FECACA;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:600;margin-bottom:14px;display:none;animation:motionShake .4s var(--ease-standard)}
 .l-lbl{display:block;font-size:11.5px;font-weight:700;color:#5C4F8A;margin-bottom:5px;text-transform:uppercase;letter-spacing:.6px}
 .l-input-group{position:relative}
-.l-input-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#9D8FC5;font-size:16px;pointer-events:none}
+.l-input-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:24px;height:24px;display:flex;align-items:center;justify-content:center;color:#9D8FC5;font-size:16px;line-height:1;pointer-events:none}
 .l-input-eye{position:absolute;right:4px;top:50%;transform:translateY(-50%);background:none;border:none;color:#9D8FC5;width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px}
 .l-input-eye:hover{background:var(--pri-light)}
 .l-inp{width:100%;padding:12px 14px;border:1.5px solid #E4DEFF;border-radius:11px;font-size:14px;font-family:'DM Sans',sans-serif;color:#1A0F3C;outline:none;margin-bottom:14px;transition:border-color .2s,box-shadow .2s}
 .lb .l-inp.l-inp-icon{padding-left:40px}
-.l-inp:focus{border-color:var(--pri);box-shadow:0 0 0 3.5px rgba(91,63,232,.14)}
-.l-btn{width:100%;padding:13px;background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 16px rgba(91,63,232,.32)}
-.l-btn:hover{opacity:.93;transform:translateY(-1px);box-shadow:0 8px 24px rgba(91,63,232,.4)}.l-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+.l-inp:focus{border-color:var(--pri);box-shadow:0 0 0 3.5px rgba(30,94,255,.14)}
+.l-btn{width:100%;padding:13px;background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 16px rgba(30,94,255,.32)}
+.l-btn:hover{opacity:.93;transform:translateY(-1px);box-shadow:0 8px 24px rgba(30,94,255,.4)}.l-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
 
 /* ── BLOQUEIO / ACESSO SUSPENSO (NOVO) ── */
 .bq-screen{position:fixed;inset:0;background:linear-gradient(135deg,#1A0F3C,#2A1D50 60%,#0F0A1E);display:flex;align-items:center;justify-content:center;z-index:10000;padding:20px}
@@ -627,7 +626,7 @@ button,.btn,.card,.tag,input,select,textarea{transition:var(--trans)}
 .sidebar.pinned .ni-tip{display:none}
 
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
-.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;height:var(--th);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:12px;box-shadow:0 1px 0 rgba(74,54,110,.04),0 2px 8px rgba(74,54,110,.04)}
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;height:var(--th);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:12px;box-shadow:0 1px 0 rgba(74,54,110,.04),0 4px 16px -6px rgba(30,94,255,.10)}
 .topbar-title{font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:var(--txt);display:flex;align-items:center;gap:10px}
 .topbar-right{display:flex;align-items:center;gap:8px}
 .tb-btn{width:36px;height:36px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg2);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--txt2);font-size:17px;transition:var(--trans);box-shadow:var(--shadow-card)}
@@ -990,7 +989,7 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
 .nav-div-thin{height:1px;background:rgba(255,255,255,.06);margin:7px 4px}
 /* Nav items ligeiramente mais altos */
 .ni{padding:10px 10px;border-radius:11px;margin-bottom:3px}
-.ni.active{background:rgba(255,255,255,.14);box-shadow:inset 3px 0 0 rgba(255,255,255,.5)}
+.ni.active{background:rgba(255,255,255,.14);box-shadow:inset 3px 0 0 rgba(255,255,255,.5),0 4px 14px -4px rgba(10,10,40,.35)}
 /* Logo icon ligeiramente maior */
 .logo-icon{width:40px;height:40px;border-radius:11px;background:rgba(255,255,255,.1);padding:5px}
 /* Prog bar mais arredondada */
@@ -999,8 +998,8 @@ body.pdv-fullscreen .pdv-fs-bar{display:flex}
 /* Badges de role mais arredondados */
 .role-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:8px;font-size:11.5px;font-weight:700}
 /* Caixa aberto/fechado pill */
-.caixa-pill{display:flex;align-items:center;gap:6px;padding:5px 13px;border-radius:9px;font-size:12px;font-weight:600}
-.net-pill{display:flex;align-items:center;gap:6px;padding:5px 13px;border-radius:9px;font-size:12px;font-weight:600;cursor:pointer;transition:var(--trans)}
+.caixa-pill{display:flex;align-items:center;gap:6px;padding:5px 13px;border-radius:9px;font-size:12px;font-weight:600;box-shadow:var(--shadow-card)}
+.net-pill{display:flex;align-items:center;gap:6px;padding:5px 13px;border-radius:9px;font-size:12px;font-weight:600;cursor:pointer;transition:var(--trans);box-shadow:var(--shadow-card)}
 /* Os caixas de formulário (fg) com espaçamento ligeiramente maior */
 .fg{margin-bottom:14px}
 .lbl{display:block;font-size:11px;font-weight:700;color:var(--txt2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.7px}
@@ -2332,9 +2331,9 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
   <div class="l-blob b3" aria-hidden="true"></div>
   <div class="lb">
     <div class="l-icon" style="background:none;box-shadow:none;width:130px;height:130px;border-radius:0">
-      <img src="/icon-512.png" style="width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 6px 24px rgba(91,63,232,.45))" alt="MISU SYS">
+      <img src="/icon-512.png" style="width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 6px 24px rgba(30,94,255,.45))" alt="MISU SYS">
     </div>
-    <div class="l-title" style="letter-spacing:2px">MISU <span style="background:linear-gradient(135deg,#5B3FE8,#7C5CFF);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">SYS</span></div>
+    <div class="l-title" style="letter-spacing:2px">MISU <span style="background:linear-gradient(135deg,#1E5EFF,#3D8BFF);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">SYS</span></div>
     <div class="l-sub">Sistema oficial da Misu Tech — ERP & PDV</div>
     <div id="l-err" class="l-err"></div>
     <label class="l-lbl">E-mail</label>
@@ -2478,7 +2477,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
       <div class="logo-badge" style="background:none;box-shadow:none;padding:0;gap:12px">
         <div class="logo-icon" id="sb-logo-icon" style="background:none;box-shadow:none"><img src="/icon-192.png" style="width:100%;height:100%;object-fit:contain" alt="MISU SYS"></div>
         <div class="logo-texts">
-          <div class="logo-text" style="line-height:1.15;letter-spacing:1.5px">MISU <span style="color:#7C5CFF">SYS</span></div>
+          <div class="logo-text" style="line-height:1.15;letter-spacing:1.5px">MISU <span style="color:#3D8BFF">SYS</span></div>
           <div class="logo-sub">Sistema oficial Misu Tech</div>
         </div>
       </div>
@@ -29485,6 +29484,7 @@ html.ac-readable p,html.ac-readable li,html.ac-readable td,html.ac-readable labe
       </div>
       <div id="mh-busca-vazio" style="display:none;font-size:13px;color:#9a93b8;padding:8px 2px">Nada encontrado. Tente outra palavra.</div>
       <div style="text-align:right;margin:-4px 0 6px"><button type="button" onclick="if(window.l2ReverDicas)window.l2ReverDicas()" style="background:none;border:none;color:#5B3FE8;font-size:12px;font-weight:600;cursor:pointer;padding:2px 0">↺ Rever dicas das telas</button></div>
+      <button type="button" class="l2-btn pri" id="l2-treino-btn" onclick="if(window.l2ToggleTreino)l2ToggleTreino()" style="margin:0 0 12px"><i class="ti ti-school"></i>Ativar Modo Treinamento</button>
       <details class="mh-cat"><summary>Comecando</summary><div class="mh-art"><b>Configurar a loja:</b> abra Configuracoes e preencha os dados. <b>Primeiro produto:</b> Estoque &rsaquo; Produtos. <b>Abrir caixa:</b> PDV &rsaquo; Abrir caixa. <b>Primeira venda:</b> adicione produtos e finalize.</div></details>
       <details class="mh-cat"><summary>PDV e vendas</summary><div class="mh-art">Busque o produto ou passe o codigo de barras para adicionar ao carrinho. Aplique desconto no resumo. Escolha dinheiro, Pix, cartao ou link e finalize. Para cancelar, use a acao de cancelar a venda.</div></details>
       <details class="mh-cat"><summary>Caixa</summary><div class="mh-art">O caixa precisa estar <b>aberto</b> para vender. Faca sangria/reforco pelo Financeiro e feche o caixa ao fim do dia para conferir os valores.</div></details>
@@ -29514,35 +29514,15 @@ html.ac-readable p,html.ac-readable li,html.ac-readable td,html.ac-readable labe
 })();
 </script>
 <!-- FIM CENTRAL DE AJUDA -->
-<!-- ═══ LOTE 2: AJUDA CONTEXTUAL POR TELA + MODO TREINAMENTO (autônomo) ═══ -->
+<!-- ═══ LOTE 2: MODO TREINAMENTO (autônomo) — botão "?" flutuante e popup removidos a pedido do usuário; ver o botão "Ativar Modo Treinamento" dentro da Central de Ajuda (aba "Central de Ajuda") ═══ -->
 <style id="l2-style">
-#l2-fab{position:fixed;right:18px;bottom:18px;z-index:99980;width:46px;height:46px;border-radius:50%;background:#5B3FE8;color:#fff;border:none;box-shadow:0 8px 22px rgba(91,63,232,.4);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .12s}
-#l2-fab:active{transform:scale(.94)}
-#l2-pop{position:fixed;right:18px;bottom:74px;z-index:99981;width:300px;max-width:calc(100vw - 36px);background:#fff;color:#191338;border-radius:16px;box-shadow:0 18px 48px rgba(10,4,40,.28);font-family:'DM Sans',system-ui,Arial,sans-serif;overflow:hidden;display:none}
-#l2-pop.open{display:block}
-.l2-ph{display:flex;align-items:center;gap:8px;padding:13px 15px;background:#f6f3ff;border-bottom:1px solid #ece7fb}
-.l2-ph i{color:#5B3FE8}
-.l2-ph b{font-family:'Syne',sans-serif;font-size:14px;flex:1}
-.l2-ph .l2-x{background:none;border:none;font-size:20px;color:#9a93b8;cursor:pointer;line-height:1}
-.l2-pb{padding:13px 15px}
-.l2-dica{font-size:13px;line-height:1.55;color:#4a4470;margin-bottom:12px}
 .l2-btn{width:100%;border:none;border-radius:10px;padding:10px 12px;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:8px;justify-content:center;margin-top:8px}
 .l2-btn.pri{background:#5B3FE8;color:#fff}
 .l2-btn.out{background:#f1eefb;color:#5B3FE8}
 #l2-banner{position:fixed;left:50%;transform:translateX(-50%);bottom:16px;z-index:99999;background:#0f7b3d;color:#fff;border-radius:99px;padding:9px 16px;font:600 13px/1.2 'DM Sans',system-ui,Arial;box-shadow:0 10px 30px rgba(4,60,25,.4);display:none;align-items:center;gap:12px;max-width:calc(100vw - 24px)}
 #l2-banner.on{display:flex}
 #l2-banner button{background:rgba(255,255,255,.22);border:none;color:#fff;font-weight:700;border-radius:99px;padding:5px 12px;cursor:pointer;font-size:12px;white-space:nowrap}
-@media (max-width:768px){#l2-fab{display:none}}
 </style>
-<button id="l2-fab" title="Ajuda desta tela" aria-label="Ajuda desta tela" onclick="l2TogglePop()">?</button>
-<div id="l2-pop" role="dialog" aria-label="Ajuda da tela atual">
-  <div class="l2-ph"><i class="ti ti-info-circle"></i><b id="l2-pop-titulo">Ajuda</b><button class="l2-x" aria-label="Fechar" onclick="l2ClosePop()">&times;</button></div>
-  <div class="l2-pb">
-    <div class="l2-dica" id="l2-pop-dica">—</div>
-    <button class="l2-btn out" onclick="l2ClosePop();if(typeof mhOpen==='function')mhOpen()"><i class="ti ti-book"></i>Abrir Central de Ajuda</button>
-    <button class="l2-btn pri" id="l2-treino-btn" onclick="l2ToggleTreino()"><i class="ti ti-school"></i>Ativar Modo Treinamento</button>
-  </div>
-</div>
 <div id="l2-banner"><span>🎓 Modo Treinamento — dados de exemplo. Nada é salvo de verdade.</span><button onclick="l2SairTreino()">Sair</button></div>
 <script>
 (function(){
@@ -29579,19 +29559,6 @@ html.ac-readable p,html.ac-readable li,html.ac-readable td,html.ac-readable labe
     aparencia:'Personalize cores e logo do sistema.',
     configuracoes:'Ajuste dados da loja, formas de pagamento, integrações e fiscal.'
   };
-  function rotaAtual(){ return (document.body && document.body.dataset && document.body.dataset.route) || 'dashboard'; }
-  var PTsafe = (typeof PT!=='undefined') ? PT : {};
-
-  window.l2TogglePop=function(){ var p=document.getElementById('l2-pop'); if(!p)return; if(p.classList.contains('open')){l2ClosePop();return;} l2AbrePop(); };
-  window.l2AbrePop=function(){
-    var p=document.getElementById('l2-pop'); if(!p)return;
-    var r=rotaAtual();
-    var tit=document.getElementById('l2-pop-titulo'); if(tit) tit.textContent = 'Ajuda: '+(PTsafe[r]||'esta tela');
-    var d=document.getElementById('l2-pop-dica'); if(d) d.textContent = (window.AJUDA_TELA[r]||'Use o botão abaixo para abrir a Central de Ajuda completa.');
-    p.classList.add('open');
-  };
-  window.l2ClosePop=function(){ var p=document.getElementById('l2-pop'); if(p)p.classList.remove('open'); };
-
   // ── MODO TREINAMENTO ────────────────────────────────────────────────
   var TREINO=false, avisou=false;
   function aviso(){ if(!avisou && typeof notify==='function'){ avisou=true; notify('Modo treinamento: essa ação não é salva de verdade.','info',3000); setTimeout(function(){avisou=false;},4000); } }
@@ -29663,7 +29630,7 @@ html.ac-readable p,html.ac-readable li,html.ac-readable td,html.ac-readable labe
     // 3) Banner + botão + re-render
     var b=document.getElementById('l2-banner'); if(b)b.classList.add('on');
     var tb=document.getElementById('l2-treino-btn'); if(tb){ tb.innerHTML='<i class="ti ti-logout"></i>Sair do Modo Treinamento'; }
-    l2ClosePop();
+    if(typeof mhClose==='function') mhClose();
     try{ if(typeof go==='function') go('dashboard'); else if(typeof renderDashboard==='function') renderDashboard(); }catch(_e){}
     if(typeof notify==='function') notify('Modo Treinamento ativado. Explore à vontade — nada é salvo.','success',3500);
   };
