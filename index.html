@@ -9772,6 +9772,11 @@ async function fecharCaixa(){
     servicosOS=data||[];
   }catch(e){}
   const totalServicos=servicosOS.reduce((s,m)=>s+(parseFloat(m.valor)||0),0);
+  // Fatia 35 (mesma regra do celular, combinada com o usuário): OS paga em
+  // DINHEIRO no caixa também entra na gaveta. Antes ficava fora do esperado
+  // e aparecia como "sobra" na conferência. O valor gravado em servico_os
+  // já é o que ficou (o troco é guardado à parte), então soma direto.
+  const totalOSDinheiro=servicosOS.filter(m=>(m.forma_pagamento||'dinheiro')==='dinheiro').reduce((s,m)=>s+(parseFloat(m.valor)||0),0);
   // Detalhamento por forma de pagamento (considera vendas com pagamento misto)
   const porForma={dinheiro:0,pix:0,cartao:0,crediario:0,fiado:0};
   vendasCx.forEach(v=>{
@@ -9798,9 +9803,9 @@ async function fecharCaixa(){
   const totalSangrias=movs.filter(m=>m.tipo==='sangria').reduce((s,m)=>s+Math.abs(parseFloat(m.valor)||0),0);
   const totalReforcos=movs.filter(m=>m.tipo==='reforco').reduce((s,m)=>s+(parseFloat(m.valor)||0),0);
   const ajustes=totalReforcos-totalSangrias;
-  const valorSistema=(G.caixaAtual.valor_abertura||0)+totalDinheiro+ajustes;
+  const valorSistema=(G.caixaAtual.valor_abertura||0)+totalDinheiro+totalOSDinheiro+ajustes;
   // Fatia 6 — conferência de gaveta: captura o valor contado antes de fechar
-  G._fechamentoPend={valorSistema:valorSistema,totalVendas:totalVendas,totalServicos:totalServicos,vendasCx:vendasCx,porForma:porForma,totalDinheiro:totalDinheiro,totalSangrias:totalSangrias,totalReforcos:totalReforcos,movs:movs,servicosOS:servicosOS};
+  G._fechamentoPend={valorSistema:valorSistema,totalOSDinheiro:totalOSDinheiro,totalVendas:totalVendas,totalServicos:totalServicos,vendasCx:vendasCx,porForma:porForma,totalDinheiro:totalDinheiro,totalSangrias:totalSangrias,totalReforcos:totalReforcos,movs:movs,servicosOS:servicosOS};
   var _fe=document.getElementById('fc-esperado'); if(_fe) _fe.textContent=fmt(valorSistema);
   var _fc=document.getElementById('fc-contado'); if(_fc) _fc.value='';
   var _fo=document.getElementById('fc-obs'); if(_fo) _fo.value='';
@@ -9846,7 +9851,7 @@ async function confirmarFecharCaixa(){
   }
   var idx=G.caixas.findIndex(function(cx){return cx.id===G.caixaAtual.id;});
   if(idx>=0) Object.assign(G.caixas[idx],payload);
-  var snapshot={caixa:Object.assign({},G.caixaAtual,payload),vendas:p.vendasCx,totalVendas:p.totalVendas,porForma:p.porForma,totalDinheiro:p.totalDinheiro,totalSangrias:p.totalSangrias,totalReforcos:p.totalReforcos,movs:p.movs,valorSistema:p.valorSistema,servicosOS:p.servicosOS,totalServicos:p.totalServicos,valorInformado:contado,diferenca:diferenca,observacaoFechamento:obs,operador:(G.profile&&G.profile.nome)||G.caixaAtual.operador_nome,dataFechamento:dataFechamento};
+  var snapshot={caixa:Object.assign({},G.caixaAtual,payload),vendas:p.vendasCx,totalVendas:p.totalVendas,porForma:p.porForma,totalDinheiro:p.totalDinheiro,totalSangrias:p.totalSangrias,totalReforcos:p.totalReforcos,movs:p.movs,valorSistema:p.valorSistema,servicosOS:p.servicosOS,totalServicos:p.totalServicos,totalOSDinheiro:p.totalOSDinheiro||0,valorInformado:contado,diferenca:diferenca,observacaoFechamento:obs,operador:(G.profile&&G.profile.nome)||G.caixaAtual.operador_nome,dataFechamento:dataFechamento};
   G.caixaAtual=null;
   setLoad(false); checkCaixaStatus(); updateCaixaPill(); notify('Caixa fechado!','success');
   try{
@@ -9967,6 +9972,7 @@ function gerarRelatorioFechamentoHTML(snapshot){
           <tr><td>Serviços (OS)</td><td>${fmt(snapshot.totalServicos||0)}</td></tr>
           <tr><td><b>Total de Faturamento</b></td><td><b>${fmt((snapshot.totalVendas||0)+(snapshot.totalServicos||0))}</b></td></tr>
           <tr><td>Total em Dinheiro (gaveta)</td><td>${fmt(snapshot.totalDinheiro)}</td></tr>
+          ${(snapshot.totalOSDinheiro||0)>0?`<tr><td>OS recebidas em dinheiro</td><td>+ ${fmt(snapshot.totalOSDinheiro)}</td></tr>`:''}
           <tr><td>Reforços</td><td>+ ${fmt(snapshot.totalReforcos)}</td></tr>
           <tr><td>Sangrias</td><td>− ${fmt(snapshot.totalSangrias)}</td></tr>
         </table>
@@ -19509,6 +19515,26 @@ async function sincronizarEntregas(){
         descricao:o.aparelho||('OS '+(o.numero||'')),forma:'retirada',pago,status:'para_agendar'});
     }
   });
+  // Fatia 35 (mesma regra do celular, combinada com o usuário): quando a OS
+  // é paga no caixa ela vira "Entregue" e some de G.os — aí a entrega dela
+  // ficava presa em "pagamento pendente" pra sempre. Agora: marca como paga
+  // e, se era retirada na loja, fecha como entregue (o aparelho saiu pelo
+  // balcão). Entrega em endereço continua normal com o entregador.
+  try{
+    const ativas=new Set((G.os||[]).filter(o=>o.status==='Pronto'||o.status==='Ag. Pagamento').map(o=>o.id));
+    const abertasOS=(G.entregas||[]).filter(e=>e.origem_tipo==='os'&&e.origem_id&&e.status!=='entregue'&&e.status!=='cancelada'&&!ativas.has(e.origem_id));
+    if(abertasOS.length){
+      const ids=abertasOS.map(e=>e.origem_id);
+      const { data: osFin } = await db.from('ordens_servico').select('id,status,data_conclusao').eq('empresa_id',empId).in('id',ids);
+      (osFin||[]).filter(o=>o.status==='Entregue').forEach(o=>{
+        const e=abertasOS.find(x=>x.origem_id===o.id); if(!e) return;
+        const agora=new Date().toISOString();
+        if(e.forma==='retirada') updates.push({id:e.id,patch:{pago:true,status:'entregue',entregue_em:o.data_conclusao||agora,observacoes:(e.observacoes?e.observacoes+' | ':'')+'Retirada no balcão (OS paga e entregue no caixa)',atualizado_em:agora}});
+        else if(!e.pago) updates.push({id:e.id,patch:{pago:true,atualizado_em:agora}});
+      });
+    }
+  }catch(eFin){ console.warn('entregas (OS pagas):',eFin?.message||eFin); }
+
   (G.entregasAvulsas||[]).forEach(a=>{
     if(a.status==='cancelado') return;
     if(porOrigem['avulsa:'+a.id]) return;
