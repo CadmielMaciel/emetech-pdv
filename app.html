@@ -161,6 +161,8 @@ button:focus-visible,[role="button"]:focus-visible,[role="switch"]:focus-visible
 [data-theme="dark"] .login-card,[data-theme="dark"] .success-ic{background:var(--card)}
 [data-theme="dark"] .inp{background:var(--card);color:var(--txt)}
 [data-theme="dark"] .btn-out{background:var(--card)}
+/* Fatia 31: chips (.pg) e botões de escolha (.quemusa-btn) tinham fundo branco fixo — no tema escuro o texto claro ficava ilegível */
+[data-theme="dark"] .pg:not(.on),[data-theme="dark"] .quemusa-btn{background:var(--card)}
 [data-theme="dark"] .topbar{background:var(--bg2)}
 [data-theme="dark"] body{background:linear-gradient(180deg,#0B1330,var(--bg) 240px) no-repeat,var(--bg)}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -544,15 +546,104 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 #modal-ios .mp-sub{font-size:13px;color:var(--txt3);margin-bottom:16px;line-height:1.4}
 
 /* ── Fatia 21: modais novos (Pessoas/Entregador) — mesmo padrão visual dos já existentes ── */
-#modal-quemusa-overlay,#modal-pin-op-overlay,#modal-pessoa-overlay,#modal-confirma-overlay,#modal-tentativa-overlay,#modal-meupin-overlay,#modal-applock-setup-overlay,#modal-abrecaixa-overlay{position:fixed;inset:0;background:rgba(10,6,30,.5);z-index:165;display:none;align-items:flex-end;justify-content:center;animation:motionFadeIn .18s ease}
-#modal-quemusa,#modal-pin-op,#modal-pessoa,#modal-confirma,#modal-tentativa,#modal-meupin,#modal-applock-setup,#modal-abrecaixa{background:var(--card);border-radius:22px 22px 0 0;padding:22px 20px calc(22px + var(--sab));width:100%;max-width:460px;animation:up .25s ease;max-height:85vh;overflow-y:auto}
-#modal-quemusa .mp-title,#modal-pin-op .mp-title,#modal-pessoa .mp-title,#modal-confirma .mp-title,#modal-tentativa .mp-title,#modal-meupin .mp-title,#modal-applock-setup .mp-title,#modal-abrecaixa .mp-title{font-weight:800;font-size:16px;margin-bottom:4px}
-#modal-quemusa .mp-sub,#modal-pin-op .mp-sub,#modal-pessoa .mp-sub,#modal-confirma .mp-sub,#modal-tentativa .mp-sub,#modal-meupin .mp-sub,#modal-applock-setup .mp-sub,#modal-abrecaixa .mp-sub{font-size:12.5px;color:var(--txt3);margin-bottom:14px}
+#modal-quemusa-overlay,#modal-pin-op-overlay,#modal-pessoa-overlay,#modal-confirma-overlay,#modal-tentativa-overlay,#modal-meupin-overlay,#modal-applock-setup-overlay,#modal-abrecaixa-overlay,#modal-osacao-overlay{position:fixed;inset:0;background:rgba(10,6,30,.5);z-index:165;display:none;align-items:flex-end;justify-content:center;animation:motionFadeIn .18s ease}
+#modal-quemusa,#modal-pin-op,#modal-pessoa,#modal-confirma,#modal-tentativa,#modal-meupin,#modal-applock-setup,#modal-abrecaixa,#modal-osacao{background:var(--card);border-radius:22px 22px 0 0;padding:22px 20px calc(22px + var(--sab));width:100%;max-width:460px;animation:up .25s ease;max-height:85vh;overflow-y:auto}
+#modal-quemusa .mp-title,#modal-pin-op .mp-title,#modal-pessoa .mp-title,#modal-confirma .mp-title,#modal-tentativa .mp-title,#modal-meupin .mp-title,#modal-applock-setup .mp-title,#modal-abrecaixa .mp-title,#modal-osacao .mp-title{font-weight:800;font-size:16px;margin-bottom:4px}
+#modal-quemusa .mp-sub,#modal-pin-op .mp-sub,#modal-pessoa .mp-sub,#modal-confirma .mp-sub,#modal-tentativa .mp-sub,#modal-meupin .mp-sub,#modal-applock-setup .mp-sub,#modal-abrecaixa .mp-sub,#modal-osacao .mp-sub{font-size:12.5px;color:var(--txt3);margin-bottom:14px}
 .quemusa-btn{display:flex;align-items:center;gap:10px;width:100%;padding:13px 15px;border-radius:13px;border:1.5px solid var(--border);background:#fff;font-weight:700;font-size:14px;cursor:pointer;text-align:left;color:var(--txt)}
 .quemusa-btn i{color:var(--pri);font-size:18px}
 #sheet-entrega-overlay{position:fixed;inset:0;background:rgba(10,6,30,.45);z-index:150;display:none}
 #sheet-entrega{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-radius:22px 22px 0 0;padding:10px 18px calc(20px + var(--sab));z-index:151;display:none;box-shadow:0 -10px 40px rgba(0,0,0,.25);max-height:86vh;overflow-y:auto}
 #sheet-entrega .sheet-handle{width:38px;height:4px;background:var(--border);border-radius:99px;margin:6px auto 14px;padding:9px 30px;background-clip:content-box;box-sizing:content-box}
+/* Fatia 31: os rótulos do detalhe da entrega usam as mesmas classes do
+   detalhe da OS (osd-*), mas o CSS delas era só "#sheet-os ..." — por isso
+   aqui no #sheet-entrega apareciam sem estilo. Mesmo visual do #sheet-os. */
+#sheet-entrega .osd-tit{font-size:18px;font-weight:800;margin-bottom:2px}
+#sheet-entrega .osd-sub{font-size:12.5px;color:var(--txt3);margin-bottom:14px}
+#sheet-entrega .osd-lbl{font-size:10.5px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 4px}
+#sheet-entrega .osd-val{font-size:14px;color:var(--txt);line-height:1.4}
+#sheet-entrega .osd-box{border:1.5px solid var(--border);border-radius:14px;padding:12px 14px;margin-top:14px}
+#sheet-entrega .osd-box-t{font-size:10.5px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+#sheet-entrega .ent-gest{display:flex;flex-direction:column;gap:8px}
+#sheet-entrega .ent-gest .btn{margin:0}
+.ent-pago{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700}
+.ent-pago.ok{color:var(--ok)}
+.ent-pago.pend{color:#B45309}
+.filtro-row.scroll{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;-webkit-overflow-scrolling:touch}
+.filtro-row.scroll::-webkit-scrollbar{display:none}
+.filtro-row.scroll .pg{flex-shrink:0;white-space:nowrap}
+.quemusa-btn.on{border-color:var(--pri);background:var(--bg2)}
+/* Fatia 34: caixa */
+#scr-caixa .osd-linha,#modal-osacao .osd-linha{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13.5px;padding:5px 0;color:var(--txt2)}
+#scr-caixa .osd-linha b,#modal-osacao .osd-linha b{color:var(--txt);font-weight:700}
+#scr-caixa .osd-linha.tot{border-top:1px dashed var(--border);margin-top:4px;padding-top:9px}
+#scr-caixa .osd-linha.tot b{color:var(--pri);font-size:16px}
+.cx-topo .cx-st{font-size:12.5px;color:var(--txt3);display:flex;align-items:center;gap:6px}
+.cx-topo .cx-op{font-weight:700;font-size:14px;color:var(--txt);margin:4px 0 12px}
+.cx-topo .cx-esp-l{font-size:10.5px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px}
+.cx-topo .cx-esp{font-family:'Syne',sans-serif;font-weight:800;font-size:30px;color:var(--pri);line-height:1.15}
+.cx-topo .cx-esp-d{font-size:11.5px;color:var(--txt3);margin-top:4px;line-height:1.45}
+.cx-acoes{display:flex;gap:8px;margin-top:14px}
+.cx-acoes .btn{margin:0;flex:1}
+.cx-mov{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.cx-mov:last-child{border-bottom:none}
+.cx-mov div{display:flex;flex-direction:column;min-width:0}
+.cx-mov div b{font-size:13.5px;color:var(--txt)}
+.cx-mov div span{font-size:11.5px;color:var(--txt3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cx-mov>b.neg{color:var(--danger)}
+.cx-mov>b.pos{color:var(--ok)}
+.cx-fechado{text-align:center;padding:26px 18px}
+.cx-fechado>i{font-size:34px;color:var(--txt3)}
+.cx-f-t{font-weight:800;font-size:17px;margin-top:6px}
+.cx-f-s{font-size:13px;color:var(--txt3);margin:4px 0 14px}
+/* Fatia 33: plano e assinatura */
+.pl-aviso{display:flex;gap:11px;align-items:flex-start;background:var(--card);border:1.5px solid var(--pri);border-left-width:4px;border-radius:14px;padding:12px 14px;margin-bottom:10px;font-size:13px;color:var(--txt2);line-height:1.45}
+.pl-aviso>i{font-size:20px;color:var(--pri);flex-shrink:0;margin-top:1px}
+.pl-aviso.danger{border-color:var(--danger)}
+.pl-aviso.danger>i{color:var(--danger)}
+.pl-aviso b{display:block;color:var(--txt);font-size:13.5px;margin-bottom:2px}
+.pl-aviso-acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px}
+.pl-aviso-acoes .btn{width:auto;margin:0;padding:9px 14px;font-size:12.5px;min-height:0;text-decoration:none}
+.pl-atual{border-top:4px solid rgb(var(--plc));margin-bottom:12px}
+.pl-atual-tag{font-size:10.5px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px}
+.pl-atual-nome{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:rgb(var(--plc));margin:2px 0}
+.pl-atual-sit{font-size:12.5px;color:var(--txt2);margin-bottom:6px}
+.pl-uso{margin-top:10px}
+.pl-uso-t{display:flex;justify-content:space-between;font-size:12.5px;color:var(--txt2)}
+.pl-uso-t b{color:var(--txt)}
+.pl-uso-bar{height:6px;background:var(--bg2);border-radius:99px;overflow:hidden;margin-top:5px}
+.pl-uso-bar>div{height:100%;border-radius:99px}
+.pl-ciclo{display:flex;background:var(--bg2);border-radius:99px;padding:4px;margin-bottom:12px}
+.pl-ciclo button{flex:1;border:none;background:none;border-radius:99px;padding:10px;font-weight:700;font-size:13px;color:var(--txt2);cursor:pointer;font-family:inherit}
+.pl-ciclo button.on{background:var(--card);color:var(--pri);box-shadow:var(--shadow-card,0 1px 4px rgba(0,0,0,.08))}
+.pl-ciclo button span{font-size:10.5px;color:var(--ok);font-weight:800}
+.pl-card{border:1.5px solid var(--border);margin-bottom:12px}
+.pl-card.atual{border-color:rgb(var(--plc));box-shadow:0 0 0 3px rgba(var(--plc),.12)}
+.pl-card-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.pl-card-nome{font-weight:800;font-size:16px;color:rgb(var(--plc))}
+.pl-badge{font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:99px;background:rgba(var(--plc),.14);color:rgb(var(--plc))}
+.pl-card-preco{font-family:'Syne',sans-serif;font-weight:800;font-size:26px;color:var(--txt);margin-top:4px}
+.pl-card-preco small{font-size:13px;color:var(--txt3);font-family:'DM Sans',sans-serif;font-weight:600}
+.pl-card-ano{font-size:12px;color:var(--ok);font-weight:700}
+.pl-feats{margin:10px 0 12px;font-size:13px;color:var(--txt2)}
+.pl-feats div{display:flex;gap:7px;align-items:center;padding:3px 0}
+.pl-feats i{color:rgb(var(--plc))}
+.pl-feats .mais{color:var(--txt3);font-size:12px}
+.pl-card .btn{margin:0}
+.pl-flow{display:flex;align-items:center;gap:10px}
+.pl-flow>i{color:var(--txt3);font-size:18px}
+.pl-flow-p{flex:1;border:1.5px solid var(--border);border-radius:13px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.pl-flow-p span{font-size:10px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px}
+.pl-flow-p b{font-size:15px;color:var(--txt)}
+.pl-flow-p small{font-size:12px;color:var(--txt3)}
+.pl-flow-p.novo{border-color:rgb(var(--plc));background:rgba(var(--plc),.06)}
+.pl-flow-p.novo b{color:rgb(var(--plc))}
+.pl-pix{background:var(--bg2);border-radius:14px;padding:14px}
+.pl-qr{display:flex;justify-content:center;background:#fff;border-radius:10px;padding:8px;width:max-content;margin:0 auto 8px;min-height:20px}
+/* Fatia 32: caixa de estoque atual na edição de produto */
+.p-est-info{background:var(--bg2);border-radius:12px;padding:11px 13px;font-size:13.5px;color:var(--txt2);margin-top:12px;line-height:1.5}
+.p-est-info b{color:var(--txt)}
+.p-est-info .osd-mini,#modal-osacao .osd-mini{background:none;border:none;color:var(--pri);font-weight:700;font-size:12.5px;cursor:pointer;padding:4px 0;display:inline-flex;align-items:center;gap:4px}
 .ios-passo{display:flex;gap:13px;align-items:flex-start;margin-bottom:16px}
 .ios-passo-n{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .ios-passo-t{font-size:14px;font-weight:600;line-height:1.4;padding-top:3px}
@@ -596,6 +687,18 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 .os-badge.st-entregue{background:#DCFCE7;color:#166534}
 .os-badge.st-cancelada{background:#FEE2E2;color:#991B1B}
 .os-badge.st-outro{background:var(--bg2);color:var(--txt2)}
+/* Fatia 30: badges pros demais status reais da OS — mesma família de cor
+   que o desktop usa em OC (index.html): Em Análise azul, Em Reparo roxo,
+   Aguardando Peça vermelho, Pronto verde, Ag. Pagamento âmbar, Entregue
+   cinza (classe nova st-finalizada — a st-entregue verde continua existindo
+   porque a tela Pessoas usa ela pro selo "Ativo"; só a OS Entregue passou
+   pra cinza, como no desktop, pra não confundir com "Pronto"). */
+.os-badge.st-analise{background:#DBEAFE;color:#1E40AF}
+.os-badge.st-reparo{background:#EDE9FE;color:#5B21B6}
+.os-badge.st-peca{background:#FEE2E2;color:#991B1B}
+.os-badge.st-pronto{background:#DCFCE7;color:#166534}
+.os-badge.st-agpag{background:#FEF3C7;color:#92600A}
+.os-badge.st-finalizada{background:#E5E7EB;color:#374151}
 
 /* ── Fatia 11A: bottom sheet de detalhe da OS (mesmo padrão do #sheet-mais) ── */
 #sheet-os-overlay{position:fixed;inset:0;background:rgba(10,6,30,.45);z-index:150;display:none}
@@ -605,6 +708,44 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 #sheet-os .osd-sub{font-size:12.5px;color:var(--txt3);margin-bottom:14px}
 #sheet-os .osd-lbl{font-size:10.5px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 4px}
 #sheet-os .osd-val{font-size:14px;color:var(--txt);line-height:1.4}
+/* Fatia 30: OS completa no celular (progresso, valores, peças, histórico) */
+#sheet-os .osd-prog{height:7px;background:var(--bg2);border-radius:99px;overflow:hidden;margin:2px 0 6px}
+#sheet-os .osd-prog>div{height:100%;background:linear-gradient(90deg,var(--pri),var(--pri2));border-radius:99px;transition:width .3s}
+#sheet-os .osd-prox{font-size:12px;color:var(--pri);font-weight:700;display:flex;align-items:center;gap:5px;margin-bottom:6px}
+#sheet-os .osd-box{border:1.5px solid var(--border);border-radius:14px;padding:12px 14px;margin-top:14px}
+#sheet-os .osd-box-t{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:10.5px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+#sheet-os .osd-linha{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13.5px;padding:4px 0;color:var(--txt2)}
+#sheet-os .osd-linha b{color:var(--txt);font-weight:700}
+#sheet-os .osd-linha.tot{border-top:1px dashed var(--border);margin-top:4px;padding-top:9px;font-size:15px}
+#sheet-os .osd-linha.tot b{color:var(--pri);font-size:17px;font-family:'Syne',sans-serif;font-weight:800}
+#sheet-os .osd-linha.pago b{color:var(--ok)}
+#sheet-os .osd-peca{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
+#sheet-os .osd-peca:last-child{border-bottom:none}
+#sheet-os .osd-peca .pn{flex:1;min-width:0}
+#sheet-os .osd-peca .pn div:first-child{font-weight:600;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#sheet-os .osd-peca .pn div:last-child{font-size:11.5px;color:var(--txt3)}
+#sheet-os .osd-peca .pdel{background:none;border:none;color:var(--danger);font-size:17px;width:34px;height:34px;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+#sheet-os .osd-mini{background:none;border:none;color:var(--pri);font-weight:700;font-size:12.5px;cursor:pointer;padding:4px 0;display:inline-flex;align-items:center;gap:4px;text-transform:none;letter-spacing:0}
+#sheet-os .osd-tl{position:relative;padding-left:16px}
+#sheet-os .osd-tl-i{position:relative;padding:0 0 11px}
+#sheet-os .osd-tl-i::before{content:"";position:absolute;left:-12px;top:5px;width:8px;height:8px;border-radius:50%;background:var(--pri)}
+#sheet-os .osd-tl-i::after{content:"";position:absolute;left:-9px;top:15px;bottom:-2px;width:2px;background:var(--border)}
+#sheet-os .osd-tl-i:last-child::after{display:none}
+#sheet-os .osd-tl-i .t1{font-size:13px;font-weight:700;color:var(--txt)}
+#sheet-os .osd-tl-i .t2{font-size:11.5px;color:var(--txt3);line-height:1.4}
+#sheet-os .osd-acao-row{display:flex;gap:8px;margin-bottom:10px}
+#sheet-os .osd-acao-row .btn{margin:0}
+/* Modal genérico das ações de OS (voltar/cancelar/peça/valor/alterar/receber) */
+#modal-osacao .osa-forma{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 12px}
+#modal-osacao .osa-saldo{background:var(--bg2);border-radius:13px;padding:12px 14px;margin-bottom:12px}
+#modal-osacao .osa-saldo .l{font-size:11px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px}
+#modal-osacao .osa-saldo .v{font-family:'Syne',sans-serif;font-weight:800;font-size:24px;color:var(--pri)}
+#modal-osacao .osa-saldo .d{font-size:12px;color:var(--ok);font-weight:600;margin-top:2px}
+#modal-osacao .osa-aviso{font-size:12.5px;padding:9px 12px;border-radius:10px;background:rgba(217,119,6,.12);border:1px solid rgba(217,119,6,.35);color:#B45309;font-weight:600;margin-top:8px;line-height:1.4}
+#modal-osacao .osa-ok{font-size:13px;padding:9px 12px;border-radius:10px;background:rgba(22,163,74,.10);border:1px solid rgba(22,163,74,.25);color:var(--ok);font-weight:700;margin-top:8px;display:flex;justify-content:space-between}
+#modal-osacao .osa-chk{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--txt2);margin-top:10px;cursor:pointer}
+#modal-osacao .osa-chk input{width:auto;accent-color:var(--pri)}
+#modal-osacao .osa-info{font-size:12px;color:var(--txt2);margin-top:6px}
 
 /* ── TOUR GUIADO (app mobile) — mesmo motor "spotlight" do index.html,
    adaptado pro app.html. Como aqui é sempre mobile, o popover já nasce
@@ -707,6 +848,8 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
     <div class="home-hi" id="hi">Olá 👋</div>
     <div id="home-user-line" style="font-size:11px;color:var(--txt3);font-weight:600;margin-top:-1px;margin-bottom:3px"></div>
     <div class="home-sub">O que você quer fazer?</div>
+    <!-- Fatia 33: avisos de plano (mensalidade em atraso / troca de plano esperando pagamento) -->
+    <div id="home-plano-aviso"></div>
 
     <div id="install-banner">
       <i class="ti ti-download"></i>
@@ -718,7 +861,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
     <div class="home-secao-t" id="resumo-secao-t">Resumo de hoje</div>
     <div class="resumo-grid" id="resumo-grid">
       <div class="rc glow-ok"><div class="rc-lbl">Vendas hoje</div><div class="rc-val" id="rc-vendas"><span class="motion-shimmer" style="display:inline-block;width:52px;height:15px"></span></div></div>
-      <div class="rc" id="rc-caixa-box"><div class="rc-lbl">Caixa</div><div class="rc-val" id="rc-caixa"><span class="motion-shimmer" style="display:inline-block;width:44px;height:15px"></span></div></div>
+      <div class="rc" id="rc-caixa-box" onclick="if(_podeCaixaMob())abrir('caixa')" style="cursor:pointer"><div class="rc-lbl">Caixa</div><div class="rc-val" id="rc-caixa"><span class="motion-shimmer" style="display:inline-block;width:44px;height:15px"></span></div></div>
       <div class="rc glow-warn" id="rc-os-box"><div class="rc-lbl">OS em aberto</div><div class="rc-val" id="rc-os"><span class="motion-shimmer" style="display:inline-block;width:24px;height:15px"></span></div></div>
       <div class="rc" id="rc-estoque-box"><div class="rc-lbl">Estoque baixo</div><div class="rc-val" id="rc-estbaixo"><span class="motion-shimmer" style="display:inline-block;width:24px;height:15px"></span></div></div>
       <div class="rc glow-pri" style="grid-column:1/-1" id="rc-lucro-box">
@@ -780,7 +923,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 
   <!-- PRODUTO -->
   <div class="wrap hidden" id="scr-produto">
-    <div class="aviso">
+    <div class="aviso" id="p-aviso">
       <i class="ti ti-info-circle"></i>
       <div>Cadastro rápido. Os <b>dados fiscais</b> (NCM, CFOP, origem) você completa depois no sistema, na aba <b>Produtos</b>, antes de vender com nota.</div>
     </div>
@@ -802,7 +945,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
         <button class="icon-btn mobile-fab" onclick="abrirScanner()" title="Escanear"><i class="ti ti-scan"></i></button>
       </div>
       <div class="row2">
-        <div><label class="lbl">Categoria</label><input class="inp" id="p-cat" placeholder="Ex.: Acessório"></div>
+        <div><label class="lbl">Categoria</label><input class="inp" id="p-cat" placeholder="Ex.: Acessório" list="p-cat-lista"></div>
         <div><label class="lbl">Marca</label><input class="inp" id="p-marca" placeholder="Opcional"></div>
       </div>
     </div>
@@ -813,11 +956,24 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
         <div><label class="lbl">Custo (R$)</label><input class="inp" id="p-custo" type="number" inputmode="decimal" placeholder="0,00"></div>
         <div><label class="lbl">Preço venda (R$) *</label><input class="inp" id="p-preco" type="number" inputmode="decimal" placeholder="0,00"></div>
       </div>
-      <label class="lbl">Quantidade em estoque</label>
-      <input class="inp" id="p-est" type="number" inputmode="numeric" placeholder="0" value="1">
+      <!-- Fatia 32: no cadastro, quantidade inicial; na edição, o estoque só muda
+           por "Movimentar estoque" (fica registrado no histórico, como no desktop) -->
+      <div id="p-est-wrap">
+        <label class="lbl">Quantidade em estoque</label>
+        <input class="inp" id="p-est" type="number" inputmode="numeric" placeholder="0" value="1">
+      </div>
+      <div id="p-est-info" class="p-est-info" style="display:none"></div>
+      <label class="lbl">Estoque mínimo (avisa quando chegar nele)</label>
+      <input class="inp" id="p-estmin" type="number" inputmode="numeric" min="0" placeholder="3" value="3">
+      <div id="p-status-wrap" style="display:none">
+        <label class="lbl">Situação</label>
+        <select class="inp" id="p-status"></select>
+      </div>
     </div>
 
     <button class="btn btn-ok" id="p-save" onclick="salvarProduto()"><i class="ti ti-device-floppy"></i>Salvar na loja</button>
+    <button class="btn btn-ghost hidden" id="p-desativar" style="margin-top:8px;color:var(--danger)" onclick="desativarProdutoMob()"><i class="ti ti-eye-off"></i>Tirar da venda (desativar)</button>
+    <datalist id="p-cat-lista"><option value="Celular"><option value="Acessório"><option value="Peça"><option value="Serviço"><option value="Outro"></datalist>
   </div>
 
   <!-- OS RÁPIDA -->
@@ -835,6 +991,9 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
       <input class="inp" id="os-aparelho" placeholder="Ex.: iPhone 11 128GB">
       <label class="lbl">Defeito relatado *</label>
       <textarea class="inp" id="os-defeito" rows="2" placeholder="O que o cliente relatou..."></textarea>
+      <!-- Fatia 30: valor opcional — mesmo campo "os-val" do desktop (vira valor_servico e total) -->
+      <label class="lbl">Valor do serviço (R$) — opcional</label>
+      <input class="inp" id="os-valor" type="number" inputmode="decimal" step="0.01" min="0" placeholder="Pode definir depois, na própria OS">
     </div>
     <div class="card motion-fade-up" style="animation-delay:.11s">
       <div class="card-t">Fotos do aparelho</div>
@@ -862,7 +1021,19 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
     <div class="bc-row" style="margin-bottom:14px">
       <input class="inp" id="osl-busca" placeholder="🔍 Buscar por cliente, número ou aparelho..." oninput="renderOsListaDebounced(this.value)">
     </div>
+    <!-- Fatia 30: filtro por situação (Em andamento é o padrão) -->
+    <div class="filtro-row" id="osl-filtros"></div>
     <div id="os-lista-list" class="mobile-list"></div>
+  </div>
+
+  <!-- Fatia 34: CAIXA -->
+  <div class="wrap hidden" id="scr-caixa">
+    <div id="caixa-conteudo"></div>
+  </div>
+
+  <!-- Fatia 33: PLANO E ASSINATURA -->
+  <div class="wrap hidden" id="scr-plano">
+    <div id="plano-conteudo"></div>
   </div>
 
   <!-- ESTOQUE -->
@@ -871,7 +1042,10 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
       <input class="inp" id="est-busca" placeholder="🔍 Buscar produto..." oninput="renderEstoqueDebounced(this.value)">
       <button class="icon-btn mobile-fab" onclick="abrirScanner('estoque')" title="Escanear para vender"><i class="ti ti-scan"></i></button>
     </div>
-    <div class="filtro-row">
+    <div class="filtro-row scroll">
+      <!-- Fatia 32: "À venda" = status ativo (o que o PDV vende, igual ao desktop); "Outros status" = novo, seminovo, vitrine, inativo... -->
+      <button class="pg motion-btn on" id="chip-est-venda" onclick="setFiltroStatusEstoque('venda')">À venda</button>
+      <button class="pg motion-btn" id="chip-est-outros" onclick="setFiltroStatusEstoque('outros')">Outros status</button>
       <button class="pg motion-btn" id="chip-est-baixo" onclick="toggleFiltroEstoqueBaixo()"><i class="ti ti-alert-triangle" style="font-size:13px;margin-right:4px"></i>Só estoque baixo</button>
     </div>
     <div id="estoque-list" class="mobile-list"></div>
@@ -1030,6 +1204,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
     <div class="perfil-secao-t" id="perfil-secao-gestao" style="display:none">Gestão</div>
     <div class="card" id="perfil-card-gestao" style="display:none">
       <div class="sheet-it" onclick="abrir('relatorios')"><i class="ti ti-chart-bar"></i>Relatórios</div>
+      <div class="sheet-it" onclick="abrir('plano')"><i class="ti ti-crown"></i>Plano e assinatura</div>
     </div>
 
     <div class="perfil-secao-t">Ajuda</div>
@@ -1165,6 +1340,8 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
   <!-- Revisão 2026-09: "Relatórios" saiu do acesso rápido da Home e passou
        pra cá (pedido do usuário) — só Admin/Gerente, ver aplicarModoPerfil(). -->
   <div class="sheet-it" id="sheet-relatorios-mais" style="display:none" onclick="fecharMais();abrir('relatorios')"><i class="ti ti-chart-bar"></i>Relatórios</div>
+  <div class="sheet-it" id="sheet-caixa-mais" style="display:none" onclick="fecharMais();abrir('caixa')"><i class="ti ti-cash-register"></i>Caixa (sangria, reforço, fechamento)</div>
+  <div class="sheet-it" id="sheet-plano-mais" style="display:none" onclick="fecharMais();abrir('plano')"><i class="ti ti-crown"></i>Plano e assinatura</div>
 </div>
 
 <!-- Fatia 9: passo a passo de instalação no iPhone/iPad (fica na tela até fechar) -->
@@ -1250,6 +1427,19 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
   </div>
 </div>
 
+<!-- Fatia 30: modal único das ações da OS no celular (voltar etapa, cancelar,
+     valor do serviço, peça, alterar dados, receber pagamento). O conteúdo é
+     montado pelo JS (abrirModalOSAcao) — mesmo visual dos outros modais. -->
+<div id="modal-osacao-overlay" onclick="if(event.target===this)fecharModalOSAcao()">
+  <div id="modal-osacao" role="dialog" aria-modal="true" aria-labelledby="osa-title">
+    <div class="mp-title" id="osa-title">—</div>
+    <div class="mp-sub" id="osa-sub"></div>
+    <div id="osa-body"></div>
+    <div id="osa-err" style="color:var(--danger);font-size:12.5px;margin-top:8px;min-height:16px"></div>
+    <div id="osa-btns"></div>
+  </div>
+</div>
+
 <!-- Revisão 2026-09: ativar/desativar o bloqueio de tela local deste
      aparelho (Perfil → Segurança → Bloqueio do app neste celular). -->
 <div id="modal-applock-setup-overlay" onclick="if(event.target===this)fecharApplockSetup()">
@@ -1314,7 +1504,12 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
   <div class="osd-lbl" id="ent-previsao-lbl" style="display:none">Previsão</div>
   <div class="osd-val" id="ent-previsao" style="display:none">—</div>
 
+  <!-- Fatia 31: entregador atribuído (só pra quem gerencia entregas) -->
+  <div id="ent-entregador" style="display:none"><div class="osd-lbl">Entregador</div><div class="osd-val" id="ent-entregador-val">—</div></div>
+
   <div id="ent-acoes" style="margin-top:16px;display:flex;flex-direction:column;gap:8px"></div>
+  <!-- Fatia 31: gestão (agendar, entregador, link do cliente, ver OS) -->
+  <div class="osd-box" id="ent-gestao" style="display:none"></div>
   <div id="ent-telefone-acoes" style="margin-top:10px"></div>
 </div>
 
@@ -1378,6 +1573,9 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
   <div class="sheet-handle" onclick="fecharDetalheOS()" style="cursor:pointer"></div>
   <div class="osd-tit" id="osd-titulo">OS</div>
   <div class="osd-sub" id="osd-sub"></div>
+  <!-- Fatia 30: progresso + próximo passo (mesmos textos do desktop) -->
+  <div class="osd-prog" id="osd-prog-wrap"><div id="osd-prog" style="width:0%"></div></div>
+  <div class="osd-prox" id="osd-prox"></div>
 
   <div class="osd-lbl">Cliente</div>
   <div class="osd-val" id="osd-cliente">—</div>
@@ -1388,12 +1586,24 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
   <div class="osd-lbl">Defeito relatado</div>
   <div class="osd-val" id="osd-defeito">—</div>
 
+  <!-- Fatia 30: diagnóstico / prazo / garantia / observações (só aparecem se preenchidos) -->
+  <div id="osd-extra"></div>
+
+  <!-- Fatia 30: valores e peças -->
+  <div class="osd-box" id="osd-valores"></div>
+
   <div class="osd-lbl">Fotos</div>
   <div class="thumbs" id="osd-thumbs"></div>
   <label class="foto-add" for="osd-foto" style="margin-top:9px"><i class="ti ti-camera"></i>Adicionar foto</label>
   <input type="file" id="osd-foto" accept="image/*" capture="environment" multiple class="hidden" onchange="addFotoOsExistente(event)">
 
   <div id="osd-acoes" style="margin-top:16px"></div>
+
+  <!-- Fatia 30: histórico (timeline da OS) -->
+  <div class="osd-box" id="osd-hist-box" style="display:none">
+    <div class="osd-box-t"><span>Histórico</span></div>
+    <div class="osd-tl" id="osd-hist"></div>
+  </div>
 </div>
 
 <!-- SCANNER -->
@@ -1444,7 +1654,7 @@ try{
     if(!G.empresaId) return;            // ainda não tinha logado (ex.: 1ª carga da página) — nada a fazer
     console.warn('[MISU MOBILE][sessão] sessão encerrada pelo Supabase (token expirado/inválido) — voltando ao login');
     G.empresa=null; G.empresaId=null; G.operador=null; G.caixa=null;
-    G.cart=[]; G.fotos=[]; G.osFotos=[]; G.estoqueCache=null; G.ultimaOS=null; G.ultimaVenda=null;
+    G.cart=[]; G.fotos=[]; G.osFotos=[]; G.estoqueCache=null; G.ultimaOS=null; G.ultimaVenda=null; G.maquinas=null; G.osCache=null; G.estoqueOutros=null; /* Fatias 30/32 */
     $('app').classList.add('hidden');
     $('bottom-nav').classList.add('hidden');
     $('login').classList.remove('hidden');
@@ -1457,7 +1667,7 @@ try{
 // usuário. O erro completo continua indo pro console para investigação.
 function msgAmigavel(e,fallback){
   const m=String(e?.message||'');
-  const conhecidas=[/^Conecte sua conta InfinitePay/,/^Não foi possível gerar a cobrança\.?$/,/^Informe /,/^Esta conta não é de uma empresa/,/^Empresa bloqueada/,/^E-mail ou senha incorretos/,/^Já existe um produto/];
+  const conhecidas=[/^Conecte sua conta InfinitePay/,/^Não foi possível gerar a cobrança\.?$/,/^Informe /,/^Esta conta não é de uma empresa/,/^Empresa bloqueada/,/^Acesso suspenso/,/^E-mail ou senha incorretos/,/^Já existe um produto/];
   if(conhecidas.some(rx=>rx.test(m))) return m;
   if(e) console.error('[MISU MOBILE]', e);
   return fallback||'Não foi possível concluir esta ação. Tente novamente.';
@@ -1683,10 +1893,15 @@ async function doLogin(){
 }
 
 async function carregarEmpresa(user){
-  const {data:emp}=await comTimeout(db.from('empresas').select('id,nome,status').eq('auth_user_id',user.id).maybeSingle(),'empresa');
+  // Fatia 33: traz a empresa inteira (plano, teste grátis, mensalidade) — antes só id/nome/status
+  const {data:emp}=await comTimeout(db.from('empresas').select('*').eq('auth_user_id',user.id).maybeSingle(),'empresa');
   if(!emp) throw new Error('Esta conta não é de uma empresa. Use o login da loja.');
-  if(emp.status==='bloqueada') throw new Error('Empresa bloqueada. Fale com o suporte.');
+  if(emp.status==='bloqueada') throw new Error(emp.motivo_bloqueio?('Acesso suspenso: '+emp.motivo_bloqueio):'Empresa bloqueada. Fale com o suporte.');
   G.empresa=emp; G.empresaId=emp.id; G.userEmail=user.email||'';
+  // Fatia 33: teste grátis vencido / mensalidade muito atrasada → mesma regra
+  // de bloqueio do desktop, mas aqui a tela de bloqueio já é a de planos/pagamento.
+  const _bq=_bloqueioPlanoMob(emp);
+  if(_bq){ carregarConfigSuporte(); _entrarModoBloqueioPlano(_bq); return; }
   // Revisão 2026-09: nome da empresa saiu da topbar (virou avatar de perfil);
   // ainda usa emp.nome como identificação provisória do avatar até
   // resolverOperadorDispositivo() identificar quem é de fato (mais abaixo).
@@ -1719,6 +1934,7 @@ async function carregarEmpresa(user){
   carregarConfigSuporte();
   _atualizarIconeTema();
   if(typeof verificarConviteTourMobile==='function') verificarConviteTourMobile();
+  verificarSituacaoPlanoMob(); // Fatia 33: avisos de mensalidade / troca de plano pendente
 }
 
 /* ── CONTEXTO DE VENDA (caixa aberto + lista de funcionários) ── */
@@ -1767,7 +1983,7 @@ async function carregarResumoDia(){
     else { vEl.classList.add('empty'); vEl.textContent='Nenhuma venda hoje.'; }
   }catch(_){ $('rc-vendas').textContent='—'; }
   const caixaEl=$('rc-caixa'), caixaBox=$('rc-caixa-box');
-  if(G.caixa){ caixaEl.textContent='Aberto'; caixaBox.className='rc ok'; }
+  if(G.caixa){ caixaEl.textContent='Aberto'; caixaBox.className='rc ok'; } /* Fatia 34: toque no card abre a tela do caixa */
   else { caixaEl.textContent='Fechado'; caixaBox.className='rc'; }
   try{
     const {count}=await comTimeout(db.from('ordens_servico').select('id',{count:'exact',head:true}).eq('empresa_id',G.empresaId).not('status','in','("Entregue","Cancelada")'),'os abertas');
@@ -2336,6 +2552,552 @@ function abrirSuporte(){
   window.open(`https://wa.me/${SUPORTE_WPP}?text=${encodeURIComponent(msg)}`,'_blank');
 }
 
+/* ── Fatia 34: CAIXA NO CELULAR (resumo, sangria, reforço e fechamento) ──
+   Copiado do index.html (fecharCaixa / confirmarFecharCaixa /
+   confirmarSangria / confirmarReforco), mesmas tabelas e campos:
+   • Sangria: movimentacoes_caixa tipo 'sangria' com valor NEGATIVO; reforço:
+     tipo 'reforco' com valor positivo. Valor tem que ser maior que zero.
+   • Esperado na gaveta = abertura + dinheiro das vendas do caixa (já
+     descontando troco) + reforços − sangrias  … e, por decisão combinada
+     com o usuário, + OS pagas em DINHEIRO neste caixa (no desktop elas não
+     entram na conta e aparecem como "sobra" na conferência).
+   • Fechar: o operador informa o valor contado; se houver diferença, a
+     observação é obrigatória. Grava caixas.status='fechado', data_fechamento,
+     valor_sistema, valor_informado, diferenca, observacao_fechamento (com o
+     mesmo fallback do desktop se as colunas de conferência não existirem) +
+     log "caixa_fechado" (crítico quando há diferença).
+   Quem pode: quem tem PDV no desktop por padrão (admin/gerente/operador de
+   caixa) — o técnico e o entregador não mexem no caixa. */
+const CX_FORMA_LBL={dinheiro:'Dinheiro',pix:'Pix',cartao:'Cartão',crediario:'Crediário',fiado:'Fiado',link:'Link/QR',misto:'Misto'};
+function _podeCaixaMob(){ return !G.operador || ['admin','admin_master','gerente','operador'].includes(G.operador.role); }
+
+async function _carregarResumoCaixaMob(){
+  // relê qual caixa está aberto agora (pode ter sido aberto/fechado em outro aparelho)
+  const {data:cxs}=await comTimeout(db.from('caixas').select('*').eq('empresa_id',G.empresaId).eq('status','aberto').order('criado_em',{ascending:false}).limit(1),'caixa');
+  const cx=(cxs&&cxs[0])||null;
+  G.caixa=cx;
+  if(!cx) return null;
+  let vendas=[], movs=[];
+  try{ const {data}=await comTimeout(db.from('vendas').select('id,total,pagamento,pagamentos,troco,status,tipo,criado_em,cliente_nome').eq('empresa_id',G.empresaId).eq('caixa_id',cx.id).limit(2000),'vendas do caixa'); vendas=(data||[]).filter(v=>v.status!=='cancelada'&&v.status!=='estornada'&&v.tipo!=='servico_os'); }catch(_){}
+  try{ const {data}=await comTimeout(db.from('movimentacoes_caixa').select('*').eq('caixa_id',cx.id).order('criado_em',{ascending:true}),'movimentações'); movs=data||[]; }catch(_){}
+  const pgsDe=v=>(Array.isArray(v.pagamentos)&&v.pagamentos.length)?v.pagamentos:[{forma:v.pagamento,valor:v.total}];
+  const porForma={};
+  vendas.forEach(v=>pgsDe(v).forEach(p=>{ const f=p.forma||'dinheiro'; porForma[f]=(porForma[f]||0)+(parseFloat(p.valor)||0); }));
+  const totalVendas=vendas.reduce((s,v)=>s+(Number(v.total)||0),0);
+  const totalDinheiro=vendas.reduce((s,v)=>s+pgsDe(v).filter(p=>p.forma==='dinheiro').reduce((a,p)=>a+(parseFloat(p.valor)||0),0)-(Number(v.troco)||0),0);
+  const servicosOS=movs.filter(m=>m.tipo==='servico_os');
+  const totalServicos=servicosOS.reduce((s,m)=>s+(parseFloat(m.valor)||0),0);
+  const osDinheiro=servicosOS.filter(m=>(m.forma_pagamento||'dinheiro')==='dinheiro').reduce((s,m)=>s+(parseFloat(m.valor)||0),0);
+  const totalSangrias=movs.filter(m=>m.tipo==='sangria').reduce((s,m)=>s+Math.abs(parseFloat(m.valor)||0),0);
+  const totalReforcos=movs.filter(m=>m.tipo==='reforco').reduce((s,m)=>s+(parseFloat(m.valor)||0),0);
+  const abertura=Number(cx.valor_abertura)||0;
+  const valorSistema=+(abertura+totalDinheiro+osDinheiro+totalReforcos-totalSangrias).toFixed(2);
+  G._cxResumo={cx,vendas,movs,porForma,totalVendas,totalDinheiro,servicosOS,totalServicos,osDinheiro,totalSangrias,totalReforcos,abertura,valorSistema};
+  return G._cxResumo;
+}
+async function abrirCaixaTela(){
+  const c=$('caixa-conteudo'); if(!c) return;
+  c.innerHTML='<div class="skel skel-card"></div><div class="skel skel-card"></div>';
+  let r=null;
+  try{ r=await _carregarResumoCaixaMob(); }
+  catch(e){ c.innerHTML='<div style="text-align:center;padding:22px;color:var(--danger)">Não foi possível carregar o caixa.</div>'; return; }
+  const pode=_podeCaixaMob();
+  if(!r){
+    c.innerHTML=`<div class="card cx-fechado"><i class="ti ti-lock"></i><div class="cx-f-t">Caixa fechado</div><div class="cx-f-s">Abra o caixa para começar a vender e receber pagamentos.</div>
+      ${pode?`<button class="btn btn-ok" onclick="abrirCaixaModalMobile()"><i class="ti ti-lock-open"></i>Abrir caixa</button>`:'<div class="aviso"><i class="ti ti-info-circle"></i><div>Seu perfil não abre caixa.</div></div>'}</div>`;
+    return;
+  }
+  const cx=r.cx;
+  const linhasForma=Object.entries(r.porForma).filter(([,v])=>v>0.004).map(([f,v])=>`<div class="osd-linha"><span>${esc(CX_FORMA_LBL[f]||f)}</span><b>${_brl(v)}</b></div>`).join('')||'<div class="osd-linha"><span>Nenhuma venda ainda</span><b>—</b></div>';
+  const movsLista=r.movs.filter(m=>m.tipo==='sangria'||m.tipo==='reforco'||m.tipo==='servico_os').slice().reverse().slice(0,15).map(m=>{
+    const lbl={sangria:'Sangria',reforco:'Reforço',servico_os:'OS recebida'}[m.tipo];
+    const neg=m.tipo==='sangria';
+    const det=m.tipo==='servico_os'?((m.os_numero||'')+(m.forma_pagamento?' · '+(CX_FORMA_LBL[m.forma_pagamento]||m.forma_pagamento):'')):(m.descricao||'');
+    return `<div class="cx-mov"><div><b>${lbl}</b><span>${m.criado_em?new Date(m.criado_em).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):''}${det?' · '+esc(det):''}${m.usuario_nome?' · '+esc(m.usuario_nome):''}</span></div><b class="${neg?'neg':'pos'}">${neg?'−':'+'}${_brl(Math.abs(parseFloat(m.valor)||0))}</b></div>`;
+  }).join('');
+  c.innerHTML=`
+    <div class="card cx-topo">
+      <div class="cx-st"><span class="os-badge st-pronto">Aberto</span> desde ${cx.criado_em?new Date(cx.criado_em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'—'}</div>
+      <div class="cx-op">${esc(cx.operador_nome||'—')}</div>
+      <div class="cx-esp-l">Esperado na gaveta (dinheiro)</div>
+      <div class="cx-esp">${_brl(r.valorSistema)}</div>
+      <div class="cx-esp-d">Abertura ${_brl(r.abertura)} + vendas em dinheiro ${_brl(r.totalDinheiro)}${r.osDinheiro>0?` + OS em dinheiro ${_brl(r.osDinheiro)}`:''}${r.totalReforcos>0?` + reforços ${_brl(r.totalReforcos)}`:''}${r.totalSangrias>0?` − sangrias ${_brl(r.totalSangrias)}`:''}</div>
+      ${pode?`<div class="cx-acoes"><button class="btn btn-out" onclick="abrirMovCaixaMob('sangria')"><i class="ti ti-arrow-down"></i>Sangria</button><button class="btn btn-out" onclick="abrirMovCaixaMob('reforco')"><i class="ti ti-arrow-up"></i>Reforço</button></div>
+      <button class="btn" style="margin-top:8px" onclick="abrirFecharCaixaMob()"><i class="ti ti-lock"></i>Fechar caixa</button>`:'<div class="aviso" style="margin-top:10px"><i class="ti ti-info-circle"></i><div>Só quem opera o caixa (administrador, gerente ou operador de caixa) faz sangria, reforço e fechamento.</div></div>'}
+    </div>
+    <div class="card"><div class="card-t">Vendas neste caixa · ${r.vendas.length}</div>${linhasForma}<div class="osd-linha tot"><span>Total vendido</span><b>${_brl(r.totalVendas)}</b></div>
+      ${r.totalServicos>0?`<div class="osd-linha"><span>OS recebidas (${r.servicosOS.length})</span><b>${_brl(r.totalServicos)}</b></div>`:''}</div>
+    ${movsLista?`<div class="card"><div class="card-t">Movimentações</div>${movsLista}</div>`:''}`;
+}
+
+/* Sangria / reforço — confirmarSangria()/confirmarReforco() do desktop */
+let _cxMovTipo='sangria';
+function abrirMovCaixaMob(tipo){
+  if(!_podeCaixaMob()){ notify('Seu perfil não mexe no caixa.','warn'); return; }
+  if(!G.caixa){ notify('Abra o caixa primeiro.','warn'); return; }
+  _cxMovTipo=tipo;
+  const s=tipo==='sangria';
+  abrirModalOSAcao(s?'<i class="ti ti-arrow-down"></i> Sangria':'<i class="ti ti-arrow-up"></i> Reforço',
+    s?'Retirada de dinheiro da gaveta (ex.: depósito, pagamento de fornecedor).':'Entrada de dinheiro na gaveta (ex.: troco).',
+    `<label class="lbl" style="margin-top:0">Valor (R$)</label><input class="inp" id="cxm-val" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0,00">
+     <label class="lbl">Descrição</label><input class="inp" id="cxm-desc" placeholder="${s?'Ex.: depósito no banco':'Ex.: troco do início do dia'}">`,
+    `<button class="btn" id="osa-ok" onclick="salvarMovCaixaMob()"><i class="ti ti-check"></i>Registrar ${s?'sangria':'reforço'}</button><button class="btn btn-ghost" style="margin-top:6px" onclick="fecharModalOSAcao()">Cancelar</button>`);
+}
+async function salvarMovCaixaMob(){
+  const val=parseFloat(String($('cxm-val')?.value||'').replace(',','.'))||0;
+  const desc=($('cxm-desc')?.value||'').trim();
+  if(val<=0){ _osaErro('Valor inválido.'); return; }
+  if(!G.caixa){ _osaErro('Abra o caixa primeiro.'); return; }
+  const s=_cxMovTipo==='sangria';
+  _osaBusy('osa-ok',true);
+  try{
+    const {error}=await comTimeout(db.from('movimentacoes_caixa').insert({empresa_id:G.empresaId,caixa_id:G.caixa.id,tipo:s?'sangria':'reforco',valor:s?-val:val,descricao:desc||(s?'Sangria':'Reforço'),usuario_id:G.operador?.id||null,usuario_nome:G.operador?.nome||'MISU MOBILE'}),'caixa');
+    if(error) throw error;
+    fecharModalOSAcao();
+    notify(`${s?'Sangria':'Reforço'} de ${_brl(val)} registrad${s?'a':'o'}.`,s?'info':'ok');
+    abrirCaixaTela();
+  }catch(e){ _osaErro(msgAmigavel(e,'Não foi possível registrar.')); }
+  finally{ _osaBusy('osa-ok',false); }
+}
+
+/* Fechamento com conferência de gaveta */
+async function abrirFecharCaixaMob(){
+  if(!_podeCaixaMob()){ notify('Seu perfil não fecha o caixa.','warn'); return; }
+  let r=null;
+  try{ r=await _carregarResumoCaixaMob(); }catch(_){}
+  if(!r){ notify('Nenhum caixa aberto.','warn'); abrirCaixaTela(); return; }
+  abrirModalOSAcao('<i class="ti ti-lock"></i> Fechar caixa',
+    'Conte o dinheiro da gaveta e informe o valor.',
+    `<div class="osa-saldo"><div class="l">Esperado na gaveta</div><div class="v">${_brl(r.valorSistema)}</div></div>
+     <label class="lbl" style="margin-top:0">Valor contado (R$)</label><input class="inp" id="fcm-contado" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0,00" oninput="_fcmDiff()">
+     <div id="fcm-diff" class="osa-info"></div>
+     <div id="fcm-obs-wrap" style="display:none"><label class="lbl">Motivo da diferença *</label><textarea class="inp" id="fcm-obs" rows="2" placeholder="Ex.: troco dado a mais, vale de funcionário..."></textarea></div>`,
+    `<button class="btn" id="osa-ok" onclick="confirmarFecharCaixaMob()"><i class="ti ti-lock"></i>Fechar caixa</button><button class="btn btn-ghost" style="margin-top:6px" onclick="fecharModalOSAcao()">Cancelar</button>`);
+  _fcmDiff();
+}
+function _fcmDiff(){
+  const r=G._cxResumo; const el=$('fcm-diff'); const inp=$('fcm-contado'); const ow=$('fcm-obs-wrap'); if(!r||!el||!inp) return;
+  if(inp.value===''){ el.innerHTML='Informe o valor contado para ver a diferença.'; if(ow) ow.style.display='none'; return; }
+  const dif=(parseFloat(String(inp.value).replace(',','.'))||0)-r.valorSistema;
+  const ok=Math.abs(dif)<0.01;
+  el.innerHTML=`<b style="color:${ok?'var(--ok)':(dif<0?'var(--danger)':'#B45309')}">${ok?'Sem diferença ✓':((dif<0?'Falta ':'Sobra ')+_brl(Math.abs(dif)))}</b>`;
+  if(ow) ow.style.display=ok?'none':'block';
+}
+async function confirmarFecharCaixaMob(){
+  const r=G._cxResumo; if(!r||!G.caixa){ fecharModalOSAcao(); return; }
+  const cStr=$('fcm-contado')?.value??'';
+  const contado=cStr===''?null:(parseFloat(String(cStr).replace(',','.'))||0);
+  const obs=($('fcm-obs')?.value||'').trim();
+  const diferenca=contado===null?null:+(contado-r.valorSistema).toFixed(2);
+  if(diferenca!==null && Math.abs(diferenca)>=0.01 && !obs){ _osaErro('Há diferença na gaveta. Descreva o motivo.'); $('fcm-obs')?.focus(); return; }
+  _osaBusy('osa-ok',true,'Fechando...');
+  const dataFechamento=new Date().toISOString();
+  const payload={status:'fechado',data_fechamento:dataFechamento,valor_sistema:r.valorSistema};
+  const extra={};
+  if(contado!==null){ extra.valor_informado=contado; extra.diferenca=diferenca; }
+  if(obs) extra.observacao_fechamento=obs;
+  try{
+    let {error}=await comTimeout(db.from('caixas').update({...payload,...extra}).eq('id',r.cx.id).eq('empresa_id',G.empresaId),'fechar caixa');
+    if(error){
+      // mesmo fallback do desktop: sem as colunas de conferência, fecha sem elas
+      ({error}=await comTimeout(db.from('caixas').update(payload).eq('id',r.cx.id).eq('empresa_id',G.empresaId),'fechar caixa'));
+      if(error) throw error;
+      if(contado!==null) notify('Caixa fechado. A conferência da gaveta não foi salva (falta rodar o SQL de conferência no banco).','warn');
+    }
+    const temDif=diferenca!==null && Math.abs(diferenca)>=0.01;
+    try{ await db.from('logs_auditoria').insert({empresa_id:G.empresaId,usuario_id:G.operador?.id||null,usuario_nome:G.operador?.nome||'—',perfil:G.operador?.role||null,acao:'caixa_fechado',resumo:(temDif?`Caixa fechado com diferença de ${_brl(Math.abs(diferenca))} — ${obs}`:'Caixa fechado sem diferença').slice(0,500),resultado:'success',nivel_risco:temDif?'critico':'normal',origem:'mobile',criado_em:dataFechamento}); }catch(_){}
+    G._ultimoFechamentoMob={...r,cx:{...r.cx,...payload,...extra},contado,diferenca,obs,dataFechamento,operador:G.operador?.nome||r.cx.operador_nome};
+    G.caixa=null;
+    fecharModalOSAcao();
+    notify('Caixa fechado!','ok');
+    if(typeof carregarResumoDia==='function') carregarResumoDia();
+    abrirModalOSAcao('<i class="ti ti-circle-check" style="color:var(--ok)"></i> Caixa fechado',
+      temDif?`Fechado com ${diferenca<0?'falta':'sobra'} de ${_brl(Math.abs(diferenca))}.`:'Fechado sem diferença.',
+      `<div class="osd-linha"><span>Esperado</span><b>${_brl(r.valorSistema)}</b></div>${contado!==null?`<div class="osd-linha"><span>Contado</span><b>${_brl(contado)}</b></div>`:''}<div class="osd-linha"><span>Total vendido</span><b>${_brl(r.totalVendas)}</b></div>`,
+      `<button class="btn btn-out" onclick="imprimirFechamentoMob()"><i class="ti ti-printer"></i>Imprimir / salvar PDF</button><button class="btn btn-ghost" style="margin-top:6px" onclick="fecharModalOSAcao()">Fechar</button>`);
+    abrirCaixaTela();
+  }catch(e){ _osaErro(msgAmigavel(e,'Não foi possível fechar o caixa.')); }
+  finally{ _osaBusy('osa-ok',false); }
+}
+// Relatório de fechamento (mesmas seções do relatório do desktop, em versão simples)
+function imprimirFechamentoMob(){
+  const f=G._ultimoFechamentoMob; if(!f){ notify('Nenhum fechamento recente.','warn'); return; }
+  const loja=(G.empresa&&(G.empresa.nome_fantasia||G.empresa.nome))||'Minha Loja';
+  const fmtDT=d=>d?new Date(d).toLocaleString('pt-BR'):'—';
+  const td='style="padding:6px 4px;border-bottom:1px solid #eee"', tdr='style="padding:6px 4px;border-bottom:1px solid #eee;text-align:right"';
+  const formas=Object.entries(f.porForma).filter(([,v])=>v>0.004).map(([k,v])=>`<tr><td ${td}>${esc(CX_FORMA_LBL[k]||k)}</td><td ${tdr}>${_brl(v)}</td></tr>`).join('')||`<tr><td ${td} colspan="2">Nenhuma venda</td></tr>`;
+  const movs=f.movs.filter(m=>m.tipo==='sangria'||m.tipo==='reforco').map(m=>`<tr><td ${td}>${fmtDT(m.criado_em)}</td><td ${td}>${m.tipo==='sangria'?'Sangria':'Reforço'}</td><td ${td}>${esc(m.descricao||'—')}</td><td ${tdr}>${m.tipo==='sangria'?'−':'+'}${_brl(Math.abs(parseFloat(m.valor)||0))}</td></tr>`).join('');
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Fechamento de caixa</title></head><body style="font-family:Arial,sans-serif;color:#1a1a2e;padding:20px;font-size:13px">
+    <h2 style="margin:0">${esc(loja)}</h2><div style="color:#555;margin-bottom:14px">Relatório de fechamento de caixa</div>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:14px"><tr><td ${td}>Operador</td><td ${tdr}>${esc(f.operador||'—')}</td></tr><tr><td ${td}>Abertura</td><td ${tdr}>${fmtDT(f.cx.criado_em)}</td></tr><tr><td ${td}>Fechamento</td><td ${tdr}>${fmtDT(f.dataFechamento)}</td></tr></table>
+    <h3>Vendas por forma de pagamento</h3><table style="width:100%;border-collapse:collapse">${formas}<tr><td ${td}><b>Total vendido (${f.vendas.length})</b></td><td ${tdr}><b>${_brl(f.totalVendas)}</b></td></tr>${f.totalServicos>0?`<tr><td ${td}>OS recebidas (${f.servicosOS.length})</td><td ${tdr}>${_brl(f.totalServicos)}</td></tr>`:''}</table>
+    ${movs?`<h3>Sangrias e reforços</h3><table style="width:100%;border-collapse:collapse">${movs}</table>`:''}
+    <h3>Gaveta</h3><table style="width:100%;border-collapse:collapse">
+      <tr><td ${td}>Valor de abertura</td><td ${tdr}>${_brl(f.abertura)}</td></tr>
+      <tr><td ${td}>Vendas em dinheiro (menos troco)</td><td ${tdr}>${_brl(f.totalDinheiro)}</td></tr>
+      ${f.osDinheiro>0?`<tr><td ${td}>OS recebidas em dinheiro</td><td ${tdr}>${_brl(f.osDinheiro)}</td></tr>`:''}
+      <tr><td ${td}>Reforços</td><td ${tdr}>${_brl(f.totalReforcos)}</td></tr>
+      <tr><td ${td}>Sangrias</td><td ${tdr}>−${_brl(f.totalSangrias)}</td></tr>
+      <tr><td ${td}><b>Esperado na gaveta</b></td><td ${tdr}><b>${_brl(f.valorSistema)}</b></td></tr>
+      ${f.contado!==null?`<tr><td ${td}>Valor contado</td><td ${tdr}>${_brl(f.contado)}</td></tr><tr><td ${td}><b>Diferença</b></td><td ${tdr}><b>${Math.abs(f.diferenca)<0.01?'Sem diferença':(f.diferenca<0?'Falta ':'Sobra ')+_brl(Math.abs(f.diferenca))}</b></td></tr>`:''}
+      ${f.obs?`<tr><td ${td} colspan="2">Observação: ${esc(f.obs)}</td></tr>`:''}
+    </table>
+    <div style="display:flex;justify-content:space-between;margin-top:46px;font-size:12px"><div style="border-top:1px solid #333;padding-top:4px;width:45%;text-align:center">${esc(f.operador||'Operador')}</div><div style="border-top:1px solid #333;padding-top:4px;width:45%;text-align:center">Conferência</div></div>
+  </body></html>`;
+  _relMobPrintIframe(html);
+}
+
+/* ── Fatia 33: PLANO E ASSINATURA NO CELULAR ──────────────────────────────
+   Tudo copiado do fluxo de upgrade do index.html — nada de cobrança nova:
+   • Planos: mesmo objeto PLANOS do desktop (nome/preço/limites/recursos),
+     com nome e preço sobrescritos pela tabela "planos" (sincronizarPlanosDoBanco)
+     e a lista de recursos vinda de feature_catalog + plano_entitlements
+     (renderRecursosDosPlanos), quando existir.
+   • Plano atual = empresas.plano (getPlanoAtual; sem plano → Pro, igual ao desktop).
+   • Anual = preço mensal × (1 − 17%) × 12 (DESCONTO_ANUAL).
+   • Trocar de plano (processarMudancaPlano): não troca na hora. Gera a
+     cobrança Asaas pela Edge Function "gerar-cobranca" (plataforma:true) e
+     grava o pedido em plan_change_requests (pending_payment, vence em 7
+     dias). O plano só muda quando o pagamento é confirmado (webhook/admin).
+     Se já houver troca pendente, oferece cancelar a antiga antes.
+   • Pagamento: QR PIX + copia-e-cola e link da fatura (mostrarCobrancaPlano).
+   • "Já paguei" consulta a Edge Function "verificar-pagamento" (nunca ativa
+     só pelo clique); "Cancelar troca" chama "cancelar-cobranca" e marca o
+     pedido como plan_change_cancelled.
+   • Avisos (verificarPagamentoPendente): mensalidade em atraso até 3 dias
+     depois do vencimento = aviso; passou disso = bloqueio. Teste grátis
+     vencido = bloqueio (loadProfile do desktop).
+   Quem pode trocar o plano: admin/gerente (no desktop o "Fazer Upgrade" é
+   data-p="admin,gerente"). Diferença do desktop, combinada no pedido do
+   usuário ("upgrade no celular"): quando o bloqueio é por teste grátis
+   vencido, a tela de bloqueio do celular já mostra os planos pra assinar
+   (no desktop ela só tem "falar com o suporte"). */
+const PLANOS_MOB={
+  basico:{id:'basico',nome:'Básico',preco:89,limites:{usuarios:2,caixas:1,produtos:200,os_mes:50},
+    features:{pdv:true,os:true,clientes:true,produtos:true,estoque:true,dashboard:true,relatorios:false,crediario:false,fornecedores:false,orcamentos:false,devolucoes:false,inteligencia:false,whatsapp:false,multi_caixa:false,api:false}},
+  pro:{id:'pro',nome:'Pro',preco:149,limites:{usuarios:5,caixas:3,produtos:2000,os_mes:500},
+    features:{pdv:true,os:true,clientes:true,produtos:true,estoque:true,dashboard:true,relatorios:true,crediario:true,fornecedores:true,orcamentos:true,devolucoes:true,inteligencia:false,whatsapp:false,multi_caixa:true,api:false}},
+  enterprise:{id:'enterprise',nome:'Enterprise',preco:299,limites:{usuarios:999,caixas:999,produtos:999999,os_mes:999999},
+    features:{pdv:true,os:true,clientes:true,produtos:true,estoque:true,dashboard:true,relatorios:true,crediario:true,fornecedores:true,orcamentos:true,devolucoes:true,inteligencia:true,whatsapp:true,multi_caixa:true,api:true}}
+};
+const PLANO_FEAT_LBL={pdv:'PDV (vendas)',os:'Ordens de serviço',clientes:'Clientes',produtos:'Produtos',estoque:'Estoque',dashboard:'Painel',relatorios:'Relatórios avançados',crediario:'Crediário',fornecedores:'Fornecedores',orcamentos:'Orçamentos',devolucoes:'Devoluções',inteligencia:'Inteligência (IA)',whatsapp:'WhatsApp',multi_caixa:'Vários caixas',api:'API'};
+const PLANO_COR_MOB={basico:'16,185,129',pro:'30,94,255',enterprise:'245,158,11'};
+const DESCONTO_ANUAL_MOB=0.17;
+const TOLERANCIA_DIAS_PLANO=3;
+let _cicloPlanoMob='mensal';
+
+function _planoAtualMob(){ const id=G.empresa?.plano; return (id&&PLANOS_MOB[id])?PLANOS_MOB[id]:PLANOS_MOB.pro; }
+function _podeAssinarPlano(){ return !G.operador || ['admin','admin_master','gerente'].includes(G.operador.role); }
+function _valorCobrancaPlano(p,ciclo){ const m=parseFloat(p.preco)||0; return ciclo==='anual'?+(m*(1-DESCONTO_ANUAL_MOB)*12).toFixed(2):m; }
+function _dataBR(d){ try{ return new Date(d).toLocaleDateString('pt-BR'); }catch(_){ return ''; } }
+
+// Bloqueio por plano (mesmas regras do desktop). null = liberado.
+function _bloqueioPlanoMob(emp){
+  if(!emp) return null;
+  if(emp.status==='trial' && emp.trial_expira_em && new Date(emp.trial_expira_em)<new Date())
+    return {tipo:'trial',motivo:'Seu período de teste gratuito terminou. Escolha um plano para continuar usando o sistema.'};
+  const st=emp.pagamento_status, vence=emp.pagamento_vence_em?new Date(emp.pagamento_vence_em):null;
+  if((st==='pendente'||st==='atrasado') && vence){
+    const dias=Math.ceil((vence-new Date())/86400000);
+    if(dias<-TOLERANCIA_DIAS_PLANO) return {tipo:'atraso',motivo:'Mensalidade do plano em atraso. Regularize para reativar o acesso.'};
+  }
+  return null;
+}
+function _entrarModoBloqueioPlano(b){
+  G.bloqueio=b;
+  $('login').classList.add('hidden');
+  $('app').classList.remove('hidden');
+  $('bottom-nav').classList.add('hidden');
+  abrir('plano');
+  $('btn-back').classList.add('hidden');
+}
+
+async function sincronizarPlanosMob(){
+  try{
+    const {data,error}=await comTimeout(db.from('planos').select('id,nome,preco').order('preco'),'planos');
+    if(error||!data||!data.length) return;
+    data.forEach(row=>{
+      const id=String(row.id||'').toLowerCase();
+      let alvo=PLANOS_MOB[id];
+      if(!alvo){
+        const n=String(row.nome||'').toLowerCase();
+        if(n.includes('bás')||n.includes('bas')) alvo=PLANOS_MOB.basico;
+        else if(n.includes('pro')) alvo=PLANOS_MOB.pro;
+        else if(n.includes('enter')) alvo=PLANOS_MOB.enterprise;
+      }
+      if(alvo){ if(row.preco!=null) alvo.preco=parseFloat(row.preco)||alvo.preco; if(row.nome) alvo.nome=row.nome; }
+    });
+  }catch(_){}
+}
+async function carregarRecursosPlanosMob(){
+  G._recursosPlano=null;
+  try{
+    const [cat,ents]=await Promise.all([
+      comTimeout(db.from('feature_catalog').select('*').eq('ativo',true).order('ordem'),'recursos'),
+      comTimeout(db.from('plano_entitlements').select('*'),'recursos')
+    ]);
+    const catalogo=cat.data||[], ent=ents.data||[];
+    if(!catalogo.length) return;
+    const porPlano={};
+    ent.forEach(e=>{ (porPlano[e.plano_id]=porPlano[e.plano_id]||{})[e.feature_key]=(e.bool_value!=null?e.bool_value:(e.int_value!=null?e.int_value:null)); });
+    const out={};
+    Object.keys(PLANOS_MOB).forEach(pid=>{
+      const v=porPlano[pid]||{};
+      out[pid]=catalogo.map(f=>{
+        let lib, txt=f.nome;
+        if(f.tipo==='flag'){ const x=(f.key in v)?v[f.key]:f.default_bool; lib=x===true; }
+        else { const x=(f.key in v)?v[f.key]:f.default_int; lib=(x===-1||x>0); if(lib){ const nm=f.nome.charAt(0).toLowerCase()+f.nome.slice(1); txt=x===-1?(f.nome+' ilimitados'):('Até '+x+' '+nm); } }
+        return {txt,lib};
+      });
+    });
+    G._recursosPlano=out;
+  }catch(_){}
+}
+function _recursosDoPlanoMob(pid){
+  if(G._recursosPlano&&G._recursosPlano[pid]) return G._recursosPlano[pid].filter(r=>r.lib).map(r=>r.txt);
+  const p=PLANOS_MOB[pid]; if(!p) return [];
+  const lim=p.limites, L=[];
+  L.push(lim.usuarios>=999?'Usuários ilimitados':`Até ${lim.usuarios} usuários`);
+  L.push(lim.produtos>=999999?'Produtos ilimitados':`Até ${lim.produtos} produtos`);
+  // primeiro o que este plano tem a mais que o Básico (o que diferencia), depois o resto
+  const base=PLANOS_MOB.basico.features;
+  const tem=Object.entries(p.features).filter(([k,v])=>v&&PLANO_FEAT_LBL[k]);
+  tem.filter(([k])=>pid==='basico'||!base[k]).forEach(([k])=>L.push(PLANO_FEAT_LBL[k]));
+  tem.filter(([k])=>pid!=='basico'&&base[k]).forEach(([k])=>L.push(PLANO_FEAT_LBL[k]));
+  return L;
+}
+async function carregarTrocaPendenteMob(){
+  try{
+    try{ await db.rpc('expirar_trocas_plano_vencidas'); }catch(_){}
+    const {data}=await comTimeout(db.from('plan_change_requests').select('*').eq('empresa_id',G.empresaId).eq('status','pending_payment').order('criado_em',{ascending:false}).limit(1),'troca de plano');
+    G.trocaPendente=(data&&data[0])||null;
+  }catch(_){ G.trocaPendente=null; }
+  return G.trocaPendente;
+}
+
+// Avisos na tela inicial: mensalidade em atraso (ainda dentro da folga) e
+// troca de plano esperando pagamento — os mesmos dois avisos do desktop.
+async function verificarSituacaoPlanoMob(){
+  const box=$('home-plano-aviso'); if(!box||!G.empresa) return;
+  let html='';
+  const emp=G.empresa, st=emp.pagamento_status, vence=emp.pagamento_vence_em?new Date(emp.pagamento_vence_em):null;
+  if((st==='pendente'||st==='atrasado') && vence){
+    const dias=Math.ceil((vence-new Date())/86400000);
+    html+=`<div class="pl-aviso danger"><i class="ti ti-alert-triangle"></i><div><b>Mensalidade em atraso</b><span>Regularize a mensalidade do seu plano${dias>=0?` em ${dias} dia(s)`:''} para não bloquear o acesso.</span>
+      <div class="pl-aviso-acoes">${emp.pagamento_cobranca_url?`<a class="btn btn-ok" href="${esc(emp.pagamento_cobranca_url)}" target="_blank" rel="noopener">Pagar agora</a>`:''}${emp.pagamento_pix?`<button class="btn btn-out" onclick="copiarPixMensalidade()">Copiar PIX</button>`:''}</div></div></div>`;
+  }
+  const t=await carregarTrocaPendenteMob();
+  if(t && _podeAssinarPlano()){
+    const nome=(PLANOS_MOB[t.plano_novo]?.nome)||t.plano_novo;
+    html+=`<div class="pl-aviso"><i class="ti ti-clock-dollar"></i><div><b>Troca para o plano ${esc(nome)} aguardando pagamento</b><span>Seu plano atual continua ativo normalmente.</span>
+      <div class="pl-aviso-acoes"><button class="btn" onclick="abrir('plano')">Ver</button></div></div></div>`;
+  }
+  box.innerHTML=html;
+}
+async function copiarPixMensalidade(){
+  const pix=G.empresa?.pagamento_pix; if(!pix) return;
+  try{ await navigator.clipboard.writeText(pix); notify('PIX copiado!','ok'); }catch(_){ notify(pix); }
+}
+
+/* ── Tela "Plano e assinatura" ── */
+async function abrirPlanoMob(){
+  const c=$('plano-conteudo'); if(!c) return;
+  c.innerHTML='<div class="skel skel-card"></div><div class="skel skel-card"></div><div class="skel skel-card"></div>';
+  // relê a empresa (plano/situação podem ter mudado no painel master)
+  try{ const {data}=await comTimeout(db.from('empresas').select('*').eq('id',G.empresaId).maybeSingle(),'empresa'); if(data) G.empresa=data; }catch(_){}
+  await Promise.all([sincronizarPlanosMob(),carregarRecursosPlanosMob(),carregarTrocaPendenteMob()]);
+  let nUsers=null,nProds=null;
+  try{ const r=await comTimeout(db.from('usuarios').select('id',{count:'exact',head:true}).eq('empresa_id',G.empresaId).eq('ativo',true),'usuários'); nUsers=r.count??(r.data||[]).length; }catch(_){}
+  try{ const r=await comTimeout(db.from('produtos').select('id',{count:'exact',head:true}).eq('empresa_id',G.empresaId),'produtos'); nProds=r.count??(r.data||[]).length; }catch(_){}
+  G._usoPlano={usuarios:nUsers,produtos:nProds};
+  renderPlanoMob();
+}
+function _barraUso(lbl,atual,limite,ilim){
+  if(atual==null) return '';
+  // "ilimitado" vem de quem chama: o desktop usa limite>900 pra tudo, o que
+  // faria os 2.000 produtos do Pro aparecerem como ilimitados.
+  const pct=ilim?0:Math.min(100,Math.round(atual/Math.max(1,limite)*100));
+  const cor=pct>=90?'var(--danger)':(pct>=70?'var(--warn)':'var(--pri)');
+  return `<div class="pl-uso"><div class="pl-uso-t"><span>${lbl}</span><b>${atual}${ilim?' · ilimitado':' / '+limite}</b></div>${ilim?'':`<div class="pl-uso-bar"><div style="width:${pct}%;background:${cor}"></div></div>`}</div>`;
+}
+function renderPlanoMob(){
+  const c=$('plano-conteudo'); if(!c) return;
+  const emp=G.empresa||{}, atual=_planoAtualMob(), bloq=G.bloqueio, pode=_podeAssinarPlano();
+  let h='';
+  if(bloq){
+    h+=`<div class="pl-aviso danger" style="margin-bottom:12px"><i class="ti ti-lock"></i><div><b>Acesso suspenso</b><span>${esc(bloq.motivo)}</span>
+      ${bloq.tipo==='atraso'?`<div class="pl-aviso-acoes">${emp.pagamento_cobranca_url?`<a class="btn btn-ok" href="${esc(emp.pagamento_cobranca_url)}" target="_blank" rel="noopener">Pagar mensalidade</a>`:''}${emp.pagamento_pix?`<button class="btn btn-out" onclick="copiarPixMensalidade()">Copiar PIX</button>`:''}</div>`:''}</div></div>`;
+  }
+  // Situação atual
+  let sit='';
+  if(emp.status==='trial' && emp.trial_expira_em){
+    const d=Math.ceil((new Date(emp.trial_expira_em)-new Date())/86400000);
+    sit=d>=0?`Teste grátis · termina em ${_dataBR(emp.trial_expira_em)} (${d} dia${d===1?'':'s'})`:`Teste grátis terminou em ${_dataBR(emp.trial_expira_em)}`;
+  } else if(emp.status==='bloqueada') sit='Bloqueada';
+  else if(emp.pagamento_status==='pendente'||emp.pagamento_status==='atrasado') sit='Mensalidade em aberto'+(emp.pagamento_vence_em?' · venceu em '+_dataBR(emp.pagamento_vence_em):'');
+  else sit='Ativa'+(emp.pagamento_ciclo?` · ${emp.pagamento_ciclo==='anual'?'anual':'mensal'}`:'')+(emp.pagamento_vence_em?` · próximo vencimento ${_dataBR(emp.pagamento_vence_em)}`:'');
+  h+=`<div class="card pl-atual" style="--plc:${PLANO_COR_MOB[atual.id]||'30,94,255'}">
+    <div class="pl-atual-tag">Seu plano</div>
+    <div class="pl-atual-nome">${esc(atual.nome)}</div>
+    <div class="pl-atual-sit">${esc(sit)}</div>
+    ${_barraUso('Usuários ativos',G._usoPlano?.usuarios,atual.limites.usuarios,atual.limites.usuarios>=999)}
+    ${_barraUso('Produtos cadastrados',G._usoPlano?.produtos,atual.limites.produtos,atual.limites.produtos>=999999)}
+  </div>`;
+  // Troca pendente
+  const t=G.trocaPendente;
+  if(t){
+    const nomeN=(PLANOS_MOB[t.plano_novo]?.nome)||t.plano_novo, nomeA=(PLANOS_MOB[t.plano_atual]?.nome)||t.plano_atual||atual.nome;
+    const dias=t.vence_em?Math.max(0,Math.ceil((new Date(t.vence_em)-new Date())/86400000)):null;
+    h+=`<div class="pl-aviso" style="margin-bottom:12px"><i class="ti ti-clock-dollar"></i><div><b>Troca para ${esc(nomeN)} aguardando pagamento</b>
+      <span>Seu plano ${esc(nomeA)} continua ativo normalmente.${dias!=null?` Se não for pago em ${dias} dia(s), o pedido é cancelado e você continua no plano atual.`:''}</span>
+      ${pode?`<div class="pl-aviso-acoes"><button class="btn" onclick="verPagamentoTrocaMob()">Ver pagamento</button><button class="btn btn-out" onclick="jaPagueiTrocaMob()">Já paguei</button><button class="btn btn-ghost" onclick="confirmarCancelarTrocaMob()">Cancelar troca</button></div>`:''}</div></div>`;
+  }
+  // Planos (escondidos no bloqueio por mensalidade — ali o que resolve é pagar)
+  if(!(bloq&&bloq.tipo==='atraso')){
+    h+=`<div class="home-secao-t" style="margin-top:6px">Planos</div>
+      <div class="pl-ciclo"><button class="${_cicloPlanoMob==='mensal'?'on':''}" onclick="setCicloPlanoMob('mensal')">Mensal</button><button class="${_cicloPlanoMob==='anual'?'on':''}" onclick="setCicloPlanoMob('anual')">Anual <span>-17%</span></button></div>`;
+    h+=Object.values(PLANOS_MOB).map(p=>{
+      const ehAtual=p.id===atual.id && !(bloq&&bloq.tipo==='trial');
+      const mensal=parseFloat(p.preco)||0;
+      const anual=_cicloPlanoMob==='anual';
+      const precoMes=anual?mensal*(1-DESCONTO_ANUAL_MOB):mensal;
+      const recursos=_recursosDoPlanoMob(p.id);
+      return `<div class="card pl-card${ehAtual?' atual':''}" style="--plc:${PLANO_COR_MOB[p.id]||'30,94,255'}">
+        <div class="pl-card-top"><div class="pl-card-nome">${esc(p.nome)}</div>${ehAtual?'<span class="pl-badge">Seu plano</span>':''}</div>
+        <div class="pl-card-preco">R$ ${precoMes.toFixed(0)}<small>/mês</small></div>
+        ${anual?`<div class="pl-card-ano">R$ ${(precoMes*12).toFixed(0)}/ano · economize R$ ${(mensal*12-precoMes*12).toFixed(0)}</div>`:''}
+        <div class="pl-feats">${recursos.slice(0,7).map(r=>`<div><i class="ti ti-check"></i>${esc(r)}</div>`).join('')}${recursos.length>7?`<div class="mais">e mais ${recursos.length-7} recurso(s)</div>`:''}</div>
+        ${ehAtual?'':(pode?`<button class="btn" onclick="escolherPlanoMob('${p.id}')">${(mensal>=(parseFloat(atual.preco)||0)||bloq)?'Assinar '+esc(p.nome):'Mudar para '+esc(p.nome)}</button>`:'')}
+      </div>`;
+    }).join('');
+    if(!pode) h+=`<div class="aviso"><i class="ti ti-info-circle"></i><div>Só o administrador ou gerente da loja pode trocar o plano.</div></div>`;
+  }
+  h+=`<button class="btn btn-out" style="margin-top:6px" onclick="abrirSuporte()"><i class="ti ti-headset"></i>Falar com o suporte</button>`;
+  if(bloq) h+=`<button class="btn btn-ghost" style="margin-top:6px" onclick="doLogout()"><i class="ti ti-logout"></i>Sair</button>`;
+  c.innerHTML=h;
+}
+function setCicloPlanoMob(c){ _cicloPlanoMob=c; renderPlanoMob(); }
+
+// Passo 1 — confirmação (abrirConfirmacaoPlano do desktop)
+function escolherPlanoMob(pid){
+  const novo=PLANOS_MOB[pid]; if(!novo) return;
+  if(!_podeAssinarPlano()){ notify('Só o administrador ou gerente pode trocar o plano.','warn'); return; }
+  const atual=_planoAtualMob();
+  const anual=_cicloPlanoMob==='anual';
+  const valor=_valorCobrancaPlano(novo,_cicloPlanoMob);
+  const eco=anual?((parseFloat(novo.preco)||0)*12-valor):0;
+  abrirModalOSAcao(`<i class="ti ti-rocket"></i> ${((parseFloat(novo.preco)||0)>=(parseFloat(atual.preco)||0))?'Upgrade':'Mudança'} de plano`,
+    'Confira antes de continuar',
+    `<div class="pl-flow"><div class="pl-flow-p"><span>Atual</span><b>${esc(atual.nome)}</b><small>R$ ${atual.preco}/mês</small></div><i class="ti ti-arrow-right"></i><div class="pl-flow-p novo" style="--plc:${PLANO_COR_MOB[pid]}"><span>Novo</span><b>${esc(novo.nome)}</b><small>R$ ${novo.preco}/mês</small></div></div>
+     <div class="pl-ciclo" style="margin:12px 0"><button class="${!anual?'on':''}" onclick="_cicloPlanoMob='mensal';escolherPlanoMob('${pid}')">Mensal</button><button class="${anual?'on':''}" onclick="_cicloPlanoMob='anual';escolherPlanoMob('${pid}')">Anual <span>-17%</span></button></div>
+     <div class="osa-saldo"><div class="l">Cobrança agora</div><div class="v">R$ ${valor.toFixed(2).replace('.',',')}<small style="font-size:13px;color:var(--txt3);font-family:'DM Sans',sans-serif"> ${anual?'por ano':'por mês'}</small></div>${eco>0?`<div class="d">economize R$ ${eco.toFixed(2).replace('.',',')}/ano</div>`:''}</div>
+     <div class="osa-info"><i class="ti ti-shield-check"></i> Ativado <b>depois que o pagamento for confirmado</b>. Até lá você continua no ${esc(atual.nome)}.</div>`,
+    `<button class="btn" id="osa-ok" onclick="processarMudancaPlanoMob('${pid}','${_cicloPlanoMob}')">Continuar <i class="ti ti-arrow-right"></i></button><button class="btn btn-ghost" style="margin-top:6px" onclick="fecharModalOSAcao()">Cancelar</button>`);
+}
+
+// Passo 2 — gera a cobrança e o pedido de troca (processarMudancaPlano)
+async function processarMudancaPlanoMob(pid,ciclo,jaConfirmouSubstituir){
+  const p=PLANOS_MOB[pid]; if(!p) return;
+  const valor=_valorCobrancaPlano(p,ciclo), cicloTxt=ciclo==='anual'?'anual':'mensal';
+  _osaBusy('osa-ok',true,'Gerando cobrança...');
+  try{
+    if(!jaConfirmouSubstituir){
+      try{
+        const {data:ex}=await db.from('plan_change_requests').select('id,plano_novo,cobranca_id').eq('empresa_id',G.empresaId).eq('status','pending_payment').limit(1);
+        if(ex&&ex.length){
+          _osaBusy('osa-ok',false);
+          const nomeEx=(PLANOS_MOB[ex[0].plano_novo]?.nome)||ex[0].plano_novo;
+          if(!confirm(`Você já tem uma troca para o plano ${nomeEx} esperando pagamento. Cancelar ela e criar esta nova para o plano ${p.nome}?`)) return;
+          G.trocaPendente={...(G.trocaPendente||{}),...ex[0]};
+          await cancelarTrocaPlanoMob(ex[0].id,true);
+          return processarMudancaPlanoMob(pid,ciclo,true);
+        }
+      }catch(_){ /* tabela pode não existir ainda: segue */ }
+    }
+    let cobranca=null;
+    try{
+      const emp=G.empresa||{};
+      const {data,error}=await comTimeout(db.functions.invoke('gerar-cobranca',{body:{plataforma:true,cliente:{nome:emp.nome||'Loja',cpfCnpj:emp.doc||emp.cnpj||'',telefone:emp.telefone||''},valor,descricao:`Plano ${p.nome} (${cicloTxt}) — MISU SYS`,tipo:'UNDEFINED'}}),'cobrança',20000);
+      if(!error && data && !data.error && data.configured!==false) cobranca=data;
+    }catch(_){}
+    const vence=new Date(); vence.setDate(vence.getDate()+7);
+    const req={empresa_id:G.empresaId,plano_atual:G.empresa?.plano||null,plano_novo:pid,ciclo_atual:G.empresa?.pagamento_ciclo||null,ciclo_novo:cicloTxt,valor,gateway:'asaas',
+      cobranca_id:cobranca?.id||cobranca?.asaasId||null,cobranca_url:cobranca?.invoiceUrl||null,cobranca_pix:cobranca?.pixCopiaECola||null,cobranca_status:'pendente',status:'pending_payment',vence_em:vence.toISOString(),
+      solicitado_por:G.userEmail||G.operador?.nome||null};
+    let trocaId=null;
+    try{
+      const {data:ins,error:insErr}=await db.from('plan_change_requests').insert(req).select('id').single();
+      if(insErr){ if(/relation|does not exist|schema/i.test(insErr.message||'')) notify('O controle de troca de plano ainda não foi ativado no banco (migração PC01).','warn'); }
+      else trocaId=ins?.id;
+    }catch(_){}
+    G.trocaPendente={...req,id:trocaId};
+    fecharModalOSAcao();
+    if(cobranca && (cobranca.invoiceUrl||cobranca.pixCopiaECola)) mostrarCobrancaPlanoMob(p,cobranca,vence,valor,cicloTxt);
+    else notify(`Pedido de troca para ${p.nome} registrado. O plano será ativado assim que o pagamento for confirmado.`,'info');
+    if(!$('scr-plano').classList.contains('hidden')) renderPlanoMob();
+    if(!G.bloqueio) verificarSituacaoPlanoMob();
+  }catch(e){ _osaErro(msgAmigavel(e,'Não foi possível processar a troca de plano.')); }
+  finally{ _osaBusy('osa-ok',false); }
+}
+
+// Passo 3 — pagamento (mostrarCobrancaPlano)
+function mostrarCobrancaPlanoMob(plano,cobranca,vence,valor,cicloTxt){
+  const v=valor!=null?Number(valor):(parseFloat(plano.preco)||0);
+  abrirModalOSAcao(`<i class="ti ti-receipt-2"></i> Pague para ativar o ${esc(plano.nome)}`,
+    `R$ ${v.toFixed(2).replace('.',',')}${cicloTxt==='anual'?'/ano':'/mês'} · vence em ${_dataBR(vence)}`,
+    `${cobranca.pixCopiaECola?`<div class="pl-pix"><div id="qr-plano-mob" class="pl-qr"></div><div class="osa-info" style="text-align:center">Escaneie o QR ou copie o código PIX</div>
+       <input class="inp" readonly id="pix-plano-mob" value="${esc(cobranca.pixCopiaECola)}" onclick="this.select()" style="font-family:monospace;font-size:12px">
+       <button class="btn" style="margin-top:8px" onclick="copiarPixPlanoMob()"><i class="ti ti-copy"></i>Copiar código PIX</button></div>`:''}
+     ${cobranca.invoiceUrl?`<a class="btn btn-out" style="margin-top:8px;text-decoration:none" href="${esc(cobranca.invoiceUrl)}" target="_blank" rel="noopener"><i class="ti ti-external-link"></i>Abrir fatura (cartão/boleto)</a>`:''}
+     <div class="osa-info" style="margin-top:10px"><i class="ti ti-shield-check"></i> Assim que o pagamento for confirmado, seu plano sobe para <b>${esc(plano.nome)}</b> automaticamente.</div>`,
+    `<button class="btn btn-ghost" style="margin-top:6px" onclick="fecharModalOSAcao()">Fechar</button>`);
+  if(cobranca.pixCopiaECola) setTimeout(()=>{ const box=$('qr-plano-mob'); if(box){ try{ new QRCode(box,{text:cobranca.pixCopiaECola,width:190,height:190,correctLevel:QRCode.CorrectLevel.M}); }catch(_){} } },60);
+}
+async function copiarPixPlanoMob(){ const v=$('pix-plano-mob')?.value; if(!v) return; try{ await navigator.clipboard.writeText(v); notify('PIX copiado!','ok'); }catch(_){ notify(v); } }
+function verPagamentoTrocaMob(){
+  const t=G.trocaPendente; if(!t){ notify('Nenhuma troca pendente.','info'); return; }
+  if(!t.cobranca_url && !t.cobranca_pix){ notify('Esta solicitação não tem dados de pagamento salvos. Cancele e refaça a troca.','warn'); return; }
+  const plano=PLANOS_MOB[t.plano_novo]||{nome:t.plano_novo,preco:t.valor};
+  mostrarCobrancaPlanoMob(plano,{invoiceUrl:t.cobranca_url,pixCopiaECola:t.cobranca_pix,id:t.cobranca_id},t.vence_em?new Date(t.vence_em):new Date(),t.valor,t.ciclo_novo);
+}
+async function jaPagueiTrocaMob(){
+  const t=G.trocaPendente; if(!t) return;
+  notify('Verificando o pagamento...','info');
+  let ok=false;
+  try{
+    const {data}=await comTimeout(db.functions.invoke('verificar-pagamento',{body:{cobranca_id:t.cobranca_id,empresa_id:G.empresaId}}),'verificar pagamento',20000);
+    ok=!!(data && (data.pago || data.status==='CONFIRMED' || data.status==='RECEIVED' || data.confirmado));
+  }catch(_){}
+  if(ok){ notify('Pagamento confirmado! Ativando seu novo plano...','ok'); setTimeout(()=>location.reload(),1500); }
+  else notify('Ainda não identificamos o pagamento. Se acabou de pagar, aguarde alguns minutos — a confirmação é automática.','info');
+}
+function confirmarCancelarTrocaMob(){
+  const t=G.trocaPendente; if(!t) return;
+  const nomeN=(PLANOS_MOB[t.plano_novo]?.nome)||t.plano_novo, nomeA=(PLANOS_MOB[t.plano_atual]?.nome)||t.plano_atual||'atual';
+  abrirModalOSAcao('<i class="ti ti-alert-circle"></i> Cancelar troca de plano?',
+    `O pedido de mudança para o plano <b>${esc(nomeN)}</b> será cancelado. Você continua no plano <b>${esc(nomeA)}</b> normalmente.`,
+    `<div class="osa-info"><i class="ti ti-info-circle"></i> Se existir boleto ou PIX ligado a esse pedido, ele será cancelado ou desconsiderado.</div>`,
+    `<button class="btn" id="osa-ok" onclick="cancelarTrocaPlanoMob('${esc(t.id||'')}')"><i class="ti ti-x"></i>Cancelar troca</button><button class="btn btn-ghost" style="margin-top:6px" onclick="fecharModalOSAcao()">Manter pedido</button>`);
+}
+async function cancelarTrocaPlanoMob(id,silencioso){
+  if(!id) return;
+  if(!silencioso) _osaBusy('osa-ok',true,'Cancelando...');
+  try{
+    const t=G.trocaPendente;
+    if(t && t.cobranca_id){ try{ await db.functions.invoke('cancelar-cobranca',{body:{cobranca_id:t.cobranca_id,empresa_id:G.empresaId}}); }catch(_){} }
+    const {error}=await db.from('plan_change_requests').update({status:'plan_change_cancelled',cobranca_status:'cancelado',cancelado_em:new Date().toISOString(),motivo_cancelamento:'Cancelado pelo usuário'}).eq('id',id).eq('empresa_id',G.empresaId);
+    if(error) throw error;
+    G.trocaPendente=null;
+    if(!silencioso){
+      fecharModalOSAcao();
+      notify(`Troca de plano cancelada. Você continua no plano ${_planoAtualMob().nome}.`,'ok');
+      if(!$('scr-plano').classList.contains('hidden')) renderPlanoMob();
+      if(!G.bloqueio) verificarSituacaoPlanoMob();
+    }
+  }catch(e){ if(!silencioso) _osaErro(msgAmigavel(e,'Não foi possível cancelar a troca.')); else throw e; }
+  finally{ if(!silencioso) _osaBusy('osa-ok',false); }
+}
+
 /* ── Fatia 9: INSTALAR COMO APP (PWA) ──
    Espelha o fluxo já existente no index.html — botão custom porque o
    Android/Chrome não mostra o prompt nativo automaticamente, e iOS não
@@ -2491,10 +3253,12 @@ function _marcarNavAtivo(scr){
   if(alvo) $('bn-'+alvo)?.classList.add('on');
 }
 function abrir(scr){
-  ['home','produto','os','os-ok','os-lista','venda','venda-ok','estoque','cart','etiqueta','pgpendente','pessoas','entregas','perfil','relatorios'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
+  if(G.bloqueio && scr!=='plano') return; // Fatia 33: acesso suspenso — só a tela de plano/pagamento
+  ['home','produto','os','os-ok','os-lista','venda','venda-ok','estoque','cart','etiqueta','pgpendente','pessoas','entregas','perfil','relatorios','plano','caixa'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
   $('scr-'+scr).classList.remove('hidden');
   $('btn-back').classList.remove('hidden');
-  $('scr-title').textContent = ({produto:'Cadastrar Produto',os:'OS Rápida','os-lista':'Minhas OS',venda:'Venda Rápida',estoque:'Estoque',cart:'Carrinho',etiqueta:'Etiqueta',pgpendente:'Pagamento',pessoas:'Pessoas da Empresa',entregas:'Minhas Entregas',perfil:'Perfil',relatorios:'Relatórios'})[scr]||scr;
+  $('scr-title').textContent = ({produto:'Cadastrar Produto',os:'OS Rápida','os-lista':'Minhas OS',venda:'Venda Rápida',estoque:'Estoque',cart:'Carrinho',etiqueta:'Etiqueta',pgpendente:'Pagamento',pessoas:'Pessoas da Empresa',entregas:'Entregas',perfil:'Perfil',relatorios:'Relatórios',plano:'Plano e assinatura',caixa:'Caixa'})[scr]||scr;
+  if(scr==='produto' && !G._abrindoEdicaoProduto && _prodEdit) _prodModoCriacao(); // Fatia 32
   if(scr==='estoque') abrirEstoque();
   if(scr==='cart') renderCart();
   if(scr==='os-lista') abrirOsLista();
@@ -2502,12 +3266,15 @@ function abrir(scr){
   if(scr==='entregas') abrirEntregas();
   if(scr==='perfil') abrirPerfilScreen();
   if(scr==='relatorios') abrirRelatoriosMobile();
+  if(scr==='plano') abrirPlanoMob();
+  if(scr==='caixa') abrirCaixaTela(); // Fatia 34
   if(scr!=='pgpendente') pararPollingCobranca();
   _marcarNavAtivo(scr);
 }
 function goHome(){
+  if(G.bloqueio){ abrir('plano'); $('btn-back').classList.add('hidden'); return; } // Fatia 33
   pararPollingCobranca();
-  ['produto','os','os-ok','os-lista','venda','venda-ok','estoque','cart','etiqueta','pgpendente','pessoas','entregas','perfil','relatorios'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
+  ['produto','os','os-ok','os-lista','venda','venda-ok','estoque','cart','etiqueta','pgpendente','pessoas','entregas','perfil','relatorios','plano','caixa'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
   $('scr-home').classList.remove('hidden');
   $('btn-back').classList.add('hidden');
   $('scr-title').textContent='Início';
@@ -2612,7 +3379,7 @@ function abrirPerfilScreen(){
 async function doLogout(){
   fecharMais();
   try{
-    G.cart=[]; G.fotos=[]; G.osFotos=[]; G.estoqueCache=null; G.ultimaOS=null; G.ultimaVenda=null;
+    G.cart=[]; G.fotos=[]; G.osFotos=[]; G.estoqueCache=null; G.ultimaOS=null; G.ultimaVenda=null; G.maquinas=null; G.osCache=null; G.estoqueOutros=null; /* Fatias 30/32 */
     _logoutManual=true;
     await db.auth.signOut();
   }catch(_){}
@@ -2697,47 +3464,219 @@ async function buscarPorCodigoEstoque(cod){
   addAoCarrinho(p.id);
 }
 
-/* ── SALVAR PRODUTO ── */
+/* ── SALVAR PRODUTO (cadastro + Fatia 32: edição) ─────────────────────
+   Fatia 32: a mesma tela serve pra cadastrar e pra EDITAR. Regras copiadas
+   do saveProd()/editProd() do desktop:
+   • custo: o desktop guarda o custo total em "custo" = compra + frete +
+     impostos + reparo. Aqui o campo é o custo de COMPRA; se o produto já
+     tem frete/impostos/reparo lançados no desktop, eles são mantidos e
+     somados (o celular nunca apaga essas parcelas).
+   • mudou preço ou custo na edição → registra em historico_precos, igual
+     ao desktop (sem travar o salvamento se falhar).
+   • situação (status): mesma lista padrão do desktop (getPrdCfg). Só
+     "Ativo" aparece no PDV pra vender — mesma regra do renderPDVGrid().
+   • estoque NÃO é editado aqui: na edição ele só muda por "Movimentar
+     estoque", que fica registrado em movimentacoes_estoque (salvarAjuste).
+   Editar/movimentar: admin/gerente — no desktop, Produtos e Estoque são só
+   desses perfis (ROLE_PERMS_DEFAULT). O cadastro rápido continua como era. */
+const PROD_STATUS_LISTA=[['ativo','Ativo (à venda)'],['novo','Novo'],['seminovo','Seminovo'],['usado','Usado'],['recondicionado','Recondicionado'],['troca','Troca'],['vitrine','Vitrine'],['defeito','Defeito'],['manutencao','Em manutenção'],['fora_linha','Fora de linha'],['inativo','Inativo']];
+function _prodStatusLbl(v){ const x=PROD_STATUS_LISTA.find(s=>s[0]===v); return x?x[1].replace(' (à venda)',''):(v||'—'); }
+function _podeGerirProdutos(){ return !G.operador || ['admin','admin_master','gerente'].includes(G.operador.role); }
+let _prodEdit=null; // produto em edição (linha completa do banco) ou null = cadastro
+
+function _prodModoCriacao(){
+  _prodEdit=null;
+  ['p-nome','p-bc','p-cat','p-marca','p-custo','p-preco'].forEach(id=>{ if($(id)) $(id).value=''; });
+  if($('p-est')) $('p-est').value='1';
+  if($('p-estmin')) $('p-estmin').value='3';
+  G.fotos=[]; renderThumbs();
+  $('p-aviso')?.classList.remove('hidden');
+  $('p-est-wrap').style.display=''; $('p-est-info').style.display='none';
+  $('p-status-wrap').style.display='none';
+  $('p-desativar')?.classList.add('hidden');
+  $('p-save').innerHTML='<i class="ti ti-device-floppy"></i>Salvar na loja';
+}
+async function abrirEditarProduto(id){
+  if(!_podeGerirProdutos()){ notify('Só administrador ou gerente edita produtos.','warn'); return; }
+  let p=null;
+  try{ const {data}=await comTimeout(db.from('produtos').select('*').eq('id',id).eq('empresa_id',G.empresaId).maybeSingle(),'produto'); p=data; }catch(_){}
+  if(!p){ notify('Produto não encontrado.','warn'); return; }
+  G._abrindoEdicaoProduto=true;
+  abrir('produto');
+  G._abrindoEdicaoProduto=false;
+  _prodEdit=p;
+  $('scr-title').textContent='Editar Produto';
+  $('p-aviso')?.classList.add('hidden');
+  $('p-nome').value=p.nome||'';
+  $('p-bc').value=p.barcode||'';
+  $('p-cat').value=p.categoria||'';
+  $('p-marca').value=p.marca||'';
+  $('p-custo').value=p.custo_compra??p.custo??'';
+  $('p-preco').value=p.preco??'';
+  $('p-estmin').value=p.estoque_minimo??0;
+  $('p-est-wrap').style.display='none';
+  $('p-est-info').style.display='';
+  $('p-est-info').innerHTML=p.estoque_infinito
+    ? '<b>Estoque infinito</b> (serviço / sem controle de quantidade).'
+    : `Estoque atual: <b>${Number(p.estoque)||0} un.</b> <button class="osd-mini" type="button" onclick="abrirMovimentarEstoque('${esc(p.id)}')"><i class="ti ti-arrows-exchange"></i>Movimentar estoque</button>`;
+  const sel=$('p-status');
+  const lista=PROD_STATUS_LISTA.some(s=>s[0]===p.status)||!p.status?PROD_STATUS_LISTA:[...PROD_STATUS_LISTA,[p.status,p.status]];
+  sel.innerHTML=lista.map(([v,l])=>`<option value="${esc(v)}"${(p.status||'ativo')===v?' selected':''}>${esc(l)}</option>`).join('');
+  $('p-status-wrap').style.display='';
+  $('p-desativar')?.classList.toggle('hidden',(p.status||'ativo')==='inativo');
+  G.fotos=Array.isArray(p.fotos)?[...p.fotos]:[]; renderThumbs();
+  $('p-save').innerHTML='<i class="ti ti-device-floppy"></i>Salvar alterações';
+}
 async function salvarProduto(){
   const nome=$('p-nome').value.trim();
-  const preco=parseFloat($('p-preco').value)||0;
+  const preco=parseFloat(String($('p-preco').value).replace(',','.'))||0;
   if(!nome){ notify('Informe o nome do produto.','warn'); return; }
   if(preco<=0){ notify('Informe o preço de venda.','warn'); return; }
+  const edit=_prodEdit;
+  if(edit && !_podeGerirProdutos()){ notify('Só administrador ou gerente edita produtos.','warn'); return; }
   const btn=$('p-save');
+  const btnTxt=edit?'<i class="ti ti-device-floppy"></i>Salvar alterações':'<i class="ti ti-device-floppy"></i>Salvar na loja';
   btn.disabled=true; btn.innerHTML='<div class="spinner"></div>Salvando...';
   try{
     const bc=$('p-bc').value.trim();
-    if(bc){
-      const {data:dup}=await db.from('produtos').select('nome').eq('empresa_id',G.empresaId).eq('barcode',bc).limit(1);
-      if(dup&&dup.length && !confirm('Já existe um produto com esse código de barras: "'+dup[0].nome+'". Cadastrar assim mesmo?')){
-        btn.disabled=false; btn.innerHTML='<i class="ti ti-device-floppy"></i>Salvar na loja'; return;
+    if(bc && (!edit || bc!==(edit.barcode||''))){
+      const {data:dup}=await db.from('produtos').select('id,nome').eq('empresa_id',G.empresaId).eq('barcode',bc).limit(2);
+      const outro=(dup||[]).find(d=>!edit||d.id!==edit.id);
+      if(outro && !confirm('Já existe um produto com esse código de barras: "'+outro.nome+'". Salvar assim mesmo?')){
+        btn.disabled=false; btn.innerHTML=btnTxt; return;
       }
     }
-    const payload={
-      empresa_id:G.empresaId, nome,
-      sku:'SKU-'+Date.now(),
-      barcode:bc||null,
-      gtin:bc||null,
-      categoria:$('p-cat').value.trim()||null,
-      marca:$('p-marca').value.trim()||null,
-      custo:parseFloat($('p-custo').value)||0,
-      preco,
-      estoque:parseInt($('p-est').value)||0,
-      estoque_minimo:0,
-      status:'ativo',
-      fotos:G.fotos
-    };
-    const {error}=await comTimeout(db.from('produtos').insert(payload),'salvar produto');
+    const custoCompra=parseFloat(String($('p-custo').value).replace(',','.'))||0;
+    const estMin=Math.max(0,parseInt($('p-estmin').value)||0);
+    if(!edit){
+      const payload={
+        empresa_id:G.empresaId, nome,
+        sku:'SKU-'+Date.now(),
+        barcode:bc||null,
+        gtin:bc||null,
+        categoria:$('p-cat').value.trim()||null,
+        marca:$('p-marca').value.trim()||null,
+        custo:custoCompra,
+        preco,
+        estoque:parseInt($('p-est').value)||0,
+        estoque_minimo:estMin,
+        status:'ativo',
+        fotos:G.fotos
+      };
+      const {error}=await comTimeout(db.from('produtos').insert(payload),'salvar produto');
+      if(error) throw error;
+      notify('✅ Produto salvo na loja!','ok');
+      _prodModoCriacao();
+      G.estoqueCache=null;
+      goHome(); carregarRecentes();
+      return;
+    }
+    // ── edição ──
+    const temComposto=Object.prototype.hasOwnProperty.call(edit,'custo_compra');
+    const outros=temComposto?((Number(edit.custo_frete)||0)+(Number(edit.custo_impostos)||0)+(Number(edit.custo_reparo)||0)):0;
+    const custo=custoCompra+outros;
+    const status=$('p-status').value||edit.status||'ativo';
+    const pl={nome,barcode:bc||null,categoria:$('p-cat').value.trim()||null,marca:$('p-marca').value.trim()||null,custo,preco,estoque_minimo:estMin,status,fotos:G.fotos};
+    if(temComposto) pl.custo_compra=custoCompra;
+    if(bc && !edit.gtin) pl.gtin=bc;
+    const mudouPreco=(Number(edit.custo)||0)!==custo || (Number(edit.preco)||0)!==preco;
+    const {error}=await comTimeout(db.from('produtos').update(pl).eq('id',edit.id).eq('empresa_id',G.empresaId),'salvar produto');
     if(error) throw error;
-    notify('✅ Produto salvo na loja!','ok');
-    ['p-nome','p-bc','p-cat','p-marca','p-custo','p-preco'].forEach(id=>$(id).value='');
-    $('p-est').value='1'; G.fotos=[]; renderThumbs();
-    goHome(); carregarRecentes();
+    if(mudouPreco){
+      db.from('historico_precos').insert({produto_id:edit.id,produto_nome:nome,custo_anterior:Number(edit.custo)||0,custo_novo:custo,preco_anterior:Number(edit.preco)||0,preco_novo:preco,operador_id:G.operador?.id||null,operador_nome:G.operador?.nome||null,empresa_id:G.empresaId})
+        .then(({error:eh})=>{ if(eh) console.warn('historico_precos:',eh.message); });
+    }
+    notify('Produto atualizado!','ok');
+    _prodModoCriacao();
+    G.estoqueCache=null; G.estoqueOutros=null;
+    abrir('estoque');
   }catch(e){
     notify(msgAmigavel(e,'Não foi possível salvar o produto.'),'err');
   }finally{
-    btn.disabled=false; btn.innerHTML='<i class="ti ti-device-floppy"></i>Salvar na loja';
+    btn.disabled=false; if(btn.innerHTML.includes('spinner')) btn.innerHTML=btnTxt;
   }
+}
+// "Tirar da venda": muda a situação pra Inativo (o desktop também não apaga
+// por aqui — a exclusão definitiva fica só no computador).
+async function desativarProdutoMob(){
+  const p=_prodEdit; if(!p) return;
+  if(!_podeGerirProdutos()){ notify('Só administrador ou gerente edita produtos.','warn'); return; }
+  if(!confirm(`Tirar "${p.nome}" da venda? Ele continua cadastrado (situação "Inativo") e pode voltar depois.`)) return;
+  try{
+    const {error}=await comTimeout(db.from('produtos').update({status:'inativo'}).eq('id',p.id).eq('empresa_id',G.empresaId),'desativar');
+    if(error) throw error;
+    notify('Produto desativado.','ok');
+    _prodModoCriacao(); G.estoqueCache=null; G.estoqueOutros=null;
+    abrir('estoque');
+  }catch(e){ notify(msgAmigavel(e,'Não foi possível desativar.'),'err'); }
+}
+
+/* ── Fatia 32: MOVIMENTAR ESTOQUE — salvarAjuste()/regMov() do desktop ──
+   Entrada soma, Saída subtrai (sem passar de zero), Ajuste define o valor.
+   Quantidade a partir de 1 (mesma validação do desktop). Produto com
+   estoque infinito não movimenta. Grava produtos.estoque +
+   movimentacoes_estoque (com quem fez) + log de auditoria "estoque_ajustado". */
+let _movTipo='entrada';
+async function abrirMovimentarEstoque(id){
+  if(!_podeGerirProdutos()){ notify('Só administrador ou gerente movimenta estoque.','warn'); return; }
+  let p=null;
+  try{ const {data}=await comTimeout(db.from('produtos').select('id,nome,estoque,estoque_infinito,estoque_minimo').eq('id',id).eq('empresa_id',G.empresaId).maybeSingle(),'produto'); p=data; }catch(_){}
+  if(!p){ notify('Produto não encontrado.','warn'); return; }
+  if(p.estoque_infinito){ notify('Produto com estoque infinito — não tem quantidade pra movimentar.','warn'); return; }
+  G._movProd=p; _movTipo='entrada';
+  abrirModalOSAcao('<i class="ti ti-arrows-exchange"></i> Movimentar estoque',
+    `<b>${esc(p.nome)}</b> · hoje: <b>${Number(p.estoque)||0} un.</b>`,
+    `<div class="osa-forma">${[['entrada','Entrada'],['saida','Saída'],['ajuste','Ajuste (definir)']].map(([k,l])=>`<button class="pg motion-btn${k==='entrada'?' on':''}" data-movt="${k}" onclick="setTipoMovEstoque('${k}')">${l}</button>`).join('')}</div>
+     <label class="lbl" id="mv-qty-lbl" style="margin-top:0">Quantidade que entrou</label>
+     <input class="inp" id="mv-qty" type="number" inputmode="numeric" min="1" step="1" value="1" oninput="_previewMovEstoque()">
+     <div class="osa-info" id="mv-prev"></div>
+     <label class="lbl">Motivo</label>
+     <input class="inp" id="mv-mot" placeholder="Compra, inventário, perda...">
+     <div class="osd-box-t" style="margin-top:16px;font-size:10.5px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px">Últimas movimentações</div>
+     <div id="mv-hist" style="font-size:12.5px;color:var(--txt3)">Carregando...</div>`,
+    `<button class="btn" id="osa-ok" onclick="salvarMovEstoque()"><i class="ti ti-check"></i>Confirmar</button><button class="btn btn-ghost" style="margin-top:6px" onclick="fecharModalOSAcao()">Cancelar</button>`);
+  _previewMovEstoque();
+  try{
+    const {data}=await comTimeout(db.from('movimentacoes_estoque').select('tipo,quantidade,estoque_apos,usuario_nome,motivo,criado_em').eq('empresa_id',G.empresaId).eq('produto_id',p.id).order('criado_em',{ascending:false}).limit(5),'movimentações');
+    const h=$('mv-hist');
+    if(h) h.innerHTML=(data||[]).length?(data||[]).map(m=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)"><span><b style="color:var(--txt);text-transform:capitalize">${esc(m.tipo||'')}</b> ${Number(m.quantidade)||0} → ${m.estoque_apos!=null?esc(String(m.estoque_apos)):'∞'}${m.motivo?' · '+esc(m.motivo):''}</span><span style="white-space:nowrap">${m.criado_em?new Date(m.criado_em).toLocaleDateString('pt-BR'):''}${m.usuario_nome?' · '+esc(m.usuario_nome):''}</span></div>`).join(''):'Nenhuma movimentação ainda.';
+  }catch(_){ const h=$('mv-hist'); if(h) h.textContent='Não foi possível carregar o histórico.'; }
+}
+function setTipoMovEstoque(t){
+  _movTipo=t;
+  document.querySelectorAll('#modal-osacao [data-movt]').forEach(b=>b.classList.toggle('on',b.dataset.movt===t));
+  $('mv-qty-lbl').textContent={entrada:'Quantidade que entrou',saida:'Quantidade que saiu',ajuste:'Quantidade certa em estoque (contagem)'}[t];
+  _previewMovEstoque();
+}
+function _novoEstoqueMov(atual,tipo,qty){ if(tipo==='entrada') return atual+qty; if(tipo==='saida') return Math.max(0,atual-qty); return qty; }
+function _previewMovEstoque(){
+  const p=G._movProd; const el=$('mv-prev'); if(!p||!el) return;
+  const qty=parseInt($('mv-qty')?.value)||0;
+  el.innerHTML=qty>0?`Vai ficar com <b>${_novoEstoqueMov(Number(p.estoque)||0,_movTipo,qty)} un.</b>`:'';
+}
+async function salvarMovEstoque(){
+  const p=G._movProd; if(!p) return;
+  const qty=parseInt($('mv-qty')?.value)||0;
+  const mot=($('mv-mot')?.value||'').trim();
+  if(qty<=0){ _osaErro('Informe a quantidade (mínimo 1).'); return; }
+  _osaBusy('osa-ok',true);
+  try{
+    // relê o estoque na hora (pode ter vendido algo enquanto o modal estava aberto)
+    const {data:srv}=await comTimeout(db.from('produtos').select('estoque,estoque_infinito').eq('id',p.id).eq('empresa_id',G.empresaId).maybeSingle(),'produto');
+    if(srv?.estoque_infinito){ _osaErro('Produto com estoque infinito.'); return; }
+    const atual=Number(srv?.estoque??p.estoque)||0;
+    const ne=_novoEstoqueMov(atual,_movTipo,qty);
+    const {error}=await comTimeout(db.from('produtos').update({estoque:ne}).eq('id',p.id).eq('empresa_id',G.empresaId),'estoque');
+    if(error) throw error;
+    try{ await db.from('movimentacoes_estoque').insert({empresa_id:G.empresaId,produto_id:p.id,produto_nome:p.nome,tipo:_movTipo,quantidade:qty,estoque_apos:ne,usuario_id:G.operador?.id||null,usuario_nome:G.operador?.nome||'MISU MOBILE',motivo:mot}); }catch(_){}
+    try{ await db.from('logs_auditoria').insert({empresa_id:G.empresaId,usuario_id:G.operador?.id||null,usuario_nome:G.operador?.nome||'—',perfil:G.operador?.role||null,acao:'estoque_ajustado',resumo:`${p.nome}: ${_movTipo} de ${qty} → estoque ${ne}${mot?' — '+mot:''}`.slice(0,500),resultado:'success',nivel_risco:_movTipo==='ajuste'?'critico':'atencao',origem:'mobile',criado_em:new Date().toISOString()}); }catch(_){}
+    fecharModalOSAcao();
+    notify(`Estoque: ${p.nome} → ${ne} un.`,'ok');
+    [G.estoqueCache,G.estoqueOutros].forEach(l=>{ const x=(l||[]).find(i=>i.id===p.id); if(x) x.estoque=ne; });
+    if(_prodEdit && _prodEdit.id===p.id){ _prodEdit.estoque=ne; const inf=$('p-est-info'); if(inf) inf.innerHTML=`Estoque atual: <b>${ne} un.</b> <button class="osd-mini" type="button" onclick="abrirMovimentarEstoque('${esc(p.id)}')"><i class="ti ti-arrows-exchange"></i>Movimentar estoque</button>`; }
+    if(!$('scr-estoque').classList.contains('hidden')) renderEstoque($('est-busca')?.value||'');
+  }catch(e){ _osaErro(msgAmigavel(e,'Não foi possível movimentar o estoque.')); }
+  finally{ _osaBusy('osa-ok',false); }
 }
 
 /* ── OS RÁPIDA ── */
@@ -2769,15 +3708,24 @@ async function criarOSRapida(){
   if(!ap){ notify('Informe o aparelho.','warn'); return; }
   if(!def){ notify('Descreva o defeito relatado.','warn'); return; }
   const btn=$('os-save'); btn.disabled=true; btn.innerHTML='<div class="spinner"></div>Criando OS...';
+  // Fatia 30: valor opcional (mesma regra do createOS do desktop: o valor
+  // informado vira valor_servico E total) e garantia padrão de 90 dias
+  // (mesmo default do desktop quando o campo fica em branco).
+  const valor=Math.max(0,parseFloat(($('os-valor')?.value||'').replace(',','.'))||0);
   try{
     const token=(crypto.randomUUID()+crypto.randomUUID()).replace(/-/g,'');
+    // Fatia 30: vincula a um cliente (pra o telefone não se perder — antes o
+    // WhatsApp digitado aqui era descartado). Nunca bloqueia a criação da OS.
+    const cliRef=await _osVincularCliente(cli,fone);
     let numero='OS-'+pad(await proximoNumeroOS()), os=null, tent=0;
     while(tent<6){
-      const {data,error}=await comTimeout(db.from('ordens_servico').insert({
+      const payloadOS={
         empresa_id:G.empresaId, numero, cliente_nome:cli, aparelho:ap, defeito:def,
-        status:'Aguardando', progresso:8, timeline:[{status:'Aguardando',data:new Date().toISOString()}],
-        token_publico:token
-      }).select().single(),'criar OS');
+        status:'Aguardando', progresso:8, timeline:[{status:'Aguardando',data:new Date().toISOString(),operador:_osOpNome()}],
+        token_publico:token, valor_servico:valor, total:valor, garantia_dias:90
+      };
+      if(cliRef) payloadOS.cliente_id=cliRef.id;
+      const {data,error}=await comTimeout(db.from('ordens_servico').insert(payloadOS).select().single(),'criar OS');
       if(error && /duplicate|unique|numero/i.test(error.message||'')){ tent++; numero='OS-'+pad(parseInt(numero.replace(/\D/g,''),10)+1); continue; }
       if(error) throw error;
       os=data; break;
@@ -2789,7 +3737,8 @@ async function criarOSRapida(){
     }
     G.ultimaOS={...os,fone};
     $('os-ok-num').textContent=(os.numero||'OS')+' criada!';
-    ['os-cli','os-fone','os-aparelho','os-defeito'].forEach(id=>$(id).value=''); G.osFotos=[]; renderOsThumbs();
+    ['os-cli','os-fone','os-aparelho','os-defeito','os-valor'].forEach(id=>{ if($(id)) $(id).value=''; }); G.osFotos=[]; renderOsThumbs();
+    G.osCache=null; // Fatia 30: força recarregar "Minhas OS" com a OS nova
     ['os','produto'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
     $('scr-os-ok').classList.remove('hidden');
     $('scr-title').textContent='OS criada';
@@ -2806,25 +3755,94 @@ function enviarLinkOS(){
 }
 async function copiarLinkOS(){ const l=linkOS(); if(!l)return; try{ await navigator.clipboard.writeText(l); notify('Link copiado!','ok'); }catch(_){ notify(l); } }
 
-/* ── Fatia 11A: MINHAS OS (buscar/ver OS já existentes) ──
-   Leitura + compartilhamento + anexar foto, apenas. Não mexe em status/
-   diagnóstico/cobrança — ver PENDENCIAS (fica pro próximo arquivo, os.html,
-   onde dá pra confirmar com segurança o fluxo real de status). */
+/* ── Fatia 11A + Fatia 30: MINHAS OS (buscar, ver e AGORA também dar
+   andamento até a entrega) ──────────────────────────────────────────────
+   Fatia 30: o celular passa a fazer o ciclo completo da OS, sem depender do
+   computador. TODA regra aqui é cópia da lógica do index.html — nada novo:
+   • Etapas: mesmos mapas ON (avançar) / OV (voltar) / OP (progresso) do
+     desktop, inclusive a regra de que "Ag. Pagamento" → "Entregue" só
+     acontece recebendo o pagamento (advOS bloqueia o avanço direto).
+   • Avançar/Voltar/Cancelar: mesmos campos gravados em ordens_servico e
+     mesmo formato de entrada na timeline (advOS / confirmarVoltarOS /
+     confirmarCancelarOS). Voltar pede motivo opcional; cancelar exige motivo.
+   • Peças: mesmo formato {nome,codigo,qty,preco} e mesma conta do desktop
+     (total = valor_servico + Σ preco×qty — confirmarAddPecaOS/removerPecaOS).
+   • Receber pagamento: mesma regra do confirmarPagamentoOS do desktop —
+     exige caixa aberto; dinheiro com valor menor que o saldo = pagamento
+     PARCIAL (a OS continua em "Ag. Pagamento"); cartão exige maquininha
+     (tabela maquininhas_cartao, taxa pela mesma conta de _taxaParaForma);
+     grava a OS e a entrada "servico_os" em movimentacoes_caixa com os
+     mesmos campos.
+   • Alterar dados (diagnóstico/observações/prazo/garantia): mesmo
+     histórico do confirmarAlterarOS (historico_alteracoes + entrada
+     "Alteração" na timeline, justificativa obrigatória).
+   Quem pode: dar andamento (avançar/voltar/peças/valor/alterar/cancelar) =
+   admin/gerente/técnico — mesmo "podeEditar" do desktop; receber pagamento
+   = quem tem PDV no desktop por padrão (admin/gerente/operador de caixa).
+   Sem ninguém identificado no aparelho, vale o mesmo nível de confiança que
+   o app já usava antes (tudo liberado) — ver resolverOperadorDispositivo(). */
+const OS_ON={'Aguardando':'Em Análise','Em Análise':'Em Reparo','Em Reparo':'Aguardando Peça','Aguardando Peça':'Pronto','Pronto':'Ag. Pagamento'};
+const OS_OV={'Em Análise':'Aguardando','Em Reparo':'Em Análise','Aguardando Peça':'Em Reparo','Pronto':'Em Reparo','Ag. Pagamento':'Pronto'};
+const OS_OP={'Aguardando':8,'Em Análise':25,'Em Reparo':55,'Aguardando Peça':45,'Pronto':90,'Ag. Pagamento':95,'Entregue':100,'Cancelada':0};
+const OS_PROX={'Aguardando':'Fazer diagnóstico','Em Análise':'Concluir diagnóstico e enviar orçamento','Em Reparo':'Concluir o reparo','Aguardando Peça':'Registrar/aguardar a peça','Pronto':'Enviar para pagamento (cobrar no caixa)','Ag. Pagamento':'Receber pagamento no caixa'};
+const OS_FINAIS=['Entregue','Cancelada'];
+
+function _brl(v){ return 'R$ '+(Number(v)||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function _osOpNome(){ return (G.operador&&G.operador.nome)||''; }
+function _osRole(){ return G.operador ? String(G.operador.role||'') : null; }
+function _podeEditarOS(){ const r=_osRole(); return r===null || ['admin','admin_master','gerente','tecnico'].includes(r); }
+function _podeReceberOS(){ const r=_osRole(); return r===null || ['admin','admin_master','gerente','operador'].includes(r); }
+
+// Vincula a OS a um cliente — mesma ideia do salvarVinculoCliente() do
+// desktop: se já existe um cliente com esse nome na empresa, usa ele; senão,
+// se foi informado telefone, cadastra o cliente {nome, telefone} (mesmos
+// campos que o desktop grava nesse atalho). Sem telefone e sem cliente
+// existente, a OS fica só com o nome, como antes. Falha aqui nunca impede a OS.
+async function _osVincularCliente(nome,fone){
+  try{
+    const {data:ex}=await comTimeout(db.from('clientes').select('id,nome,telefone,whatsapp').eq('empresa_id',G.empresaId).ilike('nome',nome.replace(/[%_]/g,'')).limit(1),'cliente');
+    if(ex&&ex[0]) return ex[0];
+    if(!fone) return null;
+    const {data,error}=await comTimeout(db.from('clientes').insert({nome,telefone:fone,empresa_id:G.empresaId}).select('id,nome,telefone').single(),'novo cliente');
+    if(error) return null;
+    return data;
+  }catch(_){ return null; }
+}
+
+// Telefone do cliente da OS: o desktop não grava telefone na própria OS —
+// ele procura o cliente (por cliente_id, ou pelo nome) e usa whatsapp||telefone.
+// Aqui é igual; os campos antigos (cliente_telefone/telefone/...) continuam
+// como último recurso, caso algum registro antigo tenha.
+async function _osFoneCliente(d){
+  let fone='';
+  try{
+    let q=db.from('clientes').select('whatsapp,telefone').eq('empresa_id',G.empresaId).limit(1);
+    if(d.cliente_id) q=q.eq('id',d.cliente_id);
+    else if(d.cliente_nome) q=q.ilike('nome',String(d.cliente_nome).replace(/[%_]/g,''));
+    else q=null;
+    if(q){ const {data}=await comTimeout(q,'cliente'); const c=data&&data[0]; if(c) fone=String(c.whatsapp||c.telefone||''); }
+  }catch(_){}
+  if(!fone) fone=String(d.cliente_tel||d.cliente_telefone||d.telefone||d.whatsapp||d.fone||'');
+  return fone.replace(/\D/g,'');
+}
+
+const OSL_FILTROS=[['andamento','Em andamento'],['pagamento','Prontas / a receber'],['finalizadas','Finalizadas'],['todas','Todas']];
+let G_osFiltro='andamento';
+function setFiltroOsLista(k){ G_osFiltro=k; renderOsLista($('osl-busca')?.value||''); }
+
 async function abrirOsLista(){
   const c=$('os-lista-list'); if(!c) return;
   c.innerHTML='<div class="skel skel-card"></div><div class="skel skel-card"></div><div class="skel skel-card"></div><div class="skel skel-card"></div>';
   try{
-    const {data}=await comTimeout(db.from('ordens_servico').select('id,numero,cliente_nome,aparelho,status,criado_em,token_publico').eq('empresa_id',G.empresaId).order('criado_em',{ascending:false}).limit(200),'minhas OS');
+    const {data}=await comTimeout(db.from('ordens_servico').select('id,numero,cliente_nome,aparelho,status,criado_em,token_publico,total,valor_pago_os').eq('empresa_id',G.empresaId).order('criado_em',{ascending:false}).limit(200),'minhas OS');
     G.osCache=data||[];
     renderOsLista($('osl-busca')?.value||'');
   }catch(e){ c.innerHTML='<div style="text-align:center;padding:22px;color:var(--danger)">Não foi possível carregar as OS.</div>'; }
 }
-// Só colore de forma específica os status que já confirmei no código
-// (Aguardando/Entregue/Cancelada) — qualquer outro valor real do sistema
-// aparece com um badge neutro, sem inventar cor/significado.
+// Fatia 30: cor de cada status real do sistema (mesma família do desktop).
 function _osBadge(status){
   const s=String(status||'');
-  const mapa={'Aguardando':'st-aguardando','Entregue':'st-entregue','Cancelada':'st-cancelada'};
+  const mapa={'Aguardando':'st-aguardando','Em Análise':'st-analise','Em Reparo':'st-reparo','Aguardando Peça':'st-peca','Pronto':'st-pronto','Ag. Pagamento':'st-agpag','Entregue':'st-finalizada','Cancelada':'st-cancelada'};
   return `<span class="os-badge ${mapa[s]||'st-outro'}">${esc(s||'—')}</span>`;
 }
 // Fatia 18: debounce leve (120ms) — só atrasa a chamada de renderOsLista()
@@ -2832,23 +3850,32 @@ function _osBadge(status){
 const renderOsListaDebounced=debounce(q=>renderOsLista(q),120);
 function renderOsLista(q){
   const c=$('os-lista-list'); if(!c) return;
+  const fEl=$('osl-filtros');
+  if(fEl) fEl.innerHTML=OSL_FILTROS.map(([k,l])=>`<button class="pg motion-btn${G_osFiltro===k?' on':''}" onclick="setFiltroOsLista('${k}')">${l}</button>`).join('');
   const busca=(q||'').toLowerCase();
   let list=(G.osCache||[]);
+  if(G_osFiltro==='andamento') list=list.filter(o=>!OS_FINAIS.includes(o.status));
+  else if(G_osFiltro==='pagamento') list=list.filter(o=>o.status==='Pronto'||o.status==='Ag. Pagamento');
+  else if(G_osFiltro==='finalizadas') list=list.filter(o=>OS_FINAIS.includes(o.status));
   if(busca) list=list.filter(o=>((o.cliente_nome||'')+' '+(o.numero||'')+' '+(o.aparelho||'')).toLowerCase().includes(busca));
   if(!list.length){
     c.innerHTML = busca
       ? '<div class="mobile-empty motion-fade-in"><i class="ti ti-search-off"></i><div class="me-t">Nenhuma OS encontrada com esse termo.</div></div>'
-      : `<div class="mobile-empty motion-fade-in"><i class="ti ti-clipboard-off"></i><div class="me-t">Nenhuma OS aberta.</div><button class="btn" style="width:auto;padding:11px 22px;margin:6px auto 0" onclick="abrir('os')"><i class="ti ti-plus"></i>Criar OS rápida</button></div>`;
+      : (G_osFiltro!=='todas' && (G.osCache||[]).length)
+        ? '<div class="mobile-empty motion-fade-in"><i class="ti ti-clipboard-off"></i><div class="me-t">Nenhuma OS nesta situação.</div></div>'
+        : `<div class="mobile-empty motion-fade-in"><i class="ti ti-clipboard-off"></i><div class="me-t">Nenhuma OS aberta.</div><button class="btn" style="width:auto;padding:11px 22px;margin:6px auto 0" onclick="abrir('os')"><i class="ti ti-plus"></i>Criar OS rápida</button></div>`;
     return;
   }
   c.innerHTML=list.map(o=>{
     const data=o.criado_em?new Date(o.criado_em).toLocaleDateString('pt-BR'):'';
+    const saldo=(Number(o.total)||0)-(Number(o.valor_pago_os)||0);
+    const extra=(o.status==='Ag. Pagamento'&&saldo>0.009)?` · <b style="color:var(--pri)">a receber ${_brl(saldo)}</b>`:((Number(o.total)||0)>0?` · ${_brl(o.total)}`:'');
     return `<div class="card os-card motion-card" onclick="abrirDetalheOS('${o.id}')">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
         <div style="min-width:0"><div style="font-weight:700;font-size:14.5px">${esc(o.numero||'OS')}</div><div style="font-size:12.5px;color:var(--txt3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(o.cliente_nome||'—')} · ${esc(o.aparelho||'—')}</div></div>
         ${_osBadge(o.status)}
       </div>
-      <div style="font-size:11px;color:var(--txt3);margin-top:8px">${data}</div>
+      <div style="font-size:11px;color:var(--txt3);margin-top:8px">${data}${extra}</div>
     </div>`;
   }).join('');
 }
@@ -2861,16 +3888,80 @@ async function abrirDetalheOS(id){
     const {data:full}=await comTimeout(db.from('ordens_servico').select('*').eq('id',id).eq('empresa_id',G.empresaId).maybeSingle(),'detalhe OS');
     if(full) _osDetalheAtual=full;
   }catch(_){}
-  const d=_osDetalheAtual;
+  renderDetalheOS(_osDetalheAtual);
+  await carregarFotosOS(id);
+  $('sheet-os-overlay').style.display='block';
+  $('sheet-os').style.display='block';
+}
+// Recarrega a OS do banco (depois de qualquer ação) e redesenha detalhe + lista.
+async function _recarregarOS(id){
+  try{
+    const {data:full}=await comTimeout(db.from('ordens_servico').select('*').eq('id',id).eq('empresa_id',G.empresaId).maybeSingle(),'detalhe OS');
+    if(full){
+      _osDetalheAtual=full;
+      const i=(G.osCache||[]).findIndex(x=>x.id===id);
+      if(i>=0) G.osCache[i]={...G.osCache[i],...full};
+    }
+  }catch(_){}
+  if(_osDetalheAtual) renderDetalheOS(_osDetalheAtual);
+  renderOsLista($('osl-busca')?.value||'');
+}
+function renderDetalheOS(d){
   $('osd-titulo').textContent=d.numero||'OS';
   $('osd-sub').innerHTML=_osBadge(d.status)+(d.criado_em?(' · '+new Date(d.criado_em).toLocaleDateString('pt-BR')):'');
+  const prog=OS_OP[d.status]!=null?OS_OP[d.status]:(Number(d.progresso)||0);
+  $('osd-prog').style.width=Math.max(0,Math.min(100,prog))+'%';
+  $('osd-prog-wrap').style.display=d.status==='Cancelada'?'none':'';
+  $('osd-prox').innerHTML=OS_PROX[d.status]?`<i class="ti ti-arrow-right"></i>${esc(OS_PROX[d.status])}`:'';
   $('osd-cliente').textContent=d.cliente_nome||'—';
   $('osd-aparelho').textContent=d.aparelho||'—';
   $('osd-defeito').textContent=d.defeito||'—';
-  await carregarFotosOS(id);
+
+  // Extras (só o que estiver preenchido)
+  const prazo=d.prazo_entrega||d.prazo;
+  let ex='';
+  if(d.diagnostico) ex+=`<div class="osd-lbl">Diagnóstico</div><div class="osd-val">${esc(d.diagnostico)}</div>`;
+  if(prazo) ex+=`<div class="osd-lbl">Prazo de entrega</div><div class="osd-val">${esc(new Date(String(prazo).slice(0,10)+'T12:00').toLocaleDateString('pt-BR'))}</div>`;
+  if(Number(d.garantia_dias)>0) ex+=`<div class="osd-lbl">Garantia</div><div class="osd-val">${Number(d.garantia_dias)} dias</div>`;
+  if(d.observacoes) ex+=`<div class="osd-lbl">Observações</div><div class="osd-val">${esc(d.observacoes)}</div>`;
+  if(d.status==='Cancelada'&&d.motivo_cancelamento) ex+=`<div class="osd-lbl">Motivo do cancelamento</div><div class="osd-val">${esc(d.motivo_cancelamento)}</div>`;
+  $('osd-extra').innerHTML=ex;
+
+  // Valores e peças
+  const podeEd=_podeEditarOS() && !OS_FINAIS.includes(d.status);
+  const pecas=Array.isArray(d.pecas)?d.pecas:[];
+  const totPecas=pecas.reduce((s,p)=>s+(Number(p.preco)||0)*(Number(p.qty)||1),0);
+  const pago=Number(d.valor_pago_os)||0;
+  const total=Number(d.total)||0;
+  let v=`<div class="osd-box-t"><span>Valores</span>${podeEd?`<button class="osd-mini" onclick="abrirValorServicoOS()"><i class="ti ti-pencil"></i>Valor do serviço</button>`:''}</div>
+    <div class="osd-linha"><span>Serviço (mão de obra)</span><b>${_brl(d.valor_servico)}</b></div>
+    <div class="osd-linha"><span>Peças (${pecas.length})</span><b>${_brl(totPecas)}</b></div>`;
+  if(pecas.length){
+    v+=`<div style="margin:4px 0 2px">`+pecas.map((p,i)=>`<div class="osd-peca"><div class="pn"><div>${esc(p.nome||'Peça')}</div><div>${Number(p.qty)||1} × ${_brl(p.preco)}${p.codigo?' · '+esc(p.codigo):''}</div></div>${podeEd?`<button class="pdel" aria-label="Remover peça" onclick="removerPecaOSMob(${i})"><i class="ti ti-trash"></i></button>`:''}</div>`).join('')+`</div>`;
+  }
+  if(podeEd) v+=`<button class="osd-mini" onclick="abrirAddPecaOS()"><i class="ti ti-plus"></i>Adicionar peça</button>`;
+  v+=`<div class="osd-linha tot"><span>Total</span><b>${_brl(total)}</b></div>`;
+  if(pago>0) v+=`<div class="osd-linha pago"><span>Já recebido</span><b>${_brl(pago)}</b></div>`;
+  if(pago>0 && total-pago>0.009 && !OS_FINAIS.includes(d.status)) v+=`<div class="osd-linha"><span>Falta receber</span><b>${_brl(total-pago)}</b></div>`;
+  if(d.status==='Entregue'&&d.forma_pagamento_recebido) v+=`<div class="osd-linha"><span>Forma de pagamento</span><b>${esc({dinheiro:'Dinheiro',pix:'Pix',cartao:'Cartão',crediario:'Crediário'}[d.forma_pagamento_recebido]||d.forma_pagamento_recebido)}</b></div>`;
+  $('osd-valores').innerHTML=v;
+
+  // Histórico
+  const tl=Array.isArray(d.timeline)?d.timeline:[];
+  const hb=$('osd-hist-box');
+  if(tl.length){
+    hb.style.display='';
+    $('osd-hist').innerHTML=tl.slice().reverse().map(t=>{
+      const dt=t.data?new Date(t.data).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
+      let tit=t.status||'—';
+      if(t.retorno) tit='Voltou para '+tit;
+      if(t.status==='Alteração') tit='Alteração'+(t.campo?(': '+({total:'valor total',valor_servico:'valor do serviço',diagnostico:'diagnóstico',observacoes:'observações',prazo_entrega:'prazo',garantia_dias:'garantia'}[t.campo]||t.campo)):'');
+      const det=[t.operador,t.pagamento?('pagamento: '+t.pagamento):'',t.motivo||t.nota||t.justificativa||t.obs||''].filter(Boolean).map(x=>esc(String(x))).join(' · ');
+      return `<div class="osd-tl-i"><div class="t1">${esc(tit)}</div><div class="t2">${dt}${det?' · '+det:''}</div></div>`;
+    }).join('');
+  } else { hb.style.display='none'; }
+
   renderAcoesOS(d);
-  $('sheet-os-overlay').style.display='block';
-  $('sheet-os').style.display='block';
 }
 function fecharDetalheOS(){
   $('sheet-os-overlay').style.display='none';
@@ -2885,24 +3976,46 @@ async function carregarFotosOS(osId){
     el.innerHTML = list.length ? list.map(f=>`<div class="thumb"><img src="${esc(f.url)}"></div>`).join('') : '<div style="font-size:12.5px;color:var(--txt3)">Nenhuma foto ainda.</div>';
   }catch(_){ el.innerHTML='<div style="font-size:12.5px;color:var(--txt3)">Não foi possível carregar as fotos.</div>'; }
 }
-// Fatia 11A: WhatsApp/link só aparecem se o dado necessário realmente existir
-// no registro — nada de inventar telefone/token. O nome exato da coluna de
-// telefone do cliente em ordens_servico não foi confirmado neste arquivo
-// (assunção técnica — tenta os candidatos mais prováveis).
+// Fatia 30: ações conforme a etapa e o perfil. WhatsApp/link continuam só
+// aparecendo se o dado existir (nada de inventar telefone/token).
 function renderAcoesOS(d){
-  const fone=String(d.cliente_telefone||d.telefone||d.whatsapp||d.fone||'').replace(/\D/g,'');
   const link = d.token_publico ? (location.origin+'/os.html?t='+d.token_publico) : null;
+  const final=OS_FINAIS.includes(d.status);
+  const podeEd=_podeEditarOS(), podeRec=_podeReceberOS();
+  const next=OS_ON[d.status], prev=OS_OV[d.status];
   let html='';
-  if(link){
-    const msg=`Olá! 🔧 Acompanhe sua ordem de serviço (${d.aparelho||''}) por aqui:\n\n${link}`;
-    const url = fone ? `https://api.whatsapp.com/send?phone=55${fone}&text=${encodeURIComponent(msg)}` : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
-    html += `<a class="btn btn-ok" href="${url}" target="_blank" style="text-decoration:none;margin-bottom:10px"><i class="ti ti-brand-whatsapp"></i>Enviar link no WhatsApp</a>`;
-    html += `<button class="btn btn-out" style="margin-bottom:10px" onclick="copiarLinkDetalheOS()"><i class="ti ti-copy"></i>Copiar link</button>`;
-  } else {
-    html += `<div class="aviso" style="margin-bottom:10px"><i class="ti ti-info-circle"></i><div>Link de acompanhamento não disponível para esta OS.</div></div>`;
+  if(!final){
+    if(d.status==='Ag. Pagamento'){
+      if(podeRec) html+=`<button class="btn btn-ok" style="margin-bottom:10px" onclick="abrirReceberOS()"><i class="ti ti-cash"></i>Receber pagamento e entregar</button>`;
+      else html+=`<div class="aviso" style="margin-bottom:10px"><i class="ti ti-info-circle"></i><div>Aguardando pagamento no caixa.</div></div>`;
+    }
+    if(podeEd && next) html+=`<button class="btn" style="margin-bottom:10px" onclick="avancarOSMob()"><i class="ti ti-arrow-right"></i>Avançar: ${esc(next)}</button>`;
+    if(podeEd){
+      html+=`<div class="osd-acao-row">`;
+      if(prev) html+=`<button class="btn btn-out" onclick="voltarOSMob()"><i class="ti ti-arrow-left"></i>Voltar</button>`;
+      html+=`<button class="btn btn-out" onclick="abrirAlterarOSMob()"><i class="ti ti-edit"></i>Alterar dados</button></div>`;
+    }
   }
-  html += `<button class="btn btn-ghost" onclick="fecharDetalheOS()">Fechar</button>`;
+  if(link){
+    html+=`<button class="btn btn-out" style="margin-bottom:10px" id="osd-btn-wpp" onclick="enviarWhatsOSDetalhe()"><i class="ti ti-brand-whatsapp"></i>Enviar link no WhatsApp</button>`;
+    html+=`<button class="btn btn-out" style="margin-bottom:10px" onclick="copiarLinkDetalheOS()"><i class="ti ti-copy"></i>Copiar link</button>`;
+  } else {
+    html+=`<div class="aviso" style="margin-bottom:10px"><i class="ti ti-info-circle"></i><div>Link de acompanhamento não disponível para esta OS.</div></div>`;
+  }
+  if(!final && podeEd) html+=`<button class="btn btn-ghost" style="margin-bottom:6px;color:var(--danger)" onclick="cancelarOSMob()"><i class="ti ti-ban"></i>Cancelar OS</button>`;
+  html+=`<button class="btn btn-ghost" onclick="fecharDetalheOS()">Fechar</button>`;
   $('osd-acoes').innerHTML=html;
+}
+async function enviarWhatsOSDetalhe(){
+  const d=_osDetalheAtual; if(!d?.token_publico) return;
+  const link=location.origin+'/os.html?t='+d.token_publico;
+  // Abre a janela já no clique (evita bloqueio de pop-up) e troca o endereço
+  // quando o telefone do cliente chegar.
+  const w=window.open('about:blank','_blank');
+  const fone=await _osFoneCliente(d);
+  const msg=`Olá! 🔧 Acompanhe sua ordem de serviço (${d.aparelho||''}) por aqui:\n\n${link}`;
+  const url = fone ? `https://api.whatsapp.com/send?phone=55${fone}&text=${encodeURIComponent(msg)}` : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+  if(w) w.location.href=url; else window.open(url,'_blank');
 }
 async function copiarLinkDetalheOS(){
   const d=_osDetalheAtual; if(!d?.token_publico) return;
@@ -2918,6 +4031,410 @@ async function addFotoOsExistente(ev){
   for(const f of files){ try{ await uploadFotoParaOS(d.id,f); ok++; }catch(_){} }
   notify(ok ? (ok+' foto(s) adicionada(s).') : 'Não foi possível enviar a foto.', ok?'ok':'err');
   await carregarFotosOS(d.id);
+}
+
+/* ── Fatia 30: modal único das ações ─────────────────────────────────── */
+function abrirModalOSAcao(titulo,sub,corpo,botoes){
+  $('osa-title').innerHTML=titulo; $('osa-sub').innerHTML=sub||''; $('osa-sub').style.display=sub?'':'none';
+  $('osa-body').innerHTML=corpo||''; $('osa-err').textContent=''; $('osa-btns').innerHTML=botoes||'';
+  $('modal-osacao-overlay').style.display='flex';
+}
+function fecharModalOSAcao(){ $('modal-osacao-overlay').style.display='none'; }
+function _osaErro(m){ $('osa-err').textContent=m||''; }
+function _osaBusy(btnId,on,txt){
+  const b=$(btnId); if(!b) return;
+  if(on){ b.dataset.h=b.innerHTML; b.disabled=true; b.innerHTML='<div class="spinner"></div>'+(txt||'Salvando...'); }
+  else { b.disabled=false; if(b.dataset.h) b.innerHTML=b.dataset.h; }
+}
+// Atualiza a OS no banco sempre filtrando pela empresa da sessão.
+async function _osUpdate(id,pl){
+  const {error}=await comTimeout(db.from('ordens_servico').update(pl).eq('id',id).eq('empresa_id',G.empresaId),'atualizar OS');
+  if(error) throw error;
+}
+
+/* Avançar etapa — advOS() do desktop */
+async function avancarOSMob(){
+  const o=_osDetalheAtual; if(!o) return;
+  if(!_podeEditarOS()){ notify('Seu perfil não pode alterar o andamento da OS.','warn'); return; }
+  const next=OS_ON[o.status]; if(!next) return;
+  const agora=new Date().toISOString();
+  const tl=[...(Array.isArray(o.timeline)?o.timeline:[]),{status:next,data:agora,operador:_osOpNome()}];
+  const pl={status:next,progresso:OS_OP[next]||o.progresso,timeline:tl,atualizado_em:agora};
+  if(next==='Ag. Pagamento') pl.data_pronto=agora;
+  try{
+    await _osUpdate(o.id,pl);
+    notify(`${o.numero||'OS'}: ${next}`,'ok');
+    await _recarregarOS(o.id);
+  }catch(e){ notify(msgAmigavel(e,'Não foi possível avançar a OS.'),'err'); }
+}
+
+/* Voltar etapa — voltarOS()/confirmarVoltarOS() do desktop */
+function voltarOSMob(){
+  const o=_osDetalheAtual; if(!o) return;
+  const prev=OS_OV[o.status]; if(!prev) return;
+  abrirModalOSAcao('<i class="ti ti-arrow-back-up"></i> Voltar etapa',
+    `A OS <b>${esc(o.numero||'')}</b> vai voltar de <b>${esc(o.status)}</b> para <b>${esc(prev)}</b>. O retorno fica no histórico.`,
+    `<label class="lbl" style="margin-top:0">Motivo (opcional)</label><input class="inp" id="osa-motivo" placeholder="Ex.: peça chegou, retomando o reparo">`,
+    `<button class="btn" id="osa-ok" onclick="confirmarVoltarOSMob()"><i class="ti ti-arrow-left"></i>Voltar para ${esc(prev)}</button><button class="btn btn-ghost" style="margin-top:6px" onclick="fecharModalOSAcao()">Cancelar</button>`);
+}
+async function confirmarVoltarOSMob(){
+  const o=_osDetalheAtual; if(!o) return;
+  const prev=OS_OV[o.status]; if(!prev){ fecharModalOSAcao(); return; }
+  const motivo=($('osa-motivo')?.value||'').trim();
+  const agora=new Date().toISOString();
+  const tl=[...(Array.isArray(o.timeline)?o.timeline:[]),{status:prev,data:agora,operador:_osOpNome(),retorno:true,de:o.status,motivo:motivo||null}];
+  const pl={status:prev,progresso:OS_OP[prev]||o.progresso,timeline:tl,atualizado_em:agora};
+  if(o.status==='Ag. Pagamento') pl.data_pronto=null;
+  _osaBusy('osa-ok',true);
+  try{
+    await _osUpdate(o.id,pl);
+    fecharModalOSAcao();
+    notify(`${o.numero||'OS'} voltou para ${prev}.`,'info');
+    await _recarregarOS(o.id);
+  }catch(e){ _osaErro(msgAmigavel(e,'Não foi possível voltar a etapa.')); }
+  finally{ _osaBusy('osa-ok',false); }
+}
+
+/* Cancelar — cancelarOS()/confirmarCancelarOS() do desktop (a versão que
+   de fato roda lá). A devolução de peças ao estoque só existe pra peça
+   ligada a um produto (produto_id) — mesma condição do desktop; peças
+   digitadas à mão (o caso comum) não mexem no estoque. */
+function cancelarOSMob(){
+  const o=_osDetalheAtual; if(!o) return;
+  if(OS_FINAIS.includes(o.status)){ notify('Esta OS não pode ser cancelada.','warn'); return; }
+  const comProduto=(Array.isArray(o.pecas)?o.pecas:[]).filter(p=>p&&p.produto_id);
+  abrirModalOSAcao('<i class="ti ti-ban" style="color:var(--danger)"></i> Cancelar OS '+esc(o.numero||''),
+    `Você está cancelando a OS de <b>${esc(o.aparelho||'')}</b> (${esc(o.cliente_nome||'Cliente')}). O cancelamento fica registrado no histórico.`,
+    `<label class="lbl" style="margin-top:0">Motivo do cancelamento *</label><textarea class="inp" id="osa-motivo" rows="3" placeholder="Ex.: cliente desistiu / orçamento não aprovado / aparelho sem conserto"></textarea>`+
+    (comProduto.length?`<label class="osa-chk"><input type="checkbox" id="osa-devolve" checked>Devolver ${comProduto.length} peça(s) do estoque</label>`:''),
+    `<button class="btn" id="osa-ok" style="background:var(--danger);box-shadow:none" onclick="confirmarCancelarOSMob()"><i class="ti ti-ban"></i>Confirmar cancelamento</button><button class="btn btn-ghost" style="margin-top:6px" onclick="fecharModalOSAcao()">Voltar</button>`);
+}
+async function confirmarCancelarOSMob(){
+  const o=_osDetalheAtual; if(!o) return;
+  const motivo=($('osa-motivo')?.value||'').trim();
+  if(!motivo){ _osaErro('Descreva o motivo do cancelamento.'); return; }
+  const devolve=!!$('osa-devolve')?.checked;
+  const agora=new Date().toISOString();
+  const tl=[...(Array.isArray(o.timeline)?o.timeline:[]),{status:'Cancelada',data:agora,operador:_osOpNome(),nota:motivo}];
+  const pl={status:'Cancelada',progresso:0,timeline:tl,motivo_cancelamento:motivo,cancelada_em:agora,atualizado_em:agora};
+  _osaBusy('osa-ok',true,'Cancelando...');
+  try{
+    let {error}=await comTimeout(db.from('ordens_servico').update(pl).eq('id',o.id).eq('empresa_id',G.empresaId),'cancelar OS');
+    // Mesmo fallback do desktop: se as colunas de cancelamento não existirem, salva sem elas
+    if(error && /motivo_cancelamento|cancelada_em|column|schema/i.test(error.message||'')){
+      delete pl.motivo_cancelamento; delete pl.cancelada_em;
+      ({error}=await comTimeout(db.from('ordens_servico').update(pl).eq('id',o.id).eq('empresa_id',G.empresaId),'cancelar OS'));
+    }
+    if(error) throw error;
+    if(devolve){
+      for(const pc of (o.pecas||[])){
+        if(!pc||!pc.produto_id) continue;
+        try{
+          const {data:prod}=await db.from('produtos').select('id,nome,estoque,estoque_infinito').eq('id',pc.produto_id).eq('empresa_id',G.empresaId).maybeSingle();
+          if(!prod||prod.estoque_infinito) continue;
+          const qty=Number(pc.qty)||1, novo=(Number(prod.estoque)||0)+qty;
+          await db.from('produtos').update({estoque:novo}).eq('id',prod.id).eq('empresa_id',G.empresaId);
+          await db.from('movimentacoes_estoque').insert({empresa_id:G.empresaId,produto_id:prod.id,produto_nome:prod.nome,tipo:'entrada',quantidade:qty,estoque_apos:novo,usuario_id:G.operador?.id||null,usuario_nome:_osOpNome()||null,motivo:`Devolução — OS ${o.numero} cancelada`});
+        }catch(_){ /* não impede o cancelamento — mesma postura do desktop */ }
+      }
+    }
+    fecharModalOSAcao();
+    notify(`OS ${o.numero||''} cancelada.`,'ok');
+    await _recarregarOS(o.id);
+  }catch(e){ _osaErro(msgAmigavel(e,'Não foi possível cancelar a OS.')); }
+  finally{ _osaBusy('osa-ok',false); }
+}
+
+/* Valor do serviço (mão de obra). No desktop o valor entra na criação
+   (valor_servico=total) e as peças recalculam total = valor_servico + peças.
+   Aqui o celular edita o valor_servico e recalcula o total pela MESMA conta,
+   pra peças e valor nunca ficarem desencontrados. Toda troca de um valor já
+   definido pede justificativa e fica no mesmo histórico de alterações do
+   desktop (historico_alteracoes + "Alteração" na timeline). */
+function abrirValorServicoOS(){
+  const o=_osDetalheAtual; if(!o) return;
+  const atual=Number(o.valor_servico)||0;
+  abrirModalOSAcao('<i class="ti ti-currency-real"></i> Valor do serviço',
+    `Mão de obra da OS <b>${esc(o.numero||'')}</b>. O total é recalculado somando as peças.`,
+    `<label class="lbl" style="margin-top:0">Valor do serviço (R$)</label><input class="inp" id="osa-valor" type="number" inputmode="decimal" step="0.01" min="0" value="${atual?atual.toFixed(2):''}" placeholder="0,00">`+
+    (atual>0?`<label class="lbl">Justificativa da alteração *</label><textarea class="inp" id="osa-just" rows="2" placeholder="Ex.: diagnóstico revelou problema adicional"></textarea>`:''),
+    `<button class="btn" id="osa-ok" onclick="salvarValorServicoOS()"><i class="ti ti-check"></i>Salvar valor</button><button class="btn btn-ghost" style="margin-top:6px" onclick="fecharModalOSAcao()">Cancelar</button>`);
+}
+async function salvarValorServicoOS(){
+  const o=_osDetalheAtual; if(!o) return;
+  const raw=($('osa-valor')?.value||'').replace(',','.');
+  if(raw===''){ _osaErro('Informe o valor.'); return; }
+  const novo=Math.max(0,parseFloat(raw)||0);
+  const ant=Number(o.valor_servico)||0;
+  const just=($('osa-just')?.value||'').trim();
+  if(ant>0 && !just){ _osaErro('A justificativa da alteração é obrigatória.'); return; }
+  if(Math.abs(novo-ant)<0.005){ fecharModalOSAcao(); return; }
+  const pecas=Array.isArray(o.pecas)?o.pecas:[];
+  const total=novo+pecas.reduce((s,p)=>s+(Number(p.preco)||0)*(Number(p.qty)||1),0);
+  const agora=new Date().toISOString();
+  const justTxt=just||'Valor do serviço definido';
+  const entrada={campo:'valor_servico',valor_anterior:ant,valor_novo:novo,justificativa:justTxt,operador_nome:_osOpNome()||'Celular',data:agora,notificou_cliente:false};
+  const pl={valor_servico:novo,total,historico_alteracoes:[...(Array.isArray(o.historico_alteracoes)?o.historico_alteracoes:[]),entrada],timeline:[...(Array.isArray(o.timeline)?o.timeline:[]),{status:'Alteração',data:agora,campo:'valor_servico',justificativa:justTxt,operador:entrada.operador_nome}],atualizado_em:agora};
+  _osaBusy('osa-ok',true);
+  try{
+    await _osUpdate(o.id,pl);
+    fecharModalOSAcao(); notify('Valor atualizado.','ok');
+    await _recarregarOS(o.id);
+  }catch(e){ _osaErro(msgAmigavel(e,'Não foi possível salvar o valor.')); }
+  finally{ _osaBusy('osa-ok',false); }
+}
+
+/* Peças — confirmarAddPecaOS()/removerPecaOS() do desktop. A lista de
+   produtos do estoque só serve pra preencher nome/preço (igual ao desktop,
+   que também não baixa estoque nem liga a peça ao produto nesse passo). */
+async function abrirAddPecaOS(){
+  const o=_osDetalheAtual; if(!o) return;
+  abrirModalOSAcao('<i class="ti ti-tool"></i> Adicionar peça',
+    `OS <b>${esc(o.numero||'')}</b> · ${esc(o.aparelho||'')}`,
+    `<label class="lbl" style="margin-top:0">Buscar no estoque (opcional)</label>
+     <select class="inp" id="osa-prod" onchange="preencherPecaOSMob(this)"><option value="">Carregando produtos...</option></select>
+     <label class="lbl">Nome da peça *</label><input class="inp" id="osa-pnome" placeholder="Ex.: Tela iPhone 11">
+     <label class="lbl">Código (opcional)</label><input class="inp" id="osa-pcod" placeholder="SKU / código de barras">
+     <div style="display:flex;gap:10px"><div style="flex:1"><label class="lbl">Qtd</label><input class="inp" id="osa-pqty" type="number" inputmode="numeric" min="1" step="1" value="1"></div>
+     <div style="flex:2"><label class="lbl">Preço unitário (R$)</label><input class="inp" id="osa-ppreco" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0,00"></div></div>`,
+    `<button class="btn" id="osa-ok" onclick="salvarPecaOSMob()"><i class="ti ti-check"></i>Adicionar</button><button class="btn btn-ghost" style="margin-top:6px" onclick="fecharModalOSAcao()">Cancelar</button>`);
+  let prods=G.estoqueCache;
+  if(!prods){
+    try{ const {data}=await comTimeout(db.from('produtos').select('id,nome,preco,barcode').eq('empresa_id',G.empresaId).eq('status','ativo').order('nome').limit(500),'produtos'); prods=data||[]; }catch(_){ prods=[]; }
+  }
+  const sel=$('osa-prod'); if(!sel) return;
+  sel.innerHTML='<option value="">— Digitar manualmente —</option>'+(prods||[]).map(p=>`<option value="${esc(p.id)}" data-nome="${esc(p.nome||'')}" data-preco="${Number(p.preco)||0}" data-cod="${esc(p.barcode||'')}">${esc(p.nome||'')} — ${_brl(p.preco)}</option>`).join('');
+}
+function preencherPecaOSMob(sel){
+  const opt=sel.options[sel.selectedIndex]; if(!opt||!opt.value) return;
+  $('osa-pnome').value=opt.dataset.nome||'';
+  $('osa-ppreco').value=opt.dataset.preco||'0';
+  if(opt.dataset.cod && !$('osa-pcod').value) $('osa-pcod').value=opt.dataset.cod;
+}
+async function salvarPecaOSMob(){
+  const o=_osDetalheAtual; if(!o) return;
+  const nome=($('osa-pnome')?.value||'').trim();
+  const codigo=($('osa-pcod')?.value||'').trim();
+  const qty=parseInt($('osa-pqty')?.value)||1;
+  const preco=parseFloat(($('osa-ppreco')?.value||'').replace(',','.'))||0;
+  if(!nome){ _osaErro('Informe o nome da peça.'); return; }
+  const pecas=[...(Array.isArray(o.pecas)?o.pecas:[]),{nome,codigo,qty,preco}];
+  const total=(Number(o.valor_servico)||0)+pecas.reduce((s,p)=>s+(Number(p.preco)||0)*(Number(p.qty)||1),0);
+  _osaBusy('osa-ok',true);
+  try{
+    await _osUpdate(o.id,{pecas,total,atualizado_em:new Date().toISOString()});
+    fecharModalOSAcao(); notify('Peça adicionada!','ok');
+    await _recarregarOS(o.id);
+  }catch(e){ _osaErro(msgAmigavel(e,'Não foi possível salvar a peça.')); }
+  finally{ _osaBusy('osa-ok',false); }
+}
+async function removerPecaOSMob(idx){
+  const o=_osDetalheAtual; if(!o) return;
+  const p=(o.pecas||[])[idx]; if(!p) return;
+  if(!confirm(`Remover a peça "${p.nome||''}" desta OS?`)) return;
+  const pecas=(o.pecas||[]).filter((_,i)=>i!==idx);
+  const total=(Number(o.valor_servico)||0)+pecas.reduce((s,x)=>s+(Number(x.preco)||0)*(Number(x.qty)||1),0);
+  try{
+    await _osUpdate(o.id,{pecas,total,atualizado_em:new Date().toISOString()});
+    notify('Peça removida.','info');
+    await _recarregarOS(o.id);
+  }catch(e){ notify(msgAmigavel(e,'Não foi possível remover a peça.'),'err'); }
+}
+
+/* Alterar dados — abrirAlterarOS()/confirmarAlterarOS() do desktop, com os
+   mesmos campos (o "valor" tem o botão próprio acima). */
+const OS_ALT_CAMPOS={diagnostico:'Diagnóstico',observacoes:'Observações',prazo_entrega:'Prazo de entrega',garantia_dias:'Garantia (dias)'};
+function abrirAlterarOSMob(){
+  const o=_osDetalheAtual; if(!o) return;
+  abrirModalOSAcao('<i class="ti ti-edit"></i> Alterar dados da OS',
+    `OS <b>${esc(o.numero||'')}</b>. Toda alteração fica registrada no histórico.`,
+    `<label class="lbl" style="margin-top:0">Campo</label>
+     <select class="inp" id="osa-campo" onchange="renderCampoAltOSMob()">${Object.entries(OS_ALT_CAMPOS).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select>
+     <div id="osa-campo-wrap"></div>
+     <label class="lbl">Justificativa *</label><textarea class="inp" id="osa-just" rows="2" placeholder="Ex.: diagnóstico concluído na bancada"></textarea>`,
+    `<button class="btn" id="osa-ok" onclick="salvarAlterarOSMob()"><i class="ti ti-check"></i>Registrar alteração</button><button class="btn btn-ghost" style="margin-top:6px" onclick="fecharModalOSAcao()">Cancelar</button>`);
+  renderCampoAltOSMob();
+}
+function renderCampoAltOSMob(){
+  const o=_osDetalheAtual; if(!o) return;
+  const c=$('osa-campo')?.value; const w=$('osa-campo-wrap'); if(!c||!w) return;
+  const atual=c==='prazo_entrega'?(o.prazo_entrega||o.prazo||''):(o[c]??'');
+  let campo;
+  if(c==='garantia_dias') campo=`<input class="inp" id="osa-novo" type="number" inputmode="numeric" min="0" step="1" value="${esc(String(atual))}">`;
+  else if(c==='prazo_entrega') campo=`<input class="inp" id="osa-novo" type="date" value="${esc(String(atual).slice(0,10))}">`;
+  else campo=`<textarea class="inp" id="osa-novo" rows="3">${esc(String(atual))}</textarea>`;
+  w.innerHTML=`<label class="lbl">${OS_ALT_CAMPOS[c]} — novo valor</label>${campo}`;
+}
+async function salvarAlterarOSMob(){
+  const o=_osDetalheAtual; if(!o) return;
+  const campo=$('osa-campo')?.value;
+  const raw=$('osa-novo')?.value;
+  const just=($('osa-just')?.value||'').trim();
+  if(!campo){ _osaErro('Selecione o campo.'); return; }
+  if(!raw && raw!=='0'){ _osaErro('Informe o novo valor.'); return; }
+  if(!just){ _osaErro('A justificativa da alteração é obrigatória.'); return; }
+  const novo=campo==='garantia_dias'?(parseInt(raw)||0):raw;
+  const agora=new Date().toISOString();
+  const entrada={campo,valor_anterior:campo==='prazo_entrega'?(o.prazo_entrega||o.prazo||null):(o[campo]??null),valor_novo:novo,justificativa:just,operador_nome:_osOpNome()||'Celular',data:agora,notificou_cliente:false};
+  const pl={[campo]:novo,historico_alteracoes:[...(Array.isArray(o.historico_alteracoes)?o.historico_alteracoes:[]),entrada],timeline:[...(Array.isArray(o.timeline)?o.timeline:[]),{status:'Alteração',data:agora,campo,justificativa:just,operador:entrada.operador_nome}],atualizado_em:agora};
+  _osaBusy('osa-ok',true);
+  try{
+    await _osUpdate(o.id,pl);
+    fecharModalOSAcao(); notify('Alteração registrada.','ok');
+    await _recarregarOS(o.id);
+  }catch(e){ _osaErro(msgAmigavel(e,'Não foi possível salvar a alteração.')); }
+  finally{ _osaBusy('osa-ok',false); }
+}
+
+/* Receber pagamento e entregar — abrirPagamentoOS()/confirmarPagamentoOS()
+   do desktop. Mesmas formas (Dinheiro/Pix/Cartão/Crediário), mesma regra de
+   pagamento parcial, mesma gravação em ordens_servico + movimentacoes_caixa. */
+let _osPagForma='dinheiro';
+async function _garantirCaixaAberto(){
+  if(G.caixa) return true;
+  try{
+    const {data:cx}=await comTimeout(db.from('caixas').select('id').eq('empresa_id',G.empresaId).eq('status','aberto').order('criado_em',{ascending:false}).limit(1),'caixa');
+    G.caixa=(cx&&cx[0])||null;
+  }catch(_){}
+  return !!G.caixa;
+}
+async function _carregarMaquininhas(){
+  if(Array.isArray(G.maquinas)) return G.maquinas;
+  try{ const {data}=await comTimeout(db.from('maquininhas_cartao').select('*').eq('empresa_id',G.empresaId).order('criado_em'),'maquininhas'); G.maquinas=data||[]; }
+  catch(_){ G.maquinas=[]; }
+  return G.maquinas;
+}
+function _taxaMaq(maq,forma,parc){ // _taxaParaForma() do desktop
+  if(!maq) return 0;
+  if(forma==='debito') return Number(maq.taxa_debito)||0;
+  const t=maq.taxas_credito||{};
+  return Number(t[parc]??t[String(parc)])||0;
+}
+async function abrirReceberOS(){
+  const o=_osDetalheAtual; if(!o) return;
+  if(!_podeReceberOS()){ notify('Seu perfil não recebe pagamentos. Peça pra quem está no caixa.','warn'); return; }
+  if(o.status!=='Ag. Pagamento'){ notify('Esta OS não está aguardando pagamento.','warn'); return; }
+  if(!(await _garantirCaixaAberto())){
+    notify('Abra o caixa antes de receber pagamentos.','warn');
+    if(typeof abrirCaixaModalMobile==='function') abrirCaixaModalMobile();
+    return;
+  }
+  const maqs=await _carregarMaquininhas();
+  const total=Number(o.total)||0, pago=Number(o.valor_pago_os)||0, saldo=Math.max(0,total-pago);
+  _osPagForma='dinheiro';
+  let maqSalva=''; try{ maqSalva=localStorage.getItem('misu_maq_os_'+G.empresaId)||''; }catch(_){}
+  abrirModalOSAcao('<i class="ti ti-cash" style="color:var(--ok)"></i> Receber pagamento',
+    `OS <b>${esc(o.numero||'')}</b> · ${esc(o.aparelho||'')} · ${esc(o.cliente_nome||'—')}`,
+    `<div class="osa-saldo"><div class="l">${pago>0?'Saldo a receber':'Total a receber'}</div><div class="v">${_brl(saldo)}</div>${pago>0?`<div class="d"><i class="ti ti-check"></i> Já recebido: ${_brl(pago)} de ${_brl(total)}</div>`:''}</div>
+     <label class="lbl" style="margin-top:0">Forma de pagamento</label>
+     <div class="osa-forma">${[['dinheiro','Dinheiro'],['pix','Pix'],['cartao','Cartão'],['crediario','Crediário']].map(([k,l])=>`<button class="pg motion-btn${k==='dinheiro'?' on':''}" data-osf="${k}" onclick="setFormaOSPag('${k}')">${l}</button>`).join('')}</div>
+     <div id="osa-din">
+       <label class="lbl">Valor recebido (R$)</label>
+       <input class="inp" id="osa-recebido" type="number" inputmode="decimal" min="0" step="0.01" placeholder="${saldo.toFixed(2)}" oninput="renderOSPagTrocoMob()">
+       <div id="osa-troco"></div>
+     </div>
+     <div id="osa-cart" style="display:none">
+       <label class="lbl">Maquininha *</label>
+       <select class="inp" id="osa-maq" onchange="renderOSPagTaxaMob()"><option value="">${maqs.length?'— Selecione —':'Nenhuma maquininha cadastrada'}</option>${maqs.map(m=>`<option value="${esc(m.id)}"${m.id===maqSalva?' selected':''}>${esc(m.nome||'Maquininha')}</option>`).join('')}</select>
+       <div style="display:flex;gap:10px">
+         <div style="flex:1"><label class="lbl">Modalidade</label><select class="inp" id="osa-mod" onchange="renderOSPagTaxaMob()"><option value="credito">Crédito</option><option value="debito">Débito</option></select></div>
+         <div style="flex:1" id="osa-parc-wrap"><label class="lbl">Parcelas</label><select class="inp" id="osa-parc" onchange="renderOSPagTaxaMob()">${[1,2,3,4,5,6,7,8,9,10,11,12].map(n=>`<option value="${n}">${n}x${n===1?' (à vista)':''}</option>`).join('')}</select></div>
+       </div>
+       <div class="osa-info" id="osa-taxa"></div>
+       ${maqs.length?'':'<div class="osa-aviso">Nenhuma maquininha cadastrada. Cadastre na aba Maquininhas do sistema no computador pra receber em cartão.</div>'}
+     </div>
+     <label class="lbl">Observação (opcional)</label>
+     <input class="inp" id="osa-obs" placeholder="Ex.: pago parcialmente, falta do chip...">`,
+    `<button class="btn btn-ok" id="osa-ok" onclick="confirmarReceberOS()"><i class="ti ti-check"></i>Confirmar pagamento e entregar</button><button class="btn btn-ghost" style="margin-top:6px" onclick="fecharModalOSAcao()">Cancelar</button>`);
+  renderOSPagTaxaMob();
+}
+function setFormaOSPag(f){
+  _osPagForma=f;
+  document.querySelectorAll('#modal-osacao [data-osf]').forEach(b=>b.classList.toggle('on',b.dataset.osf===f));
+  $('osa-din').style.display=f==='dinheiro'?'':'none';
+  $('osa-cart').style.display=f==='cartao'?'':'none';
+  if(f==='cartao') renderOSPagTaxaMob();
+  _osaErro('');
+}
+function renderOSPagTrocoMob(){
+  const o=_osDetalheAtual; if(!o) return;
+  const saldo=Math.max(0,(Number(o.total)||0)-(Number(o.valor_pago_os)||0));
+  const rec=parseFloat(($('osa-recebido')?.value||'').replace(',','.'))||0;
+  const el=$('osa-troco'); if(!el) return;
+  if(rec>0 && rec<saldo-0.01){
+    el.innerHTML=`<div class="osa-aviso"><i class="ti ti-info-circle"></i> Pagamento parcial: faltarão <b>${_brl(saldo-rec)}</b>. A OS continua aguardando pagamento e o aparelho ainda não é entregue.</div>`;
+  } else if(rec>saldo){
+    el.innerHTML=`<div class="osa-ok"><span>Troco</span><span>${_brl(rec-saldo)}</span></div>`;
+  } else el.innerHTML='';
+}
+function renderOSPagTaxaMob(){
+  const info=$('osa-taxa'); if(!info) return;
+  const maq=(G.maquinas||[]).find(m=>m.id===$('osa-maq')?.value);
+  const mod=$('osa-mod')?.value||'credito';
+  const parc=parseInt($('osa-parc')?.value)||1;
+  const pw=$('osa-parc-wrap'); if(pw) pw.style.visibility=mod==='debito'?'hidden':'';
+  if(!maq){ info.textContent=''; return; }
+  try{ localStorage.setItem('misu_maq_os_'+G.empresaId,maq.id); }catch(_){}
+  const o=_osDetalheAtual;
+  const saldo=Math.max(0,(Number(o?.total)||0)-(Number(o?.valor_pago_os)||0));
+  const taxa=_taxaMaq(maq,mod==='debito'?'debito':'credito',mod==='debito'?1:parc);
+  info.innerHTML=`Taxa ${taxa}%${mod==='debito'?' (débito)':' ('+parc+'x)'} = ${_brl(saldo*taxa/100)} absorvida pela loja${mod!=='debito'&&parc>1?` · ${parc}x de ${_brl(saldo/parc)}`:''}`;
+}
+async function confirmarReceberOS(){
+  const o=_osDetalheAtual; if(!o) return;
+  if(!(await _garantirCaixaAberto())){ _osaErro('Abra o caixa antes de receber pagamentos.'); return; }
+  const forma=_osPagForma||'dinheiro';
+  const obs=($('osa-obs')?.value||'').trim();
+  const total=Math.max(0,(Number(o.total)||0)-(Number(o.valor_pago_os)||0));
+  let troco=0, parcial=false, valorRecebido=total;
+  let maqId=null, maqNome=null, parc=1, taxa=0, modalidade='credito';
+  if(forma==='dinheiro'){
+    const rec=parseFloat(($('osa-recebido')?.value||'').replace(',','.'))||0;
+    if(rec>0 && rec<total-0.01){ parcial=true; valorRecebido=rec; troco=0; }
+    else { troco=rec>0?Math.max(0,rec-total):0; valorRecebido=total; }
+  }
+  if(forma==='cartao'){
+    maqId=$('osa-maq')?.value||null;
+    if(!maqId){ _osaErro('Selecione a maquininha para pagamento em cartão.'); return; }
+    modalidade=$('osa-mod')?.value||'credito';
+    parc=modalidade==='debito'?1:(parseInt($('osa-parc')?.value)||1);
+    const maq=(G.maquinas||[]).find(m=>m.id===maqId);
+    maqNome=maq?.nome||'';
+    taxa=_taxaMaq(maq,modalidade==='debito'?'debito':'credito',parc);
+  }
+  // Proteção a mais do celular: OS sem valor nenhum pede confirmação antes
+  // de entregar (no desktop passaria direto com R$ 0,00).
+  if(total<=0.009 && !confirm('Esta OS está com saldo R$ 0,00. Entregar o aparelho sem cobrar nada?')) return;
+  const agora=new Date().toISOString();
+  const jaPago=(Number(o.valor_pago_os)||0)+valorRecebido;
+  const op=_osOpNome()||'Caixa';
+  const tl=[...(Array.isArray(o.timeline)?o.timeline:[]), parcial
+    ? {status:'Ag. Pagamento',data:agora,operador:op,pagamento:forma,obs:`Pagamento parcial de ${_brl(valorRecebido)}${obs?' · '+obs:''}`}
+    : {status:'Entregue',data:agora,operador:op,pagamento:forma,obs}];
+  const plOS = parcial
+    ? {status:'Ag. Pagamento',timeline:tl,atualizado_em:agora,valor_pago_os:jaPago}
+    : {status:'Entregue',progresso:100,timeline:tl,atualizado_em:agora,data_conclusao:agora,forma_pagamento_recebido:forma,maquininha_id:maqId,maquininha_nome:maqNome,cartao_parcelas:forma==='cartao'?parc:null,cartao_taxa:forma==='cartao'?taxa:null,troco_os:troco,valor_pago_os:jaPago};
+  _osaBusy('osa-ok',true,'Registrando...');
+  try{
+    await _osUpdate(o.id,plOS);
+    const descMov=`OS ${o.numero} — ${o.aparelho} (${o.cliente_nome||'—'})${parcial?` · PARCIAL (falta ${_brl((Number(o.total)||0)-jaPago)})`:''}${obs?` · ${obs}`:''}`;
+    try{
+      const {error:errCx}=await db.from('movimentacoes_caixa').insert({
+        empresa_id:G.empresaId, caixa_id:G.caixa.id, tipo:'servico_os', valor:valorRecebido, descricao:descMov,
+        os_id:o.id, os_numero:o.numero, forma_pagamento:forma, maquininha_id:maqId, maquininha_nome:maqNome,
+        cartao_parcelas:forma==='cartao'?parc:null, cartao_taxa:forma==='cartao'?taxa:null, troco:troco||0,
+        usuario_id:G.operador?.id||null, usuario_nome:G.operador?.nome||null
+      });
+      if(errCx) console.warn('Mov. caixa falhou (não crítico):',errCx.message);
+    }catch(eCx){ console.warn('Mov. caixa falhou (não crítico):',eCx); }
+    fecharModalOSAcao();
+    if(parcial) notify(`Pagamento parcial registrado. Falta ${_brl((Number(o.total)||0)-jaPago)}.`,'info');
+    else notify(`${o.numero} paga e entregue!`,'ok');
+    if(troco>0) setTimeout(()=>notify(`Troco: ${_brl(troco)}`,'info'),600);
+    await _recarregarOS(o.id);
+    if(typeof carregarResumoDia==='function') carregarResumoDia();
+  }catch(e){ _osaErro(msgAmigavel(e,'Não foi possível registrar o pagamento.')); }
+  finally{ _osaBusy('osa-ok',false); }
 }
 
 /* ── VENDA RÁPIDA (InfinitePay + QR) ── */
@@ -2966,11 +4483,25 @@ async function abrirEstoque(){
   const c=$('estoque-list');
   c.innerHTML='<div class="skel skel-card"></div><div class="skel skel-card"></div><div class="skel skel-card"></div><div class="skel skel-card"></div>';
   $('chip-est-baixo')?.classList.toggle('on',!!G._estFiltroBaixo);
+  $('chip-est-venda')?.classList.toggle('on',G._estStatus!=='outros');
+  $('chip-est-outros')?.classList.toggle('on',G._estStatus==='outros');
   try{
-    const {data}=await comTimeout(db.from('produtos').select('id,nome,preco,estoque,estoque_minimo,fotos,barcode').eq('empresa_id',G.empresaId).eq('status','ativo').order('nome').limit(500),'estoque');
-    G.estoqueCache=data||[];
+    // G.estoqueCache continua sendo SÓ os produtos à venda (status ativo) —
+    // é dele que saem Vender/scanner/etiqueta/peça da OS. Fatia 32: os
+    // demais status vêm numa lista separada, só quando o filtro pede.
+    const {data}=await comTimeout(db.from('produtos').select('id,nome,preco,estoque,estoque_minimo,estoque_infinito,fotos,barcode,status').eq('empresa_id',G.empresaId).eq('status','ativo').order('nome').limit(500),'estoque');
+    G.estoqueCache=(data||[]).filter(p=>(p.status||'ativo')==='ativo');
+    if(G._estStatus==='outros'){
+      const {data:o}=await comTimeout(db.from('produtos').select('id,nome,preco,estoque,estoque_minimo,estoque_infinito,fotos,barcode,status').eq('empresa_id',G.empresaId).neq('status','ativo').order('nome').limit(500),'estoque');
+      G.estoqueOutros=(o||[]).filter(p=>p.status && p.status!=='ativo');
+    }
     renderEstoque($('est-busca')?.value||'');
   }catch(e){ c.innerHTML='<div style="text-align:center;padding:22px;color:var(--danger)">Erro ao carregar estoque.</div>'; }
+}
+function setFiltroStatusEstoque(k){
+  G._estStatus=k;
+  if(k==='outros' && !G.estoqueOutros) abrirEstoque();
+  else { $('chip-est-venda')?.classList.toggle('on',k!=='outros'); $('chip-est-outros')?.classList.toggle('on',k==='outros'); renderEstoque($('est-busca')?.value||''); }
 }
 // Fatia 11A: filtro "Só estoque baixo" — puramente client-side sobre o que
 // já está em G.estoqueCache, sem nenhuma consulta nova.
@@ -2984,29 +4515,40 @@ const renderEstoqueDebounced=debounce(q=>renderEstoque(q),120);
 function renderEstoque(q){
   const c=$('estoque-list'); if(!c) return;
   const busca=(q||'').toLowerCase();
-  let list=(G.estoqueCache||[]);
-  if(G._estFiltroBaixo) list=list.filter(p=>(Number(p.estoque)||0) <= (Number(p.estoque_minimo)||0));
-  if(busca) list=list.filter(p=>(p.nome||'').toLowerCase().includes(busca));
+  const outros=G._estStatus==='outros';
+  const gestor=_podeGerirProdutos();
+  let list=outros?(G.estoqueOutros||[]):(G.estoqueCache||[]);
+  if(G._estFiltroBaixo) list=list.filter(p=>!p.estoque_infinito && (Number(p.estoque)||0) <= (Number(p.estoque_minimo)||0));
+  if(busca) list=list.filter(p=>(p.nome||'').toLowerCase().includes(busca)||String(p.barcode||'').includes(busca));
   if(!list.length){
     c.innerHTML = G._estFiltroBaixo
       ? '<div class="mobile-empty motion-fade-in"><i class="ti ti-circle-check"></i><div class="me-t">Nenhum produto com estoque baixo. 🎉</div></div>'
+      : outros
+      ? '<div class="mobile-empty motion-fade-in"><i class="ti ti-package-off"></i><div class="me-t">Nenhum produto fora de venda.</div><div class="me-s">Aqui aparecem os produtos com situação diferente de "Ativo" (novo, seminovo, vitrine, inativo...).</div></div>'
       : '<div class="mobile-empty motion-fade-in"><i class="ti ti-package-off"></i><div class="me-t">Nenhum produto encontrado.</div><div class="me-s">Use o scanner para localizar um produto rapidamente.</div></div>';
     return;
   }
   c.innerHTML=list.map(p=>{
     const f=Array.isArray(p.fotos)&&p.fotos[0]?p.fotos[0]:null;
     const est=Number(p.estoque)||0, min=Number(p.estoque_minimo)||0;
-    const cor=est<=0?'var(--danger)':(est<=min?'var(--warn)':'var(--ok)');
+    const cor=p.estoque_infinito?'var(--pri)':(est<=0?'var(--danger)':(est<=min?'var(--warn)':'var(--ok)'));
+    const stBadge=outros?`<span class="os-badge st-outro" style="margin-left:6px">${esc(_prodStatusLbl(p.status))}</span>`:'';
+    const acoesVenda=outros?'':`<div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn" style="flex:1;padding:9px;font-size:13px" onclick="addAoCarrinho('${p.id}')"><i class="ti ti-shopping-cart-plus"></i>Vender</button>
+        <button class="btn btn-out" style="flex:1;padding:9px;font-size:13px" onclick="abrirEtiqueta('${p.id}')"><i class="ti ti-tag"></i>Etiqueta</button>
+      </div>`;
+    const acoesGestao=gestor?`<div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn btn-out" style="flex:1;padding:9px;font-size:13px" onclick="abrirEditarProduto('${p.id}')"><i class="ti ti-pencil"></i>Editar</button>
+        ${p.estoque_infinito?'':`<button class="btn btn-out" style="flex:1;padding:9px;font-size:13px" onclick="abrirMovimentarEstoque('${p.id}')"><i class="ti ti-arrows-exchange"></i>Estoque</button>`}
+      </div>`:'';
     return `<div class="card motion-card" style="padding:11px 13px">
       <div style="display:flex;align-items:center;gap:12px">
         ${f?`<img src="${f}" style="width:44px;height:44px;border-radius:10px;object-fit:cover;flex-shrink:0">`:`<div style="width:44px;height:44px;border-radius:10px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">📦</div>`}
-        <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.nome)}</div><div style="font-size:12px;color:var(--txt3)">R$ ${(Number(p.preco)||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>
-        <div style="text-align:center;flex-shrink:0"><div style="font-size:20px;font-weight:800;color:${cor};font-family:'Syne',sans-serif;line-height:1">${est}</div><div style="font-size:10px;color:var(--txt3)">em estoque</div></div>
+        <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.nome)}</div><div style="font-size:12px;color:var(--txt3)">R$ ${(Number(p.preco)||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}${stBadge}</div></div>
+        <div style="text-align:center;flex-shrink:0"><div style="font-size:20px;font-weight:800;color:${cor};font-family:'Syne',sans-serif;line-height:1">${p.estoque_infinito?'∞':est}</div><div style="font-size:10px;color:var(--txt3)">em estoque</div></div>
       </div>
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <button class="btn" style="flex:1;padding:9px;font-size:13px" onclick="addAoCarrinho('${p.id}')"><i class="ti ti-shopping-cart-plus"></i>Vender</button>
-        <button class="btn btn-out" style="flex:1;padding:9px;font-size:13px" onclick="abrirEtiqueta('${p.id}')"><i class="ti ti-tag"></i>Etiqueta</button>
-      </div>
+      ${acoesVenda}
+      ${acoesGestao}
     </div>`;
   }).join('');
 }
@@ -3073,7 +4615,7 @@ async function baixarEstoqueItens(itens, motivo){
       const atual=srv?(Number(srv.estoque)||0):0;
       const ne=Math.max(0,atual-ci.qty);
       await db.from('produtos').update({estoque:ne}).eq('id',ci.id);
-      try{ await db.from('movimentacoes_estoque').insert({empresa_id:G.empresaId,produto_id:ci.id,produto_nome:ci.nome,tipo:'saida',quantidade:ci.qty,estoque_apos:ne,motivo:motivo||'Venda pelo app MISU MOBILE'}); }catch(_){}
+      try{ await db.from('movimentacoes_estoque').insert({empresa_id:G.empresaId,produto_id:ci.id,produto_nome:ci.nome,tipo:'saida',quantidade:ci.qty,estoque_apos:ne,usuario_id:G.operador?.id||null,usuario_nome:G.operador?.nome||'MISU MOBILE',motivo:motivo||'Venda pelo app MISU MOBILE'}); }catch(_){} // Fatia 32: com quem fez
     }catch(_){}
   }
 }
@@ -3417,13 +4959,21 @@ function aplicarModoPerfil(){
   const sor=$('sheet-os-rapida'); if(sor) sor.style.display=entregador?'none':'';
   const sve=$('sheet-ver-estoque'); if(sve) sve.style.display=entregador?'none':'';
   const scp=$('sheet-cadastrar-produto'); if(scp) scp.style.display=entregador?'none':'';
-  const se=$('sheet-entregas-mais'); if(se) se.style.display=(entregador||adminGer)?'':'none';
+  const se=$('sheet-entregas-mais');
+  if(se){
+    // Fatia 31: quem cuida de entregas no desktop (Agenda) também vê aqui
+    const gestorEnt=_isGestorEntregas();
+    se.style.display=(entregador||gestorEnt)?'':'none';
+    se.innerHTML='<i class="ti ti-truck"></i>'+(entregador?'Minhas Entregas':'Entregas');
+  }
   const sp=$('sheet-pessoas'); if(sp) sp.style.display=adminGer?'':'none';
   // Revisão 2026-09: "Relatórios" saiu do acesso rápido da Home e passou a
   // ficar só na folha "Mais" (pedido do usuário) — mesma restrição de
   // sempre: só Admin/Gerente, igual à página Relatórios do desktop
   // (index.html: relatorios:['admin','gerente']).
   const srm=$('sheet-relatorios-mais'); if(srm) srm.style.display=adminGer?'':'none';
+  const spm=$('sheet-plano-mais'); if(spm) spm.style.display=adminGer?'':'none';
+  const scm=$('sheet-caixa-mais'); if(scm) scm.style.display=(!entregador&&_podeCaixaMob())?'':'none'; // Fatia 34 (desktop: caixa fica no PDV — admin/gerente/operador) // Fatia 33 (desktop: "Fazer Upgrade" só admin/gerente)
 
   const rg=$('resumo-grid'); if(rg) rg.style.display=entregador?'none':'';
   const rgt=$('resumo-secao-t'); if(rgt) rgt.style.display=entregador?'none':'';
@@ -3498,6 +5048,7 @@ async function confirmarAberturaCaixaMobile(){
     fecharAbrirCaixaModal();
     notify('Caixa aberto com sucesso!','ok');
     carregarResumoDia();
+    if($('scr-caixa') && !$('scr-caixa').classList.contains('hidden')) abrirCaixaTela(); // Fatia 34
   }catch(e){ $('cx-ab-erro').textContent=msgAmigavel(e,'Não foi possível abrir o caixa.'); }
 }
 async function carregarResumoEntregador(){
@@ -3600,22 +5151,122 @@ async function togglePessoaAtiva(id){
   }catch(e){ notify(msgAmigavel(e,'Não foi possível atualizar.'),'err'); }
 }
 
-/* ── MINHAS ENTREGAS ───────────────────────────────────────────────────
+/* ── ENTREGAS (Fatia 21 + Fatia 31) ────────────────────────────────────
    Entregador: só vê as suas (filtro na própria consulta, não só na tela).
-   Admin/Gerente: vê todas as entregas da empresa. Qualquer outro perfil
-   não deveria nem chegar aqui (sem link de acesso na UI), mas por
-   segurança a consulta também nega por padrão se não houver operador
-   identificado. ── */
+   Fatia 31 — gestão de entregas no celular, sem depender do computador:
+   quem cuida das entregas no desktop (página Agenda/Central de Entregas:
+   admin, gerente, operador de caixa e técnico — ROLE_PERMS_DEFAULT do
+   index.html) agora também faz pelo celular: vê todas, as entregas das OS
+   prontas são criadas aqui mesmo (mesma lógica do sincronizarEntregas() do
+   desktop — antes só nasciam quando alguém abria a Agenda no computador),
+   agenda data/janela, atribui entregador, gera o link do cliente (com
+   código, se a empresa exigir) e manda no WhatsApp.
+   Regra nova, combinada com o usuário (o desktop não tinha): quando a OS
+   foi paga no caixa ela vira "Entregue", e a entrega ligada a ela ficava
+   presa em "pagamento pendente". Agora a sincronização marca a entrega
+   como paga; e se era "retirada na loja", fecha como entregue (o aparelho
+   já saiu pelo balcão). Entrega em endereço segue normal com o entregador. */
 const ENT_STATUS_LBL={para_agendar:'Para agendar',agendada:'Agendada',em_rota:'Saiu para entrega',proximo_destino:'Próximo do destino',tentativa:'Tentativa de entrega',retirada:'Retirada',entregue:'Entregue',cancelada:'Cancelada'};
 const ENT_FILTROS_MOB=[['pendentes','Em andamento'],['entregues','Entregues'],['todas','Todas']];
-let G_entFiltroMob='pendentes';
+// Mesmos filtros da Central de Entregas do desktop (_ENTREGA_ESTADOS / _entregaMatch)
+const ENT_FILTROS_GESTOR=[['todas','Todas'],['para_agendar','Para agendar'],['agendada','Agendadas'],['hoje','Hoje'],['atrasadas','Atrasadas'],['em_rota','Em rota'],['retirada','Retirada'],['entregue','Entregues']];
+let G_entFiltroMob='pendentes', G_entFiltroGestor='todas';
+function _isGestorEntregas(){ return !!(G.operador && ['admin','admin_master','gerente','operador','tecnico'].includes(G.operador.role)); }
+function _hojeYMDMob(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function _entMatchGestor(e,f){
+  if(e.status==='cancelada') return false;
+  const h=_hojeYMDMob();
+  switch(f){
+    case 'todas': return true;
+    case 'para_agendar': return e.status==='para_agendar';
+    case 'agendada': return e.status==='agendada';
+    case 'em_rota': return e.status==='em_rota';
+    case 'retirada': return e.forma==='retirada' && e.status!=='entregue';
+    case 'entregue': return e.status==='entregue';
+    case 'hoje': return e.data_agendada===h && e.status!=='entregue';
+    case 'atrasadas': return !!e.data_agendada && e.data_agendada<h && e.status!=='entregue';
+    default: return true;
+  }
+}
+
+/* sincronizarEntregas() do desktop, adaptado: o celular não tem G.os/
+   G.clientes carregados, então busca só o necessário. Mesmo formato de
+   registro, mesma regra de "pago" (total>0 e valor_pago_os>=total) e mesma
+   chave origem_tipo:origem_id pra nunca duplicar. */
+async function sincronizarEntregasMob(){
+  const emp=G.empresaId; if(!emp) return;
+  const {data:atuais,error}=await comTimeout(db.from('entregas').select('*').eq('empresa_id',emp),'entregas');
+  if(error) throw error;
+  const porOrigem={}; (atuais||[]).forEach(e=>{ if(e.origem_id) porOrigem[e.origem_tipo+':'+e.origem_id]=e; });
+  const novos=[], updates=[];
+  const agora=new Date().toISOString();
+
+  // 1) OS prontas / aguardando pagamento → entrega (igual ao desktop)
+  let osAtivas=[];
+  try{
+    const {data}=await comTimeout(db.from('ordens_servico').select('id,numero,status,total,valor_pago_os,cliente_id,cliente_nome,aparelho,data_conclusao').eq('empresa_id',emp).in('status',['Pronto','Ag. Pagamento']),'OS prontas');
+    osAtivas=(data||[]).filter(o=>o.status==='Pronto'||o.status==='Ag. Pagamento');
+  }catch(_){}
+  const cliIds=[...new Set(osAtivas.map(o=>o.cliente_id).filter(Boolean))];
+  let clis=[];
+  if(cliIds.length){ try{ const {data}=await comTimeout(db.from('clientes').select('id,telefone,whatsapp,endereco').eq('empresa_id',emp).in('id',cliIds),'clientes'); clis=data||[]; }catch(_){} }
+  const cliDe=id=>clis.find(c=>c.id===id)||{};
+  osAtivas.forEach(o=>{
+    const total=Number(o.total||0);
+    const pago=total>0 && Number(o.valor_pago_os||0)>=total;
+    const ex=porOrigem['os:'+o.id];
+    if(ex){
+      if(ex.pago!==pago && ex.status!=='entregue' && ex.status!=='cancelada') updates.push({id:ex.id,patch:{pago,atualizado_em:agora}});
+    } else {
+      const c=cliDe(o.cliente_id);
+      novos.push({empresa_id:emp,origem_tipo:'os',origem_id:o.id,cliente_id:o.cliente_id||null,
+        cliente_nome:o.cliente_nome||null,telefone:c.telefone||c.whatsapp||null,endereco:c.endereco||null,
+        descricao:o.aparelho||('OS '+(o.numero||'')),forma:'retirada',pago,status:'para_agendar'});
+    }
+  });
+
+  // 2) Fatia 31 (regra combinada com o usuário): entrega aberta cuja OS já
+  //    foi paga e entregue no caixa.
+  const abertasOS=(atuais||[]).filter(e=>e.origem_tipo==='os'&&e.origem_id&&e.status!=='entregue'&&e.status!=='cancelada'&&!osAtivas.some(o=>o.id===e.origem_id));
+  if(abertasOS.length){
+    try{
+      const ids=abertasOS.map(e=>e.origem_id);
+      const {data}=await comTimeout(db.from('ordens_servico').select('id,status,data_conclusao').eq('empresa_id',emp).in('id',ids),'OS entregues');
+      (data||[]).filter(o=>ids.includes(o.id)&&o.status==='Entregue').forEach(o=>{
+        const e=abertasOS.find(x=>x.origem_id===o.id); if(!e) return;
+        if(e.forma==='retirada') updates.push({id:e.id,patch:{pago:true,status:'entregue',entregue_em:o.data_conclusao||agora,observacoes:(e.observacoes?e.observacoes+' | ':'')+'Retirada no balcão (OS paga e entregue no caixa)',atualizado_em:agora}});
+        else if(!e.pago) updates.push({id:e.id,patch:{pago:true,atualizado_em:agora}});
+      });
+    }catch(_){}
+  }
+
+  // 3) Compromissos avulsos → espelhados (igual ao desktop)
+  try{
+    const {data:av}=await comTimeout(db.from('entregas_avulsas').select('*').eq('empresa_id',emp),'avulsas');
+    (av||[]).forEach(a=>{
+      if(a.status==='cancelado') return;
+      if(porOrigem['avulsa:'+a.id]) return;
+      novos.push({empresa_id:emp,origem_tipo:'avulsa',origem_id:a.id,cliente_nome:a.cliente_nome||null,
+        descricao:a.titulo||'Compromisso',forma:'entrega',data_agendada:a.data||null,
+        janela:a.hora?String(a.hora).slice(0,5):null,observacoes:a.observacoes||null,pago:false,
+        status:a.status==='concluido'?'entregue':'agendada'});
+    });
+  }catch(_){}
+
+  if(novos.length){ const {error:eIns}=await db.from('entregas').insert(novos); if(eIns) console.warn('[entregas] insert:',eIns.message); }
+  for(const u of updates){ try{ await db.from('entregas').update(u.patch).eq('id',u.id).eq('empresa_id',emp); }catch(_){} }
+}
+
 async function abrirEntregas(){
   const cont=$('entregas-mob-list');
   if(!G.operador){ cont.innerHTML='<div style="text-align:center;padding:20px;color:var(--txt3);font-size:13px">Identifique-se primeiro (Mais → Trocar usuário).</div>'; $('ent-filtros').innerHTML=''; return; }
+  const gestor=_isGestorEntregas();
+  $('scr-title').textContent=gestor?'Entregas':'Minhas Entregas';
   cont.innerHTML='<div style="text-align:center;padding:20px;color:var(--txt3)"><div class="spinner" style="margin:0 auto"></div></div>';
   try{
+    if(gestor){ try{ await sincronizarEntregasMob(); }catch(eS){ console.warn('[MISU MOBILE][sincronizar entregas]',eS); } }
     let q=db.from('entregas').select('*').eq('empresa_id',G.empresaId);
-    if(!_isAdminGer()) q=q.eq('entregador_id',G.operador.id);
+    if(!gestor) q=q.eq('entregador_id',G.operador.id);
     const {data,error}=await comTimeout(q.order('data_agendada',{ascending:true,nullsFirst:false}),'entregas');
     if(error) throw error;
     G.entregasMob=data||[];
@@ -3629,39 +5280,63 @@ async function abrirEntregas(){
   renderEntregasMob();
 }
 function renderFiltrosEntregasMob(){
-  $('ent-filtros').innerHTML=ENT_FILTROS_MOB.map(([k,l])=>`<button class="pg motion-btn${G_entFiltroMob===k?' on':''}" onclick="setFiltroEntregasMob('${k}')">${l}</button>`).join('');
+  const el=$('ent-filtros');
+  if(_isGestorEntregas()){
+    el.classList.add('scroll');
+    const lista=G.entregasMob||[];
+    el.innerHTML=ENT_FILTROS_GESTOR.map(([k,l])=>{ const n=lista.filter(e=>_entMatchGestor(e,k)).length; return `<button class="pg motion-btn${G_entFiltroGestor===k?' on':''}" onclick="setFiltroEntregasMob('${k}')">${l}${n?` (${n})`:''}</button>`; }).join('');
+  } else {
+    el.classList.remove('scroll');
+    el.innerHTML=ENT_FILTROS_MOB.map(([k,l])=>`<button class="pg motion-btn${G_entFiltroMob===k?' on':''}" onclick="setFiltroEntregasMob('${k}')">${l}</button>`).join('');
+  }
 }
-function setFiltroEntregasMob(k){ G_entFiltroMob=k; renderFiltrosEntregasMob(); renderEntregasMob(); }
+function setFiltroEntregasMob(k){
+  if(_isGestorEntregas()) G_entFiltroGestor=k; else G_entFiltroMob=k;
+  renderFiltrosEntregasMob(); renderEntregasMob();
+}
+function _entPagoHtml(e){
+  if(e.origem_tipo==='avulsa') return '';
+  return e.pago?'<span class="ent-pago ok"><i class="ti ti-check"></i>Pago</span>':'<span class="ent-pago pend"><i class="ti ti-alert-triangle"></i>Pagamento pendente</span>';
+}
 function _cardEntregaMob(e){
   const st=ENT_STATUS_LBL[e.status]||e.status;
   const endTxt=e.forma==='retirada'?'Retirada na loja':(e.endereco||'Endereço não informado');
-  const dono=_isAdminGer()&&e.entregador_nome?`<div style="font-size:11px;color:var(--pri);margin-top:3px"><i class="ti ti-truck"></i> ${e.entregador_nome}</div>`:'';
+  const gestor=_isGestorEntregas();
+  const dono=gestor&&e.entregador_nome?`<div style="font-size:11px;color:var(--pri);margin-top:3px"><i class="ti ti-truck"></i> ${esc(e.entregador_nome)}</div>`:'';
+  const tipo=gestor?({os:'OS',avulsa:'Compromisso',venda:'Produto'}[e.origem_tipo]||''):'';
+  const dataTxt=e.data_agendada?`<i class="ti ti-calendar"></i> ${e.data_agendada.split('-').reverse().join('/')}${e.janela?(' · '+esc(e.janela)):''}`:(gestor?'<span style="color:var(--txt3)">sem data</span>':'');
+  const stCls=e.status==='entregue'?'st-pronto':(e.status==='tentativa'?'st-peca':(e.status==='em_rota'||e.status==='proximo_destino'?'st-analise':'st-outro'));
   return `<div class="os-card" style="border:1px solid var(--border2);border-radius:14px;padding:13px;margin-bottom:10px;background:var(--card)" onclick="abrirDetalheEntrega('${e.id}')">
     <div style="display:flex;justify-content:space-between;gap:8px;align-items:start">
-      <div style="font-weight:700;font-size:14px">${e.cliente_nome||'Cliente'}</div>
-      <span class="os-badge st-outro">${st}</span>
+      <div style="font-weight:700;font-size:14px">${esc(e.cliente_nome||'Cliente')}${tipo?` <span style="font-size:10.5px;color:var(--txt3);font-weight:700">· ${tipo}</span>`:''}</div>
+      <span class="os-badge ${stCls}">${esc(st)}</span>
     </div>
-    <div style="font-size:12.5px;color:var(--txt2);margin-top:3px">${e.descricao||''}</div>
-    <div style="font-size:11.5px;color:var(--txt3);margin-top:5px"><i class="ti ti-map-pin"></i> ${endTxt}</div>
+    <div style="font-size:12.5px;color:var(--txt2);margin-top:3px">${esc(e.descricao||'')}</div>
+    <div style="font-size:11.5px;color:var(--txt3);margin-top:5px"><i class="ti ti-map-pin"></i> ${esc(endTxt)}${dataTxt?' · '+dataTxt:''}</div>
+    ${gestor&&e.status!=='entregue'?`<div style="margin-top:6px">${_entPagoHtml(e)}</div>`:''}
     ${dono}
   </div>`;
 }
 function renderEntregasMob(){
+  const gestor=_isGestorEntregas();
   const lista=(G.entregasMob||[]).filter(e=>{
+    if(gestor) return _entMatchGestor(e,G_entFiltroGestor);
     if(e.status==='cancelada') return false;
     if(G_entFiltroMob==='entregues') return e.status==='entregue';
     if(G_entFiltroMob==='pendentes') return e.status!=='entregue';
     return true;
   });
-  $('entregas-mob-list').innerHTML=lista.length?lista.map(_cardEntregaMob).join(''):'<div style="text-align:center;padding:24px;color:var(--txt3);font-size:13px">Nenhuma entrega aqui.</div>';
+  const vazio=gestor?'Nenhuma entrega neste filtro. As OS ficam aqui quando chegam em "Pronto".':'Nenhuma entrega aqui.';
+  $('entregas-mob-list').innerHTML=lista.length?lista.map(_cardEntregaMob).join(''):`<div style="text-align:center;padding:24px;color:var(--txt3);font-size:13px">${vazio}</div>`;
 }
 
 let _entregaAtualId=null;
 function abrirDetalheEntrega(id){
   const e=(G.entregasMob||[]).find(x=>x.id===id); if(!e) return;
   _entregaAtualId=id;
+  const gestor=_isGestorEntregas();
   $('ent-titulo').textContent=e.cliente_nome||'Entrega';
-  $('ent-status-lbl').textContent=ENT_STATUS_LBL[e.status]||e.status;
+  $('ent-status-lbl').innerHTML=esc(ENT_STATUS_LBL[e.status]||e.status)+(e.status!=='entregue'&&_entPagoHtml(e)?' · '+_entPagoHtml(e):'');
   $('ent-cliente').textContent=e.cliente_nome||'—';
   $('ent-endereco').textContent=e.forma==='retirada'?'Retirada na loja':(e.endereco||'—');
   $('ent-descricao').textContent=e.descricao||'—';
@@ -3669,22 +5344,37 @@ function abrirDetalheEntrega(id){
     $('ent-previsao-lbl').style.display=''; $('ent-previsao').style.display='';
     $('ent-previsao').textContent=e.data_agendada.split('-').reverse().join('/')+(e.janela?(' · '+e.janela):'');
   } else { $('ent-previsao-lbl').style.display='none'; $('ent-previsao').style.display='none'; }
+  const eg=$('ent-entregador');
+  if(eg){ eg.style.display=(gestor&&e.forma!=='retirada')?'':'none'; $('ent-entregador-val').textContent=e.entregador_nome||'Ninguém atribuído ainda'; }
 
-  const podeAgir=_isAdminGer()||(G.operador&&e.entregador_id===G.operador.id);
+  const podeAgir=gestor||(G.operador&&e.entregador_id===G.operador.id);
   let acoes='';
   if(podeAgir && e.status!=='entregue' && e.status!=='cancelada'){
     if(e.forma!=='retirada'){
-      if(e.status==='para_agendar'||e.status==='agendada') acoes+=`<button class="btn btn-ok" onclick="marcarStatusEntrega('em_rota')"><i class="ti ti-route"></i>Saiu para entrega</button>`;
+      if(e.status==='para_agendar'||e.status==='agendada'||e.status==='tentativa') acoes+=`<button class="btn btn-ok" onclick="marcarStatusEntrega('em_rota')"><i class="ti ti-route"></i>Saiu para entrega</button>`;
       if(e.status==='em_rota') acoes+=`<button class="btn btn-out" onclick="marcarStatusEntrega('proximo_destino')"><i class="ti ti-map-pin"></i>Próximo do destino</button>`;
     }
-    acoes+=`<button class="btn btn-ok" onclick="abrirConfirmarEntrega()"><i class="ti ti-check"></i>Confirmar entrega</button>`;
+    acoes+=`<button class="btn btn-ok" onclick="abrirConfirmarEntrega()"><i class="ti ti-check"></i>${e.forma==='retirada'?'Confirmar retirada':'Confirmar entrega'}</button>`;
     if(e.forma!=='retirada') acoes+=`<button class="btn btn-out" onclick="abrirTentativaEntrega()"><i class="ti ti-alert-triangle"></i>Registrar tentativa</button>`;
   } else if(e.status==='entregue'){
-    acoes=`<div style="font-size:12.5px;color:var(--txt3);text-align:center;padding:8px">Entregue${e.entregue_em?(' em '+new Date(e.entregue_em).toLocaleString('pt-BR')):''}${e.recebido_por?(' · recebido por '+e.recebido_por):''}</div>`;
+    acoes=`<div style="font-size:12.5px;color:var(--txt3);text-align:center;padding:8px">Entregue${e.entregue_em?(' em '+new Date(e.entregue_em).toLocaleString('pt-BR')):''}${e.recebido_por?(' · recebido por '+esc(e.recebido_por)):''}</div>`;
   } else if(!podeAgir){
     acoes=`<div style="font-size:12.5px;color:var(--txt3);text-align:center;padding:8px">Esta entrega não está atribuída a você.</div>`;
   }
   $('ent-acoes').innerHTML=acoes;
+
+  // Fatia 31: gestão (agendar / entregador / link do cliente / ver OS)
+  let gest='';
+  if(gestor && e.status!=='entregue' && e.status!=='cancelada'){
+    gest+=`<div class="osd-box-t"><span>Gestão da entrega</span></div><div class="ent-gest">`;
+    gest+=`<button class="btn btn-out" onclick="abrirAgendarEntregaMob()"><i class="ti ti-calendar"></i>${e.data_agendada?'Reagendar':'Agendar'}</button>`;
+    if(e.forma!=='retirada') gest+=`<button class="btn btn-out" onclick="abrirAtribuirEntregadorMob()"><i class="ti ti-user-cog"></i>${e.entregador_id?'Trocar entregador':'Atribuir entregador'}</button>`;
+    gest+=`<button class="btn btn-out" onclick="gerarLinkEntregaMob()"><i class="ti ti-link"></i>Enviar link ao cliente</button>`;
+    gest+=`</div>`;
+  }
+  if(gestor && e.origem_tipo==='os' && e.origem_id) gest+=`<button class="btn btn-ghost" style="margin-top:6px" onclick="verOSDaEntrega()"><i class="ti ti-external-link"></i>Ver OS de origem</button>`;
+  const gb=$('ent-gestao'); if(gb){ gb.innerHTML=gest; gb.style.display=gest?'':'none'; }
+
   $('ent-telefone-acoes').innerHTML=e.telefone?`<button class="btn btn-out" style="width:100%" onclick="whatsappEntregaMob()"><i class="ti ti-brand-whatsapp"></i>Falar com o cliente</button>`:'';
 
   $('sheet-entrega-overlay').style.display='block';
@@ -3706,8 +5396,130 @@ async function marcarStatusEntrega(status){
     Object.assign(e,patch);
     notify(status==='em_rota'?'Saiu para entrega!':'Marcado como próximo do destino.','ok');
     abrirDetalheEntrega(e.id);
-    renderEntregasMob();
+    renderFiltrosEntregasMob(); renderEntregasMob();
   }catch(err){ notify(msgAmigavel(err,'Não foi possível atualizar a entrega.'),'err'); }
+}
+// _updEntrega() do desktop: grava + atualiza a memória + redesenha.
+async function _updEntregaMob(id,patch){
+  patch.atualizado_em=new Date().toISOString();
+  const {error}=await comTimeout(db.from('entregas').update(patch).eq('id',id).eq('empresa_id',G.empresaId),'entrega');
+  if(error) throw error;
+  const e=(G.entregasMob||[]).find(x=>x.id===id); if(e) Object.assign(e,patch);
+  renderFiltrosEntregasMob(); renderEntregasMob();
+  if(e && _entregaAtualId===id && $('sheet-entrega').style.display==='block') abrirDetalheEntrega(id);
+}
+
+/* Agendar — agendarEntrega() do desktop (lá usa prompt; aqui um modal com
+   data e janela). Mesma regra: "para agendar" passa a "agendada". */
+function abrirAgendarEntregaMob(){
+  const e=(G.entregasMob||[]).find(x=>x.id===_entregaAtualId); if(!e) return;
+  abrirModalOSAcao('<i class="ti ti-calendar"></i> Agendar entrega',
+    `${esc(e.cliente_nome||'')} — ${esc(e.descricao||'')}`,
+    `<label class="lbl" style="margin-top:0">Data</label><input class="inp" id="ea-data" type="date" value="${esc(e.data_agendada||'')}">
+     <label class="lbl">Janela de horário (opcional)</label><input class="inp" id="ea-janela" placeholder="Ex.: 14h-18h" value="${esc(e.janela||'')}">`,
+    `<button class="btn" id="osa-ok" onclick="salvarAgendaEntregaMob()"><i class="ti ti-check"></i>Salvar</button><button class="btn btn-ghost" style="margin-top:6px" onclick="fecharModalOSAcao()">Cancelar</button>`);
+}
+async function salvarAgendaEntregaMob(){
+  const e=(G.entregasMob||[]).find(x=>x.id===_entregaAtualId); if(!e) return;
+  const d=($('ea-data')?.value||'').trim(), j=($('ea-janela')?.value||'').trim();
+  _osaBusy('osa-ok',true);
+  try{
+    await _updEntregaMob(e.id,{data_agendada:d||null,janela:j||null,status:(e.status==='para_agendar'?'agendada':e.status)});
+    fecharModalOSAcao(); notify('Entrega agendada.','ok');
+  }catch(err){ _osaErro(msgAmigavel(err,'Não foi possível agendar.')); }
+  finally{ _osaBusy('osa-ok',false); }
+}
+
+/* Atribuir entregador — atribuirEntregador()/_setEntregador() do desktop:
+   só usuários ativos com perfil Entregador; dá pra trocar ou remover. */
+function abrirAtribuirEntregadorMob(){
+  const e=(G.entregasMob||[]).find(x=>x.id===_entregaAtualId); if(!e) return;
+  const ents=(G.usuarios||[]).filter(u=>u.ativo!==false&&u.role==='entregador');
+  if(!ents.length){ notify('Nenhum entregador cadastrado ainda. Crie um usuário com o perfil "Entregador" em Mais → Pessoas.','info'); return; }
+  abrirModalOSAcao('<i class="ti ti-user-cog"></i> Atribuir entregador',
+    `${esc(e.cliente_nome||'')} — ${esc(e.descricao||'')}`,
+    `<div style="display:flex;flex-direction:column;gap:8px">${ents.map(u=>`<button class="quemusa-btn${e.entregador_id===u.id?' on':''}" onclick="setEntregadorMob('${esc(u.id)}')"><i class="ti ti-truck"></i>${esc(u.nome||'')}${e.entregador_id===u.id?' (atual)':''}</button>`).join('')}
+     ${e.entregador_id?`<button class="quemusa-btn" style="color:var(--danger)" onclick="setEntregadorMob('')"><i class="ti ti-x" style="color:var(--danger)"></i>Remover atribuição</button>`:''}</div>`,
+    `<button class="btn btn-ghost" style="margin-top:6px" onclick="fecharModalOSAcao()">Cancelar</button>`);
+}
+async function setEntregadorMob(uid){
+  const e=(G.entregasMob||[]).find(x=>x.id===_entregaAtualId); if(!e) return;
+  const u=uid?(G.usuarios||[]).find(x=>x.id===uid):null;
+  try{
+    await _updEntregaMob(e.id,{entregador_id:u?u.id:null,entregador_nome:u?u.nome:null,atribuido_em:u?new Date().toISOString():null});
+    fecharModalOSAcao(); notify(u?('Entrega atribuída a '+u.nome+'.'):'Atribuição removida.','ok');
+  }catch(err){ _osaErro(msgAmigavel(err,'Não foi possível atribuir.')); }
+}
+
+/* Link do cliente — gerarLinkEntrega() do desktop: token de alta entropia
+   (expira em 30 dias), código de 4 dígitos se a empresa exige código, copia
+   o link e abre o WhatsApp do cliente com a mesma mensagem. */
+async function gerarLinkEntregaMob(){
+  const e=(G.entregasMob||[]).find(x=>x.id===_entregaAtualId); if(!e) return;
+  const w=e.telefone?window.open('about:blank','_blank'):null; // abre já no clique (evita bloqueio de pop-up)
+  try{
+    let tok=e.token_publico;
+    if(!tok){
+      tok=(crypto.randomUUID()+crypto.randomUUID()).replace(/-/g,'');
+      const exp=new Date(Date.now()+30*24*3600*1000).toISOString();
+      const {error}=await db.from('entregas').update({token_publico:tok,token_expira_em:exp}).eq('id',e.id).eq('empresa_id',G.empresaId);
+      if(error) throw error;
+      e.token_publico=tok; e.token_expira_em=exp;
+    }
+    let codigo=e.codigo_confirmacao||null;
+    try{
+      const cfg=await carregarConfigEntregaMob();
+      if(cfg.exigir_codigo && !codigo){
+        codigo=String(Math.floor(1000+Math.random()*9000));
+        const {error:cErr}=await db.from('entregas').update({codigo_confirmacao:codigo,codigo_tentativas:0}).eq('id',e.id).eq('empresa_id',G.empresaId);
+        if(!cErr){ e.codigo_confirmacao=codigo; e.codigo_tentativas=0; } else codigo=null;
+      }
+    }catch(_){}
+    const link=`${location.origin}/entrega.html?t=${tok}`;
+    try{ await navigator.clipboard.writeText(link); notify('Link de entrega copiado!','ok'); }catch(_){ notify('Link: '+link,'info'); }
+    if(e.telefone){
+      const tel=String(e.telefone).replace(/\D/g,'');
+      const codigoTxt=codigo?` Guarde este código: *${codigo}* — o entregador vai pedir ele na hora de confirmar a entrega.`:'';
+      const url=`https://wa.me/55${tel}?text=${encodeURIComponent(`Olá ${e.cliente_nome||''}! Preencha seus dados de entrega aqui: ${link}${codigoTxt}`)}`;
+      if(w) w.location.href=url; else window.open(url,'_blank');
+    }
+  }catch(err){
+    if(w) try{ w.close(); }catch(_){}
+    notify(msgAmigavel(err,'Não foi possível gerar o link.'),'err');
+  }
+}
+
+/* Ver a OS de origem (abre o mesmo detalhe de OS da Fatia 30). */
+async function verOSDaEntrega(){
+  const e=(G.entregasMob||[]).find(x=>x.id===_entregaAtualId); if(!e||!e.origem_id) return;
+  try{
+    const {data}=await comTimeout(db.from('ordens_servico').select('*').eq('id',e.origem_id).eq('empresa_id',G.empresaId).maybeSingle(),'OS');
+    if(!data){ notify('OS não encontrada.','warn'); return; }
+    G.osCache=G.osCache||[];
+    const i=G.osCache.findIndex(x=>x.id===data.id);
+    if(i>=0) G.osCache[i]=data; else G.osCache.unshift(data);
+    fecharDetalheEntrega();
+    abrirDetalheOS(data.id);
+  }catch(err){ notify(msgAmigavel(err,'Não foi possível abrir a OS.'),'err'); }
+}
+
+/* Regra do desktop (marcarEntregueEntrega): entrega de OS/venda só é
+   liberada se estiver paga. Antes de travar, confere a OS na hora — se ela
+   já foi paga (ex.: recebida no caixa depois que a entrega foi criada),
+   atualiza a entrega e libera. */
+async function _entregaLiberadaPagamento(e){
+  if(e.origem_tipo==='avulsa' || e.pago) return true;
+  if(e.origem_tipo==='os' && e.origem_id){
+    try{
+      const {data:o}=await comTimeout(db.from('ordens_servico').select('id,status,total,valor_pago_os').eq('id',e.origem_id).eq('empresa_id',G.empresaId).maybeSingle(),'OS');
+      const total=Number(o?.total||0);
+      if(o && (o.status==='Entregue' || (total>0 && Number(o.valor_pago_os||0)>=total))){
+        try{ await db.from('entregas').update({pago:true,atualizado_em:new Date().toISOString()}).eq('id',e.id).eq('empresa_id',G.empresaId); }catch(_){}
+        e.pago=true; return true;
+      }
+    }catch(_){}
+  }
+  return false;
 }
 
 /* ── Confirmação de entrega: assinatura / código / simples, conforme
@@ -3745,6 +5557,11 @@ function limparAssinatura(){
 }
 async function abrirConfirmarEntrega(){
   const e=(G.entregasMob||[]).find(x=>x.id===_entregaAtualId); if(!e) return;
+  // Fatia 31: mesma trava do desktop — entrega de OS só com pagamento feito
+  if(!(await _entregaLiberadaPagamento(e))){
+    notify(_isGestorEntregas()?'Pagamento pendente — receba o pagamento da OS antes de entregar (botão "Ver OS de origem").':'Pagamento pendente — esta entrega ainda não foi liberada. Fale com a loja.','warn');
+    return;
+  }
   fecharDetalheEntrega();
   const cfg=await carregarConfigEntregaMob();
   $('confirma-sub').textContent=(e.cliente_nome||'')+' — '+(e.descricao||'');
