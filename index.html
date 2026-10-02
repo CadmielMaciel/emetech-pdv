@@ -934,6 +934,28 @@ input::placeholder,textarea::placeholder{color:var(--txt4)}
 .pin-erro{color:#EF4444;font-size:13px;font-weight:600;margin-top:12px;min-height:18px;text-align:center}
 .pin-voltar{margin-top:20px;color:rgba(255,255,255,.45);font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px;transition:color .2s}
 .pin-voltar:hover{color:rgba(255,255,255,.8)}
+/* Fatia 50: PIN de 6 dígitos (conferido no servidor) */
+.pin-dot.d6{display:none}
+.pin-screen.pin6 .pin-dot.d6{display:block}
+.pin-key.off{opacity:.35;pointer-events:none}
+.pin-links{display:flex;gap:22px;justify-content:center;flex-wrap:wrap;margin-top:6px}
+.pin-links .pin-voltar{color:rgba(255,255,255,.72);text-decoration:underline;text-underline-offset:3px}
+.nf-aviso{max-width:440px;margin-top:18px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:12px 16px;color:rgba(255,255,255,.88);font-size:13px;line-height:1.5;text-align:center}
+.nf-aviso b{color:#fff}
+.nf-aviso .btn{margin:10px auto 0;display:inline-flex}
+.pin-ola-acoes{display:none;flex-direction:column;gap:10px;align-items:center;margin-top:8px}
+.pin-screen.ola .pin-dots,.pin-screen.ola .pin-numpad,.pin-screen.ola .pin-links{display:none}
+.pin-screen.ola .pin-ola-acoes{display:flex}
+.pin-ola-acoes .btn-ola{min-width:220px;padding:11px 18px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;border:1.5px solid rgba(255,255,255,.35);background:transparent;color:#fff;font-family:inherit}
+.pin-ola-acoes .btn-ola.pri{background:var(--pri);border-color:var(--pri)}
+body.pin-travado .pin-screen,body.pin-travado .nf-screen{z-index:10000}
+#modal-pinadm-desk.open,#modal-pinshow-desk.open{z-index:10001}
+.pinshow-d-row{display:flex;align-items:center;gap:12px;padding:10px 2px;border-bottom:1px solid var(--border)}
+.pinshow-d-nome{font-weight:700;font-size:13.5px;color:var(--txt)}
+.pinshow-d-rl{font-size:11.5px;color:var(--txt2)}
+.pinshow-d-pin{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:20px;font-weight:800;letter-spacing:1.5px;color:var(--txt);white-space:nowrap}
+.pin-st-ok{font-size:12px;color:var(--txt2)}
+.pin-st-falta{font-size:12px;font-weight:700;color:var(--danger,#dc2626)}
 
 /* ── APARÊNCIA — EXTRAS ────────────────────────────── */
 .palette-preset{width:36px;height:36px;border-radius:8px;cursor:pointer;border:3px solid transparent;transition:all .2s;flex-shrink:0}
@@ -2432,7 +2454,8 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
     <div class="nf-title">Quem está usando?</div>
   <div class="nf-grid" id="nf-grid" style="max-width:480px"></div>
   <div id="nf-admin-container"></div>
-  <div style="margin-top:24px;font-size:11px;color:rgba(255,255,255,.18);text-align:center">
+  <div class="nf-aviso" id="nf-aviso" style="display:none"></div>
+  <div style="margin-top:24px;font-size:11px;color:rgba(255,255,255,.6);text-align:center">
     Selecione seu perfil para continuar
   </div>
 </div>
@@ -2448,6 +2471,8 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
     <div class="pin-dot" id="pd1"></div>
     <div class="pin-dot" id="pd2"></div>
     <div class="pin-dot" id="pd3"></div>
+    <div class="pin-dot d6" id="pd4"></div>
+    <div class="pin-dot d6" id="pd5"></div>
   </div>
   <div class="pin-numpad">
     <div class="pin-key" onclick="pinKey('1')">1</div>
@@ -2463,8 +2488,17 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
     <div class="pin-key" onclick="pinKey('0')">0</div>
     <div class="pin-key del" onclick="pinDel()">⌫</div>
   </div>
-  <div class="pin-erro" id="pin-erro"></div>
-  <div class="pin-voltar" onclick="voltarNF()"><i class="ti ti-arrow-left" style="font-size:14px"></i>Trocar perfil</div>
+  <div class="pin-erro" id="pin-erro" role="status" aria-live="polite"></div>
+  <div class="pin-links">
+    <div class="pin-voltar" id="pin-voltar" onclick="voltarNF()"><i class="ti ti-arrow-left" style="font-size:14px"></i>Trocar perfil</div>
+    <div class="pin-voltar" id="pin-esqueci" style="display:none" onclick="_pinEsqueciDesk()"><i class="ti ti-help-circle" style="font-size:14px"></i>Esqueci meu PIN</div>
+  </div>
+  <!-- Fatia 50: modo "só PIN" (mais de 5 usuários) — mostra quem foi identificado -->
+  <div class="pin-ola-acoes">
+    <button type="button" class="btn-ola pri" onclick="_pinOlaEntrarDesk()">Entrar</button>
+    <button type="button" class="btn-ola" onclick="_pinNaoSouEuDesk()">Não é você? Trocar</button>
+  </div>
+  <div class="nf-aviso" id="pin-aviso" style="display:none"></div>
 </div>
 
 <!-- PDF PRINT AREA -->
@@ -2507,6 +2541,8 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
       <div class="user-pill">
         <div class="user-av" id="uav">?</div>
         <div style="flex:1;min-width:0"><div class="user-name" id="uname">...</div><div class="user-role" id="urole"></div></div>
+        <button class="logout-btn" id="btn-meupin-desk" style="display:none" onclick="abrirMeuPinDesk()" title="Meu PIN" aria-label="Meu PIN"><i class="ti ti-key"></i></button>
+        <button class="logout-btn" id="btn-trocar-desk" style="display:none" onclick="trocarUsuarioDesk()" title="Trocar usuário (bloquear tela)" aria-label="Trocar usuário"><i class="ti ti-user-switch"></i></button>
         <button class="logout-btn" onclick="doLogout()" title="Sair"><i class="ti ti-logout"></i></button>
       </div>
     </div>
@@ -2965,8 +3001,8 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
         <!-- Contratos -->
         <div id="cred-tab-contratos">
           <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-            <div class="ig" style="flex:1"><i class="ti ti-search"></i><input type="text" placeholder="Buscar por cliente..." oninput="renderContratos(this.value)"></div>
-            <select id="cred-filter-status" onchange="renderContratos()" style="padding:7px 10px;font-size:12.5px;border-radius:8px;width:auto">
+            <div class="ig" style="flex:1"><i class="ti ti-search"></i><input type="text" id="cred-busca" placeholder="Buscar por cliente ou nº..." oninput="renderContratosCred(this.value)"></div>
+            <select id="cred-filter-status" onchange="renderContratosCred(document.getElementById('cred-busca')?.value||'')" style="padding:7px 10px;font-size:12.5px;border-radius:8px;width:auto">
               <option value="">Todos</option><option value="aberto">Em dia</option><option value="inadimplente">Inadimplente</option><option value="quitado">Quitado</option>
             </select>
             <button class="btn btn-pri" onclick="popSelects();openModal('modal-novo-credito')"><i class="ti ti-plus"></i>Novo Crediário</button>
@@ -3268,7 +3304,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
             <button class="btn btn-out btn-xs" data-f="vencendo" onclick="setGarFiltro('vencendo',this)">Vencendo</button>
             <button class="btn btn-out btn-xs" data-f="vencida" onclick="setGarFiltro('vencida',this)">Vencidas</button>
           </div>
-          <input type="text" id="gar-busca" placeholder="Buscar cliente, aparelho, nº..." oninput="renderGarantias()" style="flex:1;min-width:160px;padding:7px 10px;border-radius:8px;border:1px solid var(--border)">
+          <input type="text" id="gar-busca" placeholder="Buscar cliente, aparelho, nº ou IMEI..." oninput="renderGarantias()" style="flex:1;min-width:160px;padding:7px 10px;border-radius:8px;border:1px solid var(--border)">
         </div>
         <div class="card" style="padding:0"><div class="tw"><table>
           <thead><tr><th>Origem</th><th>Cliente</th><th>Item/Aparelho</th><th>Início</th><th>Validade</th><th>Restante</th><th>Situação</th><th>Ações</th></tr></thead>
@@ -3906,7 +3942,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
             <select id="rec-filter" onchange="renderReceber()" style="padding:7px 10px;font-size:12.5px;border-radius:8px;width:auto">
               <option value="">Todos</option><option value="aberto">Aberto</option><option value="vencido">Vencido</option><option value="pago">Pago</option>
             </select>
-            <button class="btn btn-pri" onclick="openModal('modal-lanc-rec')"><i class="ti ti-plus"></i>Lançar</button>
+            <button class="btn btn-pri" onclick="abrirLancarRec()"><i class="ti ti-plus"></i>Lançar</button>
           </div>
           <div class="card" style="padding:0"><div class="tw"><table>
             <thead><tr><th>Descrição</th><th>Cliente</th><th>Valor</th><th>Vencimento</th><th>Pago</th><th>Status</th><th>Ações</th></tr></thead>
@@ -3919,7 +3955,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
             <select id="pag-filter" onchange="renderPagar()" style="padding:7px 10px;font-size:12.5px;border-radius:8px;width:auto">
               <option value="">Todos</option><option value="aberto">Aberto</option><option value="vencido">Vencido</option><option value="pago">Pago</option>
             </select>
-            <button class="btn btn-pri" onclick="openModal('modal-lanc-pag')"><i class="ti ti-plus"></i>Lançar</button>
+            <button class="btn btn-pri" onclick="abrirLancarPag()"><i class="ti ti-plus"></i>Lançar</button>
           </div>
           <div class="card" style="padding:0"><div class="tw"><table>
             <thead><tr><th>Descrição</th><th>Fornecedor/Destino</th><th>Categoria</th><th>Valor</th><th>Vencimento</th><th>Status</th><th>Ações</th></tr></thead>
@@ -4910,7 +4946,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
       <div class="page" id="page-usuarios">
         <div style="display:flex;gap:8px;margin-bottom:12px">
           <div class="ig" style="flex:1"><i class="ti ti-search"></i><input type="text" placeholder="Buscar usuário..." oninput="renderUsuarios(this.value)"></div>
-          <button class="btn btn-pri" onclick="document.getElementById('u-id').value='';document.getElementById('u-nome').value='';var _ut=document.getElementById('u-telefone');if(_ut)_ut.value='';document.getElementById('u-pin').value='';var h=document.getElementById('u-pin-hint');if(h)h.textContent='';document.getElementById('u-comissao-grp').style.display='none';document.getElementById('u-comissao').value='';document.getElementById('u-ativo').value='true';document.getElementById('u-role').value='operador';document.getElementById('usr-ttl').textContent='Novo Usuário';openModal('modal-usr')"><i class="ti ti-user-plus"></i>Novo Usuário</button>
+          <button class="btn btn-pri" onclick="document.getElementById('u-id').value='';document.getElementById('u-nome').value='';var _ut=document.getElementById('u-telefone');if(_ut)_ut.value='';document.getElementById('u-pin').value='';var h=document.getElementById('u-pin-hint');if(h)h.textContent='';document.getElementById('u-comissao-grp').style.display='none';document.getElementById('u-comissao').value='';document.getElementById('u-ativo').value='true';document.getElementById('u-role').value='operador';document.getElementById('usr-ttl').textContent='Novo Usuário';if(typeof _prepararModalUsrPin==='function')_prepararModalUsrPin(false);openModal('modal-usr')"><i class="ti ti-user-plus"></i>Novo Usuário</button>
         </div>
         <div class="fin-tabs" style="margin-bottom:14px">
           <button class="fin-tab active" onclick="usrTab('lista',this)"><i class="ti ti-users" style="font-size:13px"></i> Usuários</button>
@@ -4929,6 +4965,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
             </div>
             <div id="usr-plano-info" style="text-align:right;flex-shrink:0"></div>
           </div>
+          <div id="usr-pin-acoes"></div>
           <div class="card" style="padding:0"><div class="tw"><table>
             <thead><tr><th>Funcionário</th><th>PIN</th><th>Nível</th><th>Acesso</th><th>Ações</th></tr></thead>
             <tbody id="usr-table"></tbody>
@@ -5431,12 +5468,35 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
 <div class="modal-overlay" id="modal-exigir-admin"><div class="modal sm">
   <div class="modal-title"><i class="ti ti-shield-lock"></i>Autorização necessária</div>
   <div id="ea-descricao" style="font-size:12.5px;color:var(--txt2);margin-bottom:10px">Ação protegida</div>
-  <div class="fg"><label class="lbl">PIN de um Admin ou Gerente *</label><input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="ea-pin" placeholder="••••" onkeydown="if(event.key==='Enter')confirmarExigirAdmin()"></div>
+  <div class="fg"><label class="lbl">PIN de um Admin ou Gerente *</label><input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" id="ea-pin" placeholder="••••" autocomplete="off" onkeydown="if(event.key==='Enter')confirmarExigirAdmin()"></div>
   <div class="fg"><label class="lbl">Motivo</label><input type="text" id="ea-motivo" placeholder="Explique o motivo desta ação..."></div>
   <div id="ea-erro" style="color:var(--danger,#e5484d);font-size:12px;min-height:16px;margin-bottom:4px"></div>
   <div class="modal-footer">
     <button class="btn btn-out" onclick="cancelarExigirAdmin()">Cancelar</button>
     <button class="btn btn-pri" onclick="confirmarExigirAdmin()"><i class="ti ti-check"></i>Autorizar</button>
+  </div>
+</div></div>
+
+<!-- Fatia 50: PIN de administrador/gerente para gerar/resetar PINs (o servidor confere) -->
+<div class="modal-overlay" id="modal-pinadm-desk"><div class="modal sm">
+  <div class="modal-title"><i class="ti ti-key"></i><span id="pinadm-d-titulo">Confirmação</span></div>
+  <div id="pinadm-d-sub" style="font-size:12.5px;color:var(--txt2);margin-bottom:10px"></div>
+  <div class="fg"><label class="lbl" id="pinadm-d-lbl">PIN de administrador ou gerente</label><input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" id="pinadm-d-input" autocomplete="off" placeholder="••••••" onkeydown="if(event.key==='Enter')_pinAdmConfirmarDesk()"></div>
+  <div id="pinadm-d-erro" style="color:var(--danger,#e5484d);font-size:12px;min-height:16px;margin-bottom:4px" role="status"></div>
+  <div class="modal-footer">
+    <button class="btn btn-out" onclick="_pinAdmCancelarDesk()">Cancelar</button>
+    <button class="btn btn-pri" id="pinadm-d-btn" onclick="_pinAdmConfirmarDesk()"><i class="ti ti-check"></i>Confirmar</button>
+  </div>
+</div></div>
+
+<!-- Fatia 50: PIN(s) gerado(s) — aparece UMA vez, com envio pelo WhatsApp -->
+<div class="modal-overlay" id="modal-pinshow-desk"><div class="modal">
+  <div class="modal-title"><i class="ti ti-key"></i><span id="pinshow-d-titulo">PIN gerado</span></div>
+  <div style="font-size:12.5px;color:var(--txt2);margin-bottom:8px">Anote ou envie agora: o PIN <b>não aparece de novo</b>. Cada pessoa pode trocar o seu depois em <b>Meu PIN</b> (ícone de chave ao lado do nome, no menu).</div>
+  <div id="pinshow-d-lista" style="max-height:50vh;overflow-y:auto"></div>
+  <div class="modal-footer">
+    <button class="btn btn-out" onclick="_copiarPinsDesk()"><i class="ti ti-copy"></i>Copiar lista</button>
+    <button class="btn btn-pri" onclick="_fecharPinsDesk()"><i class="ti ti-check"></i>Já anotei / enviei</button>
   </div>
 </div></div>
 
@@ -5452,8 +5512,21 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
 </div></div>
 
 <!-- Financeiro: Lançar Receber -->
+<!-- Fatia 43: receber conta (pergunta como o cliente pagou) -->
+<div class="modal-overlay" id="modal-baixar-rec"><div class="modal" style="max-width:440px">
+  <div class="modal-title"><i class="ti ti-check"></i>Dar baixa na conta a receber</div>
+  <input type="hidden" id="br-id">
+  <div id="br-info" style="background:var(--bg2);border-radius:10px;padding:11px 13px;margin-bottom:12px;font-size:13px"></div>
+  <div class="fg"><label class="lbl">Como o cliente pagou? *</label><select id="br-forma" onchange="brAtualizaInfo()"><option value="">Escolha...</option><option value="dinheiro">Dinheiro (entra no caixa)</option><option value="pix">PIX</option><option value="cartao">Cartão</option><option value="boleto">Boleto</option><option value="transferencia">Transferência</option></select></div>
+  <div id="br-aviso" style="font-size:12px;color:var(--txt3);margin-top:-4px"></div>
+  <div class="modal-footer">
+    <button class="btn btn-out" onclick="closeModal('modal-baixar-rec')">Cancelar</button>
+    <button class="btn btn-success" onclick="confirmarBaixarRec()"><i class="ti ti-check"></i>Confirmar recebimento</button>
+  </div>
+</div></div>
 <div class="modal-overlay" id="modal-lanc-rec"><div class="modal">
-  <div class="modal-title"><i class="ti ti-arrow-down-left"></i>Lançar Conta a Receber</div>
+  <div class="modal-title"><i class="ti ti-arrow-down-left"></i><span id="lr-ttl">Lançar Conta a Receber</span></div>
+  <input type="hidden" id="lr-id">
   <div class="fg"><label class="lbl">Descrição *</label><input type="text" id="lr-desc" placeholder="Ex: Venda parcela 1/3"></div>
   <div class="g2"><div class="fg"><label class="lbl">Cliente</label><select id="lr-cli"></select></div><div class="fg"><label class="lbl">Valor R$ *</label><input type="number" id="lr-val" step="0.01" min="0.01"></div></div>
   <div class="g2"><div class="fg"><label class="lbl">Vencimento *</label><input type="date" id="lr-venc"></div><div class="fg"><label class="lbl">Forma Pagamento</label><input type="text" id="lr-forma" placeholder="Dinheiro, PIX..."></div></div>
@@ -5466,6 +5539,32 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
 </div></div>
 
 <!-- Financeiro: Lançar Pagar -->
+<!-- Fatia 40: pagar conta (pergunta de onde saiu o dinheiro) e excluir conta -->
+<div class="modal-overlay" id="modal-baixar-pag"><div class="modal" style="max-width:440px">
+  <div class="modal-title"><i class="ti ti-check"></i>Marcar conta como paga</div>
+  <input type="hidden" id="bp-id">
+  <div id="bp-info" style="background:var(--bg2);border-radius:10px;padding:11px 13px;margin-bottom:12px;font-size:13px"></div>
+  <div class="fg"><label class="lbl">De onde saiu o dinheiro? *</label><select id="bp-forma" onchange="bpAtualizaInfo()"><option value="">Escolha...</option><option value="dinheiro">Dinheiro do caixa (gaveta)</option><option value="pix">PIX</option><option value="boleto">Boleto</option><option value="transferencia">Transferência</option><option value="cartao">Cartão</option></select></div>
+  <div id="bp-aviso" style="font-size:12px;color:var(--txt3);margin-top:-4px"></div>
+  <div class="modal-footer">
+    <button class="btn btn-out" onclick="closeModal('modal-baixar-pag')">Cancelar</button>
+    <button class="btn btn-pri" onclick="confirmarBaixarPag()"><i class="ti ti-check"></i>Confirmar pagamento</button>
+  </div>
+</div></div>
+<div class="modal-overlay" id="modal-excluir-pag"><div class="modal" style="max-width:440px">
+  <div class="modal-title"><i class="ti ti-trash"></i>Excluir conta a pagar</div>
+  <input type="hidden" id="xp-id">
+  <div id="xp-info" style="font-size:13px;margin-bottom:12px"></div>
+  <div id="xp-escopo" style="display:none;background:var(--bg2);border-radius:10px;padding:11px 13px;margin-bottom:10px;font-size:13px">
+    <label style="display:flex;gap:8px;align-items:center;cursor:pointer;margin-bottom:6px"><input type="radio" name="xp-esc" value="uma" checked style="width:auto"> Só esta conta</label>
+    <label style="display:flex;gap:8px;align-items:center;cursor:pointer"><input type="radio" name="xp-esc" value="proximas" style="width:auto"> <span>Esta e as próximas em aberto da recorrência</span></label>
+  </div>
+  <div style="font-size:12px;color:var(--txt3)">Contas já pagas não são apagadas.</div>
+  <div class="modal-footer">
+    <button class="btn btn-out" onclick="closeModal('modal-excluir-pag')">Cancelar</button>
+    <button class="btn btn-danger" onclick="confirmarExcluirPag()"><i class="ti ti-trash"></i>Excluir</button>
+  </div>
+</div></div>
 <div class="modal-overlay" id="modal-lanc-pag"><div class="modal" style="max-width:560px">
   <div class="modal-title"><i class="ti ti-arrow-up-right"></i>Lançar Conta a Pagar</div>
   <input type="hidden" id="lp-id">
@@ -5537,6 +5636,17 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
 <div class="modal-overlay" id="modal-os-det"><div class="modal lg">
   <div id="os-det-content"></div>
   <div class="modal-footer" id="os-det-footer"></div>
+</div></div>
+<!-- Fatia 45: baixa de parcela do crediário (pergunta como o cliente pagou) -->
+<div class="modal-overlay" id="modal-baixar-parcela"><div class="modal" style="max-width:440px">
+  <div class="modal-title"><i class="ti ti-check"></i>Dar baixa na parcela</div>
+  <div id="bpc-info" style="background:var(--bg2);border-radius:10px;padding:11px 13px;margin-bottom:12px;font-size:13px"></div>
+  <div class="fg"><label class="lbl">Como o cliente pagou? *</label><select id="bpc-forma" onchange="bpcAtualizaInfo()"><option value="">Escolha...</option><option value="dinheiro">Dinheiro (entra no caixa)</option><option value="pix">PIX</option><option value="cartao">Cartão</option><option value="boleto">Boleto</option><option value="transferencia">Transferência</option></select></div>
+  <div id="bpc-aviso" style="font-size:12px;color:var(--txt3);margin-top:-4px"></div>
+  <div class="modal-footer">
+    <button class="btn btn-out" onclick="closeModal('modal-baixar-parcela')">Cancelar</button>
+    <button class="btn btn-success" onclick="confirmarBaixarParcela()"><i class="ti ti-check"></i>Confirmar recebimento</button>
+  </div>
 </div></div>
 
 <div class="modal-overlay" id="modal-generic"><div class="modal">
@@ -5675,11 +5785,12 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
   <input type="hidden" id="u-id">
   <div class="fg"><label class="lbl">Nome *</label><input type="text" id="u-nome"></div>
   <div class="fg"><label class="lbl">Telefone / WhatsApp</label><input type="text" id="u-telefone" inputmode="numeric" placeholder="(DDD) 9 9999-9999"></div>
-  <div class="fg"><label class="lbl">PIN (4 dígitos) <span id="u-pin-hint" style="font-weight:400;color:rgba(255,255,255,.4)"></span></label><input type="text" id="u-pin" inputmode="numeric" maxlength="6" placeholder="ex: 1234"></div>
+  <div class="fg" id="u-pin-grp"><label class="lbl">PIN (4 dígitos) <span id="u-pin-hint" style="font-weight:400;color:rgba(255,255,255,.4)"></span></label><input type="text" id="u-pin" inputmode="numeric" maxlength="6" placeholder="ex: 1234"></div>
+  <div class="alert-box alert-info" id="u-pin-info" style="font-size:12px;display:none"><i class="ti ti-key"></i><span>O sistema gera o PIN de 6 dígitos ao salvar (aparece uma vez, com envio pelo WhatsApp). Para trocar o PIN de alguém, use <b>Novo PIN</b> na lista.</span></div>
   <div class="fg"><label class="lbl">Nível *</label><select id="u-role" onchange="toggleComissaoField()"><option value="operador">Operador de Caixa</option><option value="tecnico">Técnico</option><option value="entregador">Entregador</option><option value="gerente">Gerente</option><option value="admin">Administrador</option></select></div>
   <div class="fg" id="u-comissao-grp" style="display:none"><label class="lbl">Comissão por OS concluída (%)</label><input type="number" id="u-comissao" step="0.1" min="0" max="100" placeholder="Ex: 10"></div>
   <div class="fg"><label class="lbl">Status</label><select id="u-ativo"><option value="true">Ativo</option><option value="false">Inativo</option></select></div>
-  <div class="alert-box alert-info" style="font-size:12px"><i class="ti ti-info-circle"></i>O funcionário acessa por <b>nome + PIN</b> na tela inicial. Sem e-mail nem senha próprios.</div>
+  <div class="alert-box alert-info" style="font-size:12px"><i class="ti ti-info-circle"></i>O funcionário acessa por <b>nome + PIN</b> na tela inicial (com mais de 5 pessoas, <b>só o PIN</b>). Sem e-mail nem senha próprios.</div>
   <div class="modal-footer">
     <button class="btn btn-out" onclick="closeModal('modal-usr')">Cancelar</button>
     <button class="btn btn-pri" onclick="saveUsr()"><i class="ti ti-check"></i>Salvar</button>
@@ -6047,22 +6158,22 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
 <div class="modal-overlay" id="modal-alterar-pin"><div class="modal sm">
   <div class="modal-title"><i class="ti ti-lock-code"></i>Alterar PIN</div>
   <input type="hidden" id="ap-user-id">
-  <div style="font-size:13px;color:var(--txt2);margin-bottom:16px">
+  <div style="font-size:13px;color:var(--txt2);margin-bottom:16px" id="ap-desc">
     O PIN é usado para acessar o sistema na tela de seleção de perfil. Use 4 dígitos numéricos.
   </div>
   <div id="pin-atual-grp" class="fg">
     <label class="lbl">PIN Atual <span id="pin-atual-lbl"></span></label>
     <div style="display:flex;gap:8px">
-      <input type="password" id="ap-pin-atual" maxlength="4" inputmode="numeric" pattern="[0-9]*" placeholder="••••" style="text-align:center;font-size:22px;letter-spacing:6px;font-weight:700">
+      <input type="password" id="ap-pin-atual" maxlength="6" autocomplete="off" inputmode="numeric" pattern="[0-9]*" placeholder="••••" style="text-align:center;font-size:22px;letter-spacing:6px;font-weight:700">
     </div>
   </div>
   <div class="fg">
-    <label class="lbl">Novo PIN (4 dígitos)</label>
-    <input type="password" id="ap-pin-novo" maxlength="4" inputmode="numeric" pattern="[0-9]*" placeholder="••••" style="text-align:center;font-size:22px;letter-spacing:6px;font-weight:700">
+    <label class="lbl" id="ap-novo-lbl">Novo PIN (4 dígitos)</label>
+    <input type="password" id="ap-pin-novo" maxlength="6" autocomplete="off" inputmode="numeric" pattern="[0-9]*" placeholder="••••" style="text-align:center;font-size:22px;letter-spacing:6px;font-weight:700">
   </div>
   <div class="fg">
     <label class="lbl">Confirmar novo PIN</label>
-    <input type="password" id="ap-pin-conf" maxlength="4" inputmode="numeric" pattern="[0-9]*" placeholder="••••" style="text-align:center;font-size:22px;letter-spacing:6px;font-weight:700">
+    <input type="password" id="ap-pin-conf" maxlength="6" autocomplete="off" inputmode="numeric" pattern="[0-9]*" placeholder="••••" style="text-align:center;font-size:22px;letter-spacing:6px;font-weight:700">
   </div>
   <div id="ap-pin-err" style="background:#FEF2F2;color:#EF4444;border:1px solid #FECACA;border-radius:8px;padding:8px 12px;font-size:12.5px;font-weight:600;margin-bottom:8px;display:none"></div>
   <div id="ap-pin-ok" style="background:#ECFDF5;color:#059669;border:1px solid #A7F3D0;border-radius:8px;padding:8px 12px;font-size:12.5px;font-weight:600;margin-bottom:8px;display:none"></div>
@@ -9084,6 +9195,7 @@ async function loadAll(){
   setLoad(true);
   // 1) carrega SÓ usuários primeiro (necessário para a tela de perfis) — com timeout
   G.usuarios = await consultaSegura('usuários', db.from('usuarios').select('*').eq('empresa_id',EID()).order('nome'));
+  await _carregarPinResumoDesk(); // Fatia 50: PIN de 6 dígitos em uso? (e limpa pin/pin_hash da memória)
   setLoad(false);
   // 2) o restante em segundo plano, sem travar a entrada
   carregarDadosSecundarios();
@@ -12209,8 +12321,11 @@ async function converterOrcamento(){
   // Salva como convertido e coloca no carrinho
   if(id){await db.from('orcamentos').update({status:'convertido'}).eq('id',id);}
   // Adiciona ao carrinho do PDV
+  // Fatia 41 (decisão do usuário): o desconto % do orçamento vai pro preço de
+  // cada item — antes era perdido e o cliente pagava o preço cheio no PDV.
+  const _fat=1-Math.min(100,Math.max(0,parseFloat(document.getElementById('orc-desc').value)||0))/100;
   G.cart=[];
-  G.orcItems.forEach(i=>{G.cart.push({id:i.id,nome:i.nome,preco:i.preco,custo:0,qty:i.qty,inf:false});});
+  G.orcItems.forEach(i=>{G.cart.push({id:i.id,nome:i.nome,preco:+((Number(i.preco)||0)*_fat).toFixed(2),custo:0,qty:i.qty,inf:false});});
   closeModal('modal-orc');go('pdv');notify('Orçamento convertido! Finalize a venda no PDV.','info');
 }
 
@@ -12241,8 +12356,9 @@ function renderOrcamentos(q=''){
 
 async function conv2venda(id){
   const o=G.orcamentos.find(x=>x.id===id);if(!o)return;
+  const _fat=1-Math.min(100,Math.max(0,Number(o.desconto_pct)||0))/100; // Fatia 41: desconto no preço
   G.cart=[];
-  (o.itens||[]).forEach(i=>{G.cart.push({id:i.id,nome:i.nome,preco:i.preco,custo:0,qty:i.qty,inf:false});});
+  (o.itens||[]).forEach(i=>{G.cart.push({id:i.id,nome:i.nome,preco:+((Number(i.preco)||0)*_fat).toFixed(2),custo:0,qty:i.qty,inf:false});});
   await db.from('orcamentos').update({status:'convertido'}).eq('id',id);
   o.status='convertido';renderOrcamentos();go('pdv');notify('Orçamento carregado no PDV!','info');
 }
@@ -12254,6 +12370,12 @@ async function buscarVendaDev(){
   if(!num){notify('Informe o número da venda!','error');return;}
   const v=G.vendas.find(x=>x.numero===num||x.id===String(num));
   if(!v){notify('Venda não encontrada!','error');return;}
+  _devCarregarVenda(v);
+}
+// Fatia 39: separado de buscarVendaDev para o botão "Devolver" do Histórico
+// de Vendas também carregar a venda (antes ele procurava #dev-venda-id, que
+// não existe, e a devolução ficava sem venda: "Busque a venda primeiro!").
+function _devCarregarVenda(v){
   devVendaAtual=v;
   document.getElementById('dev-venda-info').style.display='';
   document.getElementById('dev-venda-info').innerHTML=`<div style="font-weight:600;margin-bottom:6px">Venda #${pad(v.numero||0)} — ${esc(v.cliente_nome)}</div><div style="font-size:12px;color:var(--txt2)">${fmtDT(v.criado_em)} · ${fmt(v.total)}</div>`;
@@ -12270,7 +12392,16 @@ async function saveDevolucao(){
   const itens=devVendaAtual.itens||[];
   const selecionados=itens.filter((_,i)=>document.getElementById(`dev-it-${i}`)?.checked);
   if(!selecionados.length){notify('Selecione ao menos um item!','error');return;}
-  const total=selecionados.reduce((s,i)=>s+i.preco*i.qty,0);
+  // Fatia 39: o valor devolvido nunca passa do que ainda resta da venda
+  // (total − devoluções já registradas), igual ao celular.
+  const _jaDev=(G.devolucoes||[]).filter(d=>d.venda_id===devVendaAtual.id).reduce((s,d)=>s+(Number(d.valor_total)||0),0);
+  const total=+Math.min(selecionados.reduce((s,i)=>s+i.preco*i.qty,0),Math.max(0,(Number(devVendaAtual.total)||0)-_jaDev)).toFixed(2);
+  if(total<=0){notify('Esta venda já foi totalmente devolvida.','warn');return;}
+  // Fatia 39 (decisão do usuário): estorno em DINHEIRO sai da gaveta — vira
+  // uma saída (tipo 'sangria', valor negativo) no caixa aberto e desconta do
+  // esperado no fechamento. Sem caixa aberto, não deixa devolver em dinheiro.
+  const _formaEst=document.getElementById('dev-estorno').value;
+  if(_formaEst==='dinheiro'&&!G.caixaAtual){notify('Abra o caixa para devolver em dinheiro, ou escolha outra forma de estorno.','warn',5000);return;}
   const payload={empresa_id:EID(),venda_id:devVendaAtual.id,venda_numero:devVendaAtual.numero,cliente_id:devVendaAtual.cliente_id,cliente_nome:devVendaAtual.cliente_nome,operador_id:G.profile.id,operador_nome:G.profile.nome,itens:selecionados,tipo:document.getElementById('dev-tipo').value,motivo:document.getElementById('dev-motivo').value,valor_total:total,forma_estorno:document.getElementById('dev-estorno').value};
   setLoad(true);
   const {data,error}=await db.from('devolucoes').insert(payload).select().single();
@@ -12286,6 +12417,12 @@ async function saveDevolucao(){
       }
     }
     if(data)G.devolucoes.unshift(data);
+    if(_formaEst==='dinheiro'&&G.caixaAtual){
+      try{
+        const _r=await db.from('movimentacoes_caixa').insert({empresa_id:EID(),caixa_id:G.caixaAtual.id,tipo:'sangria',valor:-total,descricao:'Devolução da venda #'+(devVendaAtual.numero?pad(devVendaAtual.numero):String(devVendaAtual.id||'').slice(-6).toUpperCase()),usuario_id:G.profile.id,usuario_nome:G.profile.nome});
+        if(_r&&_r.error) throw _r.error;
+      }catch(_e){ console.error('[devolução → caixa]',_e); notify('Devolução registrada, mas a saída no caixa falhou — registre uma sangria manual.','warn',6000); }
+    }
   }
   setLoad(false);
   if(error){notify('Erro: '+error.message,'error');return;}
@@ -12673,11 +12810,8 @@ function iniciarDevolucaoVenda(id){
   // Pré-preenche o modal de devolução com os dados da venda selecionada
   openModal('modal-devolucao');
   setTimeout(()=>{
-    const selV=document.getElementById('dev-venda-id');
-    if(selV){ selV.value=v.id;
-      // Trigger manual para atualizar campos dependentes se existir
-      selV.dispatchEvent(new Event('change'));
-    }
+    _devCarregarVenda(v); // Fatia 39
+    const num=document.getElementById('dev-venda-num'); if(num&&v.numero) num.value=v.numero;
     const cli=document.getElementById('dev-cliente'); if(cli) cli.value=v.cliente_nome||'';
     const val=document.getElementById('dev-valor'); if(val) val.value=(v.total||0).toFixed(2);
   },100);
@@ -13285,13 +13419,49 @@ function vencStatus(venc,status){
   return['venc-ok',`${Math.ceil(diff)}d`];
 }
 
+// Fatia 43 (decisão do usuário): editar conta a receber em aberto (admin/gerente).
+function abrirLancarRec(){
+  popLancCli();
+  ['lr-id','lr-desc','lr-val','lr-venc','lr-forma','lr-obs'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const pn=document.getElementById('lr-parc-n'); if(pn) pn.value=1; const pt=document.getElementById('lr-parc-t'); if(pt) pt.value=1;
+  const cli=document.getElementById('lr-cli'); if(cli) cli.value='';
+  const t=document.getElementById('lr-ttl'); if(t) t.textContent='Lançar Conta a Receber';
+  openModal('modal-lanc-rec');
+}
+function abrirEditarRec(id){
+  const r=(G.receber||[]).find(x=>x.id===id); if(!r) return;
+  if(r.status==='pago'){ notify('Conta já recebida não pode ser editada.','warn'); return; }
+  if(!temRole('admin','admin_master','gerente')){ notify('Só administrador ou gerente edita contas.','warn'); return; }
+  popLancCli();
+  const set=(k,v)=>{const el=document.getElementById(k); if(el) el.value=v==null?'':v;};
+  set('lr-id',r.id); set('lr-desc',r.descricao); set('lr-val',r.valor_original); set('lr-venc',r.data_vencimento);
+  set('lr-forma',r.forma_pagamento); set('lr-parc-n',r.parcela_numero||1); set('lr-parc-t',r.parcela_total||1); set('lr-obs',r.observacoes);
+  const cli=document.getElementById('lr-cli'); if(cli) cli.value=r.cliente_id||'';
+  const t=document.getElementById('lr-ttl'); if(t) t.textContent='Editar Conta a Receber';
+  openModal('modal-lanc-rec');
+}
 async function saveLancRec(){
+  const _editId=(document.getElementById('lr-id')?.value||'').trim(); // Fatia 43
   const desc=document.getElementById('lr-desc').value.trim();
   const val=parseFloat(document.getElementById('lr-val').value)||0;
   const venc=document.getElementById('lr-venc').value;
   if(!desc||!val||!venc){notify('Preencha descrição, valor e vencimento!','error');return;}
   const cli=document.getElementById('lr-cli');
-  const payload={empresa_id:EID(),descricao:desc,cliente_id:cli?.value||null,cliente_nome:cli?.options[cli.selectedIndex]?.text||'',valor_original:val,data_vencimento:venc,forma_pagamento:document.getElementById('lr-forma').value,parcela_numero:parseInt(document.getElementById('lr-parc-n').value)||1,parcela_total:parseInt(document.getElementById('lr-parc-t').value)||1,observacoes:document.getElementById('lr-obs').value,status:'aberto'};
+  const payload={empresa_id:EID(),descricao:desc,cliente_id:cli?.value||null,cliente_nome:cli?.value?(cli?.options[cli.selectedIndex]?.text||''):'',valor_original:val,data_vencimento:venc,forma_pagamento:document.getElementById('lr-forma').value,parcela_numero:parseInt(document.getElementById('lr-parc-n').value)||1,parcela_total:parseInt(document.getElementById('lr-parc-t').value)||1,observacoes:document.getElementById('lr-obs').value,status:'aberto'};
+  if(_editId){
+    const atual=(G.receber||[]).find(x=>x.id===_editId);
+    if(!atual||atual.status==='pago'){ notify('Conta já recebida não pode ser editada.','warn'); return; }
+    const upd={...payload}; delete upd.empresa_id; delete upd.status;
+    setLoad(true);
+    const {error:eUp}=await db.from('contas_receber').update(upd).eq('id',_editId).eq('empresa_id',EID());
+    setLoad(false);
+    if(eUp){notify('Erro: '+eUp.message,'error');return;}
+    Object.assign(atual,upd);
+    try{ registrarAudit('conta_receber_editada',`Conta a receber editada: ${desc} — ${fmt(val)} vence ${fmtD(venc+'T12:00')}`,_operadorAtual?.nome||G.profile?.nome,'','success'); }catch(_){}
+    document.getElementById('lr-id').value='';
+    closeModal('modal-lanc-rec');notify('Conta atualizada!','success');renderReceber();renderFinanceiro();
+    return;
+  }
   setLoad(true);
   const {data,error}=await db.from('contas_receber').insert(payload).select().single();
   setLoad(false);
@@ -13312,7 +13482,31 @@ function toggleRecorrencia(){
   if(box) box.style.display = on ? '' : 'none';
 }
 
+// Fatia 40: editar conta em aberto (reusa o modal de lançamento; #lp-id
+// já existia e não era usado). Recorrência não muda na edição.
+function abrirEditarPag(id){
+  const p=(G.pagar||[]).find(x=>x.id===id); if(!p) return;
+  if(p.status==='pago'){ notify('Conta já paga não pode ser editada.','warn'); return; }
+  if(!temRole('admin','admin_master','gerente')){ notify('Só administrador ou gerente edita contas.','warn'); return; }
+  const set=(k,v)=>{ const el=document.getElementById(k); if(el) el.value=v==null?'':v; };
+  set('lp-id',p.id); set('lp-desc',p.descricao); set('lp-forn',p.fornecedor_nome); set('lp-val',p.valor_original);
+  set('lp-venc',p.data_vencimento); set('lp-cat',p.categoria_despesa||'outros'); set('lp-forma',p.forma_pagamento||'');
+  set('lp-comp',p.data_competencia); set('lp-linha',p.linha_digitavel); set('lp-obs',p.observacoes);
+  const fi=document.getElementById('lp-anexo'); if(fi) fi.value='';
+  const at=document.getElementById('lp-anexo-atual'); if(at) at.innerHTML=p.anexo_url?`Anexo atual: <a href="${esc(p.anexo_url)}" target="_blank">${esc(p.anexo_nome||'ver')}</a> (escolha outro arquivo para trocar)`:'';
+  const rec=document.getElementById('lp-recorrente'); if(rec){ rec.checked=false; toggleRecorrencia(); const w=rec.closest('.fg'); if(w) w.style.display='none'; }
+  const t=document.querySelector('#modal-lanc-pag .modal-title'); if(t) t.innerHTML='<i class="ti ti-edit"></i>Editar Conta a Pagar';
+  openModal('modal-lanc-pag');
+}
+function abrirLancarPag(){
+  ['lp-id','lp-desc','lp-forn','lp-val','lp-venc','lp-linha','lp-obs','lp-comp'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const at=document.getElementById('lp-anexo-atual'); if(at) at.innerHTML='';
+  const rec=document.getElementById('lp-recorrente'); if(rec){ rec.checked=false; toggleRecorrencia(); const w=rec.closest('.fg'); if(w) w.style.display=''; }
+  const t=document.querySelector('#modal-lanc-pag .modal-title'); if(t) t.innerHTML='<i class="ti ti-arrow-up-right"></i>Lançar Conta a Pagar';
+  openModal('modal-lanc-pag');
+}
 async function saveLancPag(){
+  const _editId=(document.getElementById('lp-id')?.value||'').trim(); // Fatia 40
   const desc=document.getElementById('lp-desc').value.trim();
   const val=parseFloat(document.getElementById('lp-val').value)||0;
   const venc=document.getElementById('lp-venc').value;
@@ -13352,6 +13546,22 @@ async function saveLancPag(){
     status:'aberto'
   };
 
+  // Fatia 40: edição de uma conta em aberto
+  if(_editId){
+    const atual=(G.pagar||[]).find(x=>x.id===_editId);
+    if(!atual||atual.status==='pago'){ setLoad(false); notify('Conta já paga não pode ser editada.','warn'); return; }
+    const upd={...base}; delete upd.empresa_id; delete upd.status; upd.data_vencimento=venc;
+    if(!anexoUrl){ delete upd.anexo_url; delete upd.anexo_nome; }
+    const {error:eUp}=await db.from('contas_pagar').update(upd).eq('id',_editId).eq('empresa_id',EID());
+    setLoad(false);
+    if(eUp){ notify('Erro: '+eUp.message,'error'); return; }
+    Object.assign(atual,upd);
+    try{ registrarAudit('conta_pagar_editada',`Conta editada: ${desc} — ${fmt(val)} vence ${fmtD(venc+'T12:00')}`,_operadorAtual?.nome||G.profile?.nome,'','success'); }catch(_){}
+    closeModal('modal-lanc-pag'); document.getElementById('lp-id').value='';
+    notify('Conta atualizada!','success'); renderPagar(); renderFinanceiro();
+    return;
+  }
+
   const recorrente=document.getElementById('lp-recorrente')?.checked;
   let linhas=[];
   if(recorrente){
@@ -13359,12 +13569,15 @@ async function saveLancPag(){
     const qtd=Math.min(60, Math.max(2, parseInt(document.getElementById('lp-rec-qtd').value)||12));
     const grupo=(crypto?.randomUUID?crypto.randomUUID():('g'+Date.now()));
     for(let i=0;i<qtd;i++){
-      const d=new Date(venc+'T12:00');
-      if(tipo==='mensal') d.setMonth(d.getMonth()+i);
-      else if(tipo==='semanal') d.setDate(d.getDate()+i*7);
-      else if(tipo==='anual') d.setFullYear(d.getFullYear()+i);
+      // Fatia 40: mensal/anual seguram o dia no fim do mês (31/01 → 28/02 → 31/03);
+      // antes o setMonth pulava fevereiro (31/01 → 03/03).
+      const [_y,_m,_d]=venc.split('-').map(Number);
+      let d;
+      if(tipo==='semanal') d=new Date(_y,_m-1,_d+i*7,12);
+      else { const _mm=(_m-1)+(tipo==='anual'?12*i:i); d=new Date(_y,_mm,Math.min(_d,new Date(_y,_mm+1,0).getDate()),12); }
+      const _iso=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
       linhas.push({...base,
-        data_vencimento:d.toISOString().split('T')[0],
+        data_vencimento:_iso,
         recorrente:true, recorrencia_tipo:tipo, recorrencia_grupo:grupo,
         parcela_num:i+1, parcela_total:qtd
       });
@@ -13390,22 +13603,129 @@ async function saveLancPag(){
   renderPagar();renderFinanceiro();
 }
 
-async function baixarRec(id){
+// Fatia 43 (decisão do usuário): ao dar baixa, pergunta como o cliente pagou.
+// "Dinheiro" exige caixa aberto e lança uma ENTRADA (tipo 'reforco', valor
+// positivo, "Recebimento: …") que soma no esperado do fechamento — senão a
+// gaveta "sobrava". As outras formas não mexem no caixa. Valor = valor da
+// conta e data = hoje, como antes.
+function baixarRec(id){
   const r=G.receber.find(x=>x.id===id);if(!r)return;
+  if(r.status==='pago'){ notify('Esta conta já foi recebida.','info'); return; }
+  document.getElementById('br-id').value=id;
+  document.getElementById('br-info').innerHTML=`<div style="font-weight:700">${esc(r.descricao||'')}</div><div style="color:var(--txt2)">${esc(r.cliente_nome||'')}${r.cliente_nome?' · ':''}vence ${fmtD(r.data_vencimento+'T12:00')}</div><div style="font-weight:800;font-size:16px;margin-top:4px">${fmt(r.valor_original)}</div>`;
+  const f=String(r.forma_pagamento||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const pre=f.startsWith('dinh')?'dinheiro':f.startsWith('pix')?'pix':(f.startsWith('cart')?'cartao':f.startsWith('bolet')?'boleto':f.startsWith('transf')?'transferencia':'');
+  document.getElementById('br-forma').value=pre;
+  brAtualizaInfo();
+  openModal('modal-baixar-rec');
+}
+function brAtualizaInfo(){
+  const f=document.getElementById('br-forma')?.value; const el=document.getElementById('br-aviso'); if(!el) return;
+  el.innerHTML = f==='dinheiro'
+    ? (G.caixaAtual?'<i class="ti ti-cash"></i> Vai pra gaveta: lança uma entrada no caixa aberto e soma no esperado do fechamento.':'<span style="color:var(--danger)"><i class="ti ti-alert-triangle"></i> Nenhum caixa aberto. Abra o caixa ou escolha outra forma.</span>')
+    : (f?'<i class="ti ti-info-circle"></i> Não mexe no caixa em dinheiro.':'');
+}
+async function confirmarBaixarRec(){
+  const id=document.getElementById('br-id').value;
+  const r=G.receber.find(x=>x.id===id);if(!r){closeModal('modal-baixar-rec');return;}
+  const forma=document.getElementById('br-forma').value;
+  if(!forma){ notify('Escolha como o cliente pagou.','warn'); return; }
+  if(forma==='dinheiro'&&!G.caixaAtual){ notify('Abra o caixa para receber em dinheiro, ou escolha outra forma.','warn',5000); return; }
+  closeModal('modal-baixar-rec');
   setLoad(true);
-  const payload={valor_pago:r.valor_original,data_pagamento:new Date().toISOString().split('T')[0],status:'pago'};
-  await db.from('contas_receber').update(payload).eq('id',id);
+  const payload={valor_pago:r.valor_original,data_pagamento:new Date().toISOString().split('T')[0],status:'pago',forma_pagamento:forma};
+  const {error}=await db.from('contas_receber').update(payload).eq('id',id).eq('empresa_id',EID());
+  if(error){ setLoad(false); notify('Erro: '+error.message,'error'); return; }
   Object.assign(r,payload);
-  setLoad(false);renderReceber();renderFinanceiro();notify('Conta baixada como paga!');
+  if(forma==='dinheiro'&&G.caixaAtual){
+    try{
+      const _r=await db.from('movimentacoes_caixa').insert({empresa_id:EID(),caixa_id:G.caixaAtual.id,tipo:'reforco',valor:Number(r.valor_original)||0,descricao:('Recebimento: '+(r.descricao||'')+(r.cliente_nome?' — '+r.cliente_nome:'')).slice(0,200),usuario_id:G.profile.id,usuario_nome:G.profile.nome});
+      if(_r&&_r.error) throw _r.error;
+    }catch(_e){ console.error('[recebimento → caixa]',_e); notify('Conta recebida, mas a entrada no caixa falhou — registre um reforço manual.','warn',6000); }
+  }
+  try{ registrarAudit('conta_receber_baixada',`Recebido: ${r.descricao||''} — ${fmt(r.valor_original)} (${forma})`,_operadorAtual?.nome||G.profile?.nome,'','success'); }catch(_){}
+  setLoad(false);renderReceber();renderFinanceiro();notify('Conta baixada como recebida!');
+}
+function excluirRec(id){
+  const r=(G.receber||[]).find(x=>x.id===id); if(!r) return;
+  if(r.status==='pago'){ notify('Conta já recebida não pode ser excluída.','warn'); return; }
+  if(!temRole('admin','admin_master','gerente')){ notify('Só administrador ou gerente exclui contas.','warn'); return; }
+  confirmAct('Excluir conta a receber',`Excluir "${r.descricao||''}" (${fmt(r.valor_original)}, vence ${fmtD(r.data_vencimento+'T12:00')})? Não dá para desfazer.`,async()=>{
+    setLoad(true);
+    const {error}=await db.from('contas_receber').delete().eq('id',id).eq('empresa_id',EID()).neq('status','pago');
+    setLoad(false);
+    if(error){ notify('Erro ao excluir: '+error.message,'error'); return; }
+    G.receber=(G.receber||[]).filter(x=>x.id!==id);
+    try{ registrarAudit('conta_receber_excluida',`Conta a receber excluída: ${r.descricao||''} — ${fmt(r.valor_original)}`,_operadorAtual?.nome||G.profile?.nome,'','success','atencao'); }catch(_){}
+    renderReceber(); renderFinanceiro(); notify('Conta excluída.');
+  });
 }
 
-async function baixarPag(id){
+// Fatia 40 (decisão do usuário): ao marcar como paga, pergunta de onde saiu
+// o dinheiro. "Dinheiro do caixa" lança uma saída (tipo 'sangria', valor
+// negativo) no caixa aberto — desconta do esperado no fechamento, igual à
+// devolução em dinheiro. As outras formas não mexem no caixa.
+// Valor pago = valor da conta e data = hoje, como antes.
+function baixarPag(id){
   const p=G.pagar.find(x=>x.id===id);if(!p)return;
+  if(p.status==='pago'){ notify('Esta conta já está paga.','info'); return; }
+  document.getElementById('bp-id').value=id;
+  document.getElementById('bp-info').innerHTML=`<div style="font-weight:700">${esc(p.descricao||'')}</div><div style="color:var(--txt2)">${esc(p.fornecedor_nome||'')}${p.fornecedor_nome?' · ':''}vence ${fmtD(p.data_vencimento+'T12:00')}</div><div style="font-weight:800;font-size:16px;margin-top:4px">${fmt(p.valor_original)}</div>`;
+  const sel=document.getElementById('bp-forma'); sel.value=['dinheiro','pix','boleto','transferencia','cartao'].includes(p.forma_pagamento)?p.forma_pagamento:'';
+  bpAtualizaInfo();
+  openModal('modal-baixar-pag');
+}
+function bpAtualizaInfo(){
+  const f=document.getElementById('bp-forma')?.value; const el=document.getElementById('bp-aviso'); if(!el) return;
+  el.innerHTML = f==='dinheiro'
+    ? (G.caixaAtual?'<i class="ti ti-cash"></i> Vai sair da gaveta: lança uma saída no caixa aberto e desconta do esperado no fechamento.':'<span style="color:var(--danger)"><i class="ti ti-alert-triangle"></i> Nenhum caixa aberto. Abra o caixa ou escolha outra forma.</span>')
+    : (f?'<i class="ti ti-info-circle"></i> Não mexe no caixa em dinheiro.':'');
+}
+async function confirmarBaixarPag(){
+  const id=document.getElementById('bp-id').value;
+  const p=G.pagar.find(x=>x.id===id);if(!p){closeModal('modal-baixar-pag');return;}
+  const forma=document.getElementById('bp-forma').value;
+  if(!forma){ notify('Escolha de onde saiu o dinheiro.','warn'); return; }
+  if(forma==='dinheiro'&&!G.caixaAtual){ notify('Abra o caixa para pagar com dinheiro da gaveta, ou escolha outra forma.','warn',5000); return; }
+  closeModal('modal-baixar-pag');
   setLoad(true);
-  const payload={valor_pago:p.valor_original,data_pagamento:new Date().toISOString().split('T')[0],status:'pago'};
-  await db.from('contas_pagar').update(payload).eq('id',id);
+  const payload={valor_pago:p.valor_original,data_pagamento:new Date().toISOString().split('T')[0],status:'pago',forma_pagamento:forma};
+  const {error}=await db.from('contas_pagar').update(payload).eq('id',id).eq('empresa_id',EID());
+  if(error){ setLoad(false); notify('Erro: '+error.message,'error'); return; }
   Object.assign(p,payload);
+  if(forma==='dinheiro'&&G.caixaAtual){
+    try{
+      const _r=await db.from('movimentacoes_caixa').insert({empresa_id:EID(),caixa_id:G.caixaAtual.id,tipo:'sangria',valor:-(Number(p.valor_original)||0),descricao:('Conta paga: '+(p.descricao||'')).slice(0,200),usuario_id:G.profile.id,usuario_nome:G.profile.nome});
+      if(_r&&_r.error) throw _r.error;
+    }catch(_e){ console.error('[conta paga → caixa]',_e); notify('Conta paga, mas a saída no caixa falhou — registre uma sangria manual.','warn',6000); }
+  }
+  try{ registrarAudit('conta_marcada_paga_manual',`Conta paga: ${p.descricao||''} — ${fmt(p.valor_original)} (${forma})`,_operadorAtual?.nome||G.profile?.nome,'','success'); }catch(_){}
   setLoad(false);renderPagar();renderFinanceiro();notify('Conta baixada como paga!');
+}
+function excluirPag(id){
+  const p=(G.pagar||[]).find(x=>x.id===id); if(!p) return;
+  if(p.status==='pago'){ notify('Conta já paga não pode ser excluída.','warn'); return; }
+  if(!temRole('admin','admin_master','gerente')){ notify('Só administrador ou gerente exclui contas.','warn'); return; }
+  document.getElementById('xp-id').value=id;
+  document.getElementById('xp-info').innerHTML=`<b>${esc(p.descricao||'')}</b> — ${fmt(p.valor_original)}, vence ${fmtD(p.data_vencimento+'T12:00')}`;
+  const esc2=document.getElementById('xp-escopo'); esc2.style.display=(p.recorrente&&p.recorrencia_grupo)?'':'none';
+  const r1=document.querySelector('input[name="xp-esc"][value="uma"]'); if(r1) r1.checked=true;
+  openModal('modal-excluir-pag');
+}
+async function confirmarExcluirPag(){
+  const id=document.getElementById('xp-id').value;
+  const p=(G.pagar||[]).find(x=>x.id===id); if(!p){ closeModal('modal-excluir-pag'); return; }
+  const prox=(document.querySelector('input[name="xp-esc"]:checked')?.value==='proximas') && p.recorrente && p.recorrencia_grupo;
+  closeModal('modal-excluir-pag'); setLoad(true);
+  let q=db.from('contas_pagar').delete().eq('empresa_id',EID()).neq('status','pago');
+  q = prox ? q.eq('recorrencia_grupo',p.recorrencia_grupo).gte('data_vencimento',p.data_vencimento) : q.eq('id',id);
+  const {error}=await q;
+  setLoad(false);
+  if(error){ notify('Erro ao excluir: '+error.message,'error'); return; }
+  const apagadas=(G.pagar||[]).filter(x=>x.status!=='pago'&&(prox?(x.recorrencia_grupo===p.recorrencia_grupo&&x.data_vencimento>=p.data_vencimento):x.id===id));
+  G.pagar=(G.pagar||[]).filter(x=>!apagadas.includes(x));
+  try{ registrarAudit('conta_pagar_excluida',`${apagadas.length} conta(s) excluída(s): ${p.descricao||''} — ${fmt(p.valor_original)}`,_operadorAtual?.nome||G.profile?.nome,'','success','atencao'); }catch(_){}
+  renderPagar(); renderFinanceiro(); notify(apagadas.length>1?`${apagadas.length} contas excluídas.`:'Conta excluída.');
 }
 
 function renderReceber(q=''){
@@ -13413,16 +13733,16 @@ function renderReceber(q=''){
   const fs=document.getElementById('rec-filter')?.value||'';
   let list=G.receber.filter(r=>(!f||r.descricao.toLowerCase().includes(f)||(r.cliente_nome||'').toLowerCase().includes(f))&&(!fs||r.status===fs||(fs==='vencido'&&r.status!=='pago'&&new Date(r.data_vencimento+'T12:00')<new Date())));
   const total=list.filter(r=>r.status!=='pago').reduce((s,r)=>s+(r.valor_original||0),0);
-  document.getElementById('rec-table').innerHTML=list.length===0?((f||fs)?'<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--txt3)">Nenhum lançamento encontrado com esse filtro.</td></tr>':'<tr><td colspan="7" style="text-align:center;padding:22px;color:var(--txt3)">Nenhuma conta a receber cadastrada ainda.<br><button class="btn btn-out btn-sm" style="margin-top:10px" onclick="openModal(\'modal-lanc-rec\')"><i class="ti ti-plus"></i> Lançar conta</button></td></tr>'):list.map(r=>{
+  document.getElementById('rec-table').innerHTML=list.length===0?((f||fs)?'<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--txt3)">Nenhum lançamento encontrado com esse filtro.</td></tr>':'<tr><td colspan="7" style="text-align:center;padding:22px;color:var(--txt3)">Nenhuma conta a receber cadastrada ainda.<br><button class="btn btn-out btn-sm" style="margin-top:10px" onclick="abrirLancarRec()"><i class="ti ti-plus"></i> Lançar conta</button></td></tr>'):list.map(r=>{
     const [cls,lbl]=vencStatus(r.data_vencimento,r.status);
     return`<tr>
-      <td><div style="font-weight:600;font-size:13px">${r.descricao}</div>${r.parcela_total>1?`<div style="font-size:10.5px;color:var(--txt3)">Parcela ${r.parcela_numero}/${r.parcela_total}</div>`:''}  </td>
-      <td style="color:var(--txt2)">${r.cliente_nome||'—'}</td>
+      <td><div style="font-weight:600;font-size:13px">${esc(r.descricao||'')}</div>${r.parcela_total>1?`<div style="font-size:10.5px;color:var(--txt3)">Parcela ${r.parcela_numero}/${r.parcela_total}</div>`:''}  </td>
+      <td style="color:var(--txt2)">${esc(r.cliente_nome||'')||'—'}</td>
       <td style="font-weight:700;color:var(--success)">${fmt(r.valor_original)}</td>
       <td style="font-size:12px">${fmtD(r.data_vencimento+'T12:00')}</td>
       <td>${r.valor_pago>0?fmt(r.valor_pago):'—'}</td>
       <td><span class="venc-badge ${cls}">${lbl}</span></td>
-      <td>${r.status!=='pago'?`<button class="btn btn-success btn-xs" onclick="baixarRec('${r.id}')"><i class="ti ti-check"></i>Baixar</button>`:'—'}</td>
+      <td>${r.status!=='pago'?`<div style="display:flex;gap:3px"><button class="btn btn-success btn-xs" onclick="baixarRec('${r.id}')"><i class="ti ti-check"></i>Baixar</button>${temRole('admin','admin_master','gerente')?`<button class="btn btn-out btn-xs" onclick="abrirEditarRec('${r.id}')" title="Editar"><i class="ti ti-edit"></i></button><button class="btn btn-out btn-xs" onclick="excluirRec('${r.id}')" title="Excluir"><i class="ti ti-trash"></i></button>`:''}</div>`:'—'}</td>
     </tr>`;
   }).join('');
 }
@@ -13431,7 +13751,7 @@ function renderPagar(q=''){
   const f=q.toLowerCase();
   const fs=document.getElementById('pag-filter')?.value||'';
   let list=G.pagar.filter(p=>(!f||p.descricao.toLowerCase().includes(f))&&(!fs||p.status===fs||(fs==='vencido'&&p.status!=='pago'&&new Date(p.data_vencimento+'T12:00')<new Date())));
-  document.getElementById('pag-table').innerHTML=list.length===0?((f||fs)?'<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--txt3)">Nenhum lançamento encontrado com esse filtro.</td></tr>':'<tr><td colspan="7" style="text-align:center;padding:22px;color:var(--txt3)">Nenhuma conta a pagar cadastrada ainda.<br><button class="btn btn-out btn-sm" style="margin-top:10px" onclick="openModal(\'modal-lanc-pag\')"><i class="ti ti-plus"></i> Lançar conta</button></td></tr>'):list.map(p=>{
+  document.getElementById('pag-table').innerHTML=list.length===0?((f||fs)?'<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--txt3)">Nenhum lançamento encontrado com esse filtro.</td></tr>':'<tr><td colspan="7" style="text-align:center;padding:22px;color:var(--txt3)">Nenhuma conta a pagar cadastrada ainda.<br><button class="btn btn-out btn-sm" style="margin-top:10px" onclick="abrirLancarPag()"><i class="ti ti-plus"></i> Lançar conta</button></td></tr>'):list.map(p=>{
     const [cls,lbl]=vencStatus(p.data_vencimento,p.status);
     return`<tr>
       <td style="font-weight:600;font-size:13px">${esc(p.descricao)}
@@ -13444,7 +13764,7 @@ function renderPagar(q=''){
       <td style="font-weight:700;color:var(--danger)">${fmt(p.valor_original)}</td>
       <td style="font-size:12px">${fmtD(p.data_vencimento+'T12:00')}</td>
       <td><span class="venc-badge ${cls}">${lbl}</span></td>
-      <td>${p.status!=='pago'?`<button class="btn btn-danger btn-xs" onclick="baixarPag('${p.id}')"><i class="ti ti-check"></i>Baixar</button>`:'—'}</td>
+      <td>${p.status!=='pago'?`<div style="display:flex;gap:3px"><button class="btn btn-danger btn-xs" onclick="baixarPag('${p.id}')"><i class="ti ti-check"></i>Baixar</button>${temRole('admin','admin_master','gerente')?`<button class="btn btn-out btn-xs" onclick="abrirEditarPag('${p.id}')" title="Editar"><i class="ti ti-edit"></i></button><button class="btn btn-out btn-xs" onclick="excluirPag('${p.id}')" title="Excluir"><i class="ti ti-trash"></i></button>`:''}</div>`:'—'}</td>
     </tr>`;
   }).join('');
 }
@@ -16129,7 +16449,7 @@ async function carregarGarantias(){
     const c = calc(v.criado_em||v.data||new Date().toISOString(), v.garantia_dias);
     const itensTxt = (v.itens||[]).map(i=>i.nome).slice(0,2).join(', ') + ((v.itens||[]).length>2?'...':'');
     lista.push({
-      origem:'Venda', icone:'ti-shopping-cart', ref:'#'+pad(v.numero||0),
+      origem:'Venda', icone:'ti-shopping-cart', ref:'#'+(v.numero?pad(v.numero):String(v.id||'').slice(-6).toUpperCase()), venda_id:v.id, lbl:'Venda #'+(v.numero?pad(v.numero):String(v.id||'').slice(-6).toUpperCase()),
       cliente_id:v.cliente_id, cliente_nome:v.cliente_nome||'Consumidor Final',
       item: itensTxt||'Produtos', dias:v.garantia_dias, ...c
     });
@@ -16137,16 +16457,19 @@ async function carregarGarantias(){
 
   // 2) Garantias de ORDENS DE SERVIÇO (entregues/concluídas com garantia)
   // Carrega do banco para pegar OS já finalizadas (não só as ativas em G.os)
+  // Fatia 44 (decisão do usuário): só OS ENTREGUES — antes entrava toda OS
+  // com garantia_dias (até em reparo e cancelada, "correndo" desde a abertura).
+  // Também passa a filtrar pela empresa.
   let osList = [];
   try{
-    const {data} = await db.from('ordens_servico').select('*').gt('garantia_dias',0).order('criado_em',{ascending:false}).limit(500);
+    const {data} = await db.from('ordens_servico').select('*').eq('empresa_id',EID()).eq('status','Entregue').gt('garantia_dias',0).order('criado_em',{ascending:false}).limit(500);
     osList = data||[];
-  }catch(e){ osList = (G.os||[]).filter(o=>(o.garantia_dias||0)>0); }
+  }catch(e){ osList = (G.os||[]).filter(o=>o.status==='Entregue'&&(o.garantia_dias||0)>0); }
   osList.forEach(o=>{
     const inicio = o.data_conclusao || o.data_entrega || o.criado_em || new Date().toISOString();
     const c = calc(inicio, o.garantia_dias);
     lista.push({
-      origem:'OS', icone:'ti-tool', ref:'OS '+(o.numero||''),
+      origem:'OS', icone:'ti-tool', ref:'OS '+(o.numero||''), lbl:/^OS/i.test(String(o.numero||''))?o.numero:'OS '+(o.numero||''), os_id:o.id, imei:o.imei||'',
       cliente_id:o.cliente_id, cliente_nome:o.cliente_nome||'—',
       item:o.aparelho||'Aparelho', dias:o.garantia_dias, ...c
     });
@@ -16168,7 +16491,8 @@ async function renderGarantias(){
   if(busca) list = list.filter(g=>
     (g.cliente_nome||'').toLowerCase().includes(busca) ||
     (g.item||'').toLowerCase().includes(busca) ||
-    (g.ref||'').toLowerCase().includes(busca)
+    (g.ref||'').toLowerCase().includes(busca) ||
+    String(g.imei||'').toLowerCase().includes(busca) // Fatia 44: busca por IMEI
   );
 
   // Cards de resumo (sempre sobre o total, não o filtrado)
@@ -16191,9 +16515,9 @@ async function renderGarantias(){
   tb.innerHTML = list.length===0
     ? '<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--txt3)">Nenhuma garantia encontrada</td></tr>'
     : list.map((g,idx)=>`<tr>
-        <td><span style="display:inline-flex;align-items:center;gap:5px;font-size:12px"><i class="ti ${g.icone}" style="color:var(--pri)"></i>${g.origem} ${g.ref}</span></td>
-        <td>${g.cliente_nome}</td>
-        <td style="font-size:12.5px">${g.item}</td>
+        <td><span style="display:inline-flex;align-items:center;gap:5px;font-size:12px"><i class="ti ${g.icone}" style="color:var(--pri)"></i>${esc(g.lbl||(g.origem+' '+g.ref))}</span></td>
+        <td>${esc(g.cliente_nome||'')}</td>
+        <td style="font-size:12.5px">${esc(g.item||'')}${g.imei?`<div style="font-size:10.5px;color:var(--txt3)">IMEI ${esc(g.imei)}</div>`:''}</td>
         <td style="font-size:12px;color:var(--txt3)">${g.inicio.toLocaleDateString('pt-BR')}</td>
         <td style="font-size:12px">${g.fim.toLocaleDateString('pt-BR')}</td>
         <td style="font-weight:700;color:${g.status==='vencida'?'#dc2626':g.status==='vencendo'?'#d97706':'#16a34a'}">${g.restante<0?`${Math.abs(g.restante)}d atrás`:`${g.restante}d`}</td>
@@ -16218,9 +16542,9 @@ function avisarClienteGarantia(idx){
   const validade=g.fim.toLocaleDateString('pt-BR');
   let msg;
   if(g.status==='vencida'){
-    msg=`Olá ${g.cliente_nome}! A garantia do seu ${g.item} (${g.origem} ${g.ref}) da ${emp.nome||'nossa loja'} venceu em ${validade}. Se precisar de uma revisão, estamos à disposição!`;
+    msg=`Olá ${g.cliente_nome}! A garantia do seu ${g.item} (${g.lbl||(g.origem+' '+g.ref)}) da ${emp.nome||'nossa loja'} venceu em ${validade}. Se precisar de uma revisão, estamos à disposição!`;
   } else {
-    msg=`Olá ${g.cliente_nome}! Lembrete da ${emp.nome||'nossa loja'}: a garantia do seu ${g.item} (${g.origem} ${g.ref}) é válida até ${validade}${g.restante<=GAR_DIAS_ALERTA?` — restam ${g.restante} dia(s)`:''}. Qualquer problema, fale com a gente!`;
+    msg=`Olá ${g.cliente_nome}! Lembrete da ${emp.nome||'nossa loja'}: a garantia do seu ${g.item} (${g.lbl||(g.origem+' '+g.ref)}) é válida até ${validade}${g.restante<=GAR_DIAS_ALERTA?` — restam ${g.restante} dia(s)`:''}. Qualquer problema, fale com a gente!`;
   }
   const numero = tel ? (tel.length<=11 ? '55'+tel : tel) : '';
   const url = numero ? `https://wa.me/${numero}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
@@ -19466,13 +19790,15 @@ function agendaIrHoje(){
 // Coleta todos os "eventos de entrega": OS (prazo) + Orçamentos (data_entrega_prevista) + Entregas avulsas
 function agendaColetarEventos(){
   const eventos=[];
+  // Fatia 46: OS cancelada não é entrega pendente (antes aparecia como atrasada)
   G.os.forEach(o=>{
-    if(o.prazo&&o.status!=='Entregue'){
+    if(o.prazo&&o.status!=='Entregue'&&o.status!=='Cancelada'){
       eventos.push({data:o.prazo,tipo:'os',cliente:o.cliente_nome||'—',detalhe:`OS ${o.numero} · ${o.aparelho||''}`,status:o.status,ref:o.id});
     }
   });
   G.orcamentos.forEach(o=>{
-    if(o.data_entrega_prevista&&o.status!=='convertido'&&o.status!=='cancelado'){
+    // Fatia 46: recusado/expirado/convertido em OS também não é entrega pendente
+    if(o.data_entrega_prevista&&!['convertido','convertido_os','cancelado','recusado','expirado'].includes(o.status)){
       const itens=(o.itens||[]).map(i=>i.nome).join(', ');
       eventos.push({data:o.data_entrega_prevista,tipo:'prod',cliente:o.cliente_nome||'—',detalhe:itens||'Produto(s)',status:o.status,ref:o.id});
     }
@@ -19923,7 +20249,7 @@ async function excluirEntregaAvulsa() {
 }
 
 async function recarregarEntregasAvulsas() {
-  const { data, error } = await db.from('entregas_avulsas').select('*').neq('status','cancelado').order('data');
+  const { data, error } = await db.from('entregas_avulsas').select('*').eq('empresa_id',EID()).neq('status','cancelado').order('data'); // Fatia 46: filtra a empresa
   if (error) { console.error(error); return; }
   G.entregasAvulsas = data || [];
 }
@@ -20236,6 +20562,7 @@ async function saveUsr(){
   const comissao_pct=role==='tecnico'?(parseFloat(document.getElementById('u-comissao').value)||0):0;
   const editId=document.getElementById('u-id').value;
   if(!nome){notify('Nome obrigatório!','error');return;}
+  if(G.pinNovo){ await _saveUsrPinNovo({editId,nome,telefone,role,ativo,comissao_pct}); return; } // Fatia 50
   if(pin && !/^\d{4,6}$/.test(pin)){notify('O PIN deve ter de 4 a 6 dígitos.','error');return;}
   if(!editId && !pin){notify('Defina um PIN para o novo funcionário.','error');return;}
   setLoad(true);
@@ -20267,6 +20594,7 @@ async function saveUsr(){
   }
   notify(editId?'Funcionário atualizado!':'Funcionário criado!');
   const {data}=await db.from('usuarios').select('*').eq('empresa_id',EID()).order('nome');G.usuarios=data||[];
+  _sanitizarUsuariosPin(); // Fatia 50
   closeModal('modal-usr');renderUsuarios();
 }
 
@@ -20304,6 +20632,7 @@ function renderUsuarios(q=''){
         const podeEditar = podeMexer && !euMesmo;
         const podeDesativar = ehAdmin && !euMesmo && !eAdmin;
         const pinOk = (typeof hasPin === 'function') ? hasPin(u.id) : !!u.pin;
+        const pinTxt = G.pinNovo ? (pinOk ? '<span class="pin-st-ok">🔒 PIN de 6 dígitos</span>' : (u.ativo ? '<span class="pin-st-falta">⚠ Sem PIN — não consegue entrar</span>' : '<span class="pin-st-ok">⚪ Sem PIN</span>')) : ''; // Fatia 50
 
         return `<tr>
           <td>
@@ -20319,7 +20648,7 @@ function renderUsuarios(q=''){
             </div>
           </td>
           <td>
-            <span style="font-size:12px;color:${pinOk?'#16a34a':'var(--txt3)'}">${pinOk ? '🔒 PIN configurado' : '⚪ Sem PIN'}</span>
+            ${pinTxt || `<span style="font-size:12px;color:${pinOk?'#16a34a':'var(--txt3)'}">${pinOk ? '🔒 PIN configurado' : '⚪ Sem PIN'}</span>`}
           </td>
           <td><span class="role-badge ${RC[u.role]||''}">${RL[u.role]||u.role}</span></td>
           <td>
@@ -20330,11 +20659,13 @@ function renderUsuarios(q=''){
           <td>
             ${!euMesmo ? `<div style="display:flex;gap:5px;flex-wrap:wrap">
               ${podeEditar ? `<button class="btn btn-out btn-xs" onclick="editUsr('${u.id}')" title="Editar dados e PIN"><i class="ti ti-edit"></i> Editar</button>` : ''}
+              ${podeEditar && G.pinNovo && u.ativo ? `<button class="btn btn-out btn-xs" onclick="gerarPinPessoaDesk('${u.id}')" title="Gerar um PIN novo (o atual para de valer)"><i class="ti ti-key"></i> Novo PIN</button>` : ''}
               ${podeDesativar ? `<button class="btn btn-xs ${u.ativo ? 'btn-danger' : 'btn-success'}" onclick="toggleUsr('${u.id}')">${u.ativo ? '<i class="ti ti-lock"></i> Desativar' : '<i class="ti ti-lock-open"></i> Ativar'}</button>` : ''}
             </div>` : '<span style="color:var(--txt3);font-size:12px">—</span>'}
           </td>
         </tr>`;
       }).join('');
+  _renderUsrPinAcoes(); // Fatia 50
 }
 
 function editUsr(id){
@@ -20349,6 +20680,7 @@ function editUsr(id){
   document.getElementById('u-comissao').value=u.comissao_pct||'';
   toggleComissaoField();
   document.getElementById('usr-ttl').textContent='Editar Usuário';
+  _prepararModalUsrPin(true); // Fatia 50
   openModal('modal-usr');
 }
 
@@ -20672,7 +21004,7 @@ async function renderAlertasOperacionais(){
   try{
     if(typeof carregarGarantias==='function'){ await carregarGarantias(); }
     (_garCache||[]).forEach(g=>{
-      if(g.status==='vencendo') alertas.push({cat:'Garantia',prio:'media',icone:'ti-shield-exclamation',cor:'#d97706',titulo:`Garantia vencendo: ${g.item}`,desc:`${g.cliente_nome} — faltam ${g.restante}d (${g.origem} ${g.ref})`,acao:()=>go('garantias')});
+      if(g.status==='vencendo') alertas.push({cat:'Garantia',prio:'media',icone:'ti-shield-exclamation',cor:'#d97706',titulo:`Garantia vencendo: ${g.item}`,desc:`${g.cliente_nome} — faltam ${g.restante}d (${g.lbl||(g.origem+' '+g.ref)})`,acao:()=>go('garantias')});
     });
   }catch(e){}
 
@@ -21186,7 +21518,7 @@ function salvarCredito() {
   saveCredario();
   closeModal('modal-novo-credito');
   limparFormCredito();
-  renderContratos();
+  renderContratosCred();
   notify(`Crediário ${contrato.numero} criado!`, 'success');
 }
 
@@ -21299,16 +21631,65 @@ function verContrato(id) {
   openModal('modal-os-det');
 }
 
+// Fatia 45 (decisão do usuário): a baixa pergunta como o cliente pagou.
+// "Dinheiro" exige caixa aberto e lança uma ENTRADA no caixa (tipo 'reforco',
+// "Recebimento crediário: …"), igual às contas a receber. Correção: antes a
+// baixa regravava TODOS os carnês a partir da memória deste computador
+// (saveCredario() sem argumento) — uma baixa feita no celular ou em outro
+// computador podia ser desfeita. Agora relê o carnê do banco, muda só a
+// parcela e grava só aquele carnê.
+let _bpcAlvo = null;
 function baixarParcela(contratoId, parcIdx) {
   const c = G_CONTRATOS.find(x => x.id === contratoId); if (!c) return;
-  c.parcelas[parcIdx].status = 'paga';
-  c.parcelas[parcIdx].pago_em = new Date().toISOString();
-  const todas = c.parcelas.every(p => p.status === 'paga');
-  if (todas) c.status = 'quitado';
-  saveCredario();
-  verContrato(contratoId);
-  renderContratos();
-  notify(`Parcela ${c.parcelas[parcIdx].num} baixada!`, 'success');
+  const p = c.parcelas[parcIdx]; if (!p) return;
+  if (p.status === 'paga') { notify('Esta parcela já está paga.', 'info'); return; }
+  _bpcAlvo = { contratoId, parcIdx };
+  document.getElementById('bpc-info').innerHTML = `<div style="font-weight:700">${esc(c.numero||'')} — ${esc(c.clienteNome||'')}</div><div style="color:var(--txt2)">Parcela ${p.num}/${c.parcelas.length} · vence ${fmtD(p.vencimento+'T12:00')}</div><div style="font-weight:800;font-size:16px;margin-top:4px">${fmt(p.valor)}</div>`;
+  document.getElementById('bpc-forma').value = '';
+  bpcAtualizaInfo();
+  openModal('modal-baixar-parcela');
+}
+function bpcAtualizaInfo(){
+  const f=document.getElementById('bpc-forma')?.value; const el=document.getElementById('bpc-aviso'); if(!el) return;
+  el.innerHTML = f==='dinheiro'
+    ? (G.caixaAtual?'<i class="ti ti-cash"></i> Vai pra gaveta: lança uma entrada no caixa aberto e soma no esperado do fechamento.':'<span style="color:var(--danger)"><i class="ti ti-alert-triangle"></i> Nenhum caixa aberto. Abra o caixa ou escolha outra forma.</span>')
+    : (f?'<i class="ti ti-info-circle"></i> Não mexe no caixa em dinheiro.':'');
+}
+async function confirmarBaixarParcela(){
+  const alvo=_bpcAlvo; if(!alvo){ closeModal('modal-baixar-parcela'); return; }
+  const forma=document.getElementById('bpc-forma').value;
+  if(!forma){ notify('Escolha como o cliente pagou.','warn'); return; }
+  if(forma==='dinheiro'&&!G.caixaAtual){ notify('Abra o caixa para receber em dinheiro, ou escolha outra forma.','warn',5000); return; }
+  closeModal('modal-baixar-parcela'); setLoad(true);
+  try{
+    let c = G_CONTRATOS.find(x => x.id === alvo.contratoId);
+    // relê do banco pra não sobrescrever baixa feita em outro aparelho
+    try{
+      const {data:row}=await db.from('contratos_crediario').select('*').eq('id',alvo.contratoId).maybeSingle();
+      if(row){ const fresco=_contratoDeDb(row); if(c) Object.assign(c,{parcelas:fresco.parcelas,status:fresco.status}); else c=fresco; }
+    }catch(_){}
+    if(!c){ setLoad(false); notify('Carnê não encontrado.','error'); return; }
+    const p=c.parcelas[alvo.parcIdx];
+    if(!p){ setLoad(false); notify('Parcela não encontrada.','error'); return; }
+    if(p.status==='paga'){ setLoad(false); verContrato(c.id); renderContratosCred(); notify('Esta parcela já tinha sido paga (em outro aparelho).','info',5000); return; }
+    p.status='paga'; p.pago_em=new Date().toISOString(); p.forma_pagamento=forma;
+    const hoje=new Date().toISOString().split('T')[0];
+    c.status = c.parcelas.every(x=>x.status==='paga') ? 'quitado' : (c.parcelas.some(x=>x.status==='aberta'&&x.vencimento<hoje) ? 'inadimplente' : 'aberto');
+    const {error}=await db.from('contratos_crediario').update({parcelas:c.parcelas,status:c.status,atualizado_em:new Date().toISOString()}).eq('id',c.id).eq('empresa_id',EID());
+    if(error) throw error;
+    const valor=+(Number(p.valor)||0).toFixed(2);
+    if(forma==='dinheiro'&&G.caixaAtual){
+      try{
+        const _r=await db.from('movimentacoes_caixa').insert({empresa_id:EID(),caixa_id:G.caixaAtual.id,tipo:'reforco',valor,descricao:(`Recebimento crediário: ${c.numero} parcela ${p.num}/${c.parcelas.length} — ${c.clienteNome||''}`).slice(0,200),usuario_id:G.profile.id,usuario_nome:G.profile.nome});
+        if(_r&&_r.error) throw _r.error;
+      }catch(_e){ console.error('[parcela → caixa]',_e); notify('Parcela baixada, mas a entrada no caixa falhou — registre um reforço manual.','warn',6000); }
+    }
+    try{ registrarAudit('parcela_crediario_baixada',`${c.numero} parcela ${p.num}/${c.parcelas.length} — ${fmt(valor)} (${forma})`,_operadorAtual?.nome||G.profile?.nome,'','success'); }catch(_){}
+    setLoad(false);
+    verContrato(c.id);
+    renderContratosCred();
+    notify(`Parcela ${p.num} baixada!`, 'success');
+  }catch(e){ setLoad(false); notify('Erro ao baixar a parcela: '+(e.message||e),'error'); }
 }
 
 // ── GATEWAY DE PAGAMENTO (Asaas) — gerar boleto/PIX de uma parcela ──────
@@ -21812,7 +22193,7 @@ function credTab(tab, btn) {
   ['contratos','parcelas','inadimplentes','historico','pagamento'].forEach(t => {
     const el = document.getElementById('cred-tab-'+t); if(el) el.style.display = t===tab?'':'none';
   });
-  if (tab==='contratos') renderContratos();
+  if (tab==='contratos') renderContratosCred();
   else if (tab==='parcelas') { renderParcelasGlobal(); popParcelaCli(); }
   else if (tab==='inadimplentes') renderInadimplentes();
   else if (tab==='pagamento') renderConfigPagamento();
@@ -23299,7 +23680,7 @@ function exigirAdmin(descricao, callback, tipoLog = 'acao_protegida') {
   const motEl = document.getElementById('ea-motivo');
   const errEl = document.getElementById('ea-erro');
   if (descEl) descEl.textContent = descricao;
-  if (pinEl) pinEl.value = '';
+  if (pinEl) { pinEl.value = ''; pinEl.placeholder = G.pinNovo ? '••••••' : '••••'; } // Fatia 50
   if (motEl) motEl.value = '';
   if (errEl) errEl.textContent = '';
   openModal('modal-exigir-admin');
@@ -23321,6 +23702,7 @@ function confirmarExigirAdmin() {
   const pin = (document.getElementById('ea-pin')?.value || '').trim();
   const motivo = (document.getElementById('ea-motivo')?.value || '').trim();
   const errEl = document.getElementById('ea-erro');
+  if (G.pinNovo) { _confirmarExigirAdminPinNovo(pend, pin, motivo, errEl); return; } // Fatia 50: conferido no servidor
   if (!/^\d{4}$/.test(pin)) {
     if (errEl) errEl.textContent = 'Digite o PIN de 4 dígitos de um Admin ou Gerente.';
     return;
@@ -23342,6 +23724,26 @@ function confirmarExigirAdmin() {
   closeModal('modal-exigir-admin');
   _exigirAdminPendente = null;
   registrarAudit(pend.tipoLog, pend.descricao, _operadorAtual?.nome || G.profile?.nome, autorizador.nome, 'success');
+  if (pend.callback) pend.callback(motivo);
+}
+
+// Fatia 50: com o PIN de 6 dígitos, quem confere é o servidor (autorizar_por_pin).
+// Mesmos perfis de antes (Admin/Gerente).
+async function _confirmarExigirAdminPinNovo(pend, pin, motivo, errEl) {
+  if (!/^\d{6}$/.test(pin)) { if (errEl) errEl.textContent = 'Digite o PIN de 6 dígitos de um Admin ou Gerente.'; return; }
+  let res = null;
+  try { res = await _rpcPinDesk('autorizar_por_pin', { p_pin: pin, p_perfis: ['admin', 'gerente'] }); }
+  catch (e) { if (errEl) errEl.textContent = 'Sem conexão para conferir o PIN. Tente de novo.'; return; }
+  if (!res || !res.ok) {
+    if (errEl) errEl.textContent = (res && res.erro === 'pin_incorreto') ? ('PIN inválido ou sem permissão para autorizar esta ação.' + (Number(res.espera_seg) > 0 ? ' Aguarde ' + _fmtEsperaDesk(res.espera_seg) + '.' : '')) : _msgErroPinDesk(res, 'PIN inválido ou sem permissão.');
+    registrarAudit(pend.tipoLog, pend.descricao + ' — tentativa de autorização negada (PIN inválido)', _operadorAtual?.nome || G.profile?.nome, '', 'error');
+    const pinEl = document.getElementById('ea-pin'); if (pinEl) { pinEl.value = ''; pinEl.focus(); }
+    return;
+  }
+  if (_exigirAdminPendente !== pend) return; // cancelado enquanto conferia
+  closeModal('modal-exigir-admin');
+  _exigirAdminPendente = null;
+  registrarAudit(pend.tipoLog, pend.descricao, _operadorAtual?.nome || G.profile?.nome, res.usuario?.nome || '', 'success');
   if (pend.callback) pend.callback(motivo);
 }
 
@@ -23717,6 +24119,7 @@ async function toggleBloqueioUsuario(userId){
 }
 
 function abrirGerenciarPinSlot(userId) {
+  if (G.pinNovo) { gerarPinPessoaDesk(userId); return; } // Fatia 50: o sistema gera
   const u = G.usuarios.find(x => x.id === userId);
   if (!u) return;
   if (!podeEditarSlots()) { notify('Sem permissão para alterar PINs.', 'warn'); return; }
@@ -23812,6 +24215,7 @@ async function confirmarPinSlot() {
 }
 
 function removerPinSlot(userId) {
+  if (G.pinNovo) { notify('O PIN é obrigatório: não dá pra remover. Use "Novo PIN" para trocar.', 'warn'); return; } // Fatia 50
   const u = G.usuarios.find(x => x.id === userId);
   confirmAct('Remover PIN', `Remover o PIN de "${u?.nome}"? Ele não precisará de PIN para entrar na tela inicial.`, async () => {
     await removePin(userId);
@@ -24523,17 +24927,22 @@ let _nfModoAlterar = false; // flag para modo alteração de PIN
 // dispositivos e gerenciáveis pelo admin master. getPin/hasPin lêem do
 // G.usuarios (já carregado); setPin/removePin gravam local + Supabase.
 function getPin(userId) {
+  if (G.pinNovo) return null; // Fatia 50: PIN novo nunca fica no navegador
   const u = G.usuarios.find(x => x.id === userId);
   return u?.pin || null;
 }
 async function setPin(userId, pin) {
+  if (G.pinNovo) { notify('Com o PIN de 6 dígitos, use "Novo PIN" em Usuários (o sistema gera).', 'warn'); return false; } // Fatia 50
   const u = G.usuarios.find(x => x.id === userId);
   if (u) u.pin = pin;
   const { error } = await db.from('usuarios').update({ pin }).eq('id', userId);
   if (error) { notify('Erro ao salvar PIN: ' + error.message, 'error'); return false; }
   return true;
 }
-function hasPin(userId) { return !!getPin(userId); }
+function hasPin(userId) {
+  if (G.pinNovo) { const u = (G.usuarios || []).find(x => x.id === userId); return !!(u && u.pin_definido_em); } // Fatia 50
+  return !!getPin(userId);
+}
 async function removePin(userId) { return setPin(userId, null); }
 
 // ── EXIBIR TELA NETFLIX ─────────────────────────────────
@@ -24578,6 +24987,7 @@ function mostrarTelaNetflix() {
   const tela = document.getElementById('nf-screen');
   const grid = document.getElementById('nf-grid');
   if (!tela || !grid) return;
+  if (G.pinNovo) { _mostrarIdentDesk({}); return; } // Fatia 50: PIN de 6 dígitos
 
   const ativos = (G.usuarios || []).filter(u => u.ativo);
 
@@ -24623,6 +25033,13 @@ function mostrarTelaNetflix() {
 
   const _mgBtn = document.getElementById('nf-manage-btn');
   if (_mgBtn) _mgBtn.remove();
+
+  // Fatia 50: banco pronto pro PIN de 6 dígitos, mas ninguém tem ainda → avisa o admin
+  const _nfAv = document.getElementById('nf-aviso');
+  if (_nfAv) {
+    if (G.pinSqlOk) { _nfAv.innerHTML = '<b>Novo: PIN de 6 dígitos.</b> Um administrador ou gerente precisa gerar os PINs novos de todos. Os PINs antigos param de valer na hora.<br><button class="btn btn-pri" type="button" onclick="abrirGerarPinsTodosDesk(\'migrar\')"><i class="ti ti-key"></i>Gerar PINs agora</button>'; _nfAv.style.display = ''; }
+    else { _nfAv.style.display = 'none'; _nfAv.innerHTML = ''; }
+  }
 
   tela.style.display = 'flex';
   requestAnimationFrame(() => { tela.style.opacity = '1'; });
@@ -24778,6 +25195,7 @@ function ocultarTelaNetflix() {
 // ── SELECIONAR PERFIL ──────────────────────────────────
 /* ── SELECIONAR PERFIL COM HIGHLIGHT VISUAL ───────── */
 function nfSelecionarCard(userId) {
+  if (G.pinNovo) { _nfClicarDesk(userId); return; } // Fatia 50
   const u = G.usuarios.find(x => x.id === userId);
   if (!u) return;
   const m = getMarca ? getMarca() : {};
@@ -24806,6 +25224,7 @@ function nfSelecionarCard(userId) {
 }
 
 function selecionarPerfil(userId) {
+  if (G.pinNovo) { _nfClicarDesk(userId); return; } // Fatia 50
   const u = G.usuarios.find(x => x.id === userId);
   if (!u) return;
   _nfPerfilSelecionado = u;
@@ -24869,6 +25288,19 @@ function mostrarPinScreen(u, modo) {
   const av = document.getElementById('pin-avatar');
   const nomeLbl = document.getElementById('pin-nome-label');
   const sub = screen.querySelector('.pin-sub');
+  // Fatia 50: 6 dígitos + "Esqueci meu PIN" quando o PIN novo está em uso
+  _cancelarOlaDesk();
+  screen.classList.toggle('pin6', !!G.pinNovo);
+  const _pAv = document.getElementById('pin-aviso'); if (_pAv) { _pAv.style.display = 'none'; _pAv.innerHTML = ''; }
+  const _pEsq = document.getElementById('pin-esqueci'); if (_pEsq) _pEsq.style.display = G.pinNovo ? '' : 'none';
+  const _pVol = document.getElementById('pin-voltar');
+  if (_pVol) _pVol.style.display = (modo === 'identificar' || (G.pinNovo && _usuariosAtivosDesk().length <= 1)) ? 'none' : '';
+  if (modo === 'identificar') {
+    av.style.background = 'linear-gradient(135deg,var(--pri-dark),var(--pri))';
+    av.innerHTML = '<i class="ti ti-lock" style="font-size:30px"></i>';
+    nomeLbl.textContent = 'Digite seu PIN';
+    sub.textContent = 'Seu PIN de 6 dígitos identifica você — não precisa procurar seu nome';
+  } else {
   
   // Avatar
   const m = getMarca ? getMarca() : {};
@@ -24880,12 +25312,15 @@ function mostrarPinScreen(u, modo) {
     : iniciais;
   
   nomeLbl.textContent = u.nome;
-  if (modo === 'verificar') sub.textContent = 'Digite seu PIN de 4 dígitos';
+  if (modo === 'verificar' && G.pinNovo) sub.textContent = 'Digite seu PIN de 6 dígitos';
+  else if (modo === 'verificar') sub.textContent = 'Digite seu PIN de 4 dígitos';
   else if (modo === 'cadastrar') sub.textContent = 'Crie um PIN de 4 dígitos';
   else sub.textContent = 'Confirme o novo PIN';
+  }
   
   document.getElementById('pin-erro').textContent = '';
   atualizarDots();
+  if (G.pinNovo) _pinAtualizarBloqueioDesk();
   
   screen.style.display = 'flex';
   screen.style.opacity = '0';
@@ -24903,19 +25338,23 @@ function mostrarPinScreen(u, modo) {
     const isNumpad = e.code && e.code.startsWith('Numpad') && e.key >= '0' && e.key <= '9';
     if (isDigit || isNumpad) { pinKey(e.key); e.preventDefault(); }
     else if (e.key === 'Backspace' || e.key === 'Delete') { pinDel(); e.preventDefault(); }
-    else if (e.key === 'Escape') { voltarParaPerfis(); e.preventDefault(); }
+    else if (e.key === 'Escape') { if (_pinModo !== 'identificar' && document.getElementById('pin-voltar')?.style.display !== 'none') voltarNF(); e.preventDefault(); } // antes chamava voltarParaPerfis(), que não existe
   };
   document.addEventListener('keydown', window._pinKeyHandler);
 }
 
 function pinKey(d) {
-  if (_pinDigitos.length >= 4) return;
+  const L = G.pinNovo ? 6 : 4; // Fatia 50
+  if (G.pinNovo && (_pinOcupado || _pinBloqueadoDesk() || document.getElementById('pin-screen')?.classList.contains('ola'))) return;
+  if (_pinDigitos.length >= L) return;
   _pinDigitos += d;
   atualizarDots();
-  if (_pinDigitos.length === 4) setTimeout(verificarPin, 150);
+  if (G.pinNovo && !_pinBloqueadoDesk()) { const e = document.getElementById('pin-erro'); if (e) e.textContent = ''; }
+  if (_pinDigitos.length === L) setTimeout(verificarPin, 150);
 }
 
 function pinDel() {
+  if (G.pinNovo && _pinOcupado) return;
   _pinDigitos = _pinDigitos.slice(0, -1);
   atualizarDots();
   document.getElementById('pin-erro').textContent = '';
@@ -24923,7 +25362,7 @@ function pinDel() {
 }
 
 function atualizarDots() {
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 6; i++) {
     const d = document.getElementById('pd' + i);
     if (!d) continue;
     d.classList.toggle('filled', i < _pinDigitos.length);
@@ -24942,6 +25381,7 @@ function pinErro(msg) {
 }
 
 function verificarPin() {
+  if (G.pinNovo) { _verificarPinNovoDesk(); return; } // Fatia 50: conferido no servidor
   const u = _nfPerfilSelecionado;
   if (!u) return;
   
@@ -24983,6 +25423,7 @@ function voltarNF() {
    Botão "Alterar PIN" na lista de usuários
    ────────────────────────────────────────────────────── */
 function abrirAlterarPIN(userId) {
+  if (G.pinNovo) { if (_operadorAtual && userId === _operadorAtual.id) abrirMeuPinDesk(); else gerarPinPessoaDesk(userId); return; } // Fatia 50
   const u = G.usuarios.find(x => x.id === userId); if (!u) return;
   document.getElementById('ap-user-id').value = userId;
   document.getElementById('ap-pin-atual').value = '';
@@ -25016,6 +25457,21 @@ async function salvarNovoPIN() {
   errEl.style.display = 'none'; okEl.style.display = 'none';
   
   const showErr = (msg) => { errEl.textContent = msg; errEl.style.display = ''; };
+  if (G.pinNovo) { // Fatia 50: "Meu PIN" pelo servidor (definir_pin), 6 dígitos
+    if (!/^[0-9]{6}$/.test(pinAtual)) return showErr('Digite seu PIN atual (6 números).');
+    if (!/^[0-9]{6}$/.test(pinNovo)) return showErr('O novo PIN deve ter 6 números.');
+    if (pinNovo !== pinConf) return showErr('Os PINs não coincidem.');
+    if (pinNovo === pinAtual) return showErr('O novo PIN é igual ao atual.');
+    let res = null;
+    try { res = await _rpcPinDesk('definir_pin', { p_usuario_id: userId, p_pin_atual: pinAtual, p_pin_novo: pinNovo }); }
+    catch (e) { return showErr('Não foi possível trocar o PIN: ' + (e.message || e)); }
+    if (!res || !res.ok) return showErr(_msgErroPinDesk(res, 'Não foi possível trocar o PIN.'));
+    const uu = (G.usuarios || []).find(x => x.id === userId); if (uu) uu.pin_definido_em = new Date().toISOString();
+    okEl.textContent = '✅ PIN trocado! Use o novo a partir de agora.'; okEl.style.display = '';
+    ['ap-pin-atual', 'ap-pin-novo', 'ap-pin-conf'].forEach(id => { document.getElementById(id).value = ''; });
+    setTimeout(() => closeModal('modal-alterar-pin'), 1500);
+    return;
+  }
   
   // Validações
   if (!/^[0-9]{4}$/.test(pinNovo)) return showErr('O PIN deve ter exatamente 4 dígitos numéricos.');
@@ -25041,11 +25497,412 @@ async function salvarNovoPIN() {
 }
 
 function removerPIN(userId) {
+  if (G.pinNovo) { notify('O PIN é obrigatório: não dá pra remover. Use "Novo PIN" para trocar.', 'warn'); return; } // Fatia 50
   const u = G.usuarios.find(x => x.id === userId);
   confirmAct('Remover PIN', `Remover o PIN de "${u?.nome}"? O perfil ficará sem proteção.`, async () => {
     await removePin(userId);
     renderUsuarios(); notify('PIN removido.', 'info');
   });
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   FATIA 50 — PIN de 6 dígitos no desktop (mesma proposta da Fatia 49)
+   • até 5 usuários ativos: tela Netflix + PIN; mais de 5: só o teclado;
+   • PIN obrigatório, gerado pelo sistema, conferido SEMPRE no servidor
+     (RPCs da Fatia 48) — getPin/setPin em texto puro deixam de valer;
+   • 10 minutos sem uso → pede o PIN de novo;
+   • transição: sem o SQL da Fatia 48, ou antes do admin gerar os PINs,
+     segue o fluxo antigo (com aviso para gerar os PINs).
+   ══════════════════════════════════════════════════════════════════════ */
+const PIN_DESK_INATIVO_MS = 10*60*1000;
+const PIN_DESK_LIMITE_PERFIS = 5;
+const PIN_DESK_ADM = ['admin','admin_master','gerente'];
+function _escPin(s){ return String(s==null?'':s).replace(/[<>&"']/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c])); }
+function _dispositivoPinDesk(){
+  let id='';
+  try{ id=localStorage.getItem('misu_disp_id')||''; }catch(_){}
+  if(!id){
+    try{ const a=new Uint8Array(8); crypto.getRandomValues(a); id=Array.from(a).map(b=>b.toString(16).padStart(2,'0')).join(''); }
+    catch(_){ id=Date.now().toString(16)+Math.random().toString(16).slice(2,8); }
+    try{ localStorage.setItem('misu_disp_id',id); }catch(_){}
+  }
+  return 'web:'+id;
+}
+async function _rpcPinDesk(fn,args){
+  const r=await comTimeout(db.rpc(fn,{...(args||{}),p_dispositivo:_dispositivoPinDesk()}),'PIN');
+  if(r && r.error) throw r.error;
+  return (r && r.data) || {};
+}
+function _fmtEsperaDesk(s){ s=Math.max(1,Math.ceil(Number(s)||0)); if(s<60) return s+' s'; const m=Math.floor(s/60), r=s%60; return m+' min'+(r?(' '+r+' s'):''); }
+function _msgErroPinDesk(res,padrao){
+  if(!res) return padrao;
+  const esp=Number(res.espera_seg)>0 ? ' Aguarde '+_fmtEsperaDesk(res.espera_seg)+'.' : '';
+  switch(res.erro){
+    case 'bloqueado': return 'Muitas tentativas erradas. Aguarde '+_fmtEsperaDesk(res.espera_seg)+' e tente de novo.';
+    case 'pin_incorreto': return 'PIN incorreto.'+esp;
+    case 'sem_permissao': return 'PIN de administrador ou gerente incorreto.'+esp;
+    case 'formato': return 'PIN fraco: use 6 números, sem sequência (123456) e sem repetir (111111).';
+    case 'indisponivel': return 'PIN indisponível, escolha outro.'+esp;
+    case 'usuario_nao_encontrado': return 'Usuário não encontrado.';
+  }
+  return padrao;
+}
+function _usuariosAtivosDesk(){ return (G.usuarios||[]).filter(u=>u.ativo); }
+function _temPinNovoDesk(u){ return !!(u && u.pin_definido_em); }
+function _nenhumAdminComPinDesk(){ return !_usuariosAtivosDesk().some(u=>PIN_DESK_ADM.includes(u.role)&&_temPinNovoDesk(u)); }
+
+/* ── Estado do PIN na empresa ── */
+async function _carregarPinResumoDesk(){
+  G.pinResumo=null; G.pinSqlOk=false; G.pinNovo=false;
+  try{
+    const r=await comTimeout(db.rpc('pin_resumo'),'pin');
+    const d=(r && !r.error) ? r.data : null;
+    if(d && typeof d.ativos==='number'){
+      G.pinResumo=d; G.pinSqlOk=true;
+      G.pinNovo = d.ativos>0 && Number(d.sem_pin)<d.ativos;
+    }
+  }catch(_){ /* SQL da Fatia 48 ainda não rodou → fluxo antigo */ }
+  _sanitizarUsuariosPin();
+}
+// Não deixa o hash nem (com o PIN novo em uso) o PIN antigo na memória do navegador.
+function _sanitizarUsuariosPin(){
+  (G.usuarios||[]).forEach(u=>{ if(!u) return; delete u.pin_hash; if(G.pinNovo) delete u.pin; });
+  const mostrar = !!G.pinNovo;
+  const b1=document.getElementById('btn-meupin-desk'); if(b1) b1.style.display=mostrar?'':'none';
+  const b2=document.getElementById('btn-trocar-desk'); if(b2) b2.style.display=mostrar?'':'none';
+}
+async function _recarregarUsuariosDesk(){
+  const {data}=await db.from('usuarios').select('*').eq('empresa_id',EID()).order('nome');
+  G.usuarios=data||[];
+  await _carregarPinResumoDesk();
+  if(_operadorAtual){ const n=G.usuarios.find(x=>x.id===_operadorAtual.id); if(n){ _operadorAtual=n; G.profile=n; } }
+}
+
+/* ── Tela de identificação (modo novo) ── */
+let _pinOcupado=false, _pinBloqAte=0, _pinTimerBloq=null, _pinOlaTimer=null, _pinOlaUsuario=null, _deskRetomarId=null;
+function _mostrarIdentDesk(opts){
+  opts=opts||{};
+  const ativos=_usuariosAtivosDesk();
+  const tela=document.getElementById('nf-screen'), grid=document.getElementById('nf-grid');
+  if(!tela||!grid) return;
+  const aviso=document.getElementById('nf-aviso'); if(aviso){ aviso.style.display='none'; aviso.innerHTML=''; }
+  if(ativos.length>PIN_DESK_LIMITE_PERFIS){ _nfPerfilSelecionado=null; mostrarPinScreen(null,'identificar'); return; }
+  const lembrar = opts.lembrarId ? ativos.find(u=>u.id===opts.lembrarId && _temPinNovoDesk(u)) : null;
+  if(lembrar){ _nfPerfilSelecionado=lembrar; mostrarPinScreen(lembrar,'verificar'); return; }
+  if(ativos.length===1 && _temPinNovoDesk(ativos[0])){ _nfPerfilSelecionado=ativos[0]; mostrarPinScreen(ativos[0],'verificar'); return; }
+  const m = (typeof getMarca==='function') ? getMarca() : {};
+  grid.innerHTML = ativos.length ? ativos.map(u=>{
+    const c=getNFColor(u.role), ok=_temPinNovoDesk(u);
+    const ini=_escPin((u.nome||'?').slice(0,2).toUpperCase());
+    const av = m.logoSidebar ? `<img src="${m.logoSidebar}" style="width:100%;height:100%;object-fit:contain;padding:8px" alt="">` : `<span style="font-family:'Syne',sans-serif;font-weight:800;font-size:28px;color:#fff">${ini}</span>`;
+    return `<div class="nf-slot" id="nf-slot-card-${_escPin(u.id)}" role="button" tabindex="0" onclick="_nfClicarDesk('${_escPin(u.id)}')" onkeydown="if(event.key==='Enter')_nfClicarDesk('${_escPin(u.id)}')">
+      <div class="nf-avatar" style="background:${c.bg}">${av}</div>
+      <div class="nf-nome">${_escPin(u.nome)}</div>
+      <span class="role-badge ${NFRoleTag[u.role]||''}" style="font-size:9.5px;padding:1.5px 7px">${_escPin(NFRoleLbl[u.role]||u.role)}</span>
+      <div style="font-size:10.5px;margin-top:10px;color:${ok?'rgba(255,255,255,.62)':'rgba(255,255,255,.75)'}">${ok?'🔒 PIN de 6 dígitos':'⚪ Sem PIN'}</div>
+    </div>`;
+  }).join('') : `<div style="color:rgba(255,255,255,.6);font-size:13px;padding:16px 0">Nenhum funcionário cadastrado.</div>`;
+  document.getElementById('nf-admin-container')?.remove();
+  document.getElementById('nf-manage-btn')?.remove();
+  document.getElementById('pin-screen').style.display='none';
+  tela.style.display='flex';
+  requestAnimationFrame(()=>{ tela.style.opacity='1'; });
+}
+function _nfClicarDesk(id){
+  const u=_usuariosAtivosDesk().find(x=>x.id===id); if(!u) return;
+  if(!_temPinNovoDesk(u)){
+    const av=document.getElementById('nf-aviso');
+    let h=`<b>${_escPin(u.nome)}</b> ainda não tem PIN. Peça a um administrador ou gerente para gerar o seu (Usuários → Novo PIN).`;
+    if(PIN_DESK_ADM.includes(u.role) && _nenhumAdminComPinDesk()) h+=`<br><button class="btn btn-pri" type="button" onclick="_gerarPinProprioDesk('${_escPin(u.id)}')"><i class="ti ti-key"></i>Gerar meu PIN agora</button>`;
+    av.innerHTML=h; av.style.display='';
+    return;
+  }
+  _nfPerfilSelecionado=u;
+  mostrarPinScreen(u,'verificar');
+}
+function _pinEsqueciDesk(){
+  const av=document.getElementById('pin-aviso'); if(!av) return;
+  let h='Peça a um <b>administrador ou gerente</b> para gerar um PIN novo para você (Usuários → Novo PIN).';
+  if(_nenhumAdminComPinDesk()){
+    const adms=_usuariosAtivosDesk().filter(u=>PIN_DESK_ADM.includes(u.role));
+    if(adms.length) h+='<br><br><b>Primeiro acesso:</b> ninguém da gestão tem PIN ainda.<br>'+adms.map(u=>`<button class="btn btn-pri" type="button" onclick="_gerarPinProprioDesk('${_escPin(u.id)}')"><i class="ti ti-key"></i>Gerar PIN de ${_escPin(u.nome)}</button>`).join(' ');
+  }
+  av.innerHTML=h; av.style.display='';
+}
+// Configuração inicial: o servidor só aceita enquanto nenhum admin/gerente tem PIN.
+async function _gerarPinProprioDesk(id){
+  const u=_usuariosAtivosDesk().find(x=>x.id===id); if(!u) return;
+  try{
+    const res=await _rpcPinDesk('gerar_pin',{p_usuario_id:id,p_pin_admin:''});
+    if(!res.ok){ notify(_msgErroPinDesk(res,'Não foi possível gerar o PIN.')+' Peça a um administrador ou gerente que já tenha PIN.','warn',6000); return; }
+    await _recarregarUsuariosDesk();
+    await _mostrarPinsDesk([{id:u.id,nome:u.nome,role:u.role,telefone:u.telefone,pin:res.pin}]);
+    _mostrarIdentDesk({lembrarId:u.id});
+  }catch(e){ notify('Não foi possível gerar o PIN: '+(e.message||e),'error'); }
+}
+function _pinBloqueadoDesk(){ return Date.now()<_pinBloqAte; }
+function _pinTeclasDesk(){ const off=_pinOcupado||_pinBloqueadoDesk(); document.querySelectorAll('#pin-screen .pin-key').forEach(k=>k.classList.toggle('off',off)); }
+function _pinAtualizarBloqueioDesk(){
+  clearInterval(_pinTimerBloq); _pinTimerBloq=null;
+  const tick=()=>{
+    const el=document.getElementById('pin-erro');
+    if(_pinBloqueadoDesk()){ if(el) el.textContent='Muitas tentativas erradas. Aguarde '+_fmtEsperaDesk((_pinBloqAte-Date.now())/1000)+'.'; }
+    else { clearInterval(_pinTimerBloq); _pinTimerBloq=null; if(el && /Aguarde/.test(el.textContent)) el.textContent=''; }
+    _pinTeclasDesk();
+  };
+  tick();
+  if(_pinBloqueadoDesk()) _pinTimerBloq=setInterval(tick,1000);
+}
+async function _verificarPinNovoDesk(){
+  const pin=_pinDigitos, u=_nfPerfilSelecionado;
+  if(_pinModo==='verificar' && !u) return;
+  _pinOcupado=true; _pinTeclasDesk();
+  const errEl=document.getElementById('pin-erro'); if(errEl) errEl.textContent='Conferindo...';
+  let res=null;
+  try{
+    res = (_pinModo==='identificar')
+      ? await _rpcPinDesk('identificar_por_pin',{p_pin:pin})
+      : await _rpcPinDesk('verificar_pin',{p_usuario_id:u.id,p_pin:pin});
+  }catch(e){ _pinOcupado=false; _pinTeclasDesk(); pinErro('Sem conexão para conferir o PIN. Tente de novo.'); return; }
+  _pinOcupado=false; _pinTeclasDesk();
+  if(res && res.ok && res.usuario){
+    const user=(G.usuarios||[]).find(x=>x.id===res.usuario.id) || {...res.usuario,ativo:true,empresa_id:EID()};
+    if(errEl) errEl.textContent='';
+    if(_pinModo==='identificar'){ _pinOlaDesk(user); return; }
+    _entrarPinNovoDesk(user);
+    return;
+  }
+  if(res && Number(res.espera_seg)>0) _pinBloqAte=Date.now()+Number(res.espera_seg)*1000;
+  pinErro(_msgErroPinDesk(res,'PIN incorreto. Tente novamente.'));
+  _pinAtualizarBloqueioDesk();
+  if(!_pinBloqueadoDesk() && errEl) errEl.textContent=_msgErroPinDesk(res,'PIN incorreto. Tente novamente.');
+}
+function _pinOlaDesk(user){
+  _pinOlaUsuario=user;
+  const scr=document.getElementById('pin-screen');
+  const c=NFColors[user.role]||NFColors.admin;
+  const av=document.getElementById('pin-avatar');
+  av.style.background=c.bg; av.textContent=(user.nome||'?').slice(0,2).toUpperCase();
+  document.getElementById('pin-nome-label').textContent='Olá, '+String(user.nome||'').split(' ')[0]+'!';
+  scr.querySelector('.pin-sub').textContent=NFRoleLbl[user.role]||user.role||'';
+  scr.classList.add('ola');
+  clearTimeout(_pinOlaTimer);
+  _pinOlaTimer=setTimeout(_pinOlaEntrarDesk,2500);
+}
+function _cancelarOlaDesk(){ clearTimeout(_pinOlaTimer); _pinOlaTimer=null; _pinOlaUsuario=null; document.getElementById('pin-screen')?.classList.remove('ola'); }
+function _pinOlaEntrarDesk(){ const u=_pinOlaUsuario; _cancelarOlaDesk(); if(u) _entrarPinNovoDesk(u); }
+function _pinNaoSouEuDesk(){ _cancelarOlaDesk(); mostrarPinScreen(null,'identificar'); }
+function _entrarPinNovoDesk(user){
+  _cancelarOlaDesk();
+  const mesmo = _deskRetomarId && _deskRetomarId===user.id;
+  _deskRetomarId=null;
+  document.body.classList.remove('pin-travado');
+  _marcarAtividadeDesk();
+  if(mesmo){
+    // voltou depois da inatividade: continua exatamente onde estava
+    if(window._pinKeyHandler){ document.removeEventListener('keydown',window._pinKeyHandler); window._pinKeyHandler=null; }
+    document.getElementById('pin-screen').style.display='none';
+    ocultarTelaNetflix();
+    return;
+  }
+  document.getElementById('pin-screen').style.display='none';
+  entrarComPerfil(user);
+}
+
+/* ── 10 minutos sem uso → pede o PIN de novo ── */
+let _deskUltAtiv=Date.now();
+function _marcarAtividadeDesk(){ _deskUltAtiv=Date.now(); }
+function _telaIdentAbertaDesk(){
+  const p=document.getElementById('pin-screen'), n=document.getElementById('nf-screen');
+  return (p && p.style.display!=='none') || (n && n.style.display!=='none');
+}
+['mousemove','mousedown','keydown','touchstart','wheel'].forEach(t=>document.addEventListener(t,()=>{ if(!_telaIdentAbertaDesk()) _marcarAtividadeDesk(); },{passive:true,capture:true}));
+function _verificarInatividadeDesk(){
+  if(!G.pinNovo || !_operadorAtual) return;
+  if(_telaIdentAbertaDesk()) return;
+  if(Date.now()-_deskUltAtiv < PIN_DESK_INATIVO_MS) return;
+  _travarDesk();
+}
+function _travarDesk(){
+  _deskRetomarId=_operadorAtual ? _operadorAtual.id : null;
+  document.body.classList.add('pin-travado'); // tela de PIN por cima de qualquer modal aberto
+  _mostrarIdentDesk({lembrarId:_deskRetomarId});
+}
+function trocarUsuarioDesk(){
+  if(!G.pinNovo){ mostrarTelaNetflix(); return; }
+  _deskRetomarId=null;
+  document.body.classList.add('pin-travado');
+  _mostrarIdentDesk({});
+}
+setInterval(_verificarInatividadeDesk,20000);
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) _verificarInatividadeDesk(); });
+
+/* ── PIN de admin/gerente (o servidor confere) ── */
+let _pinAdmCtxDesk=null;
+function _pedirPinAdminDesk(opts){
+  return new Promise(resolve=>{
+    _pinAdmCtxDesk={...opts,resolve};
+    document.getElementById('pinadm-d-titulo').textContent=opts.titulo||'Confirmação';
+    document.getElementById('pinadm-d-sub').textContent=opts.sub||'';
+    document.getElementById('pinadm-d-lbl').textContent=opts.aceita4?'PIN atual de administrador ou gerente':'Seu PIN de administrador ou gerente (6 dígitos)';
+    document.getElementById('pinadm-d-input').value='';
+    document.getElementById('pinadm-d-erro').textContent='';
+    openModal('modal-pinadm-desk');
+    setTimeout(()=>document.getElementById('pinadm-d-input')?.focus(),150);
+  });
+}
+function _pinAdmCancelarDesk(){
+  const c=_pinAdmCtxDesk; _pinAdmCtxDesk=null;
+  closeModal('modal-pinadm-desk');
+  if(c) c.resolve(null);
+}
+async function _pinAdmConfirmarDesk(){
+  const c=_pinAdmCtxDesk; if(!c) return;
+  const pin=(document.getElementById('pinadm-d-input').value||'').trim();
+  const errEl=document.getElementById('pinadm-d-erro');
+  if(pin && !(c.aceita4?/^\d{4,6}$/:/^\d{6}$/).test(pin)){ errEl.textContent=c.aceita4?'Digite o PIN (4 a 6 números).':'Digite o PIN de 6 números.'; return; }
+  const btn=document.getElementById('pinadm-d-btn'); btn.disabled=true;
+  try{
+    const res=await c.executar(pin);
+    if(!res || !res.ok){ errEl.textContent=_msgErroPinDesk(res,'Não foi possível concluir.'); document.getElementById('pinadm-d-input').value=''; return; }
+    _pinAdmCtxDesk=null;
+    closeModal('modal-pinadm-desk');
+    c.resolve(res);
+  }catch(e){ errEl.textContent='Não foi possível concluir: '+(e.message||e); }
+  finally{ btn.disabled=false; }
+}
+
+/* ── PIN(s) gerado(s): mostra uma vez, com WhatsApp ── */
+let _pinshowListaDesk=[], _pinshowResolveDesk=null;
+function _mostrarPinsDesk(lista){
+  _pinshowListaDesk=(lista||[]).filter(u=>u && u.pin);
+  const n=_pinshowListaDesk.length;
+  document.getElementById('pinshow-d-titulo').textContent = n===1 ? ('PIN de '+_pinshowListaDesk[0].nome) : ('PINs gerados ('+n+')');
+  document.getElementById('pinshow-d-lista').innerHTML=_pinshowListaDesk.map((u,i)=>`<div class="pinshow-d-row">
+      <div style="flex:1;min-width:0"><div class="pinshow-d-nome">${_escPin(u.nome)}</div><div class="pinshow-d-rl">${_escPin(NFRoleLbl[u.role]||u.role||'')}${u.telefone?' · '+_escPin(u.telefone):' · sem telefone'}</div></div>
+      <div class="pinshow-d-pin">${_escPin(String(u.pin).slice(0,3)+' '+String(u.pin).slice(3))}</div>
+      <button type="button" class="btn btn-out btn-sm" id="pinshow-d-wa-${i}" onclick="_enviarPinWhatsDesk(${i})" aria-label="Enviar o PIN de ${_escPin(u.nome)} pelo WhatsApp"><i class="ti ti-brand-whatsapp"></i> WhatsApp</button>
+    </div>`).join('');
+  openModal('modal-pinshow-desk');
+  return new Promise(res=>{ _pinshowResolveDesk=res; });
+}
+function _enviarPinWhatsDesk(i){
+  const u=_pinshowListaDesk[i]; if(!u) return;
+  let tel=String(u.telefone||'').replace(/\D/g,'');
+  if(tel && !(tel.startsWith('55') && tel.length>=12)) tel='55'+tel;
+  const msg=encodeURIComponent(`Olá, ${String(u.nome||'').split(' ')[0]}! Seu PIN de acesso ao sistema da ${G.empresa?.nome||'loja'} é ${u.pin}. Ele é pessoal: não passe para ninguém. Você pode trocar em Meu PIN.`);
+  window.open(tel?`https://wa.me/${tel}?text=${msg}`:`https://wa.me/?text=${msg}`,'_blank');
+  const b=document.getElementById('pinshow-d-wa-'+i); if(b) b.innerHTML='<i class="ti ti-check"></i> Enviado';
+}
+function _copiarPinsDesk(){
+  const txt=_pinshowListaDesk.map(u=>u.nome+': '+u.pin).join('\n');
+  try{ navigator.clipboard.writeText(txt).then(()=>notify('Lista copiada.','success'),()=>notify('Não foi possível copiar.','error')); }
+  catch(_){ notify('Não foi possível copiar.','error'); }
+}
+function _fecharPinsDesk(){
+  if(!confirm('Os PINs não aparecem de novo. Já anotou ou enviou todos?')) return;
+  closeModal('modal-pinshow-desk');
+  document.getElementById('pinshow-d-lista').innerHTML=''; _pinshowListaDesk=[];
+  const r=_pinshowResolveDesk; _pinshowResolveDesk=null; if(r) r();
+}
+
+/* ── Gerar PINs (Usuários e aviso de migração) ── */
+async function abrirGerarPinsTodosDesk(modo){
+  if(!G.pinSqlOk){ notify('Atualização do banco pendente: rode o SQL do PIN de 6 dígitos no Supabase.','error'); return; }
+  if(modo==='todos' && !confirm('Gerar PINs NOVOS para todo mundo? Os PINs atuais de todas as pessoas param de valer na hora.')) return;
+  const migrar=(modo==='migrar');
+  const sub = migrar
+    ? 'Cada pessoa ativa recebe um PIN de 6 dígitos e os PINs antigos de 4 dígitos param de valer na hora. Digite o PIN atual de um administrador ou gerente (se ninguém da gestão tiver PIN, deixe em branco).'
+    : modo==='faltam' ? 'Gera PIN só para quem ainda não tem. Quem já tem continua com o mesmo.'
+    : 'Todos recebem um PIN novo. Digite seu PIN de administrador ou gerente.';
+  const res=await _pedirPinAdminDesk({
+    titulo: migrar?'Gerar PINs de 6 dígitos':(modo==='faltam'?'Gerar PIN para quem não tem':'Gerar PINs novos para todos'),
+    sub, aceita4:migrar,
+    executar:p=>_rpcPinDesk('gerar_pins_todos',{p_pin_admin:p,p_somente_sem_pin:modo==='faltam'})
+  });
+  if(!res) return;
+  await _recarregarUsuariosDesk();
+  if(typeof renderUsuarios==='function' && document.getElementById('usr-table')) renderUsuarios();
+  await _mostrarPinsDesk(res.usuarios||[]);
+  notify((res.usuarios||[]).length+' PIN(s) gerado(s).','success');
+  if(migrar && !_operadorAtual) mostrarTelaNetflix(); // veio da tela de perfis: agora entra com o PIN novo
+  _marcarAtividadeDesk();
+}
+async function gerarPinPessoaDesk(id){
+  const u=(G.usuarios||[]).find(x=>x.id===id); if(!u) return false;
+  if(!['admin','admin_master','gerente'].includes(G.role)){ notify('Só administrador ou gerente gera PIN.','warn'); return false; }
+  const res=await _pedirPinAdminDesk({
+    titulo:'Novo PIN para '+u.nome,
+    sub:(_temPinNovoDesk(u)?'O PIN atual de '+u.nome+' para de valer na hora. ':'')+'Digite seu PIN (administrador ou gerente) para confirmar.',
+    executar:p=>_rpcPinDesk('gerar_pin',{p_usuario_id:id,p_pin_admin:p})
+  });
+  if(!res) return false;
+  await _recarregarUsuariosDesk();
+  if(typeof renderUsuarios==='function') renderUsuarios();
+  if(typeof renderSlotsPreview==='function') try{ renderSlotsPreview(); }catch(_){}
+  await _mostrarPinsDesk([{id:u.id,nome:u.nome,role:u.role,telefone:u.telefone,pin:res.pin}]);
+  _marcarAtividadeDesk();
+  return true;
+}
+function _renderUsrPinAcoes(){
+  const el=document.getElementById('usr-pin-acoes'); if(!el) return;
+  const podeMexer = G.role==='admin' || G.role==='gerente' || G.role==='admin_master';
+  if(!G.pinSqlOk || !podeMexer || !(G.usuarios||[]).length){ el.innerHTML=''; return; }
+  const faltam=_usuariosAtivosDesk().filter(u=>!_temPinNovoDesk(u)).length;
+  const box=(txt,botoes)=>`<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px;padding:12px 14px;background:var(--surface);border-radius:10px;border:1.5px solid var(--pri)"><i class="ti ti-key" style="color:var(--pri);font-size:18px"></i><div style="font-size:12.5px;color:var(--txt2);flex:1;min-width:220px">${txt}</div><div style="display:flex;gap:8px;flex-wrap:wrap">${botoes}</div></div>`;
+  if(!G.pinNovo){
+    el.innerHTML=box('<b style="color:var(--txt)">PIN de 6 dígitos:</b> gere os PINs novos de todos de uma vez. Os PINs antigos de 4 dígitos param de valer na hora.',`<button class="btn btn-pri btn-sm" onclick="abrirGerarPinsTodosDesk('migrar')"><i class="ti ti-key"></i>Gerar PINs de 6 dígitos para todos</button>`);
+  } else {
+    const modoTxt = _usuariosAtivosDesk().length>PIN_DESK_LIMITE_PERFIS ? 'Com mais de 5 pessoas, a entrada é só pelo PIN (sem lista de nomes).' : 'Até 5 pessoas, a entrada mostra os nomes.';
+    el.innerHTML=box(`<b style="color:var(--txt)">PIN de 6 dígitos:</b> ${faltam?`${faltam} pessoa(s) ativa(s) sem PIN.`:'todas as pessoas ativas têm PIN.'} ${modoTxt}`,
+      (faltam?`<button class="btn btn-pri btn-sm" onclick="abrirGerarPinsTodosDesk('faltam')"><i class="ti ti-key"></i>Gerar para quem não tem</button>`:'')+`<button class="btn btn-out btn-sm" onclick="abrirGerarPinsTodosDesk('todos')"><i class="ti ti-refresh"></i>Refazer de todos</button>`);
+  }
+}
+function _prepararModalUsrPin(editando){
+  const novo=!!G.pinNovo;
+  const g=document.getElementById('u-pin-grp'); if(g) g.style.display=novo?'none':'';
+  const i=document.getElementById('u-pin-info'); if(i) i.style.display=(novo&&!editando)?'':'none';
+}
+// Com o PIN novo, o cadastro não grava PIN — o sistema gera (gerar_pin) logo depois.
+async function _saveUsrPinNovo({editId,nome,telefone,role,ativo,comissao_pct}){
+  setLoad(true);
+  let err, novoId=null;
+  if(editId){
+    const patch={nome,telefone:telefone||null,role,ativo,comissao_pct};
+    ({error:err}=await db.from('usuarios').update(patch).eq('id',editId));
+    if(err && /telefone|column|schema cache/i.test(err.message||'')){ delete patch.telefone; ({error:err}=await db.from('usuarios').update(patch).eq('id',editId)); }
+  } else {
+    let r=await db.from('usuarios').insert({nome,telefone:telefone||null,role,ativo,comissao_pct,empresa_id:EID()}).select('id').single();
+    if(r.error && /telefone|column|schema cache/i.test(r.error.message||'')) r=await db.from('usuarios').insert({nome,role,ativo,comissao_pct,empresa_id:EID()}).select('id').single();
+    err=r.error; novoId=r.data?.id||null;
+  }
+  setLoad(false);
+  if(err){
+    if((err.message||'').toLowerCase().includes('limite')) notify('🔒 '+err.message,'warn',6000);
+    else notify('Erro: '+err.message,'error');
+    return;
+  }
+  await _recarregarUsuariosDesk();
+  closeModal('modal-usr'); renderUsuarios();
+  if(!novoId){ notify('Funcionário atualizado!'); return; }
+  notify('Funcionário criado! Agora gere o PIN dele.');
+  const ok=await gerarPinPessoaDesk(novoId);
+  if(!ok) notify('Funcionário criado sem PIN. Use "Novo PIN" na lista quando quiser gerar.','warn',6000);
+}
+/* ── Meu PIN (a própria pessoa troca) ── */
+function abrirMeuPinDesk(){
+  const u=_operadorAtual; if(!u){ notify('Identifique-se primeiro.','warn'); return; }
+  if(!G.pinNovo){ abrirAlterarPIN(u.id); return; }
+  if(!_temPinNovoDesk(u)){ notify('Você ainda não tem PIN. Peça a um administrador ou gerente.','warn'); return; }
+  document.getElementById('ap-user-id').value=u.id;
+  ['ap-pin-atual','ap-pin-novo','ap-pin-conf'].forEach(id=>{ const e=document.getElementById(id); e.value=''; e.placeholder='••••••'; });
+  document.getElementById('ap-pin-err').style.display='none';
+  document.getElementById('ap-pin-ok').style.display='none';
+  document.getElementById('pin-atual-grp').style.display='';
+  document.getElementById('pin-atual-lbl').textContent='';
+  document.getElementById('ap-desc').textContent='Digite seu PIN atual e escolha um novo PIN de 6 números. Não vale sequência (123456) nem número repetido (111111).';
+  document.getElementById('ap-novo-lbl').textContent='Novo PIN (6 dígitos)';
+  openModal('modal-alterar-pin');
 }
 
 /* ── RIPPLE EFFECT GLOBAL ──────────────────────────────
