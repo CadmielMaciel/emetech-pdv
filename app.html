@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>MISU MOBILE</title>
+<!-- Fatia 55: o app tem tema claro e escuro próprios. Declarar isso impede o
+     "modo escuro forçado" do navegador do celular (Chrome Android, Samsung
+     Internet, Xiaomi...) de escurecer a página por cima, que deixava os textos
+     apagados e os nomes cinzas em vez de brancos. -->
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1E5EFF"> <!-- Fatia 56: barra do celular no azul do sistema -->
 <script>
 /* Fatia 9: aplica o tema salvo ANTES de renderizar, igual ao index.html —
    evita "piscada" de tela clara e mantém o tema consistente com o desktop
@@ -11,6 +17,17 @@
 try{
   var _temaSalvoApp = localStorage.getItem('misu_tema');
   if(_temaSalvoApp==='dark'||_temaSalvoApp==='light') document.documentElement.setAttribute('data-theme',_temaSalvoApp);
+  // Fatia 55: sem escolha salva, segue o tema do celular (escuro de verdade,
+  // não o escurecimento automático do navegador).
+  else if(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.setAttribute('data-theme','dark');
+}catch(e){}
+try{
+  if(window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(ev){
+    var salvo=null; try{ salvo=localStorage.getItem('misu_tema'); }catch(_){}
+    if(salvo==='dark'||salvo==='light') return; // quem escolheu no app manda
+    document.documentElement.setAttribute('data-theme', ev.matches?'dark':'light');
+    if(typeof _atualizarIconeTema==='function') _atualizarIconeTema();
+  });
 }catch(e){}
 /* Acessibilidade (revisão 2026-09): mesmo princípio do tema acima — aplica
    tamanho de fonte e alto contraste salvos ANTES de renderizar, pra não
@@ -71,31 +88,42 @@ try{
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root{
-  --pri:#5B3FE8;--pri2:#7C5CFF;--pri-d:#3D2596;
-  --bg:#F3F1FB;--bg2:#ECE8F8;--card:#fff;
-  --txt:#191338;--txt2:#5A5280;
+  /* Fatia 56: mesmas cores do sistema desktop (index.html) — azul da marca
+     e os mesmos neutros. --pri-btn2 é o fim do degradê dos botões com texto
+     branco (o #3D8BFF claro derrubava o contraste do texto). */
+  --pri:#1E5EFF;--pri2:#3D8BFF;--pri-d:#0A2FA8;--pri-btn:#1E5EFF;--pri-btn2:#1A4FD9;
+  --bg:#F5F2EC;--bg2:#EFE9DF;--card:#fff;
+  --txt:#1E1530;--txt2:#54487A;
   /* Revisão 2026-09 (acessibilidade): #9C95B6 media só ~2.6:1 de contraste
      sobre o fundo claro — abaixo do mínimo de 4,5:1 (WCAG AA) pra texto
      normal. #6A6390 mede ~4,9–5,5:1 nos mesmos fundos, mantendo a mesma
      tonalidade roxo-acinzentada. */
-  --txt3:#6A6390;
-  --border:#E7E2F3;--border2:#EFEBF8;
+  --txt3:#665A88;
+  --border:#E6DED3;--border2:#EEE7DD;
   --ok:#16A34A;--warn:#F59E0B;--danger:#DC2626;
   /* Fatia 38: cores pra TEXTO (as de cima continuam pra fundo/borda/ícone
      grande). Medidas com contraste ≥4,5:1 (WCAG AA) sobre os fundos do tema
      claro — o --ok/--warn puros ficavam 2,1–3,3:1 sobre branco. */
-  --pri-txt:#5B3FE8;--ok-txt:#166534;--warn-txt:#92400E;--danger-txt:#B91C1C;
+  --pri-txt:#1A52E0;--ok-txt:#166534;--warn-txt:#92400E;--danger-txt:#B91C1C;
   --sab:env(safe-area-inset-bottom,0px);--sat:env(safe-area-inset-top,0px);
   /* Revisão 2026-09: sombras mais discretas (menos "glow" colorido, mais
      plano/limpo) — mesma hierarquia visual, com menos ruído. */
   --shadow-sm:0 1px 2px rgba(24,16,56,.04);
   --shadow:0 1px 3px rgba(24,16,56,.04),0 8px 20px -14px rgba(24,16,56,.12)
   ;
-  --glow:0 4px 14px -4px rgba(91,63,232,.30);
-  --ring:0 0 0 4px rgba(91,63,232,.12);
+  --glow:0 4px 14px -4px rgba(30,94,255,.30);
+  --ring:0 0 0 4px rgba(30,94,255,.12);
   --r:16px;
   --navh:64px;
 }
+/* Fatia 55: diz ao navegador qual tema está em uso — 'only light' impede o
+   escurecimento forçado no tema claro; no escuro os controles nativos
+   (select, data, barra de rolagem) também ficam escuros. */
+:root{color-scheme:only light}
+[data-theme="dark"]{color-scheme:dark}
+/* Fatia 55: nomes e números em destaque dentro de textos secundários (cinza)
+   ficam na cor principal — branco no escuro, escuro no claro. */
+.mp-sub b,.mp-sub strong,#osa-body b,#mv-prev b,.id-aviso b,.mq-aviso b,.pl-aviso b{color:var(--txt)}
 /* Fatia 9: tema escuro — mesma paleta e mesma chave (misu_tema) do sistema desktop */
 [data-theme="dark"]{
   --bg:#070B1A;--bg2:#0B1228;--card:#101A38;
@@ -106,7 +134,7 @@ try{
   --border:#1B2A55;--border2:#25376B;
   /* Fatia 38: no escuro, o roxo da marca (#5B3FE8) como TEXTO ficava 2,7:1
      sobre os fundos azul-marinho — ilegível. Versões claras, todas ≥4,8:1. */
-  --pri-txt:#B3A6FF;--ok-txt:#4ADE80;--warn-txt:#FBBF24;--danger-txt:#FCA5A5;
+  --pri-txt:#8AB0FF;--ok-txt:#4ADE80;--warn-txt:#FBBF24;--danger-txt:#FCA5A5;
   --shadow-sm:0 1px 2px rgba(0,0,0,.3);
   --shadow:0 1px 3px rgba(0,0,0,.3),0 8px 20px -14px rgba(0,0,0,.5);
 }
@@ -151,7 +179,7 @@ html[data-fontsize="xl"] body{zoom:1.28}
 /* Alto contraste: reforça bordas e contraste de texto, remove sombras/
    gradientes decorativos que podem "lavar" o contraste visual. */
 :root[data-contraste="alto"]{
-  --txt2:#241F45;--txt3:#3F3968;--border:#B9B0DE;--border2:#B9B0DE;
+  --txt2:#241F45;--txt3:#3F3968;--border:#BDB3A6;--border2:#BDB3A6;
 }
 [data-theme="dark"][data-contraste="alto"]{
   --txt2:#DCE6FF;--txt3:#C7D4F5;--border:#3A4E8C;--border2:#3A4E8C;
@@ -174,7 +202,7 @@ button:focus-visible,[role="button"]:focus-visible,[role="switch"]:focus-visible
 [data-theme="dark"] body{background:linear-gradient(180deg,#0B1330,var(--bg) 240px) no-repeat,var(--bg)}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{max-width:100%;overflow-x:hidden}
-body{font-family:'DM Sans',sans-serif;background:linear-gradient(180deg,#EEE9FB,var(--bg) 240px) no-repeat,var(--bg);color:var(--txt);min-height:100vh;min-height:100dvh;-webkit-font-smoothing:antialiased}
+body{font-family:'DM Sans',sans-serif;background:linear-gradient(180deg,#E8EFFF,var(--bg) 240px) no-repeat,var(--bg);color:var(--txt);min-height:100vh;min-height:100dvh;-webkit-font-smoothing:antialiased}
 input,select,textarea,button{font-family:inherit;font-size:16px}
 .hidden{display:none!important}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -199,11 +227,11 @@ input,select,textarea,button{font-family:inherit;font-size:16px}
 #applock::before{content:"";position:absolute;inset:0;background:radial-gradient(85% 55% at 50% 0%,rgba(255,255,255,.20),transparent 60%);pointer-events:none}
 .login-blob{position:absolute;border-radius:50%;filter:blur(50px);pointer-events:none;animation:loginFloat 16s ease-in-out infinite}
 .login-blob.b1{width:240px;height:240px;background:rgba(255,255,255,.28);top:-70px;left:-60px}
-.login-blob.b2{width:210px;height:210px;background:rgba(124,92,255,.55);bottom:-60px;right:-50px;animation-delay:-5.5s}
+.login-blob.b2{width:210px;height:210px;background:rgba(61,139,255,.55);bottom:-60px;right:-50px;animation-delay:-5.5s}
 .login-blob.b3{width:150px;height:150px;background:rgba(255,255,255,.18);bottom:16%;left:-45px;animation-delay:-10s}
 @keyframes loginFloat{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(16px,-20px) scale(1.07)}}
 .login-card{position:relative;background:#fff;border-radius:26px;padding:34px 26px calc(28px + var(--sab));width:100%;max-width:400px;box-shadow:0 30px 70px -20px rgba(30,10,80,.5),0 2px 8px rgba(0,0,0,.06);animation:pop .4s ease}
-.login-mark{width:54px;height:54px;border-radius:17px;background:linear-gradient(135deg,var(--pri),var(--pri2));display:flex;align-items:center;justify-content:center;margin:0 auto 14px;box-shadow:0 10px 24px -8px rgba(91,63,232,.4);color:#fff;font-family:'Syne',sans-serif;font-weight:800;font-size:21px}
+.login-mark{width:54px;height:54px;border-radius:17px;background:linear-gradient(135deg,var(--pri-btn),var(--pri-btn2));display:flex;align-items:center;justify-content:center;margin:0 auto 14px;box-shadow:0 10px 24px -8px rgba(30,94,255,.4);color:#fff;font-family:'Syne',sans-serif;font-weight:800;font-size:21px}
 .login-logo{font-size:24px;font-weight:800;color:var(--pri-txt);text-align:center}
 .login-sub{text-align:center;font-size:13px;color:var(--txt3);margin:5px 0 26px;font-weight:500}
 .input-group{position:relative}
@@ -221,9 +249,9 @@ input,select,textarea,button{font-family:inherit;font-size:16px}
 textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 
 /* ── BUTTONS ── */
-.btn,.mobile-button{width:100%;border:none;border-radius:14px;padding:15px;min-height:54px;font-size:16px;font-weight:700;letter-spacing:-.01em;color:#fff;background:linear-gradient(135deg,var(--pri),var(--pri2));cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;box-shadow:var(--glow);transition:transform .12s ease,box-shadow .18s,opacity .18s}
+.btn,.mobile-button{width:100%;border:none;border-radius:14px;padding:15px;min-height:54px;font-size:16px;font-weight:700;letter-spacing:-.01em;color:#fff;background:linear-gradient(135deg,var(--pri-btn),var(--pri-btn2));cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;box-shadow:var(--glow);transition:transform .12s ease,box-shadow .18s,opacity .18s}
 .btn i{font-size:18px}
-.btn:active{transform:scale(.975);box-shadow:0 6px 16px -8px rgba(91,63,232,.5)}
+.btn:active{transform:scale(.975);box-shadow:0 6px 16px -8px rgba(30,94,255,.5)}
 .btn:disabled{opacity:.55;box-shadow:none}
 .btn-out{background:#fff;color:var(--pri-txt);border:1.5px solid var(--border);box-shadow:var(--shadow-sm)}
 .btn-out:active{border-color:var(--pri)}
@@ -232,7 +260,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 .btn-ghost:active{background:var(--bg2)}
 .l-err{background:#FEECEC;color:#B42318;border:1px solid #FBD5D5;border-radius:12px;padding:12px 13px;font-size:13px;margin-top:15px;display:none;font-weight:500}
 .spinner{width:18px;height:18px;border:2.5px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
-.btn-out .spinner,.btn-ok .spinner{border-color:rgba(91,63,232,.25);border-top-color:var(--pri)}
+.btn-out .spinner,.btn-ok .spinner{border-color:rgba(30,94,255,.25);border-top-color:var(--pri)}
 
 /* ── APP SHELL ── */
 #app{min-height:100dvh;padding-top:var(--sat)}
@@ -245,12 +273,12 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 /* ── Revisão 2026-09: ícone de perfil na topbar (substitui o nome da
    empresa por um avatar com as iniciais de quem está usando o celular —
    tocar nele abre a tela de Perfil/Configurações) ── */
-.avatar-btn{width:36px;height:36px;border-radius:50%;border:none;background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;font-weight:800;font-size:13px;letter-spacing:.2px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;box-shadow:0 2px 8px -2px rgba(91,63,232,.4);transition:transform .12s}
+.avatar-btn{width:36px;height:36px;border-radius:50%;border:none;background:linear-gradient(135deg,var(--pri-btn),var(--pri-btn2));color:#fff;font-weight:800;font-size:13px;letter-spacing:.2px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;box-shadow:0 2px 8px -2px rgba(30,94,255,.4);transition:transform .12s}
 .avatar-btn:active{transform:scale(.92)}
 
 /* ── Revisão 2026-09: tela de Perfil (conta, aparência, ajuda) ── */
 .perfil-card{display:flex;flex-direction:column;align-items:center;text-align:center;padding:22px 16px 24px}
-.avatar-lg{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;font-weight:800;font-size:25px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;box-shadow:0 8px 20px -6px rgba(91,63,232,.35)}
+.avatar-lg{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--pri-btn),var(--pri-btn2));color:#fff;font-weight:800;font-size:25px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;box-shadow:0 8px 20px -6px rgba(30,94,255,.35)}
 .perfil-nome{font-family:'Syne',sans-serif;font-weight:800;font-size:19px;letter-spacing:-.01em}
 .perfil-cargo{font-size:12px;color:var(--pri-txt);font-weight:700;margin-top:3px;text-transform:uppercase;letter-spacing:.5px}
 .perfil-empresa{font-size:12.5px;color:var(--txt3);margin-top:7px}
@@ -261,7 +289,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 .fonte-lbl{font-size:11.5px;color:var(--txt3);font-weight:600;min-width:64px;text-align:center}
 .switch-fake{width:38px;height:22px;border-radius:99px;background:var(--border);position:relative;display:inline-block;transition:background .18s;flex-shrink:0}
 .switch-fake::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .18s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
-.switch-fake.on{background:var(--pri)}
+.switch-fake.on{background:var(--pri-btn)}
 .switch-fake.on::after{transform:translateX(16px)}
 
 /* ── HOME ── */
@@ -274,7 +302,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 .mod,.mobile-action{display:flex;align-items:center;gap:15px;background:var(--card);border:1px solid var(--border2);border-radius:20px;padding:17px;margin-bottom:13px;cursor:pointer;box-shadow:var(--shadow);transition:transform .14s ease,box-shadow .18s}
 .mod:active{transform:scale(.98)}
 .mod:not(.soon):active{box-shadow:var(--glow)}
-.mod-ic{width:56px;height:56px;border-radius:17px;display:flex;align-items:center;justify-content:center;font-size:27px;flex-shrink:0;box-shadow:0 6px 16px -6px rgba(91,63,232,.28)}
+.mod-ic{width:56px;height:56px;border-radius:17px;display:flex;align-items:center;justify-content:center;font-size:27px;flex-shrink:0;box-shadow:0 6px 16px -6px rgba(30,94,255,.28)}
 .mod-t{font-weight:700;font-size:16px;letter-spacing:-.01em}
 .mod-d{font-size:12.5px;color:var(--txt3);margin-top:3px;line-height:1.35}
 .mod .ti-chevron-right{margin-left:auto;color:var(--txt3);font-size:20px;flex-shrink:0}
@@ -288,7 +316,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 .row2>div{min-width:0}
 .bc-row,.mobile-toolbar{display:flex;gap:9px}
 .bc-row .inp{flex:1;min-width:0}
-.icon-btn{background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;border:none;border-radius:13px;width:54px;min-height:52px;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;box-shadow:var(--glow);flex-shrink:0;transition:transform .12s}
+.icon-btn{background:linear-gradient(135deg,var(--pri-btn),var(--pri-btn2));color:#fff;border:none;border-radius:13px;width:54px;min-height:52px;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;box-shadow:var(--glow);flex-shrink:0;transition:transform .12s}
 .icon-btn:active{transform:scale(.95)}
 .aviso{background:linear-gradient(135deg,#FEF6DA,#FEF3C7);border:1px solid #FCE38A;border-radius:14px;padding:13px;font-size:12.5px;color:#8A5B00;display:flex;gap:10px;margin-bottom:15px;line-height:1.45;box-shadow:var(--shadow-sm)}
 .aviso i{font-size:18px;flex-shrink:0}
@@ -308,34 +336,65 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 #scan .scan-top{position:absolute;top:calc(12px + var(--sat));left:0;right:0;display:flex;justify-content:space-between;padding:0 16px;z-index:2}
 #scan .scan-close{background:rgba(0,0,0,.5);border:none;color:#fff;font-size:26px;width:46px;height:46px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center}
 #scan .scan-hint{position:absolute;bottom:calc(34px + var(--sab));left:0;right:0;text-align:center;color:#fff;font-size:14px;font-weight:500;text-shadow:0 1px 6px #000}
-#scan .scan-frame{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:76%;height:130px;border:3px solid var(--pri2);border-radius:16px;box-shadow:0 0 0 2000px rgba(0,0,0,.5),0 0 24px rgba(124,92,255,.55)}
+#scan .scan-frame{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:76%;height:130px;border:3px solid var(--pri2);border-radius:16px;box-shadow:0 0 0 2000px rgba(0,0,0,.5),0 0 24px rgba(61,139,255,.55)}
 
 /* toast */
 #toast{position:fixed;left:16px;right:16px;bottom:calc(20px + var(--sab));z-index:300;display:flex;flex-direction:column;gap:9px;pointer-events:none}
-.tst{background:#191338;color:#fff;border-radius:14px;padding:13px 16px;font-size:14px;font-weight:500;box-shadow:0 12px 30px -8px rgba(0,0,0,.45);animation:up .28s ease}
+.tst{background:#1E1530;color:#fff;border-radius:14px;padding:13px 16px;font-size:14px;font-weight:500;box-shadow:0 12px 30px -8px rgba(0,0,0,.45);animation:up .28s ease}
 .tst.ok{background:linear-gradient(135deg,#166534,#15803D)}.tst.err{background:linear-gradient(135deg,#991B1B,#B91C1C)}.tst.warn{background:linear-gradient(135deg,#92400E,#B45309)} /* Fatia 38: texto branco legível (≥4,5:1) */
 
 /* pagamento / quantidade */
 .pg{border:1.5px solid var(--border);background:#fff;color:var(--txt2);border-radius:99px;padding:11px 17px;min-height:44px;font-size:13.5px;font-weight:600;cursor:pointer;transition:all .16s}
-.pg.on{background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;border-color:transparent;box-shadow:var(--glow)}
+.pg.on{background:linear-gradient(135deg,var(--pri-btn),var(--pri-btn2));color:#fff;border-color:transparent;box-shadow:var(--glow)}
+/* Fatia 54: simulador de cartão e maquininhas */
+.simm-valor{font-size:24px;font-weight:800;min-height:58px}
+.simm-taxa{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.simm-taxa .v{font-size:24px;font-weight:800;color:var(--pri-txt)}
+.simm-taxa .s{font-size:12px;color:var(--txt3)}
+.simm-box{border-left:4px solid var(--border);margin-top:10px}
+.simm-box.abs{border-left-color:var(--ok)}
+.simm-box.rep{border-left-color:var(--pri)}
+.simm-box .t{font-weight:800;font-size:14px;color:var(--txt)}
+.simm-box .t small{display:block;font-weight:500;font-size:11.5px;color:var(--txt3);margin-top:1px}
+.simm-row{display:flex;justify-content:space-between;align-items:center;font-size:13.5px;padding:5px 0;color:var(--txt2)}
+.simm-row b{color:var(--txt)}
+.simm-row.tot{border-top:1px solid var(--border2);margin-top:4px;padding-top:8px}
+.simm-row.tot b{font-size:17px;color:var(--ok-txt)}
+.simm-row .neg{color:var(--danger-txt)}
+.simm-row .pos{color:var(--warn-txt)}
+.simm-tab{width:100%;border-collapse:collapse;font-size:13px}
+.simm-tab th{text-align:left;font-size:11px;color:var(--txt3);font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:6px 4px;border-bottom:1px solid var(--border2)}
+.simm-tab td{padding:9px 4px;border-bottom:1px solid var(--border2);color:var(--txt)}
+.simm-tab tr.on td{background:var(--bg2);font-weight:800}
+.simm-tab tr{cursor:pointer}
+.simm-tab td:last-child,.simm-tab th:last-child{text-align:right}
+.mq-aviso{display:flex;gap:9px;align-items:flex-start;font-size:12.5px;color:var(--txt2);background:var(--bg2);border-radius:12px;padding:11px 13px;margin-bottom:12px;line-height:1.45}
+.mq-aviso i{color:var(--pri-txt);font-size:17px;flex-shrink:0}
+.mq-card{display:flex;justify-content:space-between;align-items:center;gap:10px;cursor:pointer}
+.mq-card .n{font-weight:800;font-size:15px;color:var(--txt)}
+.mq-card .d{font-size:12px;color:var(--txt3);margin-top:3px}
+.mq-g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mq-grade{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.mq-grade .lbl{margin:4px 0 4px;font-size:11px}
+.mq-grade .inp{min-height:46px;padding:10px 11px;font-size:15px}
 .qty-b{width:42px;height:42px;border-radius:12px;border:1.5px solid var(--border);background:#fff;font-size:20px;font-weight:700;color:var(--pri-txt);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .1s}
 .qty-b:active{transform:scale(.9);background:var(--bg2)}
 
 /* sucesso / QR / etiqueta */
 .success{text-align:center;padding:22px 10px 6px}
-.success-ic{width:84px;height:84px;border-radius:50%;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:42px;background:radial-gradient(circle at 50% 32%,#EEE9FB,#F7F5FD);box-shadow:0 14px 32px -10px rgba(91,63,232,.4),inset 0 0 0 1px var(--border2);animation:pop .4s ease}
+.success-ic{width:84px;height:84px;border-radius:50%;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:42px;background:radial-gradient(circle at 50% 32%,#E8EFFF,#F5F8FF);box-shadow:0 14px 32px -10px rgba(30,94,255,.4),inset 0 0 0 1px var(--border2);animation:pop .4s ease}
 .success-t{font-family:'Syne',sans-serif;font-weight:800;font-size:21px;letter-spacing:-.02em}
 .success-sub{font-size:13px;color:var(--txt3);margin-top:6px}
-.success-val{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--pri-txt);margin-top:4px;text-shadow:0 6px 18px rgba(91,63,232,.22)}
+.success-val{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--pri-txt);margin-top:4px;text-shadow:0 6px 18px rgba(30,94,255,.22)}
 .qr-box{display:flex;justify-content:center;margin:16px 0}
 .qr-box>div{background:#fff;padding:18px;border-radius:20px;box-shadow:var(--shadow),0 0 0 1px var(--border2)}
 .qr-hint{text-align:center;font-size:12.5px;color:var(--txt3);margin-bottom:16px}
 /* Fatia 38: a etiqueta é sempre "papel branco" (é o que vai pra impressora) —
    então o texto também é sempre escuro; antes herdava a cor do tema e no
    escuro ficava texto claro sobre branco (invisível). */
-#etq-label{background:#fff;color:#191338;border:1px solid var(--border2);border-radius:16px;padding:18px;text-align:center;max-width:300px;margin:10px auto;box-shadow:var(--shadow)}
+#etq-label{background:#fff;color:#1E1530;border:1px solid var(--border2);border-radius:16px;padding:18px;text-align:center;max-width:300px;margin:10px auto;box-shadow:var(--shadow)}
 #etq-nome{font-weight:700;font-size:15px;margin-bottom:2px}
-#etq-preco{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;margin:2px 0 8px;color:#191338}
+#etq-preco{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;margin:2px 0 8px;color:#1E1530}
 #etq-bc{max-width:100%}
 
 /* telas pequenas 320–360 */
@@ -430,7 +489,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
    (gradiente --pri/--pri2, igual ao .avatar-btn) pra se destacar como a
    ação principal do meio, no mesmo espírito de menu inferior com "+"
    central usado como referência de design nesta conta. */
-#bottom-nav .bn-plus{flex:0 0 auto;width:56px;height:56px;margin:-24px 8px 0;border-radius:50%;border:none;background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;box-shadow:0 8px 20px -6px rgba(91,63,232,.55),0 0 0 4px var(--bg);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .12s;flex-shrink:0}
+#bottom-nav .bn-plus{flex:0 0 auto;width:56px;height:56px;margin:-24px 8px 0;border-radius:50%;border:none;background:linear-gradient(135deg,var(--pri-btn),var(--pri-btn2));color:#fff;box-shadow:0 8px 20px -6px rgba(30,94,255,.55),0 0 0 4px var(--bg);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .12s;flex-shrink:0}
 #bottom-nav .bn-plus i{font-size:26px}
 #bottom-nav .bn-plus:active{transform:scale(.93)}
 [data-theme="dark"] #bottom-nav .bn-plus{box-shadow:0 8px 22px -6px color-mix(in oklab,var(--pri) 55%,transparent),0 0 0 4px var(--bg),0 0 20px -8px color-mix(in oklab,var(--pri) 45%,transparent)}
@@ -463,7 +522,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 #sheet-mais hr{border:none;border-top:1px solid var(--border2);margin:6px 0}
 
 /* ── Fatia 9: banner de instalação PWA ── */
-#install-banner{display:none;align-items:center;gap:12px;background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;border-radius:16px;padding:13px 15px;margin-bottom:16px;box-shadow:var(--glow)}
+#install-banner{display:none;align-items:center;gap:12px;background:linear-gradient(135deg,var(--pri-btn),var(--pri-btn2));color:#fff;border-radius:16px;padding:13px 15px;margin-bottom:16px;box-shadow:var(--glow)}
 #install-banner i{font-size:24px;flex-shrink:0}
 #install-banner .ib-txt{flex:1;font-size:12.5px;font-weight:600;line-height:1.35}
 #install-banner button{background:rgba(255,255,255,.18);border:1.5px solid rgba(255,255,255,.4);color:#fff;border-radius:10px;padding:8px 12px;font-size:12.5px;font-weight:700;cursor:pointer;flex-shrink:0}
@@ -489,7 +548,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 .fin-tit i{color:var(--pri-txt);font-size:17px}
 .fin-filtros{display:flex;gap:6px;flex-shrink:0}
 .fin-btn{border:1.5px solid var(--border);background:var(--bg2);color:var(--txt2);font-weight:700;font-size:11.5px;padding:6px 10px;border-radius:99px;cursor:pointer;transition:background .15s,color .15s,border-color .15s}
-.fin-btn.on{background:linear-gradient(135deg,var(--pri),var(--pri2));border-color:transparent;color:#fff}
+.fin-btn.on{background:linear-gradient(135deg,var(--pri-btn),var(--pri-btn2));border-color:transparent;color:#fff}
 .fin-periodo{font-size:11px;color:var(--txt3);margin:6px 0 14px}
 .fin-stats{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:18px}
 .fin-stat{background:var(--bg2);border-radius:14px;padding:12px}
@@ -523,7 +582,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 .rel-tabs-row{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;margin-bottom:14px}
 .rel-tabs-row::-webkit-scrollbar{display:none}
 .rel-tab{border:1.5px solid var(--border);background:var(--bg2);color:var(--txt2);font-weight:700;font-size:12px;padding:8px 13px;border-radius:99px;cursor:pointer;white-space:nowrap;flex-shrink:0}
-.rel-tab.on{background:linear-gradient(135deg,var(--pri),var(--pri2));border-color:transparent;color:#fff}
+.rel-tab.on{background:linear-gradient(135deg,var(--pri-btn),var(--pri-btn2));border-color:transparent;color:#fff}
 .rel-export-row{display:flex;gap:9px;margin-bottom:16px}
 .btn-rel-exp{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;border:1.5px solid var(--border);background:var(--card);color:var(--txt2);font-weight:700;font-size:12.5px;padding:11px;border-radius:13px;cursor:pointer}
 .btn-rel-exp:active{transform:scale(.97)}
@@ -602,7 +661,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 .id-perfis{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px}
 .id-perfil{display:flex;flex-direction:column;align-items:center;gap:6px;padding:13px 6px 11px;border-radius:16px;border:1.5px solid var(--border);background:var(--card);color:var(--txt);cursor:pointer;font-weight:700;font-size:13.5px;min-height:118px;text-align:center;word-break:break-word}
 .id-perfil:active{border-color:var(--pri);transform:scale(.98)}
-.id-av{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px;flex-shrink:0}
+.id-av{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--pri-btn),var(--pri-btn2));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px;flex-shrink:0}
 .id-perfil .rl{font-size:11.5px;color:var(--txt3);font-weight:600}
 .id-perfil.sem .id-av{background:var(--bg2);color:var(--txt2);border:1.5px dashed var(--border)}
 .id-aviso{font-size:12.5px;color:var(--txt2);background:var(--bg2);border-radius:12px;padding:10px 12px;margin-top:12px;line-height:1.45}
@@ -651,7 +710,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 .cart-cli-ok button{background:none;border:none;color:var(--pri-txt);font-weight:700;font-size:12px;cursor:pointer;padding:0 0 0 4px;font-family:inherit}
 /* Fatia 36: clientes */
 .cli-card{display:flex;align-items:center;gap:12px;padding:12px 13px}
-.cli-av{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.cli-av{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--pri-btn),var(--pri-btn2));color:#fff;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .cli-nome{font-weight:700;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cli-sub{font-size:12px;color:var(--txt3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cli-acoes{display:flex;gap:8px;margin-top:10px}
@@ -665,19 +724,19 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 .ag-d{background:none;border:0;border-radius:10px;padding:6px 0 5px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;color:var(--txt);font-size:13.5px;font-weight:600;min-height:44px}
 .ag-d.vazio{visibility:hidden}
 .ag-d.hoje{color:var(--pri-txt);font-weight:800}
-.ag-d.sel{background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff}
+.ag-d.sel{background:linear-gradient(135deg,var(--pri-btn),var(--pri-btn2));color:#fff}
 .ag-dots{display:flex;gap:2px;height:6px}
 .ag-dots i,.ag-leg i{width:6px;height:6px;border-radius:50%;display:inline-block}
 .ag-leg{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--txt3);margin:8px 2px 4px}
 .ag-leg span{display:inline-flex;align-items:center;gap:5px}
-.ag-dots i.os,.ag-leg i.os{background:#6D4AFF}
+.ag-dots i.os,.ag-leg i.os{background:var(--pri)} /* Fatia 56: OS em azul, igual à agenda do desktop */
 .ag-dots i.prod,.ag-leg i.prod{background:#16A34A}
 .ag-dots i.avulsa,.ag-leg i.avulsa{background:#3B82F6}
 .ag-dots i.atr,.ag-leg i.atr{background:#DC2626}
 .ag-d.sel .ag-dots i{box-shadow:0 0 0 1.5px #fff}
 .ag-ev{display:flex;gap:10px;align-items:flex-start;padding:12px 13px;cursor:pointer}
 .ag-ev .bar{width:4px;align-self:stretch;border-radius:4px;flex-shrink:0}
-.ag-ev .bar.os{background:#6D4AFF}.ag-ev .bar.prod{background:#16A34A}.ag-ev .bar.avulsa{background:#3B82F6}.ag-ev .bar.atr{background:#DC2626}
+.ag-ev .bar.os{background:var(--pri)}.ag-ev .bar.prod{background:#16A34A}.ag-ev .bar.avulsa{background:#3B82F6}.ag-ev .bar.atr{background:#DC2626}
 .ag-ev .btn{width:auto;padding:8px 12px;font-size:12.5px;margin:0;min-height:0;flex-shrink:0}
 /* Fatia 45: crediário */
 .crd-bar{background:var(--bg2);border-radius:99px;height:6px;overflow:hidden;margin-top:8px}
@@ -824,7 +883,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 .p-est-info b{color:var(--txt)}
 .p-est-info .osd-mini,#modal-osacao .osd-mini{background:none;border:none;color:var(--pri-txt);font-weight:700;font-size:12.5px;cursor:pointer;padding:4px 0;display:inline-flex;align-items:center;gap:4px}
 .ios-passo{display:flex;gap:13px;align-items:flex-start;margin-bottom:16px}
-.ios-passo-n{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ios-passo-n{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--pri-btn),var(--pri-btn2));color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .ios-passo-t{font-size:14px;font-weight:600;line-height:1.4;padding-top:3px}
 .ios-passo-ic{font-size:20px;color:var(--pri-txt);margin:0 3px}
 .ios-aviso{background:linear-gradient(135deg,#FEF6DA,#FEF3C7);border:1px solid #FCE38A;border-radius:12px;padding:11px 13px;font-size:12px;color:#8A5B00;margin-bottom:14px;line-height:1.4}
@@ -873,7 +932,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
    porque a tela Pessoas usa ela pro selo "Ativo"; só a OS Entregue passou
    pra cinza, como no desktop, pra não confundir com "Pronto"). */
 .os-badge.st-analise{background:#DBEAFE;color:#1E40AF}
-.os-badge.st-reparo{background:#EDE9FE;color:#5B21B6}
+.os-badge.st-reparo{background:#EDE9FE;color:#5B21B6} /* cor de STATUS (Em Reparo roxo, igual ao desktop) — não é a cor da marca */
 .os-badge.st-peca{background:#FEE2E2;color:#991B1B}
 .os-badge.st-pronto{background:#DCFCE7;color:#166534}
 .os-badge.st-agpag{background:#FEF3C7;color:#92600A}
@@ -907,7 +966,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 #sheet-os .osd-mini{background:none;border:none;color:var(--pri-txt);font-weight:700;font-size:12.5px;cursor:pointer;padding:4px 0;display:inline-flex;align-items:center;gap:4px;text-transform:none;letter-spacing:0}
 #sheet-os .osd-tl{position:relative;padding-left:16px}
 #sheet-os .osd-tl-i{position:relative;padding:0 0 11px}
-#sheet-os .osd-tl-i::before{content:"";position:absolute;left:-12px;top:5px;width:8px;height:8px;border-radius:50%;background:var(--pri)}
+#sheet-os .osd-tl-i::before{content:"";position:absolute;left:-12px;top:5px;width:8px;height:8px;border-radius:50%;background:var(--pri-btn)}
 #sheet-os .osd-tl-i::after{content:"";position:absolute;left:-9px;top:15px;bottom:-2px;width:2px;background:var(--border)}
 #sheet-os .osd-tl-i:last-child::after{display:none}
 #sheet-os .osd-tl-i .t1{font-size:13px;font-weight:700;color:var(--txt)}
@@ -936,9 +995,9 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
    (não aplica classe/z-index neles). ── */
 .tour-overlay-slice{position:fixed;background:rgba(8,8,20,.6);z-index:9990;pointer-events:auto;opacity:0;transition:opacity .18s ease}
 .tour-overlay-slice.tour-on{opacity:1}
-.tour-highlight{position:fixed;z-index:9991;pointer-events:none;border-radius:14px;outline:2.5px solid var(--pri);outline-offset:3px;box-shadow:0 0 0 5000px rgba(8,8,20,0),0 0 18px 2px rgba(91,63,232,.55);opacity:0;transition:top .22s ease,left .22s ease,width .22s ease,height .22s ease,opacity .18s ease;animation:tourPulseMob 1.8s ease-in-out infinite}
+.tour-highlight{position:fixed;z-index:9991;pointer-events:none;border-radius:14px;outline:2.5px solid var(--pri);outline-offset:3px;box-shadow:0 0 0 5000px rgba(8,8,20,0),0 0 18px 2px rgba(30,94,255,.55);opacity:0;transition:top .22s ease,left .22s ease,width .22s ease,height .22s ease,opacity .18s ease;animation:tourPulseMob 1.8s ease-in-out infinite}
 .tour-highlight.tour-on{opacity:1}
-@keyframes tourPulseMob{0%,100%{box-shadow:0 0 0 5000px rgba(8,8,20,0),0 0 14px 1px rgba(91,63,232,.4)}50%{box-shadow:0 0 0 5000px rgba(8,8,20,0),0 0 22px 4px rgba(91,63,232,.75)}}
+@keyframes tourPulseMob{0%,100%{box-shadow:0 0 0 5000px rgba(8,8,20,0),0 0 14px 1px rgba(30,94,255,.4)}50%{box-shadow:0 0 0 5000px rgba(8,8,20,0),0 0 22px 4px rgba(30,94,255,.75)}}
 .tour-popover{position:fixed;left:0;right:0;bottom:0;z-index:9992;background:var(--card);border-radius:20px 20px 0 0;padding:16px 18px calc(18px + var(--sab));box-shadow:0 -10px 40px rgba(0,0,0,.3);max-height:70vh;overflow-y:auto;transform:translateY(12px);opacity:0;pointer-events:none;transition:transform .22s ease,opacity .18s ease}
 .tour-popover.tour-on{transform:translateY(0);opacity:1;pointer-events:auto}
 .tour-popover-close{position:absolute;top:12px;right:14px;background:var(--bg2);border:none;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--txt2);font-size:15px;cursor:pointer}
@@ -948,11 +1007,11 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 .tour-popover-progress{font-size:11px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
 .tour-popover-dots{display:flex;gap:5px}
 .tour-popover-dot{width:6px;height:6px;border-radius:50%;background:var(--border)}
-.tour-popover-dot.tour-dot-on{background:var(--pri);width:16px;border-radius:4px}
+.tour-popover-dot.tour-dot-on{background:var(--pri-btn);width:16px;border-radius:4px}
 .tour-popover-actions{display:flex;gap:8px}
 .tour-popover-skip{display:block;width:100%;text-align:center;background:none;border:none;color:var(--txt3);font-size:12px;font-weight:600;margin-top:14px;padding:6px;cursor:pointer}
 .tour-btn{border:none;border-radius:11px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer}
-.tour-btn-pri{background:var(--pri);color:#fff}
+.tour-btn-pri{background:var(--pri-btn);color:#fff}
 .tour-btn-ghost{background:var(--bg2);color:var(--txt2)}
 .tour-btn-out{background:transparent;color:var(--pri-txt);border:1.5px solid var(--pri)}
 .tour-invite{position:fixed;left:12px;right:12px;bottom:calc(14px + var(--sab));z-index:9989;background:var(--card);border-radius:16px;padding:14px 16px;box-shadow:0 8px 30px rgba(0,0,0,.25);border:1px solid var(--border);opacity:0;transform:translateY(10px);pointer-events:none;transition:transform .2s ease,opacity .18s ease}
@@ -1088,8 +1147,8 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 
     <!-- Fatia 11A: ações rápidas que não cabiam nos 4 cards grandes -->
     <div class="qa-row">
-      <div class="qa-btn" data-tour="mobile-scanner" onclick="abrirScanner('estoque')"><i class="ti ti-scan"></i>Scanner</div>
-      <div class="qa-btn" onclick="abrir('os-lista')"><i class="ti ti-list-details"></i>Minhas OS</div>
+      <div class="qa-btn" id="qa-scanner" data-tour="mobile-scanner" onclick="abrirScanner('estoque')"><i class="ti ti-scan"></i>Scanner</div>
+      <div class="qa-btn" id="qa-minhas-os" onclick="abrir('os-lista')"><i class="ti ti-list-details"></i>Minhas OS</div>
     </div>
 
     <!-- Revisão 2026-09: dashboard financeiro (mesma lógica do desktop —
@@ -1357,6 +1416,45 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
     <button class="btn btn-ghost" style="margin-top:6px" onclick="abrir('receber')">Cancelar</button>
   </div>
 
+  <!-- Fatia 54: SIMULADOR DE CARTÃO (separado do cadastro de maquininhas, igual ao desktop) -->
+  <div class="wrap hidden" id="scr-simulador">
+    <div class="card">
+      <label class="lbl" style="margin-top:0">Maquininha</label>
+      <div class="filtro-row scroll" id="simm-maqs"></div>
+      <label class="lbl">Valor da venda (R$)</label>
+      <input class="inp simm-valor" id="simm-valor" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0,00" oninput="simularMob()">
+      <label class="lbl">Forma</label>
+      <div class="filtro-row" id="simm-formas"></div>
+      <div id="simm-parc-box"><label class="lbl">Parcelas</label><select class="inp" id="simm-parc" onchange="simularMob()"></select></div>
+    </div>
+    <div id="simm-res"></div>
+    <div id="simm-tabela"></div>
+  </div>
+
+  <!-- Fatia 54: MAQUININHAS (cadastro — só admin/gerente) -->
+  <div class="wrap hidden" id="scr-maquininhas">
+    <div class="mq-aviso"><i class="ti ti-info-circle"></i><span>As taxas valem para todo o sistema: simulador, PDV e pagamento de OS.</span></div>
+    <div id="mq-lista" class="mobile-list"></div>
+    <button class="btn" style="margin-top:6px" onclick="abrirFormMaquinaMob()"><i class="ti ti-plus"></i>Nova maquininha</button>
+  </div>
+  <div class="wrap hidden" id="scr-maquina">
+    <div class="card">
+      <label class="lbl" style="margin-top:0">Nome da maquininha *</label>
+      <input class="inp" id="mqf-nome" placeholder="Ex.: PagBank, Cielo, InfinitePay">
+      <div class="mq-g2">
+        <div><label class="lbl">Débito (%)</label><input class="inp" id="mqf-deb" type="number" inputmode="decimal" step="0.01" min="0" placeholder="ex: 1.99"></div>
+        <div><label class="lbl">Crédito 1x (%)</label><input class="inp" id="mqf-c1" type="number" inputmode="decimal" step="0.01" min="0" placeholder="ex: 3.99"></div>
+      </div>
+      <label class="lbl">Crédito parcelado (% por nº de parcelas)</label>
+      <div class="mq-grade" id="mqf-grade"></div>
+      <button class="btn btn-out" style="margin-top:14px" onclick="preencherTaxasPadraoMob()"><i class="ti ti-wand"></i>Preencher com média de mercado</button>
+      <div id="mqf-err" style="color:var(--danger-txt);font-size:12.5px;margin-top:10px;min-height:16px" role="status"></div>
+    </div>
+    <button class="btn btn-ok" id="mqf-salvar" onclick="salvarMaquinaMob()"><i class="ti ti-device-floppy"></i>Salvar maquininha</button>
+    <button class="btn btn-ghost" style="margin-top:6px" onclick="abrir('maquininhas')">Cancelar</button>
+    <button class="btn btn-ghost hidden" id="mqf-del" style="margin-top:6px;color:var(--danger-txt)" onclick="excluirMaquinaMob()"><i class="ti ti-trash"></i>Excluir maquininha</button>
+  </div>
+
   <!-- Fatia 41: ORÇAMENTOS -->
   <div class="wrap hidden" id="scr-orcs">
     <div class="bc-row" style="margin-bottom:10px">
@@ -1518,7 +1616,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
     <div id="estoque-list" class="mobile-list"></div>
   </div>
   <div class="wrap hidden" id="scr-venda">
-    <div class="aviso" style="background:#ede9fe;border-color:var(--pri);color:var(--pri-d)">
+    <div class="aviso" style="background:#E8EFFF;border-color:var(--pri);color:var(--pri-d)">
       <i class="ti ti-info-circle"></i>
       <div>Gera um link de pagamento InfinitePay (Pix + cartão). Precisa da conta InfinitePay conectada no sistema.</div>
     </div>
@@ -1605,7 +1703,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 
   <!-- Fatia 21: PESSOAS / USUÁRIOS DA EMPRESA (só Admin/Gerente) -->
   <div class="wrap hidden" id="scr-pessoas">
-    <div class="aviso" style="background:#ede9fe;border-color:var(--pri);color:var(--pri-d)">
+    <div class="aviso" style="background:#E8EFFF;border-color:var(--pri);color:var(--pri-d)">
       <i class="ti ti-info-circle"></i>
       <div>Funcionário acessa por <b>nome + PIN</b> (com mais de 5 pessoas, <b>só o PIN</b>) — não precisa de e-mail nem senha próprios.</div>
     </div>
@@ -1774,7 +1872,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 </div>
 
   <!-- BARRA DO CARRINHO -->
-  <div id="cart-bar" class="hidden" onclick="abrir('cart')" style="position:fixed;left:12px;right:12px;bottom:calc(14px + var(--sab));background:var(--pri);color:#fff;border-radius:14px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 8px 28px rgba(91,63,232,.4);z-index:60;cursor:pointer">
+  <div id="cart-bar" class="hidden" onclick="abrir('cart')" style="position:fixed;left:12px;right:12px;bottom:calc(14px + var(--sab));background:var(--pri-btn);color:#fff;border-radius:14px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 8px 28px rgba(30,94,255,.4);z-index:60;cursor:pointer">
     <span style="font-weight:700"><i class="ti ti-shopping-cart"></i> <span id="cart-count"></span></span>
     <span style="font-weight:800" id="cart-total"></span>
   </div>
@@ -1808,6 +1906,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
     <div class="sheet-it" id="sheet-vendas-mais" style="display:none" onclick="fecharMais();abrir('vendas')"><i class="ti ti-receipt"></i>Histórico de vendas</div>
     <div class="sheet-it" id="sheet-orcs-mais" style="display:none" onclick="fecharMais();abrir('orcs')"><i class="ti ti-file-dollar"></i>Orçamentos</div>
     <div class="sheet-it" id="sheet-caixa-mais" style="display:none" onclick="fecharMais();abrir('caixa')"><i class="ti ti-cash-register"></i>Caixa</div>
+    <div class="sheet-it" id="sheet-simulador-mais" style="display:none" onclick="fecharMais();abrir('simulador')"><i class="ti ti-calculator"></i>Simulador de cartão</div>
     </div>
   </div>
   <div class="sheet-grp" id="sheet-grp-servicos">
@@ -1833,6 +1932,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
     <div class="sheet-it" id="sheet-contas-mais" style="display:none" onclick="fecharMais();abrir('contas')"><i class="ti ti-file-invoice"></i>Contas a pagar</div>
     <div class="sheet-it" id="sheet-receber-mais" style="display:none" onclick="fecharMais();abrir('receber')"><i class="ti ti-receipt-2"></i>Contas a receber</div>
     <div class="sheet-it" id="sheet-cred-mais" style="display:none" onclick="fecharMais();abrir('cred')"><i class="ti ti-credit-card"></i>Crediário</div>
+    <div class="sheet-it" id="sheet-maquininhas-mais" style="display:none" onclick="fecharMais();abrir('maquininhas')"><i class="ti ti-device-mobile-dollar"></i>Maquininhas</div>
     <div class="sheet-it" id="sheet-relatorios-mais" style="display:none" onclick="fecharMais();abrir('relatorios')"><i class="ti ti-chart-bar"></i>Relatórios</div>
     </div>
   </div>
@@ -2502,6 +2602,7 @@ async function carregarContexto(){
   // baixada; se o SQL da Fatia 48 ainda não rodou, segue o fluxo antigo.
   await _carregarPinResumo();
   await _carregarUsuariosMob();
+  await _carregarPermsMob(); // Fatia 52: permissões configuradas da empresa (iguais ao desktop)
 }
 
 /* ── Fatia 9: RESUMO DO DIA (tela inicial) ──
@@ -2936,7 +3037,7 @@ function _renderRelMobProdutos(vendas){
   const c=$('rel-chart-prod');
   if(_relCharts.prod){ _relCharts.prod.destroy(); _relCharts.prod=null; }
   if(c && typeof Chart!=='undefined' && top8.length){
-    _relCharts.prod=new Chart(c,{type:'bar',data:{labels:top8.map(p=>p.nome),datasets:[{data:top8.map(p=>p.fat),backgroundColor:'#5B3FE8',borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:9}}},y:{ticks:{font:{size:10}}}}}});
+    _relCharts.prod=new Chart(c,{type:'bar',data:{labels:top8.map(p=>p.nome),datasets:[{data:top8.map(p=>p.fat),backgroundColor:'#1E5EFF',borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:9}}},y:{ticks:{font:{size:10}}}}}});
   }
   const el=$('rel-prod-lista'); if(!el) return;
   if(!ordFat.length){ el.innerHTML='<div class="fin-empty">Sem vendas de produto no período.</div>'; return; }
@@ -3134,7 +3235,56 @@ function abrirSuporte(){
    fica só lá). O histórico (OS e compras) é só leitura, pelas mesmas chaves
    que o desktop usa: ordens_servico.cliente_id e vendas.cliente_id (com o
    nome como plano B pras OS antigas criadas sem vínculo). */
-function _podeClientesMob(){ return !G.operador || G.operador.role!=='entregador'; }
+/* ══ Fatia 52: permissões por perfil IGUAIS às do desktop ══════════════
+   Cópia do canAccess()/ROLE_PERMS_DEFAULT do index.html (inclusive as
+   permissões que a empresa configurou em Configurações → Permissões, que
+   ficam em aparencia_config.role_permissions). Antes o celular tinha listas
+   fixas de perfil (o _canAccessLegado antigo do desktop), e por isso o
+   técnico via Venda rápida/Estoque/Vender e o operador via OS. */
+const ROLE_PERMS_DEFAULT_MOB = {
+  gerente:['dashboard','pdv','hist-vendas','caixas','crediario','orcamentos','simulador','os-hist','devolucoes','os','agenda','comissoes','produtos','estoque','fornecedores','reposicao','financeiro','clientes','relatorios','inteligencia','garantias','troca','crm','diagnostico','catalogo','contratos','configuracoes','usuarios','permissoes'],
+  operador:['pdv','hist-vendas','crediario','orcamentos','simulador','agenda','clientes','crm'],
+  tecnico:['os-hist','os','agenda','clientes','garantias','diagnostico']
+};
+async function _carregarPermsMob(){
+  try{
+    const r=await comTimeout(db.from('aparencia_config').select('role_permissions').eq('empresa_id',G.empresaId).maybeSingle(),'permissões');
+    G.rolePerms=(r && !r.error && r.data && r.data.role_permissions) || null;
+  }catch(_){ G.rolePerms=null; } // sem a configuração: usa o padrão (igual ao desktop)
+}
+function _rolePermsMob(){
+  const c=G.rolePerms||{};
+  return { gerente:c.gerente||ROLE_PERMS_DEFAULT_MOB.gerente, operador:c.operador||ROLE_PERMS_DEFAULT_MOB.operador, tecnico:c.tecnico||ROLE_PERMS_DEFAULT_MOB.tecnico };
+}
+function _canAccessMob(page){
+  const role = G.operador ? G.operador.role : null;
+  if(!role) return true; // ninguém identificado: sem restrição de perfil (como antes)
+  if(page==='entregas') return true;
+  if(page==='parados'||page==='dre') return ['admin','admin_master','gerente'].includes(role);
+  if(page==='maquininhas') return ['admin','admin_master','gerente'].includes(role); // Fatia 54 (igual ao desktop)
+  if(role==='admin_master'||role==='admin') return true;
+  if(role==='gerente'&&(page==='usuarios'||page==='aparencia')) return true;
+  if(page==='aparencia') return false;
+  return (_rolePermsMob()[role]||[]).includes(page);
+}
+function _podeVenderMob(){ return _canAccessMob('pdv'); }        // Venda rápida, Vender, carrinho, caixa
+function _podeEstoqueMob(){ return _canAccessMob('estoque'); }   // ver o estoque
+function _podeOSMob(){ return _canAccessMob('os'); }             // criar OS
+function _podeListaOSMob(){ return _canAccessMob('os')||_canAccessMob('os-hist'); }
+// Desktop: quem tem PDV mas não OS (operador) cobra as OS na fila "OS
+// aguardando pagamento" do PDV. No celular: "OS a receber", só Ag. Pagamento.
+function _osSoCobranca(){ return !_podeListaOSMob() && _podeVenderMob(); }
+const _ACESSO_TELA_MOB={
+  venda:()=>_podeVenderMob(), cart:()=>_podeVenderMob(), caixa:()=>_podeCaixaMob(),
+  estoque:()=>_podeVenderMob()||_podeEstoqueMob(), produto:()=>_podeGerirProdutos(),
+  os:()=>_podeOSMob(), 'os-lista':()=>_podeListaOSMob()||_osSoCobranca(),
+  vendas:()=>_podeVendasMob(), clientes:()=>_podeClientesMob(), cliente:()=>_podeClientesMob(),
+  contas:()=>_podeContasMob(), conta:()=>_podeContasMob(), receber:()=>_podeContasMob(), receb:()=>_podeContasMob(),
+  cred:()=>_podeCredMob(), garantias:()=>_podeGarantiasMob(), agenda:()=>_podeAgendaMob(),
+  orcs:()=>_podeOrcMob()||_podeAnalisarOrcMob(),
+  simulador:()=>_canAccessMob('simulador'), maquininhas:()=>_canAccessMob('maquininhas'), maquina:()=>_canAccessMob('maquininhas') // Fatia 54
+};
+function _podeClientesMob(){ return _canAccessMob('clientes'); } // Fatia 52
 const CLI_CAMPOS=[['clf-nome','nome'],['clf-tel','telefone'],['clf-cpf','cpf'],['clf-email','email'],['clf-nasc','data_nascimento'],['clf-cep','cep'],['clf-end','endereco'],['clf-num','numero'],['clf-bai','bairro'],['clf-cid','cidade'],['clf-est','estado'],['clf-lim','limite_credito'],['clf-obs','observacoes']];
 let _cliEditId=null;
 
@@ -3294,8 +3444,8 @@ function novaOSParaClienteMob(id){
 const HV_PERIODOS=[['hoje','Hoje'],['7d','7 dias'],['30d','30 dias'],['90d','90 dias']];
 const DEV_ESTORNO_LBL={dinheiro:'Dinheiro',credito_loja:'Crédito na loja',pix:'Pix',cartao:'Cartão'};
 let G_hvPer='hoje', G_hvForma='';
-function _podeVendasMob(){ return !G.operador || ['admin','admin_master','gerente','operador'].includes(G.operador.role); }
-function _podeDevolverMob(){ return !G.operador || ['admin','admin_master','gerente'].includes(G.operador.role); }
+function _podeVendasMob(){ return _canAccessMob('hist-vendas'); } // Fatia 52
+function _podeDevolverMob(){ return _canAccessMob('devolucoes'); } // Fatia 52
 function _hvNum(v){ return v&&v.numero?('#'+String(v.numero).padStart(4,'0')):('#'+String(v&&v.id||'').slice(-6).toUpperCase()); }
 function _hvIni(){
   const d=new Date(); d.setHours(0,0,0,0);
@@ -3622,7 +3772,7 @@ function _avisoPlanoMob(nome,plural){
 const ORC_ST={aberto:['Aberto','st-aguardando'],aguardando_analise:['Aguardando análise','st-aguardando'],em_analise:['Em análise','st-analise'],aguardando_cliente:['Aguardando cliente','st-reparo'],aprovado:['Aprovado','st-pronto'],convertido:['Convertido em venda','st-finalizada'],convertido_os:['Convertido em OS','st-finalizada'],recusado:['Recusado','st-cancelada'],expirado:['Expirado','st-outro']};
 const ORC_FILTROS=[['todos','Todos',null],['abertos','Abertos',['aberto']],['analise','Em análise',['aguardando_analise','em_analise']],['cliente','Aguardando cliente',['aguardando_cliente']],['aprovados','Aprovados',['aprovado']],['convertidos','Convertidos',['convertido','convertido_os']],['recusados','Recusados',['recusado','expirado']]];
 let G_orlFiltro='todos', _orcEditId=null, _orcTecId=null;
-function _podeOrcMob(){ return !G.operador || ['admin','admin_master','gerente','operador'].includes(G.operador.role); }
+function _podeOrcMob(){ return _canAccessMob('orcamentos'); } // Fatia 52
 function _podeAnalisarOrcMob(){ return !G.operador || ['admin','admin_master','gerente','tecnico'].includes(G.operador.role); }
 function _orcSoAnalise(){ return !!(G.operador && G.operador.role==='tecnico'); }
 function _orcNum(o){ return '#'+pad(o&&o.numero||0); }
@@ -4101,7 +4251,7 @@ const CP_CAT={fornecedor:'Fornecedor',aluguel:'Aluguel',salario:'Salário',servi
 const CP_FORMA={boleto:'Boleto',pix:'PIX',dinheiro:'Dinheiro',cartao:'Cartão',transferencia:'Transferência'};
 const CP_FILTROS=[['abertas','Em aberto'],['vencidas','Vencidas'],['7d','Próximos 7 dias'],['pagas','Pagas'],['todas','Todas']];
 let G_cpFiltro='abertas', _cpEditId=null;
-function _podeContasMob(){ return !G.operador || ['admin','admin_master','gerente'].includes(G.operador.role); }
+function _podeContasMob(){ return _canAccessMob('financeiro'); } // Fatia 52
 function _hojeLocalISO(d){ d=d||new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function _cpDataBR(iso){ return iso?String(iso).slice(0,10).split('-').reverse().join('/'):'—'; }
 function _cpVenc(c){
@@ -4371,7 +4521,7 @@ async function salvarContaMob(){
    • Celular: mês em calendário compacto (pontinhos por tipo), lista do dia
      tocado e bloco de atrasados; compromisso pode ser concluído direto. */
 let _agRef=new Date(), _agSel=null, _cmEditId=null;
-function _podeAgendaMob(){ return !G.operador || ['admin','admin_master','gerente','tecnico','operador'].includes(G.operador.role); }
+function _podeAgendaMob(){ return _canAccessMob('agenda'); } // Fatia 52
 function _agFinal(e){ return e.status==='Pronto'||e.status==='Entregue'||e.status==='concluido'; }
 async function abrirAgendaMob(){
   if(!_podeAgendaMob()){ notify('Seu perfil não acessa a agenda.','warn'); goHome(); return; }
@@ -4524,7 +4674,7 @@ async function _cmExcluirMob(){
    • Extra do celular: cobrar pelo WhatsApp (o desktop cobra por e-mail). */
 const CRD_FILTROS=[['todos','Todos'],['aberto','Em dia'],['inadimplente','Em atraso'],['quitado','Quitados']];
 let G_crdFiltro='todos', _crdBaixa=null;
-function _podeCredMob(){ return !G.operador || ['admin','admin_master','gerente','operador'].includes(G.operador.role); }
+function _podeCredMob(){ return _canAccessMob('crediario'); } // Fatia 52
 function _crdNorm(r){
   return {id:r.id,numero:r.numero||'CR',clienteId:r.cliente_id,clienteNome:r.cliente_nome||'Cliente',descricao:r.descricao||'',valorTotal:Number(r.valor_total)||0,entrada:Number(r.entrada)||0,parcelas:Array.isArray(r.parcelas)?r.parcelas:[],status:r.status,criado_em:r.criado_em};
 }
@@ -4693,7 +4843,7 @@ async function confirmarBaixaParcelaMob(){
 const GAR_ALERTA_MOB=15;
 const GAR_FILTROS=[['todas','Todas'],['ativa','Ativas'],['vencendo','Vencendo'],['vencida','Vencidas']];
 let G_garFiltro='todas';
-function _podeGarantiasMob(){ return !G.operador || ['admin','admin_master','gerente','tecnico'].includes(G.operador.role); }
+function _podeGarantiasMob(){ return _canAccessMob('garantias'); } // Fatia 52
 function _garCalc(inicioISO,dias){
   let ini=new Date(inicioISO); if(isNaN(ini.getTime())) ini=new Date();
   const hoje=new Date(); hoje.setHours(0,0,0,0);
@@ -5022,7 +5172,7 @@ async function salvarReceberMob(){
    Quem pode: quem tem PDV no desktop por padrão (admin/gerente/operador de
    caixa) — o técnico e o entregador não mexem no caixa. */
 const CX_FORMA_LBL={dinheiro:'Dinheiro',pix:'Pix',cartao:'Cartão',crediario:'Crediário',fiado:'Fiado',link:'Link/QR',misto:'Misto'};
-function _podeCaixaMob(){ return !G.operador || ['admin','admin_master','gerente','operador'].includes(G.operador.role); }
+function _podeCaixaMob(){ return _canAccessMob('pdv'); } // Fatia 52: no desktop o caixa fica no PDV
 
 async function _carregarResumoCaixaMob(){
   // relê qual caixa está aberto agora (pode ter sido aberto/fechado em outro aparelho)
@@ -5671,7 +5821,37 @@ function aplicarPaletaApp(p){
   if(p.c1) s.setProperty('--pri',p.c1);
   if(p.c2) s.setProperty('--pri2',p.c2);
   if(p.dark) s.setProperty('--pri-d',p.dark);
+  _ajustarCorMarcaApp();
 }
+/* Fatia 56: mesma regra do desktop (_ajustarCoresMarcaContraste): a partir da
+   cor da marca calcula a cor de TEXTO (--pri-txt) e o fundo dos botões com
+   texto branco (--pri-btn/--pri-btn2), com contraste ≥4,5:1 no tema atual.
+   Com o azul padrão os valores são os mesmos do index.html. */
+function _hexRgbApp(h){ h=String(h||'').trim().replace('#',''); if(/^[0-9a-f]{3}$/i.test(h)) h=h.split('').map(c=>c+c).join(''); if(!/^[0-9a-f]{6}$/i.test(h)) return null; return [0,2,4].map(i=>parseInt(h.slice(i,i+2),16)); }
+function _rgbHexApp(c){ return '#'+c.map(v=>Math.round(Math.max(0,Math.min(255,v))).toString(16).padStart(2,'0')).join('').toUpperCase(); }
+function _lumApp(c){ const f=v=>{ v/=255; return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4); }; return 0.2126*f(c[0])+0.7152*f(c[1])+0.0722*f(c[2]); }
+function _contrApp(a,b){ const x=_lumApp(a), y=_lumApp(b); return (Math.max(x,y)+0.05)/(Math.min(x,y)+0.05); }
+function _mixApp(a,b,t){ return a.map((v,i)=>v+(b[i]-v)*t); }
+let _corMarcaChaveApp='';
+function _ajustarCorMarcaApp(){
+  const root=document.documentElement;
+  const pri=(root.style.getPropertyValue('--pri')||getComputedStyle(root).getPropertyValue('--pri')||'').trim();
+  const dark=root.getAttribute('data-theme')==='dark';
+  const chave=pri+'|'+dark; if(chave===_corMarcaChaveApp) return; _corMarcaChaveApp=chave;
+  const base=_hexRgbApp(pri);
+  if(!base){ ['--pri-txt','--pri-btn','--pri-btn2'].forEach(v=>root.style.removeProperty(v)); return; }
+  const fundos=(dark?['#070B1A','#0B1228','#101A38']:['#FFFFFF','#F5F2EC','#EFE9DF']).map(_hexRgbApp);
+  const alvo=dark?[255,255,255]:[0,0,0];
+  let txt=base; for(let i=1;i<=20 && Math.min(...fundos.map(f=>_contrApp(txt,f)))<4.5;i++) txt=_mixApp(base,alvo,i/20);
+  let btn=base; for(let i=1;i<=20 && _contrApp([255,255,255],btn)<4.5;i++) btn=_mixApp(base,[0,0,0],i/20);
+  root.style.setProperty('--pri-txt',_rgbHexApp(txt));
+  root.style.setProperty('--pri-btn',_rgbHexApp(btn));
+  root.style.setProperty('--pri-btn2',_rgbHexApp(_mixApp(btn,[0,0,0],.12)));
+}
+try{
+  new MutationObserver(()=>_ajustarCorMarcaApp()).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme','style']});
+  _ajustarCorMarcaApp();
+}catch(_){}
 async function carregarMarca(empId){
   try{
     const {data}=await comTimeout(db.from('aparencia_config').select('config_marca').eq('empresa_id',empId).maybeSingle(),'marca');
@@ -5711,10 +5891,12 @@ function _marcarNavAtivo(scr){
 }
 function abrir(scr){
   if(G.bloqueio && scr!=='plano') return; // Fatia 33: acesso suspenso — só a tela de plano/pagamento
-  ['home','produto','os','os-ok','os-lista','venda','venda-ok','estoque','cart','etiqueta','pgpendente','pessoas','entregas','perfil','relatorios','plano','caixa','clientes','cliente','vendas','contas','conta','orcs','orc','orca','orct','receber','receb','garantias','cred','agenda','compromisso'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
+  if(_ACESSO_TELA_MOB[scr] && !_ACESSO_TELA_MOB[scr]()){ notify('Seu perfil não acessa esta tela.','warn'); return; } // Fatia 52: mesmas permissões do desktop
+  ['home','produto','os','os-ok','os-lista','venda','venda-ok','estoque','cart','etiqueta','pgpendente','pessoas','entregas','perfil','relatorios','plano','caixa','clientes','cliente','vendas','contas','conta','orcs','orc','orca','orct','receber','receb','garantias','cred','agenda','compromisso','simulador','maquininhas','maquina'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
   $('scr-'+scr).classList.remove('hidden');
   $('btn-back').classList.remove('hidden');
-  $('scr-title').textContent = ({produto:'Cadastrar Produto',os:'OS Rápida','os-lista':'Minhas OS',venda:'Venda Rápida',estoque:'Estoque',cart:'Carrinho',etiqueta:'Etiqueta',pgpendente:'Pagamento',pessoas:'Pessoas da Empresa',entregas:'Entregas',perfil:'Perfil',relatorios:'Relatórios',plano:'Plano e assinatura',caixa:'Caixa',clientes:'Clientes',cliente:'Cliente',vendas:'Histórico de vendas',contas:'Contas a pagar',conta:'Lançar conta',orcs:'Orçamentos',orc:'Orçamento',orca:'Orçamento — assistência',orct:'Análise técnica',receber:'Contas a receber',receb:'Lançar conta a receber',garantias:'Garantias',cred:'Crediário',agenda:'Agenda',compromisso:'Compromisso'})[scr]||scr;
+  $('scr-title').textContent = ({produto:'Cadastrar Produto',os:'OS Rápida','os-lista':'Minhas OS',venda:'Venda Rápida',estoque:'Estoque',cart:'Carrinho',etiqueta:'Etiqueta',pgpendente:'Pagamento',pessoas:'Pessoas da Empresa',entregas:'Entregas',perfil:'Perfil',relatorios:'Relatórios',plano:'Plano e assinatura',caixa:'Caixa',clientes:'Clientes',cliente:'Cliente',vendas:'Histórico de vendas',contas:'Contas a pagar',conta:'Lançar conta',orcs:'Orçamentos',orc:'Orçamento',orca:'Orçamento — assistência',orct:'Análise técnica',receber:'Contas a receber',receb:'Lançar conta a receber',garantias:'Garantias',cred:'Crediário',agenda:'Agenda',compromisso:'Compromisso',simulador:'Simulador de cartão',maquininhas:'Maquininhas',maquina:'Maquininha'})[scr]||scr;
+  if(scr==='os-lista' && _osSoCobranca()) $('scr-title').textContent='OS a receber'; // Fatia 52
   if(scr==='produto' && !G._abrindoEdicaoProduto && _prodEdit) _prodModoCriacao(); // Fatia 32
   if(scr==='estoque') abrirEstoque();
   if(scr==='cart') renderCart();
@@ -5733,13 +5915,15 @@ function abrir(scr){
   if(scr==='garantias') abrirGarantiasMob(); // Fatia 44
   if(scr==='cred') abrirCredMob(); // Fatia 45
   if(scr==='agenda') abrirAgendaMob(); // Fatia 46
+  if(scr==='simulador') abrirSimuladorMob(); // Fatia 54
+  if(scr==='maquininhas') abrirMaquininhasMob(); // Fatia 54
   if(scr!=='pgpendente') pararPollingCobranca();
   _marcarNavAtivo(scr);
 }
 function goHome(){
   if(G.bloqueio){ abrir('plano'); $('btn-back').classList.add('hidden'); return; } // Fatia 33
   pararPollingCobranca();
-  ['produto','os','os-ok','os-lista','venda','venda-ok','estoque','cart','etiqueta','pgpendente','pessoas','entregas','perfil','relatorios','plano','caixa','clientes','cliente','vendas','contas','conta','orcs','orc','orca','orct','receber','receb','garantias','cred','agenda','compromisso'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
+  ['produto','os','os-ok','os-lista','venda','venda-ok','estoque','cart','etiqueta','pgpendente','pessoas','entregas','perfil','relatorios','plano','caixa','clientes','cliente','vendas','contas','conta','orcs','orc','orca','orct','receber','receb','garantias','cred','agenda','compromisso','simulador','maquininhas','maquina'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
   $('scr-home').classList.remove('hidden');
   $('btn-back').classList.add('hidden');
   $('scr-title').textContent='Início';
@@ -5947,7 +6131,7 @@ async function buscarPorCodigoEstoque(cod){
    desses perfis (ROLE_PERMS_DEFAULT). O cadastro rápido continua como era. */
 const PROD_STATUS_LISTA=[['ativo','Ativo (à venda)'],['novo','Novo'],['seminovo','Seminovo'],['usado','Usado'],['recondicionado','Recondicionado'],['troca','Troca'],['vitrine','Vitrine'],['defeito','Defeito'],['manutencao','Em manutenção'],['fora_linha','Fora de linha'],['inativo','Inativo']];
 function _prodStatusLbl(v){ const x=PROD_STATUS_LISTA.find(s=>s[0]===v); return x?x[1].replace(' (à venda)',''):(v||'—'); }
-function _podeGerirProdutos(){ return !G.operador || ['admin','admin_master','gerente'].includes(G.operador.role); }
+function _podeGerirProdutos(){ return _canAccessMob('produtos'); } // Fatia 52
 let _prodEdit=null; // produto em edição (linha completa do banco) ou null = cadastro
 
 function _prodModoCriacao(){
@@ -6317,16 +6501,22 @@ const renderOsListaDebounced=debounce(q=>renderOsLista(q),120);
 function renderOsLista(q){
   const c=$('os-lista-list'); if(!c) return;
   const fEl=$('osl-filtros');
-  if(fEl) fEl.innerHTML=OSL_FILTROS.map(([k,l])=>`<button class="pg motion-btn${G_osFiltro===k?' on':''}" onclick="setFiltroOsLista('${k}')">${l}</button>`).join('');
+  const soCobranca=_osSoCobranca(); // Fatia 52: operador — só as OS aguardando pagamento (fila do PDV no desktop)
+  if(fEl) fEl.innerHTML=soCobranca?'':OSL_FILTROS.map(([k,l])=>`<button class="pg motion-btn${G_osFiltro===k?' on':''}" onclick="setFiltroOsLista('${k}')">${l}</button>`).join('');
   const busca=(q||'').toLowerCase();
   let list=(G.osCache||[]);
-  if(G_osFiltro==='andamento') list=list.filter(o=>!OS_FINAIS.includes(o.status));
+  if(soCobranca) list=list.filter(o=>o.status==='Ag. Pagamento');
+  else if(G_osFiltro==='andamento') list=list.filter(o=>!OS_FINAIS.includes(o.status));
   else if(G_osFiltro==='pagamento') list=list.filter(o=>o.status==='Pronto'||o.status==='Ag. Pagamento');
   else if(G_osFiltro==='finalizadas') list=list.filter(o=>OS_FINAIS.includes(o.status));
   if(busca) list=list.filter(o=>((o.cliente_nome||'')+' '+(o.numero||'')+' '+(o.aparelho||'')).toLowerCase().includes(busca));
   if(!list.length){
     c.innerHTML = busca
       ? '<div class="mobile-empty motion-fade-in"><i class="ti ti-search-off"></i><div class="me-t">Nenhuma OS encontrada com esse termo.</div></div>'
+      : soCobranca
+        ? '<div class="mobile-empty motion-fade-in"><i class="ti ti-cash-off"></i><div class="me-t">Nenhuma OS aguardando pagamento.</div></div>'
+      : !_podeOSMob()
+        ? '<div class="mobile-empty motion-fade-in"><i class="ti ti-clipboard-off"></i><div class="me-t">Nenhuma OS nesta situação.</div></div>'
       : (G_osFiltro!=='todas' && (G.osCache||[]).length)
         ? '<div class="mobile-empty motion-fade-in"><i class="ti ti-clipboard-off"></i><div class="me-t">Nenhuma OS nesta situação.</div></div>'
         : `<div class="mobile-empty motion-fade-in"><i class="ti ti-clipboard-off"></i><div class="me-t">Nenhuma OS aberta.</div><button class="btn" style="width:auto;padding:11px 22px;margin:6px auto 0" onclick="abrir('os')"><i class="ti ti-plus"></i>Criar OS rápida</button></div>`;
@@ -6776,6 +6966,172 @@ function _taxaMaq(maq,forma,parc){ // _taxaParaForma() do desktop
   const t=maq.taxas_credito||{};
   return Number(t[parc]??t[String(parc)])||0;
 }
+/* ══════════════════════════════════════════════════════════════════════
+   FATIA 54 — SIMULADOR DE CARTÃO e MAQUININHAS no celular
+   Mesma conta e mesma tabela (maquininhas_cartao) do desktop
+   (renderSimulador/simularCartao/salvarMaquina no index.html). O cadastro
+   de maquininhas ficou separado do simulador e só admin/gerente mexe
+   nas taxas (decisão do usuário). Quem acessa o simulador segue a mesma
+   permissão 'simulador' do desktop (gerente e operador por padrão).
+   ══════════════════════════════════════════════════════════════════════ */
+const SIM_MAX_PARC_MOB=18;
+function _taxasPadraoMob(){ // _taxasPadrao() do desktop
+  const cred={};
+  for(let n=1;n<=SIM_MAX_PARC_MOB;n++){
+    if(n===1) cred[n]=3.99;
+    else if(n<=6) cred[n]=+(3.99+(n-1)*0.55).toFixed(2);
+    else cred[n]=+(7.5+(n-6)*0.45).toFixed(2);
+  }
+  return {taxa_debito:1.99, taxas_credito:cred};
+}
+function _pct(v){ return (Number(v)||0).toFixed(2).replace('.',',')+'%'; }
+const _simm={maqId:null, forma:'credito', parc:1};
+async function abrirSimuladorMob(){
+  $('simm-res').innerHTML='<div class="skel skel-card"></div>'; $('simm-tabela').innerHTML='';
+  G.maquinas=null; // relê: alguém pode ter mudado as taxas no desktop
+  await _carregarMaquininhas();
+  const maqs=G.maquinas||[];
+  if(!_simm.maqId || !maqs.some(m=>m.id===_simm.maqId)) _simm.maqId=maqs[0]?maqs[0].id:null;
+  const sel=$('simm-parc');
+  sel.innerHTML=Array.from({length:SIM_MAX_PARC_MOB},(_,i)=>`<option value="${i+1}">${i+1}x</option>`).join('');
+  sel.value=String(_simm.parc);
+  _renderSimmControles();
+  simularMob();
+}
+function _renderSimmControles(){
+  const maqs=G.maquinas||[];
+  $('simm-maqs').innerHTML=maqs.length
+    ? maqs.map(m=>`<button type="button" class="pg${m.id===_simm.maqId?' on':''}" onclick="_simmMaq('${esc(m.id)}')">${esc(m.nome||'Maquininha')}</button>`).join('')
+    : '<span style="font-size:13px;color:var(--txt3)">Nenhuma cadastrada</span>';
+  $('simm-formas').innerHTML=[['debito','Débito'],['credito','Crédito']].map(([k,l])=>`<button type="button" class="pg${_simm.forma===k?' on':''}" onclick="_simmForma('${k}')">${l}</button>`).join('');
+  $('simm-parc-box').style.display=_simm.forma==='credito'?'':'none';
+}
+function _simmMaq(id){ _simm.maqId=id; _renderSimmControles(); simularMob(); }
+function _simmForma(f){ _simm.forma=f; _renderSimmControles(); simularMob(); }
+function _simmParc(n){ _simm.parc=n; $('simm-parc').value=String(n); simularMob(); $('simm-res')?.scrollIntoView({behavior:'smooth',block:'start'}); }
+// Mesma conta do simularCartao() do desktop
+function _calcSimMob(valor,taxa,parcelas){
+  const t=taxa/100;
+  const recebeAbs=valor*(1-t);
+  const totalRep=t<1?valor/(1-t):valor;
+  return {recebeAbs, custoAbs:valor-recebeAbs, parcAbs:valor/parcelas, totalRep, parcRep:totalRep/parcelas, acresRep:totalRep-valor};
+}
+function simularMob(){
+  const out=$('simm-res'), tab=$('simm-tabela'); if(!out||!tab) return;
+  const maqs=G.maquinas||[];
+  const maq=maqs.find(m=>m.id===_simm.maqId)||maqs[0]||null;
+  if(!maq){
+    out.innerHTML=`<div class="card mobile-empty"><i class="ti ti-device-mobile-dollar"></i><div class="me-t">Nenhuma maquininha cadastrada.</div>${_canAccessMob('maquininhas')?`<button class="btn" style="width:auto;padding:11px 20px;margin:8px auto 0" onclick="abrir('maquininhas')"><i class="ti ti-plus"></i>Cadastrar maquininha</button>`:'<div style="font-size:12.5px;margin-top:6px">Peça a um administrador ou gerente para cadastrar em Mais → Maquininhas.</div>'}</div>`;
+    tab.innerHTML=''; return;
+  }
+  _simm.parc=parseInt($('simm-parc').value)||1;
+  const valor=parseFloat($('simm-valor').value)||0;
+  const forma=_simm.forma, parcelas=forma==='debito'?1:_simm.parc;
+  const taxa=_taxaMaq(maq,forma,parcelas);
+  if(valor<=0){ out.innerHTML='<div class="card" style="text-align:center;color:var(--txt3);font-size:13.5px">Digite o valor da venda para simular.</div>'; tab.innerHTML=''; return; }
+  const c=_calcSimMob(valor,taxa,parcelas);
+  out.innerHTML=`
+    <div class="card simm-taxa"><div><div class="s">${esc(maq.nome||'')} · ${forma==='debito'?'Débito':parcelas+'x no crédito'}</div><div class="s">Taxa da maquininha</div></div><div class="v">${_pct(taxa)}</div></div>
+    <div class="card simm-box rep">
+      <div class="t">Repassar a taxa ao cliente<small>Cliente paga a mais e você recebe o valor cheio</small></div>
+      <div class="simm-row"><span>Cliente paga</span><b>${_brl(c.totalRep)}</b></div>
+      ${parcelas>1?`<div class="simm-row"><span>${parcelas}x de</span><b>${_brl(c.parcRep)}</b></div>`:''}
+      <div class="simm-row"><span>Acréscimo pro cliente</span><b class="pos">+ ${_brl(c.acresRep)}</b></div>
+      <div class="simm-row tot"><span><b>Você recebe</b></span><b>${_brl(valor)}</b></div>
+    </div>
+    <div class="card simm-box abs">
+      <div class="t">Loja absorve a taxa<small>Cliente paga o valor da venda</small></div>
+      <div class="simm-row"><span>Cliente paga</span><b>${_brl(valor)}</b></div>
+      ${parcelas>1?`<div class="simm-row"><span>${parcelas}x de</span><b>${_brl(c.parcAbs)}</b></div>`:''}
+      <div class="simm-row"><span>Taxa da maquininha</span><b class="neg">- ${_brl(c.custoAbs)}</b></div>
+      <div class="simm-row tot"><span><b>Você recebe</b></span><b>${_brl(c.recebeAbs)}</b></div>
+    </div>`;
+  if(forma!=='credito'){ tab.innerHTML=''; return; }
+  let linhas='';
+  for(let n=1;n<=SIM_MAX_PARC_MOB;n++){
+    const tx=_taxaMaq(maq,'credito',n), k=_calcSimMob(valor,tx,n);
+    linhas+=`<tr class="${n===parcelas?'on':''}" onclick="_simmParc(${n})"><td>${n}x <span style="color:var(--txt3);font-size:11.5px">${_pct(tx)}</span></td><td>${n>1?`${n}x ${_brl(k.parcRep)}<br><span style="color:var(--txt3);font-size:11.5px">total ${_brl(k.totalRep)}</span>`:_brl(k.totalRep)}</td><td>${_brl(k.recebeAbs)}</td></tr>`;
+  }
+  tab.innerHTML=`<div class="home-secao-t" style="margin-top:16px">Todas as parcelas no crédito</div>
+    <div class="card" style="padding:8px 12px"><table class="simm-tab"><thead><tr><th>Parcelas</th><th>Cobrar repassando</th><th>Recebe absorvendo</th></tr></thead><tbody>${linhas}</tbody></table>
+    <div style="font-size:11.5px;color:var(--txt3);margin-top:8px">Toque numa linha para ver o detalhe.</div></div>`;
+}
+
+/* ── Maquininhas (cadastro) ── */
+let _mqEditId=null;
+async function abrirMaquininhasMob(){
+  const c=$('mq-lista'); if(!c) return;
+  c.innerHTML='<div class="skel skel-card"></div><div class="skel skel-card"></div>';
+  G.maquinas=null;
+  await _carregarMaquininhas();
+  const maqs=G.maquinas||[];
+  c.innerHTML=maqs.length ? maqs.map(m=>{
+    const t=m.taxas_credito||{};
+    const c12=t[12]??t['12'];
+    return `<div class="card mq-card" role="button" tabindex="0" onclick="abrirFormMaquinaMob('${esc(m.id)}')">
+      <div style="min-width:0"><div class="n">${esc(m.nome||'Maquininha')}</div>
+      <div class="d">Débito ${_pct(m.taxa_debito)} · Crédito 1x ${_pct(t[1]??t['1'])}${c12!=null?' · 12x '+_pct(c12):''}</div></div>
+      <i class="ti ti-chevron-right" style="color:var(--txt3);font-size:20px"></i></div>`;
+  }).join('') : '<div class="mobile-empty"><i class="ti ti-device-mobile-dollar"></i><div class="me-t">Nenhuma maquininha cadastrada ainda.</div></div>';
+}
+function _preencherGradeMob(taxas){
+  const tc=taxas.taxas_credito||{};
+  $('mqf-deb').value=taxas.taxa_debito??'';
+  $('mqf-c1').value=tc[1]??tc['1']??'';
+  let h='';
+  for(let n=2;n<=SIM_MAX_PARC_MOB;n++){
+    const v=tc[n]??tc[String(n)]??'';
+    h+=`<div><label class="lbl" for="mqf-c${n}">${n}x (%)</label><input class="inp" id="mqf-c${n}" type="number" inputmode="decimal" step="0.01" min="0" value="${v}"></div>`;
+  }
+  $('mqf-grade').innerHTML=h;
+}
+function abrirFormMaquinaMob(id){
+  if(!_canAccessMob('maquininhas')){ notify('Só administrador ou gerente altera as maquininhas.','warn'); return; }
+  const m=id?(G.maquinas||[]).find(x=>x.id===id):null;
+  _mqEditId=m?m.id:null;
+  abrir('maquina');
+  $('scr-title').textContent=m?'Editar maquininha':'Nova maquininha';
+  $('mqf-nome').value=m?(m.nome||''):'';
+  $('mqf-err').textContent='';
+  $('mqf-del').classList.toggle('hidden',!m);
+  _preencherGradeMob(m?{taxa_debito:m.taxa_debito,taxas_credito:m.taxas_credito||{}}:_taxasPadraoMob());
+}
+function preencherTaxasPadraoMob(){ _preencherGradeMob(_taxasPadraoMob()); notify('Taxas preenchidas com a média de mercado. Ajuste e salve.','ok'); }
+function _lerGradeMob(){
+  const cred={1:parseFloat($('mqf-c1').value)||0};
+  for(let n=2;n<=SIM_MAX_PARC_MOB;n++) cred[n]=parseFloat($('mqf-c'+n)?.value)||0;
+  return {taxa_debito:parseFloat($('mqf-deb').value)||0, taxas_credito:cred};
+}
+async function salvarMaquinaMob(){
+  if(!_canAccessMob('maquininhas')){ notify('Só administrador ou gerente altera as maquininhas.','warn'); return; }
+  const nome=($('mqf-nome').value||'').trim();
+  if(!nome){ $('mqf-err').textContent='Dê um nome para a maquininha.'; return; }
+  const t=_lerGradeMob();
+  if([t.taxa_debito,...Object.values(t.taxas_credito)].some(v=>!(v>=0&&v<100))){ $('mqf-err').textContent='As taxas precisam estar entre 0% e 99,99%.'; return; }
+  const btn=$('mqf-salvar'); btn.disabled=true;
+  try{
+    let r;
+    if(_mqEditId) r=await db.from('maquininhas_cartao').update({nome,taxa_debito:t.taxa_debito,taxas_credito:t.taxas_credito}).eq('id',_mqEditId).eq('empresa_id',G.empresaId);
+    else r=await db.from('maquininhas_cartao').insert({empresa_id:G.empresaId,nome,taxa_debito:t.taxa_debito,taxas_credito:t.taxas_credito});
+    if(r.error) throw r.error;
+    G.maquinas=null;
+    notify('Maquininha salva!','ok');
+    abrir('maquininhas');
+  }catch(e){ $('mqf-err').textContent=msgAmigavel(e,'Não foi possível salvar.'); }
+  finally{ btn.disabled=false; }
+}
+async function excluirMaquinaMob(){
+  if(!_canAccessMob('maquininhas')||!_mqEditId) return;
+  if(!confirm('Excluir esta maquininha? Ela some do simulador, do PDV e do pagamento de OS.')) return;
+  try{
+    const {error}=await db.from('maquininhas_cartao').delete().eq('id',_mqEditId).eq('empresa_id',G.empresaId);
+    if(error) throw error;
+    G.maquinas=null; _mqEditId=null;
+    notify('Maquininha excluída.','ok');
+    abrir('maquininhas');
+  }catch(e){ $('mqf-err').textContent=msgAmigavel(e,'Não foi possível excluir.'); }
+}
+
 async function abrirReceberOS(){
   const o=_osDetalheAtual; if(!o) return;
   if(!_podeReceberOS()){ notify('Seu perfil não recebe pagamentos. Peça pra quem está no caixa.','warn'); return; }
@@ -7866,7 +8222,11 @@ function aplicarModoPerfil(){
   const entregador=_isEntregador(), adminGer=_isAdminGer();
   _atualizarAvatarPerfil();
 
-  ['bn-vender','bn-os'].forEach(id=>{ const el=$(id); if(el) el.style.display=entregador?'none':''; });
+  // Fatia 52: mesmas permissões do desktop (PDV → Vender; OS → OS)
+  { const el=$('bn-vender'); if(el) el.style.display=(!entregador&&_podeVenderMob())?'':'none'; }
+  { const el=$('bn-os'); if(el) el.style.display=(!entregador&&_podeOSMob())?'':'none'; }
+  { const el=$('qa-scanner'); if(el) el.style.display=(_podeVenderMob()||_podeEstoqueMob())?'':'none'; }
+  { const el=$('qa-minhas-os'); if(el){ el.style.display=(_podeListaOSMob()||_osSoCobranca())?'':'none'; el.innerHTML=_osSoCobranca()?'<i class="ti ti-cash"></i>OS a receber':'<i class="ti ti-list-details"></i>Minhas OS'; } }
   // Fatia 38: cadastrar produto só pra admin/gerente — mesma regra do desktop
   // (Produtos/Estoque são só desses perfis no ROLE_PERMS_DEFAULT).
   { const el=$('bn-produto'); if(el) el.style.display=_podeGerirProdutos()?'':'none'; }
@@ -7880,13 +8240,13 @@ function aplicarModoPerfil(){
   }
   bnEnt.style.display=entregador?'':'none';
 
-  const sv=$('sheet-venda-rapida'); if(sv) sv.style.display=entregador?'none':'';
-  const so=$('sheet-minhas-os'); if(so) so.style.display=entregador?'none':'';
+  const sv=$('sheet-venda-rapida'); if(sv) sv.style.display=(!entregador&&_podeVenderMob())?'':'none'; // Fatia 52
+  const so=$('sheet-minhas-os'); if(so){ so.style.display=(!entregador&&(_podeListaOSMob()||_osSoCobranca()))?'':'none'; so.innerHTML=_osSoCobranca()?'<i class="ti ti-cash"></i>OS a receber':'<i class="ti ti-list-details"></i>Minhas OS'; } // Fatia 52
   // Revisão 2026-09: "OS Rápida"/"Ver Estoque"/"Cadastrar Produto" saíram
   // dos cards da Home e vieram pra folha Mais — mesma regra de sempre pro
   // Entregador (não vende, não cria OS nem cadastra produto).
-  const sor=$('sheet-os-rapida'); if(sor) sor.style.display=entregador?'none':'';
-  const sve=$('sheet-ver-estoque'); if(sve) sve.style.display=entregador?'none':'';
+  const sor=$('sheet-os-rapida'); if(sor) sor.style.display=(!entregador&&_podeOSMob())?'':'none'; // Fatia 52
+  const sve=$('sheet-ver-estoque'); if(sve) sve.style.display=(!entregador&&_podeEstoqueMob())?'':'none'; // Fatia 52
   const scp=$('sheet-cadastrar-produto'); if(scp) scp.style.display=_podeGerirProdutos()?'':'none'; // Fatia 38
   const se=$('sheet-entregas-mais');
   if(se){
@@ -7910,7 +8270,9 @@ function aplicarModoPerfil(){
   const sagm=$('sheet-agenda-mais'); if(sagm) sagm.style.display=(!entregador&&_podeAgendaMob()&&_temFeatureMob('technical.delivery_schedule'))?'':'none'; // Fatia 46 (desktop: agenda p/ admin/gerente/técnico/operador + plano)
   const scpm=$('sheet-contas-mais'); if(scpm) scpm.style.display=(!entregador&&_podeContasMob())?'':'none'; // Fatia 40 (desktop: financeiro só admin/gerente)
   const svm=$('sheet-vendas-mais'); if(svm) svm.style.display=(!entregador&&_podeVendasMob())?'':'none'; // Fatia 39 (desktop: hist-vendas p/ admin/gerente/operador)
-  const scm=$('sheet-caixa-mais'); if(scm) scm.style.display=(!entregador&&_podeCaixaMob())?'':'none'; // Fatia 34 (desktop: caixa fica no PDV — admin/gerente/operador) // Fatia 33 (desktop: "Fazer Upgrade" só admin/gerente)
+  const scm=$('sheet-caixa-mais'); if(scm) scm.style.display=(!entregador&&_podeCaixaMob())?'':'none';
+  const ssim=$('sheet-simulador-mais'); if(ssim) ssim.style.display=(!entregador&&_canAccessMob('simulador'))?'':'none'; // Fatia 54
+  const smaq=$('sheet-maquininhas-mais'); if(smaq) smaq.style.display=(!entregador&&_canAccessMob('maquininhas'))?'':'none'; // Fatia 54 // Fatia 34 (desktop: caixa fica no PDV — admin/gerente/operador) // Fatia 33 (desktop: "Fazer Upgrade" só admin/gerente)
   _atualizarGruposMais(); // Fatia 47
 
   const rg=$('resumo-grid'); if(rg) rg.style.display=entregador?'none':'';
@@ -7932,7 +8294,7 @@ function aplicarModoPerfil(){
       entHome=document.createElement('div');
       entHome.id='home-entregador-resumo'; entHome.className='mod';
       entHome.setAttribute('onclick',"abrir('entregas')");
-      entHome.innerHTML=`<div class="mod-ic" style="background:#ede9fe;color:#5B3FE8">🚚</div>
+      entHome.innerHTML=`<div class="mod-ic" style="background:#E8EFFF;color:#1E5EFF">🚚</div>
         <div><div class="mod-t">Minhas Entregas</div><div class="mod-d" id="ent-resumo-txt">Ver entregas atribuídas a você</div></div>
         <i class="ti ti-chevron-right"></i>`;
       $('scr-home').appendChild(entHome);
