@@ -8,21 +8,57 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="icon" type="image/png" href="/icon-192.png">
+<!-- Fatia 57: tema claro/escuro igual ao sistema. Usa a escolha salva no
+     MISU SYS (se for o mesmo aparelho) ou o tema do aparelho do cliente, e
+     declara isso pro navegador não escurecer a página por conta própria. -->
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1E5EFF">
+<script>
+(function(){
+  function temaAtual(){
+    var t=null; try{ t=localStorage.getItem('misu_tema'); }catch(e){}
+    if(t!=='dark'&&t!=='light') t=(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';
+    return t;
+  }
+  document.documentElement.setAttribute('data-theme',temaAtual());
+  try{ matchMedia('(prefers-color-scheme: dark)').addEventListener('change',function(){
+    document.documentElement.setAttribute('data-theme',temaAtual());
+    if(typeof window._aoTrocarTema==='function') window._aoTrocarTema();
+  }); }catch(e){}
+})();
+/* Cor de texto legível a partir de uma cor de status/marca: mantém o tom e
+   escurece (tema claro) ou clareia (tema escuro) até 4,5:1 sobre os cartões. */
+function corTxt(cor){
+  var h=String(cor||'').trim().replace('#','');
+  if(/^[0-9a-f]{3}$/i.test(h)) h=h.split('').map(function(c){return c+c;}).join('');
+  if(!/^[0-9a-f]{6}$/i.test(h)) return cor;
+  var c=[0,2,4].map(function(i){return parseInt(h.slice(i,i+2),16);});
+  var dark=document.documentElement.getAttribute('data-theme')==='dark';
+  var lum=function(x){var f=function(v){v/=255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4);};return 0.2126*f(x[0])+0.7152*f(x[1])+0.0722*f(x[2]);};
+  var con=function(a,b){var x=lum(a),y=lum(b);return (Math.max(x,y)+0.05)/(Math.min(x,y)+0.05);};
+  var fundos=dark?[[7,11,26],[14,23,48],[19,32,74],[40,48,80]]:[[255,255,255],[245,242,236],[239,233,223],[228,224,218]]; /* inclui os fundos tingidos dos selos */
+  var alvo=dark?[255,255,255]:[0,0,0], t=c;
+  for(var i=1;i<=20&&Math.min.apply(null,fundos.map(function(f){return con(t,f);}))<4.5;i++) t=c.map(function(v,k){return v+(alvo[k]-v)*i/20;});
+  return '#'+t.map(function(v){return Math.round(v).toString(16).padStart(2,'0');}).join('');
+}
+</script>
 <style>
-:root{--pri:#1E5EFF;--pri2:#3D8BFF;--bg:#070B1A;--card:#0E1730;--card2:#13204A;--txt:#EAF0FF;--txt2:#A8BAE8;--txt3:#6B7FB8;--border:#1B2A55;--success:#10B981;--warn:#F59E0B;--danger:#EF4444}
+:root{color-scheme:only light;--pri:#1E5EFF;--pri2:#3D8BFF;--pri-btn2:#1A4FD9;--pri-txt:#1A52E0;--bg:#F5F2EC;--card:#FFFFFF;--card2:#EFE9DF;--txt:#1E1530;--txt2:#54487A;--txt3:#665A88;--border:#E6DED3;--success:#10B981;--warn:#F59E0B;--danger:#EF4444;--success-txt:#05704F;--warn-txt:#92400E;--danger-txt:#B91C1C;--sombra:0 8px 28px rgba(74,54,110,.10);--brilho:rgba(30,94,255,.10)}
+/* Fatia 57: tema escuro (o visual de antes) — mesmas cores do sistema */
+[data-theme="dark"]{color-scheme:dark;--pri-txt:#8AB0FF;--bg:#070B1A;--card:#0E1730;--card2:#13204A;--txt:#EAF0FF;--txt2:#A8BAE8;--txt3:#93A4D6;--border:#1B2A55;--success-txt:#4ADE80;--warn-txt:#FBBF24;--danger-txt:#FCA5A5;--sombra:0 8px 32px rgba(0,0,0,.35);--brilho:rgba(30,94,255,.18)}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;background-image:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(30,94,255,.18),transparent)}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;background-image:radial-gradient(ellipse 80% 50% at 50% -10%,var(--brilho),transparent)}
 .wrap{max-width:560px;margin:0 auto;padding:28px 18px 60px}
 .header{text-align:center;margin-bottom:26px}
 .header img{width:74px;height:74px;object-fit:contain;filter:drop-shadow(0 4px 18px rgba(30,94,255,.5))}
 .emp-nome{font-family:'Syne',sans-serif;font-weight:800;font-size:19px;margin-top:10px;letter-spacing:.5px}
 .emp-sub{font-size:12px;color:var(--txt3);margin-top:2px}
-.card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:20px;margin-bottom:14px;box-shadow:0 8px 32px rgba(0,0,0,.35)}
-.os-num{font-family:'Syne',sans-serif;font-weight:800;font-size:24px;color:var(--pri2)}
+.card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:20px;margin-bottom:14px;box-shadow:var(--sombra)}
+.os-num{font-family:'Syne',sans-serif;font-weight:800;font-size:24px;color:var(--pri-txt)}
 .status-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 16px;border-radius:99px;font-size:13px;font-weight:700;margin-top:8px}
 .aparelho{font-size:15px;font-weight:600;margin-top:14px}
 .defeito{font-size:13px;color:var(--txt2);margin-top:4px;line-height:1.5}
-.prog-bar{height:10px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden;margin-top:16px;border:1px solid var(--border)}
+.prog-bar{height:10px;background:var(--card2);border-radius:99px;overflow:hidden;margin-top:16px;border:1px solid var(--border)}
 .prog-fill{height:100%;background:linear-gradient(90deg,var(--pri),var(--pri2));border-radius:99px;transition:width 1s ease;box-shadow:0 0 12px rgba(30,94,255,.6)}
 .prog-txt{font-size:11px;color:var(--txt3);margin-top:5px;text-align:right}
 .sec-lbl{font-size:10.5px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
@@ -38,13 +74,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);min-
 .info-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:13.5px}
 .info-row:last-child{border-bottom:none}
 .info-row b{font-size:15px}
-.btn-wpp{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;border-radius:14px;background:#25D366;color:#fff;font-weight:700;font-size:14.5px;text-decoration:none;font-family:'DM Sans',sans-serif;border:none;cursor:pointer;margin-top:6px;box-shadow:0 6px 20px rgba(37,211,102,.3)}
+.btn-wpp{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;border-radius:14px;background:#15803D;color:#fff;font-weight:700;font-size:14.5px;text-decoration:none;font-family:'DM Sans',sans-serif;border:none;cursor:pointer;margin-top:6px;box-shadow:0 6px 20px rgba(37,211,102,.3)}
 .center{text-align:center;padding:60px 20px}
 .center i{font-size:48px;color:var(--txt3);opacity:.5}
 .center p{color:var(--txt2);margin-top:14px;font-size:14px}
 .atualizado{text-align:center;font-size:11px;color:var(--txt3);margin-top:16px}
 .footer{text-align:center;margin-top:26px;font-size:11px;color:var(--txt3)}
-.footer b{color:var(--pri2)}
+.footer b{color:var(--pri-txt)}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 .loading i{animation:pulse 1.2s infinite;font-size:40px;color:var(--pri)}
 .midia-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
@@ -54,8 +90,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);min-
 .aut-card{border:1.5px solid var(--warn);border-radius:14px;padding:16px;margin-bottom:12px;background:rgba(245,158,11,.06)}
 .aut-card.resp{border-color:var(--border);background:var(--card)}
 .sign-pad{width:100%;height:160px;background:#fff;border-radius:12px;border:2px dashed var(--border);touch-action:none;cursor:crosshair;margin-top:10px}
-.btn-aceitar{flex:1;padding:14px;border:none;border-radius:12px;background:var(--success);color:#fff;font-weight:700;font-size:14.5px;cursor:pointer}
-.btn-recusar{flex:1;padding:14px;border:1.5px solid var(--danger);border-radius:12px;background:transparent;color:var(--danger);font-weight:700;font-size:14.5px;cursor:pointer}
+.btn-aceitar{flex:1;padding:14px;border:none;border-radius:12px;background:#047857;color:#fff;font-weight:700;font-size:14.5px;cursor:pointer}
+.btn-recusar{flex:1;padding:14px;border:1.5px solid var(--danger);border-radius:12px;background:transparent;color:var(--danger-txt);font-weight:700;font-size:14.5px;cursor:pointer}
 .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9999;display:none;align-items:center;justify-content:center;padding:20px}
 .lightbox.open{display:flex}
 .lightbox img,.lightbox video{max-width:100%;max-height:90vh;border-radius:10px}
@@ -72,7 +108,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);min-
 /* ── Fatia 12: microinteração no botão de WhatsApp/CTAs ── */
 .btn-wpp{transition:transform .12s ease,filter .15s}
 .btn-wpp:active{transform:scale(.98)}
-.btn-avisar{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;border-radius:14px;background:transparent;border:1.5px solid var(--pri2);color:var(--pri2);font-weight:700;font-size:14px;text-decoration:none;font-family:'DM Sans',sans-serif;cursor:pointer;margin-top:10px;transition:transform .12s ease,background .15s}
+.btn-avisar{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;border-radius:14px;background:transparent;border:1.5px solid var(--pri-txt);color:var(--pri-txt);font-weight:700;font-size:14px;text-decoration:none;font-family:'DM Sans',sans-serif;cursor:pointer;margin-top:10px;transition:transform .12s ease,background .15s}
 .btn-avisar:active{transform:scale(.98);background:rgba(61,139,255,.1)}
 
 /* ── Fatia 12: skeleton loading (mesmo padrão visual do resto do MISU SYS) ── */
@@ -83,7 +119,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);min-
 
 /* ── Fatia 12: copiar link (rodapé) ── */
 .copiar-link{display:inline-flex;align-items:center;gap:5px;color:var(--txt3);font-size:11px;background:none;border:none;cursor:pointer;margin-top:8px;font-family:inherit;padding:4px}
-.copiar-link:active{color:var(--pri2)}
+.copiar-link:active{color:var(--pri-txt)}
 #copia-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(14px);background:#0E1730;color:#EAF0FF;border:1px solid var(--border);padding:10px 18px;border-radius:12px;font-size:13px;font-weight:600;box-shadow:0 12px 30px rgba(0,0,0,.4);z-index:400;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none}
 #copia-toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
@@ -201,11 +237,11 @@ async function carregarGarantia(token){
       <div class="sec-lbl"><i class="ti ti-shield"></i> Garantia</div>
       <div class="info-row"><span style="color:var(--txt2)">Cobertura</span><b>${g.dias} dias</b></div>
       <div class="info-row"><span style="color:var(--txt2)">Início</span><b>${g.inicio}</b></div>
-      <div class="info-row"><span style="color:var(--txt2)">Válida até</span><b style="color:${cor}">${g.validade}</b></div>
+      <div class="info-row"><span style="color:var(--txt2)">Válida até</span><b style="color:${corTxt(cor)}">${g.validade}</b></div>
 
       <div style="margin-top:12px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <span style="font-size:13px;font-weight:700;color:${cor}">
+          <span style="font-size:13px;font-weight:700;color:${corTxt(cor)}">
             <i class="ti ti-${vencida?'shield-off':'clock'}"></i> ${txtRestante}
           </span>
           ${!vencida?`<span style="font-size:11px;color:var(--txt2)">${pct}%</span>`:''}
@@ -218,7 +254,7 @@ async function carregarGarantia(token){
       <div style="font-size:11.5px;color:var(--txt3);margin-top:12px;line-height:1.5">Esta garantia cobre apenas o serviço realizado, conforme as condições informadas pela loja.</div>
 
       ${g.termo?`
-      <button onclick="verTermoGarantiaCliente()" style="margin-top:14px;width:100%;padding:10px;border-radius:9px;border:1px solid var(--pri2,#3b5eff);background:transparent;color:var(--pri2,#3b5eff);font-weight:600;font-size:13px;cursor:pointer;font-family:inherit">
+      <button onclick="verTermoGarantiaCliente()" style="margin-top:14px;width:100%;padding:10px;border-radius:9px;border:1px solid var(--pri-txt);background:transparent;color:var(--pri-txt);font-weight:600;font-size:13px;cursor:pointer;font-family:inherit">
         <i class="ti ti-file-certificate"></i> Ver termo de garantia
       </button>`:''}
     </div>
@@ -287,13 +323,13 @@ function render(o){
           <div class="os-num">OS ${esc(o.numero)}</div>
           <div style="font-size:12px;color:var(--txt3)">Aberta em ${fmtDT(o.criado_em)}</div>
         </div>
-        <span class="status-pill" style="color:${st.cor};background:${st.bg};border:1.5px solid ${st.cor}44">
+        <span class="status-pill" style="color:${corTxt(st.cor)};background:${st.bg};border:1.5px solid ${st.cor}44">
           <i class="ti ${st.icone}"></i> ${esc(st.label||o.status)}
         </span>
       </div>
-      <div class="aparelho"><i class="ti ti-device-mobile" style="color:var(--pri2)"></i> ${esc(o.aparelho||'')}</div>
+      <div class="aparelho"><i class="ti ti-device-mobile" style="color:var(--pri-txt)"></i> ${esc(o.aparelho||'')}</div>
       ${o.defeito?`<div class="defeito">${esc(o.defeito)}</div>`:''}
-      ${st.msg?`<div style="margin-top:12px;padding:12px 14px;background:${st.bg};border-radius:11px;font-size:13px;color:${st.cor};font-weight:600">
+      ${st.msg?`<div style="margin-top:12px;padding:12px 14px;background:${st.bg};border-radius:11px;font-size:13px;color:${corTxt(st.cor)};font-weight:600">
         ${esc(st.msg)}
       </div>`:''}
       <div class="prog-bar"><div class="prog-fill" style="width:${o.progresso||0}%"></div></div>
@@ -314,7 +350,7 @@ function render(o){
       <div class="sec-lbl"><i class="ti ti-file-invoice"></i> Detalhes</div>
       ${o.diagnostico?`<div class="info-row"><span style="color:var(--txt2)">Diagnóstico</span><span style="max-width:60%;text-align:right;font-size:12.5px">${esc(o.diagnostico)}</span></div>`:''}
       ${prazo?`<div class="info-row"><span style="color:var(--txt2)">Previsão de entrega</span><b>${prazo}</b></div>`:''}
-      ${temValor?`<div class="info-row"><span style="color:var(--txt2)">Valor do serviço</span><b style="color:var(--pri2)">${fmt(o.total)}</b></div>`:''}
+      ${temValor?`<div class="info-row"><span style="color:var(--txt2)">Valor do serviço</span><b style="color:var(--pri-txt)">${fmt(o.total)}</b></div>`:''}
     </div>`:''}
 
     ${(acessoriosTxt||obsPublica)?`
@@ -342,7 +378,7 @@ function render(o){
       ${o.autorizacoes.map(a=>renderAutorizacao(a)).join('')}
     </div>`:''}
 
-    ${linkPagamento?`<a class="btn-wpp" style="background:linear-gradient(135deg,var(--pri),var(--pri2));box-shadow:0 6px 20px rgba(30,94,255,.35)" href="${esc(linkPagamento)}" target="_blank">
+    ${linkPagamento?`<a class="btn-wpp" style="background:linear-gradient(135deg,var(--pri),var(--pri-btn2));box-shadow:0 6px 20px rgba(30,94,255,.35)" href="${esc(linkPagamento)}" target="_blank">
       <i class="ti ti-credit-card" style="font-size:19px"></i> Pagar agora
     </a>`:''}
 
@@ -356,13 +392,16 @@ function render(o){
   `;
 }
 
+// Fatia 57: ao trocar o tema do aparelho, redesenha (as cores de status são calculadas por tema)
+window._aoTrocarTema=function(){ if(_osData){ render(_osData); carregarGarantia(token); try{ initSignPads(); }catch(_){} } };
+
 function renderAutorizacao(a){
   if(a.status==='pendente'){
     return `<div class="aut-card" id="aut-${a.id}">
       <div style="font-weight:700;font-size:14.5px;margin-bottom:5px">${esc(a.titulo)}</div>
       <div style="font-size:13px;color:var(--txt2);line-height:1.5;margin-bottom:8px">${esc(a.descricao)}</div>
-      ${a.valor?`<div style="font-size:16px;font-weight:800;color:var(--pri2);margin-bottom:10px">${fmt(a.valor)}</div>`:''}
-      <div style="font-size:12px;color:var(--warn);font-weight:600;margin-bottom:4px"><i class="ti ti-info-circle"></i> Assine abaixo para confirmar sua decisão:</div>
+      ${a.valor?`<div style="font-size:16px;font-weight:800;color:var(--pri-txt);margin-bottom:10px">${fmt(a.valor)}</div>`:''}
+      <div style="font-size:12px;color:var(--warn-txt);font-weight:600;margin-bottom:4px"><i class="ti ti-info-circle"></i> Assine abaixo para confirmar sua decisão:</div>
       <canvas class="sign-pad" id="sign-${a.id}"></canvas>
       <div style="display:flex;justify-content:space-between;margin-top:4px">
         <button onclick="limparAssinatura('${a.id}')" style="background:none;border:none;color:var(--txt3);font-size:12px;cursor:pointer"><i class="ti ti-eraser"></i> Limpar</button>
@@ -374,7 +413,7 @@ function renderAutorizacao(a){
       </div>
     </div>`;
   }
-  const cor=a.status==='aceita'?'var(--success)':'var(--danger)';
+  const cor=a.status==='aceita'?'var(--success-txt)':'var(--danger-txt)';
   const ico=a.status==='aceita'?'ti-circle-check':'ti-circle-x';
   const txt=a.status==='aceita'?'Você autorizou':'Você recusou';
   return `<div class="aut-card resp">
