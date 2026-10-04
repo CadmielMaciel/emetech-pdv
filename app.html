@@ -3743,6 +3743,17 @@ function _temFeatureMob(key){
   if(key in e) return e[key]===true;
   return true;
 }
+/* Fatia 62b: mesmo mapa do desktop (PAGE_FEATURE) para o que existe no
+   celular. Entregas: Básico sem entregas; o app do entregador (Minhas
+   Entregas) só no plano que libera 'logistics.driver_app'. */
+function _osPlanoMob(){ return _temFeatureMob('technical.service_orders'); }
+function _entregasPlanoMob(){ return _temFeatureMob('technical.delivery_schedule'); }
+function _appEntregadorMob(){ return _temFeatureMob('logistics.driver_app'); }
+function _planoTelaMob(scr){
+  if(scr==='entregas') return _isEntregador()?_appEntregadorMob():_entregasPlanoMob();
+  if(scr==='os'||scr==='os-lista') return _osPlanoMob();
+  return true;
+}
 function _avisoPlanoMob(nome,plural){
   return `<div class="aviso" style="margin-top:8px"><i class="ti ti-lock"></i><div>${esc(nome)} ${plural?'não fazem':'não faz'} parte do plano da sua empresa. <a href="#" onclick="fecharModalOSAcao();abrir('plano');return false" style="color:inherit;font-weight:800;text-decoration:underline">Ver planos</a></div></div>`;
 }
@@ -5383,6 +5394,9 @@ const PLANOS_MOB={
   enterprise:{id:'enterprise',nome:'Enterprise',preco:299,limites:{usuarios:999,caixas:999,produtos:999999,os_mes:999999},
     features:{pdv:true,os:true,clientes:true,produtos:true,estoque:true,dashboard:true,relatorios:true,crediario:true,fornecedores:true,orcamentos:true,devolucoes:true,inteligencia:true,whatsapp:true,multi_caixa:true,api:true}}
 };
+// Fatia 62: no banco o Básico é 'basic' (tabela planos); aqui o id é 'basico'.
+// Apelido invisível (não entra em Object.keys) para os dois nomes acharem o mesmo plano.
+Object.defineProperty(PLANOS_MOB,'basic',{get(){return PLANOS_MOB.basico;},enumerable:false});
 const PLANO_FEAT_LBL={pdv:'PDV (vendas)',os:'Ordens de serviço',clientes:'Clientes',produtos:'Produtos',estoque:'Estoque',dashboard:'Painel',relatorios:'Relatórios avançados',crediario:'Crediário',fornecedores:'Fornecedores',orcamentos:'Orçamentos',devolucoes:'Devoluções',inteligencia:'Inteligência (IA)',whatsapp:'WhatsApp',multi_caixa:'Vários caixas',api:'API'};
 const PLANO_COR_MOB={basico:'16,185,129',pro:'30,94,255',enterprise:'245,158,11'};
 // Fatia 38: cor do plano como TEXTO, separada por tema (a cor "cheia" acima
@@ -5892,6 +5906,7 @@ function _marcarNavAtivo(scr){
 function abrir(scr){
   if(G.bloqueio && scr!=='plano') return; // Fatia 33: acesso suspenso — só a tela de plano/pagamento
   if(_ACESSO_TELA_MOB[scr] && !_ACESSO_TELA_MOB[scr]()){ notify('Seu perfil não acessa esta tela.','warn'); return; } // Fatia 52: mesmas permissões do desktop
+  if(!_planoTelaMob(scr)){ notify(scr==='entregas'&&_isEntregador()?'O app do entregador não faz parte do plano da loja. Fale com o responsável.':'Este recurso não faz parte do plano da sua empresa.','warn'); return; } // Fatia 62b
   ['home','produto','os','os-ok','os-lista','venda','venda-ok','estoque','cart','etiqueta','pgpendente','pessoas','entregas','perfil','relatorios','plano','caixa','clientes','cliente','vendas','contas','conta','orcs','orc','orca','orct','receber','receb','garantias','cred','agenda','compromisso','simulador','maquininhas','maquina'].forEach(s=>$('scr-'+s)?.classList.add('hidden'));
   $('scr-'+scr).classList.remove('hidden');
   $('btn-back').classList.remove('hidden');
@@ -7809,13 +7824,13 @@ function resolverOperadorDispositivo(){
   if(G.pinNovo){ _identResolver(); return; } // Fatia 49: PIN de 6 dígitos
   const salvoId=localStorage.getItem(_empresaOpKey());
   if(salvoId){
-    const u=(G.usuarios||[]).find(x=>x.id===salvoId && x.ativo);
+    const u=(G.usuarios||[]).find(x=>x.id===salvoId && x.ativo && x.role!=='entregador'); // Fatia 65
     if(u){ G.operador=u; aplicarModoPerfil(); goHome(); return; }
   }
   abrirEscolhaOperador();
 }
 function abrirEscolhaOperador(){
-  const lista=(G.usuarios||[]).filter(u=>u.ativo);
+  const lista=(G.usuarios||[]).filter(u=>u.ativo && u.role!=='entregador'); // Fatia 65
   if(!lista.length){
     // Sem usuários cadastrados ainda — não trava o app, segue sem perfil restrito (como antes desta fatia).
     G.operador=null; aplicarModoPerfil(); goHome(); return;
@@ -7885,7 +7900,9 @@ function _dispositivoPin(){
   }
   return 'cel:'+id;
 }
-function _usuariosAtivos(){ return (G.usuarios||[]).filter(u=>u.ativo); }
+// Fatia 65: o entregador não entra pelo PIN no aparelho da loja — só pelo
+// app dele (entregador.html, CPF + senha). Fica fora da lista e das contas.
+function _usuariosAtivos(){ return (G.usuarios||[]).filter(u=>u.ativo && u.role!=='entregador'); }
 function _identModo(){ return _usuariosAtivos().length>IDENT_LIMITE_PERFIS?'pin':'perfis'; }
 function _temPinNovo(u){ return !!(u && u.pin_definido_em); }
 function _nenhumAdminComPin(){ return !_usuariosAtivos().some(u=>PIN_PERFIS_ADMIN.includes(u.role)&&_temPinNovo(u)); }
@@ -7910,6 +7927,9 @@ function _msgErroPin(res,padrao){
     case 'formato': return 'PIN fraco: use 6 números, sem sequência (123456) e sem repetir (111111).';
     case 'indisponivel': return 'PIN indisponível, escolha outro.'+esp;
     case 'usuario_nao_encontrado': return 'Usuário não encontrado.';
+    case 'sem_recurso': return 'O app do entregador não faz parte do plano da sua empresa.'; // Fatia 65
+    case 'nao_entregador': return 'Este usuário não tem o perfil Entregador.';
+    case 'inativo': return 'Ative o usuário antes de gerar o convite.';
   }
   return padrao;
 }
@@ -8054,6 +8074,9 @@ async function _idEnviar(){
     return;
   }
   _id.ocupado=false; _idTecladoHab();
+  if(res && res.ok && res.usuario && res.usuario.role==='entregador'){ // Fatia 65
+    _id.pin=''; _idDots(); _idMsg('Entregador entra pelo app dele: '+location.origin+'/entregador.html (CPF e senha).'); return;
+  }
   if(res && res.ok && res.usuario){
     const u=(G.usuarios||[]).find(x=>x.id===res.usuario.id) || {...res.usuario,ativo:true,pin_definido_em:new Date().toISOString()};
     _id.pin=''; _idDots(); _idMsg('');
@@ -8184,7 +8207,7 @@ async function _pinAdmConfirmar(){
 let _pinshowLista=[], _pinshowResolve=null;
 function _fmtPin(p){ p=String(p||''); return p.slice(0,3)+' '+p.slice(3); }
 function _mostrarPins(lista){
-  _pinshowLista=(lista||[]).filter(u=>u && u.pin);
+  _pinshowLista=(lista||[]).filter(u=>u && u.pin && u.role!=='entregador'); // Fatia 65
   const n=_pinshowLista.length;
   $('pinshow-titulo').textContent = n===1 ? ('PIN de '+_pinshowLista[0].nome) : ('PINs gerados ('+n+')');
   $('pinshow-lista').innerHTML=_pinshowLista.map((u,i)=>`<div class="pinshow-row">
@@ -8272,9 +8295,9 @@ function aplicarModoPerfil(){
 
   // Fatia 52: mesmas permissões do desktop (PDV → Vender; OS → OS)
   { const el=$('bn-vender'); if(el) el.style.display=(!entregador&&_podeVenderMob())?'':'none'; }
-  { const el=$('bn-os'); if(el) el.style.display=(!entregador&&_podeOSMob())?'':'none'; }
+  { const el=$('bn-os'); if(el) el.style.display=(!entregador&&_podeOSMob()&&_osPlanoMob())?'':'none'; } // Fatia 62b: + plano
   { const el=$('qa-scanner'); if(el) el.style.display=(_podeVenderMob()||_podeEstoqueMob())?'':'none'; }
-  { const el=$('qa-minhas-os'); if(el){ el.style.display=(_podeListaOSMob()||_osSoCobranca())?'':'none'; el.innerHTML=_osSoCobranca()?'<i class="ti ti-cash"></i>OS a receber':'<i class="ti ti-list-details"></i>Minhas OS'; } }
+  { const el=$('qa-minhas-os'); if(el){ el.style.display=((_podeListaOSMob()||_osSoCobranca())&&_osPlanoMob())?'':'none'; el.innerHTML=_osSoCobranca()?'<i class="ti ti-cash"></i>OS a receber':'<i class="ti ti-list-details"></i>Minhas OS'; } }
   // Fatia 38: cadastrar produto só pra admin/gerente — mesma regra do desktop
   // (Produtos/Estoque são só desses perfis no ROLE_PERMS_DEFAULT).
   { const el=$('bn-produto'); if(el) el.style.display=_podeGerirProdutos()?'':'none'; }
@@ -8286,21 +8309,21 @@ function aplicarModoPerfil(){
     bnEnt.setAttribute('onclick',"abrir('entregas')");
     $('bottom-nav').insertBefore(bnEnt, $('bn-mais'));
   }
-  bnEnt.style.display=entregador?'':'none';
+  bnEnt.style.display=(entregador&&_appEntregadorMob())?'':'none'; // Fatia 62b
 
   const sv=$('sheet-venda-rapida'); if(sv) sv.style.display=(!entregador&&_podeVenderMob())?'':'none'; // Fatia 52
-  const so=$('sheet-minhas-os'); if(so){ so.style.display=(!entregador&&(_podeListaOSMob()||_osSoCobranca()))?'':'none'; so.innerHTML=_osSoCobranca()?'<i class="ti ti-cash"></i>OS a receber':'<i class="ti ti-list-details"></i>Minhas OS'; } // Fatia 52
+  const so=$('sheet-minhas-os'); if(so){ so.style.display=(!entregador&&(_podeListaOSMob()||_osSoCobranca())&&_osPlanoMob())?'':'none'; so.innerHTML=_osSoCobranca()?'<i class="ti ti-cash"></i>OS a receber':'<i class="ti ti-list-details"></i>Minhas OS'; } // Fatia 52
   // Revisão 2026-09: "OS Rápida"/"Ver Estoque"/"Cadastrar Produto" saíram
   // dos cards da Home e vieram pra folha Mais — mesma regra de sempre pro
   // Entregador (não vende, não cria OS nem cadastra produto).
-  const sor=$('sheet-os-rapida'); if(sor) sor.style.display=(!entregador&&_podeOSMob())?'':'none'; // Fatia 52
+  const sor=$('sheet-os-rapida'); if(sor) sor.style.display=(!entregador&&_podeOSMob()&&_osPlanoMob())?'':'none'; // Fatia 52 (+ plano, Fatia 62b)
   const sve=$('sheet-ver-estoque'); if(sve) sve.style.display=(!entregador&&_podeEstoqueMob())?'':'none'; // Fatia 52
   const scp=$('sheet-cadastrar-produto'); if(scp) scp.style.display=_podeGerirProdutos()?'':'none'; // Fatia 38
   const se=$('sheet-entregas-mais');
   if(se){
     // Fatia 31: quem cuida de entregas no desktop (Agenda) também vê aqui
     const gestorEnt=_isGestorEntregas();
-    se.style.display=(entregador||gestorEnt)?'':'none';
+    se.style.display=(entregador?_appEntregadorMob():(gestorEnt&&_entregasPlanoMob()))?'':'none'; // Fatia 62b: + plano
     se.innerHTML='<i class="ti ti-truck"></i>'+(entregador?'Minhas Entregas':'Entregas');
   }
   const sp=$('sheet-pessoas'); if(sp) sp.style.display=adminGer?'':'none';
@@ -8348,7 +8371,15 @@ function aplicarModoPerfil(){
       $('scr-home').appendChild(entHome);
     }
     entHome.style.display='';
-    carregarResumoEntregador();
+    if(_appEntregadorMob()){
+      entHome.setAttribute('onclick',"abrir('entregas')"); entHome.style.cursor='';
+      if(entHome.dataset.bloq){ delete entHome.dataset.bloq; entHome.querySelector('.mod-t').textContent='Minhas Entregas'; }
+      carregarResumoEntregador();
+    } else { // Fatia 62b: plano sem o app do entregador
+      entHome.dataset.bloq='1'; entHome.removeAttribute('onclick'); entHome.style.cursor='default';
+      entHome.querySelector('.mod-t').textContent='App do entregador indisponível';
+      const rt=entHome.querySelector('#ent-resumo-txt'); if(rt) rt.textContent='O app do entregador não faz parte do plano da loja. Fale com o responsável.';
+    }
   } else if(entHome){ entHome.style.display='none'; }
 
   // Financeiro (vendas/lucro do dia) só carrega se o perfil pode ver — Entregador nunca vê.
@@ -8425,7 +8456,7 @@ function renderPessoas(){
   $('pessoas-list').innerHTML = lista.length ? lista.map(u=>{
     const rl=ENT_ROLE_LBL[u.role]||u.role;
     // Fatia 49: situação do PIN de 6 dígitos (nunca o PIN em si)
-    const pinTxt = G.pinNovo ? (_temPinNovo(u) ? '<div class="pin-status"><i class="ti ti-key"></i> PIN de 6 dígitos definido</div>' : (u.ativo?'<div class="pin-status falta"><i class="ti ti-alert-triangle"></i> Sem PIN — não consegue entrar</div>':'')) : '';
+    const pinTxt = u.role==='entregador' ? `<div class="pin-status" data-ent-acesso-mob="${esc(u.id)}"><i class="ti ti-device-mobile"></i> App do entregador</div>` : G.pinNovo ? (_temPinNovo(u) ? '<div class="pin-status"><i class="ti ti-key"></i> PIN de 6 dígitos definido</div>' : (u.ativo?'<div class="pin-status falta"><i class="ti ti-alert-triangle"></i> Sem PIN — não consegue entrar</div>':'')) : '';
     return `<div class="os-card" style="border:1px solid var(--border2);border-radius:14px;padding:13px;margin-bottom:10px;background:var(--card)">
       <div style="display:flex;justify-content:space-between;gap:8px;align-items:start">
         <div>
@@ -8437,22 +8468,83 @@ function renderPessoas(){
       </div>
       <div style="display:flex;gap:6px;margin-top:10px">
         <button class="btn btn-out btn-sm" style="flex:1" onclick="abrirEditarPessoa('${u.id}')"><i class="ti ti-edit"></i>Editar</button>
-        ${G.pinNovo&&u.ativo?`<button class="btn btn-out btn-sm" style="flex:1" onclick="gerarPinPessoa('${esc(u.id)}')"><i class="ti ti-key"></i>Novo PIN</button>`:''}
+        ${G.pinNovo&&u.ativo&&u.role!=='entregador'?`<button class="btn btn-out btn-sm" style="flex:1" onclick="gerarPinPessoa('${esc(u.id)}')"><i class="ti ti-key"></i>Novo PIN</button>`:''}
+        ${u.ativo&&u.role==='entregador'?`<button class="btn btn-out btn-sm" style="flex:1" onclick="abrirAcessoEntregadorMob('${esc(u.id)}')"><i class="ti ti-device-mobile"></i>Acesso ao app</button>`:''}
         ${u.role!=='admin'?`<button class="btn ${u.ativo?'btn-out':'btn-ok'} btn-sm" style="flex:1" onclick="togglePessoaAtiva('${u.id}')"><i class="ti ti-${u.ativo?'lock':'lock-open'}"></i>${u.ativo?'Desativar':'Ativar'}</button>`:''}
       </div>
     </div>`;
   }).join('') : '<div style="text-align:center;padding:24px;color:var(--txt3);font-size:13px">Nenhum usuário cadastrado.</div>';
   // Fatia 49: ações de PIN da empresa (migração / quem falta / refazer todos)
   if(G.pinSqlOk && lista.length){
-    const faltam=lista.filter(u=>u.ativo && !_temPinNovo(u)).length;
+    const faltam=lista.filter(u=>u.ativo && u.role!=='entregador' && !_temPinNovo(u)).length; // Fatia 65
     let h='';
     if(!G.pinNovo) h=`<div class="pl-aviso"><i class="ti ti-key"></i><div><b>PIN de 6 dígitos</b>Gere os PINs novos de todos de uma vez. Os PINs antigos de 4 dígitos param de valer na hora.<div class="pl-aviso-acoes"><button class="btn" onclick="abrirGerarPinsTodos('migrar')"><i class="ti ti-key"></i>Gerar PINs de 6 dígitos para todos</button></div></div></div>`;
     else h=`<div class="pl-aviso"><i class="ti ti-key"></i><div><b>PIN de 6 dígitos</b>${faltam?`${faltam} pessoa(s) ativa(s) sem PIN.`:'Todas as pessoas ativas têm PIN.'} ${_usuariosAtivos().length>IDENT_LIMITE_PERFIS?'Com mais de 5 pessoas, a entrada é só pelo PIN (sem lista de nomes).':'Até 5 pessoas, a entrada mostra os nomes.'}<div class="pl-aviso-acoes">${faltam?`<button class="btn" onclick="abrirGerarPinsTodos('faltam')"><i class="ti ti-key"></i>Gerar para quem não tem</button>`:''}<button class="btn btn-out" onclick="abrirGerarPinsTodos('todos')"><i class="ti ti-refresh"></i>Refazer de todos</button></div></div></div>`;
     $('pessoas-list').insertAdjacentHTML('afterbegin',h);
   }
+  _carregarAcessosEntregadorMob(); // Fatia 65
 }
+
+/* ── Fatia 65: acesso próprio do entregador (mesmo fluxo do computador) ── */
+let _entAcessosMob=null;
+async function _carregarAcessosEntregadorMob(){
+  if(!document.querySelector('[data-ent-acesso-mob]')) return;
+  try{ const r=await comTimeout(db.rpc('entregador_acessos_loja'),'acessos'); _entAcessosMob=(r&&!r.error&&Array.isArray(r.data))?r.data:null; }
+  catch(_){ _entAcessosMob=null; }
+  document.querySelectorAll('[data-ent-acesso-mob]').forEach(el=>{ el.innerHTML=_txtAcessoEntMob(el.dataset.entAcessoMob); el.classList.toggle('falta',/Sem acesso/.test(el.textContent)); });
+}
+function _txtAcessoEntMob(id){
+  if(!_entAcessosMob) return '<i class="ti ti-device-mobile"></i> App do entregador';
+  const a=_entAcessosMob.find(x=>x.usuario_id===id)||{};
+  if(a.tem_acesso) return '<i class="ti ti-device-mobile"></i> Acesso criado'+(a.ultimo_login_em?' · entrou em '+new Date(a.ultimo_login_em).toLocaleDateString('pt-BR'):'');
+  if(a.convite_expira_em) return '<i class="ti ti-mail"></i> Convite enviado (vale até '+new Date(a.convite_expira_em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+')';
+  return '<i class="ti ti-alert-triangle"></i> Sem acesso ao app ainda';
+}
+async function abrirAcessoEntregadorMob(id){
+  const u=(G.usuarios||[]).find(x=>x.id===id); if(!u) return;
+  if(!_appEntregadorMob()){ notify('O app do entregador não faz parte do plano da sua empresa.','warn'); return; }
+  await _carregarAcessosEntregadorMob();
+  if(_entAcessosMob===null){ try{ const r=await comTimeout(db.rpc('entregador_acessos_loja'),'acessos'); _entAcessosMob=(r&&!r.error&&Array.isArray(r.data))?r.data:null; }catch(_){} }
+  if(_entAcessosMob===null){ notify('Falta rodar o SQL da Fatia 65 no Supabase.','warn'); return; }
+  const a=_entAcessosMob.find(x=>x.usuario_id===id)||{};
+  abrirModalOSAcao('<i class="ti ti-device-mobile"></i> App do entregador', esc(u.nome)+' · '+_txtAcessoEntMob(id).replace(/<[^>]+>/g,''),
+    `<div style="font-size:13px;color:var(--txt2);line-height:1.55">Ele usa só a página <b>${esc(location.origin)}/entregador.html</b>, entra com <b>CPF e senha</b> e vê apenas as entregas atribuídas a ele. Não entra mais pelo PIN nos aparelhos da loja.</div>`,
+    `<button class="btn" onclick="gerarConviteEntregadorMob('${esc(id)}')"><i class="ti ti-send"></i>${a.tem_acesso?'Gerar novo convite (ele cria outra senha)':'Gerar convite'}</button>
+     ${a.tem_acesso||a.convite_expira_em?`<button class="btn btn-out" style="margin-top:6px;color:var(--danger-txt)" onclick="revogarAcessoEntregadorMob('${esc(id)}')"><i class="ti ti-user-off"></i>Remover acesso</button>`:''}
+     <button class="btn btn-ghost" style="margin-top:6px" onclick="fecharModalOSAcao()">Fechar</button>`);
+}
+async function gerarConviteEntregadorMob(id){
+  const u=(G.usuarios||[]).find(x=>x.id===id); if(!u) return;
+  fecharModalOSAcao();
+  const res=await _pedirPinAdmin({ titulo:'Convite do app — '+u.nome,
+    sub:'Vale 48 horas e funciona uma vez. Se ele já tinha acesso, a senha antiga para de valer quando usar o convite. Digite seu PIN (administrador ou gerente).',
+    executar:p=>_rpcPin('entregador_gerar_convite',{p_usuario_id:id,p_pin_admin:p}) });
+  if(!res) return;
+  const link=location.origin+'/entregador.html?convite='+encodeURIComponent(res.token);
+  let tel=String(u.telefone||'').replace(/\D/g,''); if(tel && !(tel.startsWith('55') && tel.length>=12)) tel='55'+tel;
+  window._convWaMob=(tel?'https://wa.me/'+tel:'https://wa.me/')+'?text='+encodeURIComponent(`Olá, ${String(u.nome||'').split(' ')[0]}! Este é o seu convite para o app de entregas da ${G.empresa?.nome||'loja'}: ${link} — abra, digite seu CPF e crie a sua senha. O link vale 48 horas e só funciona uma vez. Depois é só entrar em ${location.origin}/entregador.html com CPF e senha.`);
+  window._convLinkMob=link;
+  abrirModalOSAcao('<i class="ti ti-send"></i> Convite de '+esc(u.nome), 'Envie só para ele. Vale até '+new Date(res.expira_em).toLocaleString('pt-BR')+'.',
+    `<input class="inp" readonly value="${esc(link)}" style="font-size:12px;font-family:monospace" onclick="this.select()">`,
+    `<button class="btn" onclick="window.open(window._convWaMob,'_blank')"><i class="ti ti-brand-whatsapp"></i>Enviar pelo WhatsApp</button>
+     <button class="btn btn-out" style="margin-top:6px" onclick="navigator.clipboard&&navigator.clipboard.writeText(window._convLinkMob).then(()=>notify('Link copiado.','ok'))"><i class="ti ti-copy"></i>Copiar link</button>
+     <button class="btn btn-ghost" style="margin-top:6px" onclick="fecharModalOSAcao()">Fechar</button>`);
+  _carregarAcessosEntregadorMob();
+}
+async function revogarAcessoEntregadorMob(id){
+  const u=(G.usuarios||[]).find(x=>x.id===id); if(!u) return;
+  fecharModalOSAcao();
+  const res=await _pedirPinAdmin({ titulo:'Remover acesso — '+u.nome,
+    sub:'Ele sai do app em todos os aparelhos e o convite pendente deixa de valer. Digite seu PIN (administrador ou gerente).',
+    executar:p=>_rpcPin('entregador_revogar',{p_usuario_id:id,p_pin_admin:p}) });
+  if(!res) return;
+  notify('Acesso de '+u.nome+' removido.','ok');
+  _carregarAcessosEntregadorMob();
+}
+function _rotuloEntregadorMob(){ const o=document.querySelector('#ps-role option[value="entregador"]'); if(o){ const ok=_appEntregadorMob(); o.disabled=!ok; o.textContent=ok?'Entregador':'Entregador (plano Enterprise)'; } } // Fatia 62b
 function abrirNovaPessoa(){
   if(!_isAdminGer()) return;
+  _rotuloEntregadorMob();
   $('ps-id').value=''; $('ps-nome').value=''; $('ps-telefone').value=''; $('ps-role').value='operador'; $('ps-pin').value=''; $('ps-ativo').value='true';
   $('ps-pin-hint').textContent=''; $('pessoa-erro').textContent='';
   $('ps-pin-row').classList.toggle('hidden',!!G.pinNovo); $('ps-pin-info').classList.toggle('hidden',!G.pinNovo); // Fatia 49
@@ -8462,6 +8554,7 @@ function abrirNovaPessoa(){
 function abrirEditarPessoa(id){
   if(!_isAdminGer()) return;
   const u=(G.usuarios||[]).find(x=>x.id===id); if(!u) return;
+  _rotuloEntregadorMob();
   $('ps-id').value=u.id; $('ps-nome').value=u.nome; $('ps-telefone').value=u.telefone||''; $('ps-role').value=u.role; $('ps-pin').value='';
   $('ps-pin-hint').textContent = u.pin ? '— deixe em branco pra manter' : '— sem PIN ainda';
   $('ps-pin-row').classList.toggle('hidden',!!G.pinNovo); $('ps-pin-info').classList.add('hidden'); // Fatia 49: PIN novo é pelo botão "Novo PIN"
@@ -8480,6 +8573,11 @@ async function salvarPessoa(){
   const ativo=$('ps-ativo').value==='true';
   const editId=$('ps-id').value;
   if(!nome){ $('pessoa-erro').textContent='Informe o nome.'; return; }
+  // Fatia 62b: perfil Entregador só quando o plano libera o app do entregador
+  if(role==='entregador' && ativo && !_appEntregadorMob()){
+    const antes=editId?(G.usuarios||[]).find(u=>u.id===editId):null;
+    if(!antes||antes.role!=='entregador'||antes.ativo===false){ $('pessoa-erro').textContent='O perfil Entregador faz parte do app do entregador, que não está no plano da sua empresa.'; return; }
+  }
   if(G.pinNovo){ await _salvarPessoaPinNovo({editId,nome,telefone,role,ativo}); return; } // Fatia 49
   if(pin && !/^\d{4}$/.test(pin)){ $('pessoa-erro').textContent='O PIN deve ter exatamente 4 números.'; return; } // Fatia 62a
   if(!editId && !pin){ $('pessoa-erro').textContent='Defina um PIN para o novo funcionário.'; return; }
@@ -8523,6 +8621,7 @@ async function _salvarPessoaPinNovo({editId,nome,telefone,role,ativo}){
     renderPessoas();
   }catch(e){ $('pessoa-erro').textContent=msgAmigavel(e,'Não foi possível salvar.'); return; }
   if(!novoId){ notify('Usuário atualizado!','ok'); return; }
+  if(role==='entregador'){ notify('Entregador criado! Agora gere o convite do app dele.','ok'); await abrirAcessoEntregadorMob(novoId); return; } // Fatia 65: entregador não tem PIN
   notify('Usuário criado! Agora gere o PIN dele.','ok');
   const ok=await gerarPinPessoa(novoId);
   if(!ok) notify('Usuário criado sem PIN. Toque em "Novo PIN" no cartão dele quando quiser gerar.','warn',6000);
@@ -8756,7 +8855,7 @@ function abrirDetalheEntrega(id){
   if(gestor && e.status!=='entregue' && e.status!=='cancelada'){
     gest+=`<div class="osd-box-t"><span>Gestão da entrega</span></div><div class="ent-gest">`;
     gest+=`<button class="btn btn-out" onclick="abrirAgendarEntregaMob()"><i class="ti ti-calendar"></i>${e.data_agendada?'Reagendar':'Agendar'}</button>`;
-    if(e.forma!=='retirada') gest+=`<button class="btn btn-out" onclick="abrirAtribuirEntregadorMob()"><i class="ti ti-user-cog"></i>${e.entregador_id?'Trocar entregador':'Atribuir entregador'}</button>`;
+    if(e.forma!=='retirada'&&_appEntregadorMob()) gest+=`<button class="btn btn-out" onclick="abrirAtribuirEntregadorMob()"><i class="ti ti-user-cog"></i>${e.entregador_id?'Trocar entregador':'Atribuir entregador'}</button>`;
     gest+=`<button class="btn btn-out" onclick="gerarLinkEntregaMob()"><i class="ti ti-link"></i>Enviar link ao cliente</button>`;
     gest+=`</div>`;
   }
@@ -8821,6 +8920,7 @@ async function salvarAgendaEntregaMob(){
 /* Atribuir entregador — atribuirEntregador()/_setEntregador() do desktop:
    só usuários ativos com perfil Entregador; dá pra trocar ou remover. */
 function abrirAtribuirEntregadorMob(){
+  if(!_appEntregadorMob()){ notify('O app do entregador não faz parte do plano da sua empresa.','warn'); return; } // Fatia 62b
   const e=(G.entregasMob||[]).find(x=>x.id===_entregaAtualId); if(!e) return;
   const ents=(G.usuarios||[]).filter(u=>u.ativo!==false&&u.role==='entregador');
   if(!ents.length){ notify('Nenhum entregador cadastrado ainda. Crie um usuário com o perfil "Entregador" em Mais → Pessoas.','info'); return; }
