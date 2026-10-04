@@ -1363,9 +1363,7 @@ select option { background: var(--bg2); }
       <div class="page" id="page-planos">
         <div class="sec-hdr">
           <div class="sec-title">Planos e preços</div>
-          <button class="btn btn-pri btn-sm" onclick="novoPlano()">
-            <i class="ti ti-plus"></i> Novo plano
-          </button>
+          <span style="font-size:12px;color:var(--txt3)">3 planos fixos: Básico, Pro e Enterprise. Edite nome, preço e permissões.</span>
         </div>
         <div id="planos-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">
         </div>
@@ -2295,6 +2293,7 @@ CREATE POLICY "admin_master_somente_master" ON admin_master FOR ALL TO authentic
     <div class="tabs">
       <button class="tab-btn active" onclick="detTab('geral',this)">Geral</button>
       <button class="tab-btn" onclick="detTab('financeiro',this)">Financeiro</button>
+      <button class="tab-btn" onclick="detTab('recursos',this)">Recursos</button>
       <button class="tab-btn" onclick="detTab('acesso',this)">Acesso</button>
       <button class="tab-btn" onclick="detTab('marca',this)">Marca</button>
       <button class="tab-btn" onclick="detTab('bloqueio',this)">Bloqueio</button>
@@ -2306,6 +2305,10 @@ CREATE POLICY "admin_master_somente_master" ON admin_master FOR ALL TO authentic
     <!-- Aba Financeiro (NOVO) -->
     <div id="det-tab-financeiro" style="display:none">
       <div id="det-financeiro-content"></div>
+    </div>
+    <!-- Aba Recursos (Fatia 62: exceção por loja) -->
+    <div id="det-tab-recursos" style="display:none">
+      <div id="det-recursos-content"></div>
     </div>
     <!-- Aba Acesso -->
     <div id="det-tab-acesso" style="display:none">
@@ -3204,14 +3207,9 @@ async function salvarPlanoDb(plano) {
     }
   }
 
-  if (plano.id) {
-    await tentarGravar((p) => db.from('planos').update(p).eq('id', plano.id));
-    return plano.id;
-  } else {
-    const id = 'plano_' + Date.now();
-    await tentarGravar((p) => db.from('planos').insert({ id, ...p }));
-    return id;
-  }
+  if (!plano.id) throw new Error('Só é possível editar os 3 planos fixos.'); // Fatia 62
+  await tentarGravar((p) => db.from('planos').update(p).eq('id', plano.id));
+  return plano.id;
 }
 
 function mapLogFromDb(r) {
@@ -5380,8 +5378,140 @@ async function carregarAceitesEmpresa(empId){
   }
 }
 
+// ── Fatia 62: RECURSOS POR LOJA (exceção ao plano) ─────────────────────
+// Ordem que vale para a loja (função meus_entitlements no banco):
+//   exceção desta loja  >  permissões do plano  >  padrão do recurso
+// Só o Admin Master lê/grava empresa_entitlement_overrides.
+function _planoIdNorm(id){ const x=String(id||'').toLowerCase(); return (x==='basico'||x==='básico')?'basic':(id||''); }
+let _recEstado = null; // { empresaId, ovr:{key:row}, plano:{key:valor}, catalogo }
+async function renderRecursosEmpresa(e){
+  const box = document.getElementById('det-recursos-content');
+  if (!box) return;
+  box.innerHTML = '<div style="color:var(--txt3);text-align:center;padding:20px">Carregando...</div>';
+  const planoId = _planoIdNorm(e.plano);
+  let catalogo = [], ents = [], ovrRes = null;
+  try {
+    [catalogo, ents, ovrRes] = await Promise.all([
+      getFeatureCatalog(true), getPlanoEntitlements(planoId),
+      db.from('empresa_entitlement_overrides').select('*').eq('empresa_id', e.id),
+    ]);
+  } catch (err) { ovrRes = { error: err }; }
+  if (_empresaAtual?.id !== e.id) return; // trocou de empresa enquanto carregava
+  if (!ovrRes || ovrRes.error) {
+    box.innerHTML = '<div style="color:var(--txt3);text-align:center;padding:20px">Não foi possível ler as exceções. Rode o SQL da Fatia 62 (sql_f62_planos_recursos.sql).</div>';
+    return;
+  }
+  const pe = {}; (ents || []).forEach(r => { pe[r.feature_key] = r; });
+  const ovr = {}; (ovrRes.data || []).forEach(r => { ovr[r.feature_key] = r; });
+  const plano = {};
+  catalogo.forEach(f => {
+    const r = pe[f.key];
+    plano[f.key] = f.tipo === 'flag'
+      ? (r?.bool_value != null ? r.bool_value : f.default_bool)
+      : (r?.int_value != null ? r.int_value : f.default_int);
+  });
+  _recEstado = { empresaId: e.id, ovr, plano, catalogo };
+  const nomePlano = (G.planos || []).find(p => p.id === planoId)?.nome || planoId || '—';
+  const fmtVal = (f, v) => f.tipo === 'flag' ? (v ? 'Liberado' : 'Bloqueado') : (v == null || v === -1 ? 'Ilimitado' : String(v));
+  const grupos = {};
+  catalogo.forEach(f => { (grupos[f.categoria || 'Outros'] = grupos[f.categoria || 'Outros'] || []).push(f); });
+  const qtd = Object.keys(ovr).filter(k => catalogo.some(f => f.key === k)).length;
+  let html = `
+    <div style="font-size:12.5px;color:var(--txt2);background:var(--bg3);border-radius:9px;padding:10px 12px;margin-bottom:12px;line-height:1.5">
+      <i class="ti ti-info-circle"></i> A loja segue o plano <b>${esc(nomePlano)}</b>. Aqui você libera ou bloqueia um recurso <b>só para esta loja</b> (ex.: cortesia, teste, negociação).
+      Vale quando a loja abrir o sistema de novo. <span id="rec-qtd">${qtd ? `<b>${qtd}</b> exceção(ões) ativa(s).` : 'Nenhuma exceção.'}</span>
+    </div>`;
+  Object.keys(grupos).forEach(cat => {
+    html += `<div style="font-family:'Syne',sans-serif;font-weight:700;font-size:12.5px;color:var(--pri-txt);margin:14px 0 6px;text-transform:uppercase;letter-spacing:.5px">${esc(cat)}</div>`;
+    grupos[cat].forEach(f => {
+      const o = ovr[f.key];
+      const planoTxt = 'Plano: ' + fmtVal(f, plano[f.key]);
+      let ctrl;
+      if (f.tipo === 'flag') {
+        const v = o ? (o.bool_value ? 'on' : 'off') : '';
+        ctrl = `<select class="rec-ctrl" data-key="${esc(f.key)}" data-tipo="flag" aria-label="${esc(f.nome)}" onchange="_recMarcar(this)" style="min-width:170px">
+          <option value=""${v === '' ? ' selected' : ''}>Seguir o plano</option>
+          <option value="on"${v === 'on' ? ' selected' : ''}>Liberar nesta loja</option>
+          <option value="off"${v === 'off' ? ' selected' : ''}>Bloquear nesta loja</option>
+        </select>`;
+      } else {
+        const v = o && o.int_value != null ? o.int_value : '';
+        ctrl = `<input type="number" class="rec-ctrl" data-key="${esc(f.key)}" data-tipo="limit" aria-label="${esc(f.nome)}" value="${esc(v)}" placeholder="Seguir o plano" title="Vazio = segue o plano · -1 = ilimitado" oninput="_recMarcar(this)" style="width:150px;text-align:right">`;
+      }
+      html += `<div class="rec-linha${o ? ' rec-exc' : ''}" data-key="${esc(f.key)}" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:9px 10px;border-radius:9px;border:1px solid ${o ? 'var(--pri)' : 'transparent'}">
+        <div style="min-width:0;flex:1 1 200px">
+          <div style="font-size:13px;color:var(--txt);font-weight:600">${esc(f.nome)}</div>
+          <div style="font-size:11.5px;color:var(--txt3)">${esc(planoTxt)}${o && o.motivo ? ' · Motivo: ' + esc(o.motivo) : ''}</div>
+        </div>
+        ${ctrl}
+      </div>`;
+    });
+  });
+  html += `
+    <div class="fg" style="margin-top:14px"><label class="lbl" for="rec-motivo">Motivo da mudança *</label>
+      <input id="rec-motivo" maxlength="200" placeholder="Ex.: cortesia de 30 dias, negociação, teste do recurso"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:6px">
+      <button class="btn btn-pri btn-sm" onclick="salvarRecursosEmpresa()"><i class="ti ti-check"></i> Salvar exceções</button>
+    </div>`;
+  box.innerHTML = html;
+}
+function _recMarcar(el){
+  const linha = el.closest('.rec-linha'); if (!linha) return;
+  const tem = el.value !== '';
+  linha.style.borderColor = tem ? 'var(--pri)' : 'transparent';
+}
+async function salvarRecursosEmpresa(){
+  const st = _recEstado;
+  if (!st || st.empresaId !== _empresaAtual?.id) return;
+  if (!await sessaoValida()) return;
+  const motivo = (document.getElementById('rec-motivo')?.value || '').trim();
+  const gravar = [], apagar = [], mudou = [];
+  for (const el of document.querySelectorAll('#det-recursos-content .rec-ctrl')) {
+    const key = el.dataset.key, tipo = el.dataset.tipo, atual = st.ovr[key];
+    const f = st.catalogo.find(x => x.key === key);
+    if (el.value === '') { if (atual) { apagar.push(key); mudou.push((f?.nome || key) + ': segue o plano'); } continue; }
+    if (tipo === 'flag') {
+      const b = el.value === 'on';
+      if (atual && atual.bool_value === b) continue;
+      gravar.push({ feature_key: key, bool_value: b, int_value: null });
+      mudou.push((f?.nome || key) + ': ' + (b ? 'liberado' : 'bloqueado'));
+    } else {
+      const n = parseInt(el.value, 10);
+      if (!Number.isFinite(n) || n < -1) { notify('Limite inválido em "' + (f?.nome || key) + '". Use -1 para ilimitado.', 'error'); return; }
+      if (atual && atual.int_value === n) continue;
+      gravar.push({ feature_key: key, bool_value: null, int_value: n });
+      mudou.push((f?.nome || key) + ': ' + (n === -1 ? 'ilimitado' : n));
+    }
+  }
+  if (!mudou.length) { notify('Nada mudou.', 'info'); return; }
+  if (!motivo) { notify('Informe o motivo da mudança.', 'error'); document.getElementById('rec-motivo')?.focus(); return; }
+  const quem = G.perfil?.nome || G.user?.email || 'master';
+  const agora = new Date().toISOString();
+  setLoad(true);
+  try {
+    if (gravar.length) {
+      const { error } = await db.from('empresa_entitlement_overrides').upsert(
+        gravar.map(r => ({ ...r, empresa_id: st.empresaId, motivo, atualizado_por: quem, atualizado_em: agora })),
+        { onConflict: 'empresa_id,feature_key' });
+      if (error) throw error;
+    }
+    if (apagar.length) {
+      const { error } = await db.from('empresa_entitlement_overrides').delete().eq('empresa_id', st.empresaId).in('feature_key', apagar);
+      if (error) throw error;
+    }
+    const emp = _empresaAtual;
+    addLog('plano', `Recursos de "${emp?.nome || ''}" (exceção ao plano): ${mudou.join('; ')} — motivo: ${motivo}`, emp?.nome || 'Global', st.empresaId);
+    notify('Exceções salvas. Valem quando a loja abrir o sistema de novo.', 'success');
+    if (emp) await renderRecursosEmpresa(emp);
+  } catch (err) {
+    notify('Erro ao salvar exceções: ' + (err.message || String(err)), 'error');
+  } finally {
+    setLoad(false);
+  }
+}
+
 async function detTab(tab, btn) {
-  ['geral','financeiro','acesso','marca','updates','bloqueio'].forEach(t => {
+  ['geral','financeiro','recursos','acesso','marca','updates','bloqueio'].forEach(t => {
     const el = document.getElementById('det-tab-' + t);
     if (el) el.style.display = t === tab ? '' : 'none';
   });
@@ -5488,6 +5618,8 @@ async function detTab(tab, btn) {
           </div>`).join('')
       }
     `;
+  } else if (tab === 'recursos') {
+    await renderRecursosEmpresa(e);
   } else if (tab === 'acesso') {
     const contaCriada = !!e.authUserId;
     document.getElementById('det-acesso-content').innerHTML = `
@@ -6797,17 +6929,9 @@ function _resetCamposPlanoIA() {
   document.getElementById('plano-ai-feat-diagnostico').checked = false;
 }
 
-function novoPlano() {
-  document.getElementById('plano-id').value = '';
-  document.getElementById('plano-nome').value = '';
-  document.getElementById('plano-preco').value = '';
-  document.getElementById('plano-usuarios').value = '';
-  document.getElementById('plano-preco-anual').value = '';
-  document.getElementById('plano-desconto-anual').value = '';
-  document.getElementById('plano-features').value = '';
-  _resetCamposPlanoIA();
-  openModal('modal-plano');
-}
+// Fatia 62: sem "Novo plano" — o sistema da loja só conhece os 3 planos
+// fixos (basic/pro/enterprise); um plano criado aqui não tinha permissões
+// nem aparecia para a loja.
 
 function editarPlano(id) {
   const p = G.planos.find(x => x.id === id);
@@ -6844,6 +6968,7 @@ async function salvarPlano() {
   const descontoAnualPct = descontoAnualRaw !== '' ? parseFloat(descontoAnualRaw) : null;
 
   if (!nome) { notify('Nome obrigatório.', 'error'); return; }
+  if (!id) { notify('Escolha um dos 3 planos para editar.', 'error'); return; } // Fatia 62
 
   const aiEnabled = document.getElementById('plano-ai-enabled').checked;
   const numOrNull = (elId) => {
