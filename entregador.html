@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Entregas — MISU SYS</title>
+<!-- Fatia 65: app só do entregador. Entra com CPF + senha (convite da loja).
+     Não carrega nada do resto do sistema: tudo passa pelas funções
+     entregador_* do banco, que só devolvem as entregas atribuídas a ele. -->
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1E5EFF">
+<meta name="robots" content="noindex">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<script>
+(function(){
+  function temaAtual(){
+    var t=null; try{ t=localStorage.getItem('misu_tema'); }catch(e){}
+    if(t!=='dark'&&t!=='light') t=(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';
+    return t;
+  }
+  document.documentElement.setAttribute('data-theme',temaAtual());
+  try{ matchMedia('(prefers-color-scheme: dark)').addEventListener('change',function(){ document.documentElement.setAttribute('data-theme',temaAtual()); }); }catch(e){}
+})();
+</script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{color-scheme:only light;--pri:#1E5EFF;--pri2:#1A4FD9;--pri-txt:#1A52E0;--pri-soft:#EEF3FF;--bg:#F5F2EC;--bg2:#FFFFFF;--bg3:#F7F4EF;--input:#FFFFFF;--txt:#1E1530;--txt2:#54487A;--txt3:#665A88;--border:#E6DED3;--ok:#05704F;--ok-bg:#E7F6EC;--warn:#92400E;--warn-bg:#FDF0E0;--erro:#B42318;--erro-bg:#FDECEA;--toast-bg:#1E1530;--toast-txt:#FFFFFF;--sombra:0 4px 24px rgba(0,0,0,.06);--veu:rgba(15,10,30,.45)}
+[data-theme="dark"]{color-scheme:dark;--pri-txt:#8AB0FF;--pri-soft:rgba(30,94,255,.20);--bg:#070B1A;--bg2:#0E1730;--bg3:#13204A;--input:#0A1229;--txt:#EAF0FF;--txt2:#A8BAE8;--txt3:#93A4D6;--border:#1B2A55;--ok:#4ADE80;--ok-bg:rgba(74,222,128,.12);--warn:#FBBF24;--warn-bg:rgba(251,191,36,.12);--erro:#FCA5A5;--erro-bg:rgba(248,113,113,.14);--toast-bg:#EAF0FF;--toast-txt:#0E1730;--sombra:0 8px 32px rgba(0,0,0,.35);--veu:rgba(0,0,0,.6)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;padding:16px 16px calc(24px + env(safe-area-inset-bottom))}
+.wrap{max-width:520px;margin:0 auto}
+.hidden{display:none!important}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:18px;padding:20px;box-shadow:var(--sombra)}
+.marca{display:flex;align-items:center;justify-content:center;gap:8px;font-weight:800;font-size:19px;color:var(--pri-txt);margin:10px 0 16px}
+h1{font-size:19px;margin-bottom:4px}
+.sub{color:var(--txt2);font-size:13.5px;margin-bottom:14px;line-height:1.45}
+label{display:block;font-size:12.5px;font-weight:700;color:var(--txt2);margin:12px 0 5px}
+input,textarea,select{width:100%;padding:12px 13px;border:1.5px solid var(--border);border-radius:12px;font-size:16px;font-family:inherit;color:var(--txt);background:var(--input)}
+input:focus,textarea:focus,select:focus{outline:2px solid var(--pri);outline-offset:1px;border-color:var(--pri)}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px 16px;border-radius:13px;border:none;font-family:inherit;font-weight:800;font-size:15px;cursor:pointer;background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;margin-top:14px}
+.btn:disabled{opacity:.6;cursor:default}
+.btn-out{background:var(--bg2);color:var(--txt);border:1.5px solid var(--border)}
+.btn-ok{background:linear-gradient(135deg,#047857,#065F46);color:#fff}
+.btn-sm{width:auto;padding:9px 13px;font-size:13.5px;margin-top:0}
+.btn:focus-visible,.chip:focus-visible,.ent-card:focus-visible{outline:3px solid var(--pri-txt);outline-offset:2px}
+.msg{font-size:13px;margin-top:10px;line-height:1.45;min-height:1em}
+.msg.erro{color:var(--erro)} .msg.ok{color:var(--ok)}
+.aviso{background:var(--warn-bg);color:var(--warn);border-radius:12px;padding:11px 13px;font-size:13px;line-height:1.45;margin-top:12px}
+.dica{font-size:12.5px;color:var(--txt3);margin-top:14px;line-height:1.5;text-align:center}
+.olho{position:relative}.olho input{padding-right:46px}
+.olho button{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:none;background:none;color:var(--txt2);font-size:20px;padding:6px;cursor:pointer}
+/* topo do app */
+.topo{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.topo .quem{flex:1;min-width:0}
+.topo .quem b{display:block;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topo .quem span{font-size:12.5px;color:var(--txt2)}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px}
+.chip{flex:0 0 auto;padding:9px 14px;border-radius:999px;border:1.5px solid var(--border);background:var(--bg2);color:var(--txt);font-weight:700;font-size:13px;cursor:pointer;font-family:inherit}
+.chip.on{background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;border-color:transparent}
+.ent-card{background:var(--bg2);border:1px solid var(--border);border-radius:15px;padding:14px;margin-bottom:10px;cursor:pointer;display:block;width:100%;text-align:left;font-family:inherit;color:var(--txt)}
+.ent-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.ent-nome{font-weight:800;font-size:15px}
+.ent-desc{font-size:13px;color:var(--txt2);margin-top:3px}
+.ent-end{font-size:12.5px;color:var(--txt3);margin-top:6px;display:flex;gap:5px}
+.selo{flex:0 0 auto;font-size:11.5px;font-weight:800;padding:4px 9px;border-radius:999px;background:var(--pri-soft);color:var(--pri-txt);white-space:nowrap}
+.selo.ok{background:var(--ok-bg);color:var(--ok)} .selo.warn{background:var(--warn-bg);color:var(--warn)}
+.vazio{text-align:center;color:var(--txt2);font-size:14px;padding:30px 10px}
+/* folhas (detalhe/confirmar/tentativa) */
+.veu{position:fixed;inset:0;background:var(--veu);z-index:50;display:flex;align-items:flex-end;justify-content:center}
+.folha{background:var(--bg2);color:var(--txt);width:100%;max-width:560px;max-height:92vh;overflow:auto;border-radius:20px 20px 0 0;padding:18px 18px calc(22px + env(safe-area-inset-bottom))}
+.folha h2{font-size:18px;margin-bottom:2px}
+.campo{margin-top:12px}
+.campo .t{font-size:11.5px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px}
+.campo .v{font-size:14.5px;margin-top:2px;line-height:1.45;white-space:pre-wrap}
+.acoes-rapidas{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.acoes-rapidas a,.acoes-rapidas button{display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;padding:11px 6px;border-radius:13px;border:1.5px solid var(--border);background:var(--bg3);color:var(--txt);font-weight:700;font-size:12.5px;text-decoration:none;font-family:inherit;cursor:pointer}
+.acoes-rapidas i{font-size:20px;color:var(--pri-txt)}
+canvas{width:100%;height:160px;border:1.5px dashed var(--border);border-radius:12px;background:#fff;touch-action:none;display:block}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--toast-bg);color:var(--toast-txt);padding:12px 16px;border-radius:12px;font-size:14px;font-weight:600;z-index:80;max-width:90vw;box-shadow:var(--sombra)}
+.carregando{text-align:center;color:var(--txt2);padding:40px 0;font-size:14px}
+@media (prefers-reduced-motion:no-preference){.folha{animation:sobe .18s ease-out}@keyframes sobe{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="marca"><i class="ti ti-truck-delivery" aria-hidden="true"></i> MISU Entregas</div>
+
+  <div id="tela-carregando" class="carregando" role="status">Carregando…</div>
+
+  <!-- Primeiro acesso pelo convite -->
+  <section id="tela-convite" class="card hidden" aria-labelledby="conv-tit">
+    <h1 id="conv-tit">Criar meu acesso</h1>
+    <p class="sub" id="conv-sub">Conferindo o convite…</p>
+    <form id="form-convite" class="hidden" onsubmit="aceitarConvite(event)" novalidate>
+      <label for="conv-cpf">Seu CPF</label>
+      <input id="conv-cpf" inputmode="numeric" autocomplete="username" placeholder="000.000.000-00" maxlength="14" oninput="mascaraCpf(this)" required>
+      <label for="conv-senha">Crie uma senha (mínimo 6 caracteres)</label>
+      <div class="olho"><input id="conv-senha" type="password" autocomplete="new-password" minlength="6" maxlength="72" required><button type="button" onclick="verSenha('conv-senha',this)" aria-label="Mostrar senha"><i class="ti ti-eye"></i></button></div>
+      <label for="conv-senha2">Repita a senha</label>
+      <input id="conv-senha2" type="password" autocomplete="new-password" minlength="6" maxlength="72" required>
+      <button class="btn" id="conv-btn" type="submit"><i class="ti ti-check" aria-hidden="true"></i> Criar meu acesso</button>
+      <p class="msg erro" id="conv-msg" role="alert"></p>
+      <p class="dica">Daqui pra frente você entra com o CPF e esta senha. Ela é só sua: a loja não vê.</p>
+    </form>
+  </section>
+
+  <!-- Login -->
+  <section id="tela-login" class="card hidden" aria-labelledby="login-tit">
+    <h1 id="login-tit">Entrar</h1>
+    <p class="sub">Área do entregador: só as entregas que a loja passou para você.</p>
+    <form onsubmit="entrar(event)" novalidate>
+      <label for="login-cpf">CPF</label>
+      <input id="login-cpf" inputmode="numeric" autocomplete="username" placeholder="000.000.000-00" maxlength="14" oninput="mascaraCpf(this)" required>
+      <label for="login-senha">Senha</label>
+      <div class="olho"><input id="login-senha" type="password" autocomplete="current-password" maxlength="72" required><button type="button" onclick="verSenha('login-senha',this)" aria-label="Mostrar senha"><i class="ti ti-eye"></i></button></div>
+      <button class="btn" id="login-btn" type="submit"><i class="ti ti-login" aria-hidden="true"></i> Entrar</button>
+      <p class="msg erro" id="login-msg" role="alert"></p>
+    </form>
+    <p class="dica">Primeiro acesso ou esqueceu a senha? Peça ao responsável da loja um <b>link de convite</b>.</p>
+  </section>
+
+  <!-- Minhas entregas -->
+  <section id="tela-app" class="hidden" aria-labelledby="app-tit">
+    <div class="topo">
+      <div class="quem"><b id="app-tit">Minhas entregas</b><span id="app-quem"></span></div>
+      <button class="btn btn-out btn-sm" type="button" onclick="carregarEntregas(true)" aria-label="Atualizar lista"><i class="ti ti-refresh"></i></button>
+      <button class="btn btn-out btn-sm" type="button" onclick="sair()"><i class="ti ti-logout" aria-hidden="true"></i> Sair</button>
+    </div>
+    <div class="chips" role="tablist" aria-label="Filtro das entregas" id="chips"></div>
+    <div id="lista" aria-live="polite"></div>
+  </section>
+</div>
+
+<!-- Detalhe -->
+<div class="veu hidden" id="veu-detalhe" onclick="if(event.target===this)fecharFolhas()">
+  <div class="folha" role="dialog" aria-modal="true" aria-labelledby="det-tit">
+    <h2 id="det-tit"></h2>
+    <span class="selo" id="det-status"></span>
+    <div id="det-campos"></div>
+    <div class="acoes-rapidas" id="det-rapidas"></div>
+    <div id="det-acoes"></div>
+    <button class="btn btn-out" type="button" onclick="fecharFolhas()">Fechar</button>
+  </div>
+</div>
+
+<!-- Confirmar entrega -->
+<div class="veu hidden" id="veu-confirmar" onclick="if(event.target===this)fecharFolhas()">
+  <form class="folha" role="dialog" aria-modal="true" aria-labelledby="cf-tit" onsubmit="confirmarEntrega(event)" novalidate>
+    <h2 id="cf-tit">Confirmar entrega</h2>
+    <p class="sub" id="cf-sub"></p>
+    <div id="cf-bloco-codigo" class="hidden">
+      <label for="cf-codigo">Código que o cliente informou</label>
+      <input id="cf-codigo" inputmode="numeric" maxlength="8" autocomplete="one-time-code">
+    </div>
+    <div id="cf-bloco-assinatura" class="hidden">
+      <label for="cf-canvas">Assinatura de quem recebeu</label>
+      <canvas id="cf-canvas" aria-label="Área para assinar com o dedo"></canvas>
+      <button class="btn btn-out btn-sm" type="button" style="margin-top:8px" onclick="limparAssinatura()"><i class="ti ti-eraser" aria-hidden="true"></i> Limpar</button>
+    </div>
+    <label for="cf-nome" id="cf-nome-lbl">Nome de quem recebeu</label>
+    <input id="cf-nome" maxlength="120" autocomplete="off">
+    <label for="cf-obs">Observação (opcional)</label>
+    <input id="cf-obs" maxlength="300" placeholder="Ex.: deixei com o porteiro">
+    <button class="btn btn-ok" id="cf-btn" type="submit"><i class="ti ti-check" aria-hidden="true"></i> Confirmar entrega</button>
+    <p class="msg erro" id="cf-msg" role="alert"></p>
+    <button class="btn btn-out" type="button" onclick="fecharFolhas()">Cancelar</button>
+  </form>
+</div>
+
+<!-- Tentativa -->
+<div class="veu hidden" id="veu-tentativa" onclick="if(event.target===this)fecharFolhas()">
+  <form class="folha" role="dialog" aria-modal="true" aria-labelledby="tv-tit" onsubmit="registrarTentativa(event)" novalidate>
+    <h2 id="tv-tit">Não deu para entregar</h2>
+    <p class="sub" id="tv-sub"></p>
+    <label for="tv-motivo">Motivo</label>
+    <select id="tv-motivo">
+      <option value="ausente">Cliente ausente</option>
+      <option value="endereco">Endereço não localizado</option>
+      <option value="recusou">Cliente recusou</option>
+      <option value="pagamento">Falta de pagamento</option>
+      <option value="outro">Outro</option>
+    </select>
+    <label for="tv-obs">Observação (opcional)</label>
+    <input id="tv-obs" maxlength="300">
+    <label for="tv-foto">Foto (opcional)</label>
+    <input id="tv-foto" type="file" accept="image/*" capture="environment">
+    <button class="btn" id="tv-btn" type="submit"><i class="ti ti-alert-triangle" aria-hidden="true"></i> Registrar tentativa</button>
+    <p class="msg erro" id="tv-msg" role="alert"></p>
+    <button class="btn btn-out" type="button" onclick="fecharFolhas()">Cancelar</button>
+  </form>
+</div>
+
+<div class="toast hidden" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const SURL='https://icgfpfwcnhkjglrmnuca.supabase.co';
+const SKEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljZ2ZwZndjbmhramdscm1udWNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwODA2OTEsImV4cCI6MjA5NTY1NjY5MX0.xDGiGCIlqXaqdWhWo0NoNi_XUdlw5raCogO_Jnc0ezw';
+// Sessão guardada em chave própria: não mistura com o login da loja no mesmo aparelho.
+const db=supabase.createClient(SURL,SKEY,{auth:{storageKey:'misu-entregador-auth',persistSession:true,autoRefreshToken:true}});
+
+const $=id=>document.getElementById(id);
+const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ST={para_agendar:['Para agendar',''],agendada:['Agendada',''],em_rota:['Saiu para entrega','warn'],proximo_destino:['Perto do destino','warn'],tentativa:['Tentativa','warn'],entregue:['Entregue','ok'],retirada:['Retirada','']};
+const FILTROS=[['pendentes','Em andamento'],['entregues','Entregues'],['todas','Todas']];
+const S={eu:null,entregas:[],filtro:'pendentes',atual:null,timer:null};
+
+function mostrar(tela){ ['carregando','convite','login','app'].forEach(t=>$('tela-'+t).classList.toggle('hidden',t!==tela)); }
+let _toastT=null;
+function toast(m){ const t=$('toast'); t.textContent=m; t.classList.remove('hidden'); clearTimeout(_toastT); _toastT=setTimeout(()=>t.classList.add('hidden'),3500); }
+function mascaraCpf(el){ const d=el.value.replace(/\D/g,'').slice(0,11); el.value=d.replace(/^(\d{3})(\d)/,'$1.$2').replace(/^(\d{3})\.(\d{3})(\d)/,'$1.$2.$3').replace(/\.(\d{3})(\d{1,2})$/,'.$1-$2'); }
+function cpfOk(v){ const d=String(v||'').replace(/\D/g,''); if(d.length!==11||/^(\d)\1{10}$/.test(d)) return false;
+  let s=0; for(let i=0;i<9;i++) s+=+d[i]*(10-i); let r=(s*10)%11; if(r===10) r=0; if(r!==+d[9]) return false;
+  s=0; for(let i=0;i<10;i++) s+=+d[i]*(11-i); r=(s*10)%11; if(r===10) r=0; return r===+d[10]; }
+function verSenha(id,b){ const i=$(id); const v=i.type==='password'; i.type=v?'text':'password'; b.innerHTML=`<i class="ti ti-eye${v?'-off':''}"></i>`; b.setAttribute('aria-label',v?'Esconder senha':'Mostrar senha'); }
+function fmtEspera(s){ s=Math.max(1,Math.ceil(+s||0)); return s<60?s+' s':Math.ceil(s/60)+' min'; }
+function msgErro(r,padrao){
+  const e=r&&r.erro;
+  return ({dados_incorretos:'CPF ou senha incorretos.'+(r.espera_seg>0?' Aguarde '+fmtEspera(r.espera_seg)+'.':''),
+    bloqueado:'Muitas tentativas erradas. Aguarde '+fmtEspera(r&&r.espera_seg)+' e tente de novo.',
+    acesso_desativado:'Seu acesso foi desativado pela loja. Fale com o responsável.',
+    sem_recurso:'O app do entregador não faz parte do plano da loja. Fale com o responsável.',
+    convite_invalido:'Este link de convite não é válido. Peça um novo ao responsável da loja.',
+    convite_usado:'Este convite já foi usado. Entre com seu CPF e senha, ou peça um novo convite.',
+    convite_expirado:'Este convite venceu (vale 48 horas). Peça um novo ao responsável da loja.',
+    cpf_invalido:'CPF inválido. Confira os números.', cpf_em_uso:'Este CPF já tem acesso em outra conta. Fale com o responsável da loja.',
+    senha_fraca:'A senha precisa ter pelo menos 6 caracteres.', sem_sessao:'Não foi possível iniciar a sessão neste aparelho. Tente de novo.',
+    pagamento_pendente:'Pagamento pendente: esta entrega ainda não foi liberada. Fale com a loja.',
+    falta_nome:'Informe o nome de quem recebeu.', falta_assinatura:'Peça para o cliente assinar antes de confirmar.',
+    sem_codigo:'Esta entrega ainda não tem código. Peça para a loja reenviar o link ao cliente.',
+    codigo_bloqueado:'Muitas tentativas de código erradas. Fale com o gerente.',
+    codigo_incorreto:'Código incorreto. Tentativas: '+((r&&r.tentativas)||0)+'/5.',
+    nao_encontrada:'Esta entrega não está mais com você. Atualize a lista.', status_invalido:'Esta entrega mudou de situação. Atualize a lista.'})[e]||padrao;
+}
+async function rpc(fn,args){ const {data,error}=await db.rpc(fn,args||{}); if(error) throw error; return data||{}; }
+// sessão anônima = "crachá" do aparelho; quem decide o acesso são as funções do banco
+async function garantirSessao(){
+  const {data}=await db.auth.getSession();
+  if(data&&data.session) return true;
+  const {error}=await db.auth.signInAnonymously();
+  if(error){ console.warn('[entregador] login anônimo', error.message); return false; }
+  return true;
+}
+
+/* ── início ── */
+async function iniciar(){
+  const tok=new URLSearchParams(location.search).get('convite');
+  if(tok){ abrirConvite(tok); return; }
+  try{
+    const {data}=await db.auth.getSession();
+    if(data&&data.session){ const eu=await rpc('entregador_eu'); if(eu.ok){ entrarNoApp(eu); return; } }
+  }catch(_){}
+  mostrar('login');
+}
+
+/* ── convite ── */
+let _token='';
+async function abrirConvite(tok){
+  _token=tok; mostrar('convite');
+  try{
+    const r=await rpc('entregador_convite_info',{p_token:tok});
+    if(!r.ok){ $('conv-sub').innerHTML=esc(msgErro(r,'Convite inválido.'))+'<br><a href="entregador.html" style="color:var(--pri-txt);font-weight:700">Ir para o login</a>'; return; }
+    $('conv-sub').innerHTML=`Olá, <b>${esc(String(r.nome||'').split(' ')[0])}</b>! A <b>${esc(r.loja_nome)}</b> convidou você para ver as suas entregas.`+(r.ja_tem_acesso?' Você já tinha acesso: a senha nova substitui a antiga.':'');
+    $('form-convite').classList.remove('hidden'); $('conv-cpf').focus();
+  }catch(e){ $('conv-sub').textContent='Sem conexão para conferir o convite. Tente de novo.'; }
+}
+async function aceitarConvite(ev){
+  ev.preventDefault();
+  const cpf=$('conv-cpf').value, s1=$('conv-senha').value, s2=$('conv-senha2').value, msg=$('conv-msg');
+  msg.textContent='';
+  if(!cpfOk(cpf)){ msg.textContent='CPF inválido. Confira os números.'; $('conv-cpf').focus(); return; }
+  if(s1.length<6){ msg.textContent='A senha precisa ter pelo menos 6 caracteres.'; $('conv-senha').focus(); return; }
+  if(s1!==s2){ msg.textContent='As duas senhas não são iguais.'; $('conv-senha2').focus(); return; }
+  const b=$('conv-btn'); b.disabled=true;
+  try{
+    if(!(await garantirSessao())){ msg.textContent='O login do entregador ainda não foi ativado pela loja (Supabase). Avise o responsável.'; return; }
+    const r=await rpc('entregador_aceitar_convite',{p_token:_token,p_cpf:cpf,p_senha:s1});
+    if(!r.ok){ msg.textContent=msgErro(r,'Não foi possível criar o acesso.'); return; }
+    history.replaceState(null,'',location.pathname); // tira o convite da barra de endereço
+    const eu=await rpc('entregador_eu'); if(eu.ok){ toast('Acesso criado! Bem-vindo(a).'); entrarNoApp(eu); }
+  }catch(e){ msg.textContent='Sem conexão. Tente de novo.'; }
+  finally{ b.disabled=false; }
+}
+
+/* ── login ── */
+async function entrar(ev){
+  ev.preventDefault();
+  const cpf=$('login-cpf').value, senha=$('login-senha').value, msg=$('login-msg');
+  msg.textContent='';
+  if(!cpfOk(cpf)){ msg.textContent='CPF inválido. Confira os números.'; $('login-cpf').focus(); return; }
+  if(!senha){ msg.textContent='Digite sua senha.'; $('login-senha').focus(); return; }
+  const b=$('login-btn'); b.disabled=true;
+  try{
+    if(!(await garantirSessao())){ msg.textContent='O login do entregador ainda não foi ativado pela loja (Supabase). Avise o responsável.'; return; }
+    const r=await rpc('entregador_entrar',{p_cpf:cpf,p_senha:senha});
+    if(!r.ok){ msg.textContent=msgErro(r,'Não foi possível entrar.'); $('login-senha').value=''; return; }
+    $('login-senha').value='';
+    const eu=await rpc('entregador_eu'); if(eu.ok) entrarNoApp(eu); else msg.textContent=msgErro(eu,'Não foi possível entrar.');
+  }catch(e){ msg.textContent='Sem conexão. Tente de novo.'; }
+  finally{ b.disabled=false; }
+}
+async function sair(){
+  try{ await rpc('entregador_sair'); }catch(_){}
+  try{ await db.auth.signOut(); }catch(_){}
+  clearInterval(S.timer); S.eu=null; S.entregas=[];
+  fecharFolhas(); mostrar('login');
+}
+
+/* ── minhas entregas ── */
+function entrarNoApp(eu){
+  S.eu=eu; $('app-quem').textContent=(eu.nome||'')+' · '+(eu.loja_nome||'');
+  mostrar('app'); desenharChips(); carregarEntregas();
+  clearInterval(S.timer); S.timer=setInterval(()=>{ if(!document.hidden && $('veu-detalhe').classList.contains('hidden')) carregarEntregas(); },60000);
+}
+function desenharChips(){
+  $('chips').innerHTML=FILTROS.map(([k,l])=>`<button type="button" role="tab" aria-selected="${S.filtro===k}" class="chip${S.filtro===k?' on':''}" onclick="S.filtro='${k}';desenharChips();desenharLista()">${l}</button>`).join('');
+}
+async function carregarEntregas(avisar){
+  if(!S.entregas.length) $('lista').innerHTML='<div class="carregando">Carregando entregas…</div>';
+  try{
+    const r=await rpc('entregador_minhas_entregas');
+    if(!r.ok){ toast('Sua sessão terminou. Entre de novo.'); sair(); return; }
+    S.entregas=r.entregas||[]; desenharLista();
+    if(avisar) toast('Lista atualizada.');
+  }catch(e){ if(!S.entregas.length) $('lista').innerHTML='<div class="vazio">Sem conexão. Toque em atualizar.</div>'; }
+}
+function enderecoTxt(e){
+  if(e.forma==='retirada') return 'Retirada na loja';
+  const l1=[e.rua,e.numero].filter(Boolean).join(', '), l2=[e.bairro,[e.cidade,e.uf].filter(Boolean).join('/')].filter(Boolean).join(' · ');
+  return (l1||l2) ? [l1,e.complemento,l2,e.cep?('CEP '+e.cep):''].filter(Boolean).join(' — ') : (e.endereco||'Endereço não informado');
+}
+function dataTxt(e){ if(!e.data_agendada) return ''; return e.data_agendada.split('-').reverse().slice(0,2).join('/')+(e.janela?(' · '+e.janela):''); }
+function desenharLista(){
+  const f=S.filtro, l=S.entregas.filter(e=>f==='todas'||(f==='entregues'?e.status==='entregue':e.status!=='entregue'));
+  if(!l.length){ $('lista').innerHTML=`<div class="vazio">${f==='entregues'?'Nenhuma entrega concluída nos últimos 30 dias.':'Nenhuma entrega com você agora. 🎉'}</div>`; return; }
+  $('lista').innerHTML=l.map(e=>{ const st=ST[e.status]||[e.status,'']; const d=dataTxt(e);
+    return `<button type="button" class="ent-card" onclick="abrirDetalhe('${esc(e.id)}')">
+      <div class="ent-top"><span class="ent-nome">${esc(e.cliente_nome||'Cliente')}</span><span class="selo ${st[1]}">${esc(st[0])}</span></div>
+      ${e.descricao?`<div class="ent-desc">${esc(e.descricao)}</div>`:''}
+      <div class="ent-end"><i class="ti ti-map-pin" aria-hidden="true"></i><span>${esc(enderecoTxt(e))}${d?' · '+esc(d):''}</span></div>
+    </button>`; }).join('');
+}
+function abrirDetalhe(id){
+  const e=S.entregas.find(x=>x.id===id); if(!e) return; S.atual=e;
+  const st=ST[e.status]||[e.status,''];
+  $('det-tit').textContent=e.cliente_nome||'Entrega';
+  $('det-status').className='selo '+st[1]; $('det-status').textContent=st[0];
+  const campos=[['Endereço',enderecoTxt(e)],['Ponto de referência',e.referencia],['Quem vai receber',[e.rec_nome,e.rec_telefone].filter(Boolean).join(' · ')],
+    ['O que entregar',e.descricao],['Quando',dataTxt(e)],['Observações',e.observacoes],
+    ['Entregue',e.status==='entregue'?[e.entregue_em?new Date(e.entregue_em).toLocaleString('pt-BR'):'',e.recebido_por?('recebido por '+e.recebido_por):''].filter(Boolean).join(' · '):'']];
+  $('det-campos').innerHTML=campos.filter(c=>c[1]).map(c=>`<div class="campo"><div class="t">${esc(c[0])}</div><div class="v">${esc(c[1])}</div></div>`).join('');
+  const tel=String(e.rec_telefone||e.telefone||'').replace(/\D/g,''), tel55=tel&&!(tel.startsWith('55')&&tel.length>=12)?'55'+tel:tel;
+  const endBusca=e.forma!=='retirada'?[e.rua,e.numero,e.bairro,e.cidade,e.uf,e.cep].filter(Boolean).join(', ')||e.endereco||'':'';
+  let rap='';
+  if(endBusca) rap+=`<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(endBusca)}" target="_blank" rel="noopener"><i class="ti ti-map-2" aria-hidden="true"></i>Abrir no mapa</a>`;
+  if(tel) rap+=`<a href="tel:+${esc(tel55)}"><i class="ti ti-phone" aria-hidden="true"></i>Ligar</a><a href="https://wa.me/${esc(tel55)}?text=${encodeURIComponent('Olá'+(e.cliente_nome?' '+String(e.cliente_nome).split(' ')[0]:'')+'! Sou o entregador da '+(S.eu?.loja_nome||'loja')+'.')}" target="_blank" rel="noopener"><i class="ti ti-brand-whatsapp" aria-hidden="true"></i>WhatsApp</a>`;
+  $('det-rapidas').innerHTML=rap; $('det-rapidas').classList.toggle('hidden',!rap);
+  let ac='';
+  if(e.status!=='entregue'){
+    if(e.forma!=='retirada'){
+      if(['para_agendar','agendada','tentativa'].includes(e.status)) ac+=`<button class="btn" type="button" onclick="marcar('em_rota')"><i class="ti ti-route" aria-hidden="true"></i> Saí para a entrega</button>`;
+      if(e.status==='em_rota') ac+=`<button class="btn btn-out" type="button" onclick="marcar('proximo_destino')"><i class="ti ti-map-pin" aria-hidden="true"></i> Estou perto do destino</button>`;
+    }
+    ac+=`<button class="btn btn-ok" type="button" onclick="abrirConfirmar()"><i class="ti ti-check" aria-hidden="true"></i> ${e.forma==='retirada'?'Confirmar retirada':'Confirmar entrega'}</button>`;
+    if(e.forma!=='retirada') ac+=`<button class="btn btn-out" type="button" onclick="abrirTentativa()"><i class="ti ti-alert-triangle" aria-hidden="true"></i> Não deu para entregar</button>`;
+  }
+  $('det-acoes').innerHTML=ac;
+  abrirVeu('veu-detalhe');
+}
+let _ultimoFoco=null;
+function abrirVeu(id){ fecharFolhas(true); _ultimoFoco=document.activeElement; $(id).classList.remove('hidden'); setTimeout(()=>{ const f=$(id).querySelector('input,select,button'); if(f) f.focus(); },60); }
+function fecharFolhas(semFoco){ ['veu-detalhe','veu-confirmar','veu-tentativa'].forEach(v=>$(v).classList.add('hidden')); if(!semFoco&&_ultimoFoco&&_ultimoFoco.focus) try{ _ultimoFoco.focus(); }catch(_){} }
+document.addEventListener('keydown',ev=>{ if(ev.key==='Escape') fecharFolhas(); });
+
+async function marcar(status){
+  const e=S.atual; if(!e) return;
+  try{
+    const r=await rpc('entregador_marcar',{p_id:e.id,p_status:status});
+    if(!r.ok){ toast(msgErro(r,'Não foi possível atualizar.')); await carregarEntregas(); fecharFolhas(); return; }
+    e.status=status; toast(status==='em_rota'?'Boa entrega! O cliente vê que você saiu.':'Cliente avisado que você está perto.');
+    desenharLista(); abrirDetalhe(e.id);
+  }catch(_){ toast('Sem conexão. Tente de novo.'); }
+}
+
+/* ── confirmar ── */
+let _traco=false;
+function abrirConfirmar(){
+  const e=S.atual; if(!e) return; const cfg=(S.eu&&S.eu.config)||{};
+  const ass=!!cfg.exigir_assinatura, cod=!!cfg.exigir_codigo&&!ass;
+  $('cf-sub').textContent=(e.cliente_nome||'')+(e.descricao?' — '+e.descricao:'');
+  $('cf-bloco-assinatura').classList.toggle('hidden',!ass); $('cf-bloco-codigo').classList.toggle('hidden',!cod);
+  $('cf-nome-lbl').textContent=ass?'Nome de quem recebeu (obrigatório)':'Nome de quem recebeu';
+  ['cf-codigo','cf-nome','cf-obs'].forEach(i=>$(i).value=''); $('cf-msg').textContent='';
+  abrirVeu('veu-confirmar');
+  if(ass) setTimeout(prepararCanvas,80);
+}
+function prepararCanvas(){
+  const cv=$('cf-canvas'), ctx=cv.getContext('2d'), r=cv.getBoundingClientRect();
+  cv.width=Math.round(r.width||300); cv.height=160; ctx.lineWidth=2.4; ctx.lineCap='round'; ctx.strokeStyle='#111827'; _traco=false;
+  let des=false, ult=null;
+  const pos=ev=>{ const b=cv.getBoundingClientRect(), t=ev.touches?ev.touches[0]:ev; return {x:t.clientX-b.left,y:t.clientY-b.top}; };
+  cv.onpointerdown=ev=>{ ev.preventDefault(); des=true; ult=pos(ev); cv.setPointerCapture&&cv.setPointerCapture(ev.pointerId); };
+  cv.onpointermove=ev=>{ if(!des) return; ev.preventDefault(); const p=pos(ev); ctx.beginPath(); ctx.moveTo(ult.x,ult.y); ctx.lineTo(p.x,p.y); ctx.stroke(); ult=p; _traco=true; };
+  cv.onpointerup=cv.onpointercancel=()=>{ des=false; };
+}
+function limparAssinatura(){ const cv=$('cf-canvas'); cv.getContext('2d').clearRect(0,0,cv.width,cv.height); _traco=false; }
+async function enviarArquivo(e,nome,blob,tipo){
+  const path=`${S.eu.empresa_id}/${e.id}/${nome}`;
+  const {error}=await db.storage.from('entregas-comprovantes').upload(path,blob,{contentType:tipo,upsert:false});
+  if(error) throw error; return path;
+}
+async function confirmarEntrega(ev){
+  ev.preventDefault();
+  const e=S.atual; if(!e) return; const cfg=(S.eu&&S.eu.config)||{};
+  const ass=!!cfg.exigir_assinatura, cod=!!cfg.exigir_codigo&&!ass, msg=$('cf-msg');
+  const nome=$('cf-nome').value.trim(), codigo=$('cf-codigo').value.trim(), obs=$('cf-obs').value.trim();
+  msg.textContent='';
+  if(ass&&!nome){ msg.textContent='Informe o nome de quem recebeu.'; $('cf-nome').focus(); return; }
+  if(ass&&!_traco){ msg.textContent='Peça para o cliente assinar antes de confirmar.'; return; }
+  if(cod&&!codigo){ msg.textContent='Digite o código que o cliente informou.'; $('cf-codigo').focus(); return; }
+  const b=$('cf-btn'); b.disabled=true;
+  try{
+    let caminho=null;
+    if(ass){
+      const blob=await new Promise(res=>$('cf-canvas').toBlob(res,'image/png'));
+      try{ caminho=await enviarArquivo(e,'assinatura_'+Date.now()+'.png',blob,'image/png'); }
+      catch(_){ msg.textContent='Não foi possível enviar a assinatura. Confira a internet e tente de novo.'; return; }
+    }
+    const r=await rpc('entregador_confirmar',{p_id:e.id,p_recebido_por:nome||null,p_codigo:codigo||null,p_assinatura:caminho,p_obs:obs||null});
+    if(!r.ok){ msg.textContent=msgErro(r,'Não foi possível confirmar.'); if(r.erro==='nao_encontrada'||r.erro==='status_invalido') carregarEntregas(); return; }
+    fecharFolhas(); toast('✅ Entrega confirmada!'); carregarEntregas();
+  }catch(_){ msg.textContent='Sem conexão. Tente de novo.'; }
+  finally{ b.disabled=false; }
+}
+
+/* ── tentativa ── */
+function abrirTentativa(){
+  const e=S.atual; if(!e) return;
+  $('tv-sub').textContent=e.cliente_nome||''; $('tv-motivo').value='ausente'; $('tv-obs').value=''; $('tv-foto').value=''; $('tv-msg').textContent='';
+  abrirVeu('veu-tentativa');
+}
+async function registrarTentativa(ev){
+  ev.preventDefault();
+  const e=S.atual; if(!e) return; const b=$('tv-btn'); b.disabled=true; $('tv-msg').textContent='';
+  try{
+    let foto=null; const f=$('tv-foto').files&&$('tv-foto').files[0];
+    if(f){ const ext=((f.name||'').split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,5)||'jpg';
+      try{ foto=await enviarArquivo(e,'tentativa_'+Date.now()+'.'+ext,f,f.type||'image/jpeg'); }catch(_){ foto=null; } }
+    const r=await rpc('entregador_tentativa',{p_id:e.id,p_motivo:$('tv-motivo').value,p_obs:$('tv-obs').value.trim()||null,p_foto:foto});
+    if(!r.ok){ $('tv-msg').textContent=msgErro(r,'Não foi possível registrar.'); return; }
+    fecharFolhas(); toast('Tentativa registrada. A loja já sabe.'); carregarEntregas();
+  }catch(_){ $('tv-msg').textContent='Sem conexão. Tente de novo.'; }
+  finally{ b.disabled=false; }
+}
+
+iniciar();
+</script>
+</body>
+</html>
