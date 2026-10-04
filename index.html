@@ -977,7 +977,7 @@ body.pin-travado .pin-screen,body.pin-travado .nf-screen{z-index:10000}
 .pinshow-d-rl{font-size:11.5px;color:var(--txt2)}
 .pinshow-d-pin{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:20px;font-weight:800;letter-spacing:1.5px;color:var(--txt);white-space:nowrap}
 .pin-st-ok{font-size:12px;color:var(--txt2)}
-.pin-st-falta{font-size:12px;font-weight:700;color:var(--danger,#dc2626)}
+.pin-st-falta{font-size:12px;font-weight:700;color:var(--danger-txt,#B91C1C)} /* Fatia 65: 4,5:1 nos dois temas */
 
 /* ── APARÊNCIA — EXTRAS ────────────────────────────── */
 .palette-preset{width:36px;height:36px;border-radius:8px;cursor:pointer;border:3px solid transparent;transition:all .2s;flex-shrink:0}
@@ -11355,6 +11355,7 @@ function renderCart(){
 function cQty(id,d){const p=G.produtos.find(x=>x.id===id);const ci=G.cart.find(x=>x.id===id);if(!ci)return;ci.qty+=d;if(!ci.inf&&p&&ci.qty>p.estoque){ci.qty=p.estoque;notify('Limite!','warn');return;}if(ci.qty<1)G.cart=G.cart.filter(x=>x.id!==id);renderCart();salvarCarrinhoSessao();}
 function rmCart(id){if(id==='__entrega__')G._entregaPDV=null;G.cart=G.cart.filter(x=>x.id!==id);renderCart();try{renderEntregaBadge();}catch(_){}salvarCarrinhoSessao();}
 function abrirEntregaPDV(){
+  if(!temFeatureKey('technical.delivery_schedule')){ notify('🔒 Entregas não fazem parte do plano da sua empresa.','warn'); return; } // Fatia 62b
   var e=G._entregaPDV||{};
   function set(id,v){ var el=document.getElementById(id); if(el) el.value=(v==null?'':v); }
   set('ent-endereco', e.endereco); set('ent-taxa', e.taxa||0); set('ent-previsao', e.previsao); set('ent-entregador', e.entregador); set('ent-obs', e.obs);
@@ -20019,18 +20020,18 @@ function _cardEntrega(e){
   const entregadorTxt=e.entregador_nome?`<div style="font-size:11px;color:var(--pri-txt);margin-top:4px"><i class="ti ti-truck"></i> ${esc(e.entregador_nome)}</div>`:'';
   return `<div style="border:1px solid var(--border);border-radius:12px;padding:12px;background:var(--bg2)">
     <div style="display:flex;justify-content:space-between;align-items:start;gap:8px">
-      <div style="font-weight:700;font-size:13.5px">${e.cliente_nome||'—'}</div>
+      <div style="font-weight:700;font-size:13.5px">${esc(e.cliente_nome||'—')}</div>
       <span class="tag tag-gry" style="font-size:10px">${tipoLbl}</span>
     </div>
-    <div style="font-size:12px;color:var(--txt2);margin-top:2px">${e.descricao||''}</div>
+    <div style="font-size:12px;color:var(--txt2);margin-top:2px">${esc(e.descricao||'')}</div>
     ${prontaTxt}
     <div style="font-size:11.5px;color:var(--txt3);margin-top:6px">${e.forma==='retirada'?'<i class="ti ti-building-store"></i> Retirada na loja':'<i class="ti ti-truck"></i> Entrega'} · ${dataTxt}</div>
     <div style="display:flex;gap:8px;align-items:center;margin-top:6px">${pagoBadge}<span class="tag tag-blu" style="font-size:10px">${stLbl}</span></div>
-    ${e.endereco?`<div style="font-size:11px;color:var(--txt3);margin-top:4px"><i class="ti ti-map-pin"></i> ${e.endereco}</div>`:''}
+    ${e.endereco?`<div style="font-size:11px;color:var(--txt3);margin-top:4px"><i class="ti ti-map-pin"></i> ${esc(e.endereco)}</div>`:''}
     ${entregadorTxt}
     <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:10px">
       <button class="btn btn-out btn-xs" title="Agendar" onclick="agendarEntrega('${e.id}')"><i class="ti ti-calendar"></i></button>
-      ${e.forma!=='retirada'?`<button class="btn btn-out btn-xs" title="${e.entregador_nome?'Trocar entregador':'Atribuir entregador'}" onclick="atribuirEntregador('${e.id}')"><i class="ti ti-user-cog"></i></button>`:''}
+      ${e.forma!=='retirada'&&_appEntregadorLiberado()?`<button class="btn btn-out btn-xs" title="${e.entregador_nome?'Trocar entregador':'Atribuir entregador'}" onclick="atribuirEntregador('${e.id}')"><i class="ti ti-user-cog"></i></button>`:''}
       <button class="btn btn-out btn-xs" title="Gerar link do cliente" onclick="gerarLinkEntrega('${e.id}')"><i class="ti ti-link"></i></button>
       ${e.telefone?`<button class="btn btn-out btn-xs" title="WhatsApp" onclick="whatsappEntrega('${e.id}')"><i class="ti ti-brand-whatsapp"></i></button>`:''}
       ${e.status!=='entregue'&&e.forma!=='retirada'?`<button class="btn btn-out btn-xs" title="Iniciar entrega" onclick="iniciarEntrega('${e.id}')"><i class="ti ti-route"></i></button>`:''}
@@ -20111,6 +20112,7 @@ function verOrigemEntrega(id){
    a ver essa entrega em "Minhas Entregas" no app mobile. Só lista usuários
    ativos com role='entregador' (perfil novo desta fatia). */
 function atribuirEntregador(id){
+  if(!_appEntregadorLiberado()){ notify('🔒 O app do entregador não faz parte do plano da sua empresa.','warn'); return; } // Fatia 62b
   const e=(G.entregas||[]).find(x=>x.id===id); if(!e) return;
   const entregadores=(G.usuarios||[]).filter(u=>u.ativo&&u.role==='entregador');
   if(!entregadores.length){ notify('Nenhum entregador cadastrado ainda. Crie um usuário com o perfil "Entregador" em Usuários.','info',6000); return; }
@@ -20660,6 +20662,11 @@ async function saveUsr(){
   const comissao_pct=role==='tecnico'?(parseFloat(document.getElementById('u-comissao').value)||0):0;
   const editId=document.getElementById('u-id').value;
   if(!nome){notify('Nome obrigatório!','error');return;}
+  // Fatia 62b: perfil Entregador só quando o plano libera o app do entregador
+  if(role==='entregador' && ativo && !_appEntregadorLiberado()){
+    const antes=editId?(G.usuarios||[]).find(u=>u.id===editId):null;
+    if(!antes||antes.role!=='entregador'||antes.ativo===false){ notify('🔒 O perfil Entregador faz parte do app do entregador, que não está no plano da sua empresa.','warn',6000); return; }
+  }
   if(G.pinNovo){ await _saveUsrPinNovo({editId,nome,telefone,role,ativo,comissao_pct}); return; } // Fatia 50
   if(pin && !/^\d{4}$/.test(pin)){notify('O PIN deve ter exatamente 4 números (o teclado de entrada só aceita 4).','error');return;} // Fatia 62a
   if(!editId && !pin){notify('Defina um PIN para o novo funcionário.','error');return;}
@@ -20730,7 +20737,7 @@ function renderUsuarios(q=''){
         const podeEditar = podeMexer && !euMesmo;
         const podeDesativar = ehAdmin && !euMesmo && !eAdmin;
         const pinOk = (typeof hasPin === 'function') ? hasPin(u.id) : !!u.pin;
-        const pinTxt = G.pinNovo ? (pinOk ? '<span class="pin-st-ok">🔒 PIN de 6 dígitos</span>' : (u.ativo ? '<span class="pin-st-falta">⚠ Sem PIN — não consegue entrar</span>' : '<span class="pin-st-ok">⚪ Sem PIN</span>')) : ''; // Fatia 50
+        const pinTxt = u.role === 'entregador' ? `<span data-ent-acesso="${esc(u.id)}" style="font-size:12px;color:var(--txt3)">App do entregador</span>` : G.pinNovo ? (pinOk ? '<span class="pin-st-ok">🔒 PIN de 6 dígitos</span>' : (u.ativo ? '<span class="pin-st-falta">⚠ Sem PIN — não consegue entrar</span>' : '<span class="pin-st-ok">⚪ Sem PIN</span>')) : ''; // Fatia 50
 
         return `<tr>
           <td>
@@ -20738,7 +20745,7 @@ function renderUsuarios(q=''){
               <div style="width:34px;height:34px;border-radius:9px;background:${getNFColor(u.role).bg};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0">${(u.nome||'?').slice(0,2).toUpperCase()}</div>
               <div>
                 <div style="font-weight:600;font-size:13.5px;color:var(--txt);display:flex;align-items:center;gap:6px">
-                  ${u.nome}
+                  ${esc(u.nome)}
                   ${euMesmo ? '<span class="tag tag-pur" style="font-size:9px">Você</span>' : ''}
                   ${eAdmin ? '<span class="tag" style="font-size:9px;background:#fef3c7;color:#92400e">★ Dono</span>' : ''}
                 </div>
@@ -20757,13 +20764,83 @@ function renderUsuarios(q=''){
           <td>
             ${!euMesmo ? `<div style="display:flex;gap:5px;flex-wrap:wrap">
               ${podeEditar ? `<button class="btn btn-out btn-xs" onclick="editUsr('${u.id}')" title="Editar dados e PIN"><i class="ti ti-edit"></i> Editar</button>` : ''}
-              ${podeEditar && G.pinNovo && u.ativo ? `<button class="btn btn-out btn-xs" onclick="gerarPinPessoaDesk('${u.id}')" title="Gerar um PIN novo (o atual para de valer)"><i class="ti ti-key"></i> Novo PIN</button>` : ''}
+              ${podeEditar && G.pinNovo && u.ativo && u.role!=='entregador' ? `<button class="btn btn-out btn-xs" onclick="gerarPinPessoaDesk('${u.id}')" title="Gerar um PIN novo (o atual para de valer)"><i class="ti ti-key"></i> Novo PIN</button>` : ''}
+              ${podeEditar && u.ativo && u.role==='entregador' ? `<button class="btn btn-out btn-xs" onclick="abrirAcessoEntregadorDesk('${u.id}')" title="Convite e acesso do app do entregador"><i class="ti ti-device-mobile"></i> Acesso ao app</button>` : ''}
               ${podeDesativar ? `<button class="btn btn-xs ${u.ativo ? 'btn-danger' : 'btn-success'}" onclick="toggleUsr('${u.id}')">${u.ativo ? '<i class="ti ti-lock"></i> Desativar' : '<i class="ti ti-lock-open"></i> Ativar'}</button>` : ''}
             </div>` : '<span style="color:var(--txt3);font-size:12px">—</span>'}
           </td>
         </tr>`;
       }).join('');
   _renderUsrPinAcoes(); // Fatia 50
+  _carregarAcessosEntregadorDesk(); // Fatia 65
+}
+
+/* ── Fatia 65: acesso próprio do entregador (entregador.html) ──────────────
+   O dono/gerente gera um convite (link de uso único, 48 h, com o PIN dele);
+   o entregador abre, digita o CPF e cria a senha. A loja nunca vê a senha.
+   Funções no banco: entregador_acessos_loja / entregador_gerar_convite /
+   entregador_revogar (sql_f65_entregador_acesso.sql). */
+let _entAcessosDesk=null;
+async function _carregarAcessosEntregadorDesk(){
+  const els=document.querySelectorAll('[data-ent-acesso]'); if(!els.length) return;
+  try{
+    const r=await comTimeout(db.rpc('entregador_acessos_loja'),'acessos');
+    _entAcessosDesk=(r&&!r.error&&Array.isArray(r.data))?r.data:null;
+  }catch(_){ _entAcessosDesk=null; }
+  document.querySelectorAll('[data-ent-acesso]').forEach(el=>{ el.innerHTML=_txtAcessoEntregador(el.dataset.entAcesso); });
+}
+function _txtAcessoEntregador(id){
+  if(!_entAcessosDesk) return '<span style="color:var(--txt3)">App do entregador</span>';
+  const a=_entAcessosDesk.find(x=>x.usuario_id===id)||{};
+  if(a.tem_acesso) return `<span class="pin-st-ok">📱 Acesso criado${a.ultimo_login_em?' · entrou em '+new Date(a.ultimo_login_em).toLocaleDateString('pt-BR'):''}</span>`;
+  if(a.convite_expira_em) return `<span class="pin-st-ok">✉ Convite enviado (vale até ${new Date(a.convite_expira_em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})})</span>`;
+  return '<span class="pin-st-falta">⚠ Sem acesso ao app ainda</span>';
+}
+function _linkConviteEntregador(tok){ return location.origin+'/entregador.html?convite='+encodeURIComponent(tok); }
+async function abrirAcessoEntregadorDesk(id){
+  const u=(G.usuarios||[]).find(x=>x.id===id); if(!u) return;
+  if(!_appEntregadorLiberado()){ notify('🔒 O app do entregador não faz parte do plano da sua empresa.','warn'); return; }
+  await _carregarAcessosEntregadorDesk();
+  if(_entAcessosDesk===null){ notify('Falta rodar o SQL da Fatia 65 (sql_f65_entregador_acesso.sql) no Supabase.','warn',7000); return; }
+  const a=_entAcessosDesk.find(x=>x.usuario_id===id)||{};
+  const html=`<div class="card-title" style="gap:8px;margin-bottom:10px"><i class="ti ti-device-mobile" style="color:var(--pri-txt)"></i> App do entregador — ${esc(u.nome)}</div>
+    <div style="font-size:13px;color:var(--txt2);line-height:1.55;margin-bottom:12px">${_txtAcessoEntregador(id)}<br>
+      O entregador usa só a página <b>${esc(location.origin)}/entregador.html</b>, entra com <b>CPF e senha</b> e vê apenas as entregas atribuídas a ele. Ele não entra mais pelo PIN nos aparelhos da loja.</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="btn btn-pri" onclick="gerarConviteEntregadorDesk('${esc(id)}')"><i class="ti ti-send"></i> ${a.tem_acesso?'Gerar novo convite (ele cria outra senha)':'Gerar convite'}</button>
+      ${a.tem_acesso||a.convite_expira_em?`<button class="btn btn-out" style="color:var(--danger-txt);border-color:var(--danger)" onclick="revogarAcessoEntregadorDesk('${esc(id)}')"><i class="ti ti-user-off"></i> Remover acesso (sai de todos os aparelhos)</button>`:''}
+    </div>`;
+  abrirModalGenerico(html, `<button class="btn btn-out" onclick="closeModal('modal-generic')">Fechar</button>`);
+}
+async function gerarConviteEntregadorDesk(id){
+  const u=(G.usuarios||[]).find(x=>x.id===id); if(!u) return;
+  closeModal('modal-generic');
+  const res=await _pedirPinAdminDesk({ titulo:'Convite do app — '+u.nome,
+    sub:'O convite vale 48 horas e funciona uma vez. Se ele já tinha acesso, a senha antiga para de valer quando ele usar o convite. Digite seu PIN (administrador ou gerente).',
+    executar:p=>_rpcPinDesk('entregador_gerar_convite',{p_usuario_id:id,p_pin_admin:p}) });
+  if(!res) return;
+  const link=_linkConviteEntregador(res.token);
+  let tel=String(u.telefone||'').replace(/\D/g,''); if(tel && !(tel.startsWith('55') && tel.length>=12)) tel='55'+tel;
+  window._convWaDesk=(tel?'https://wa.me/'+tel:'https://wa.me/')+'?text='+encodeURIComponent(`Olá, ${String(u.nome||'').split(' ')[0]}! Este é o seu convite para o app de entregas da ${G.empresa?.nome||'loja'}: ${link} — abra, digite seu CPF e crie a sua senha. O link vale 48 horas e só funciona uma vez. Depois é só entrar em ${location.origin}/entregador.html com CPF e senha.`);
+  const html=`<div class="card-title" style="gap:8px;margin-bottom:10px"><i class="ti ti-send" style="color:var(--pri-txt)"></i> Convite de ${esc(u.nome)}</div>
+    <div style="font-size:13px;color:var(--txt2);margin-bottom:8px">Envie este link só para ele. Vale até ${new Date(res.expira_em).toLocaleString('pt-BR')}.</div>
+    <input id="conv-link-desk" readonly value="${esc(link)}" style="width:100%;font-size:12px;font-family:monospace" onclick="this.select()">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+      <button class="btn btn-pri" onclick="window.open(window._convWaDesk,'_blank')"><i class="ti ti-brand-whatsapp"></i> Enviar pelo WhatsApp</button>
+      <button class="btn btn-out" onclick="navigator.clipboard&&navigator.clipboard.writeText(document.getElementById('conv-link-desk').value).then(()=>notify('Link copiado.','success'))"><i class="ti ti-copy"></i> Copiar link</button>
+    </div>`;
+  abrirModalGenerico(html, `<button class="btn btn-out" onclick="closeModal('modal-generic')">Fechar</button>`);
+  _carregarAcessosEntregadorDesk();
+}
+async function revogarAcessoEntregadorDesk(id){
+  const u=(G.usuarios||[]).find(x=>x.id===id); if(!u) return;
+  closeModal('modal-generic');
+  const res=await _pedirPinAdminDesk({ titulo:'Remover acesso — '+u.nome,
+    sub:'Ele sai do app em todos os aparelhos e o convite pendente deixa de valer. Digite seu PIN (administrador ou gerente).',
+    executar:p=>_rpcPinDesk('entregador_revogar',{p_usuario_id:id,p_pin_admin:p}) });
+  if(!res) return;
+  notify('Acesso de '+u.nome+' removido.','success');
+  _carregarAcessosEntregadorDesk();
 }
 
 function editUsr(id){
@@ -25697,10 +25774,15 @@ function _msgErroPinDesk(res,padrao){
     case 'formato': return 'PIN fraco: use 6 números, sem sequência (123456) e sem repetir (111111).';
     case 'indisponivel': return 'PIN indisponível, escolha outro.'+esp;
     case 'usuario_nao_encontrado': return 'Usuário não encontrado.';
+    case 'sem_recurso': return 'O app do entregador não faz parte do plano da sua empresa.'; // Fatia 65
+    case 'nao_entregador': return 'Este usuário não tem o perfil Entregador.';
+    case 'inativo': return 'Ative o usuário antes de gerar o convite.';
   }
   return padrao;
 }
-function _usuariosAtivosDesk(){ return (G.usuarios||[]).filter(u=>u.ativo); }
+// Fatia 65: o entregador não entra pelo PIN no aparelho da loja — só pelo
+// app dele (entregador.html, CPF + senha). Fica fora da lista e das contas.
+function _usuariosAtivosDesk(){ return (G.usuarios||[]).filter(u=>u.ativo && u.role!=='entregador'); }
 function _temPinNovoDesk(u){ return !!(u && u.pin_definido_em); }
 function _nenhumAdminComPinDesk(){ return !_usuariosAtivosDesk().some(u=>PIN_DESK_ADM.includes(u.role)&&_temPinNovoDesk(u)); }
 
@@ -25822,6 +25904,9 @@ async function _verificarPinNovoDesk(){
       : await _rpcPinDesk('verificar_pin',{p_usuario_id:u.id,p_pin:pin});
   }catch(e){ _pinOcupado=false; _pinTeclasDesk(); pinErro('Sem conexão para conferir o PIN. Tente de novo.'); return; }
   _pinOcupado=false; _pinTeclasDesk();
+  if(res && res.ok && res.usuario && res.usuario.role==='entregador'){ // Fatia 65
+    pinErro('Entregador entra pelo app dele: '+location.origin+'/entregador.html (CPF e senha).'); return;
+  }
   if(res && res.ok && res.usuario){
     const user=(G.usuarios||[]).find(x=>x.id===res.usuario.id) || {...res.usuario,ativo:true,empresa_id:EID()};
     if(errEl) errEl.textContent='';
@@ -25932,7 +26017,7 @@ async function _pinAdmConfirmarDesk(){
 /* ── PIN(s) gerado(s): mostra uma vez, com WhatsApp ── */
 let _pinshowListaDesk=[], _pinshowResolveDesk=null;
 function _mostrarPinsDesk(lista){
-  _pinshowListaDesk=(lista||[]).filter(u=>u && u.pin);
+  _pinshowListaDesk=(lista||[]).filter(u=>u && u.pin && u.role!=='entregador'); // Fatia 65: entregador não usa PIN
   const n=_pinshowListaDesk.length;
   document.getElementById('pinshow-d-titulo').textContent = n===1 ? ('PIN de '+_pinshowListaDesk[0].nome) : ('PINs gerados ('+n+')');
   document.getElementById('pinshow-d-lista').innerHTML=_pinshowListaDesk.map((u,i)=>`<div class="pinshow-d-row">
@@ -26042,6 +26127,7 @@ async function _saveUsrPinNovo({editId,nome,telefone,role,ativo,comissao_pct}){
   await _recarregarUsuariosDesk();
   closeModal('modal-usr'); renderUsuarios();
   if(!novoId){ notify('Funcionário atualizado!'); return; }
+  if(role==='entregador'){ notify('Entregador criado! Agora gere o convite do app dele.'); await abrirAcessoEntregadorDesk(novoId); return; } // Fatia 65: entregador não tem PIN
   notify('Funcionário criado! Agora gere o PIN dele.');
   const ok=await gerarPinPessoaDesk(novoId);
   if(!ok) notify('Funcionário criado sem PIN. Use "Novo PIN" na lista quando quiser gerar.','warn',6000);
@@ -27483,6 +27569,9 @@ const PLANOS = {
   }
 };
 
+// Fatia 62: no banco o Básico é 'basic' (tabela planos); aqui o id é 'basico'.
+// Apelido invisível (não entra em Object.keys) para os dois nomes acharem o mesmo plano.
+Object.defineProperty(PLANOS,'basic',{get(){return PLANOS.basico;},enumerable:false});
 /* ── GET/SET PLANO ATUAL (NOVO: lido do Supabase via G.empresa) ── */
 /* ── ENTITLEMENTS (permissões/limites por plano, vindos do servidor) ──────
    Fonte de verdade: RPC meus_entitlements() (resolve override>plano>default).
@@ -27509,6 +27598,7 @@ const PAGE_FEATURE = {
   os:           'technical.service_orders',
   'os-hist':    'technical.service_orders',
   agenda:       'technical.delivery_schedule',
+  entregas:     'technical.delivery_schedule', // Fatia 62b: igual à página de planos (Básico sem entregas)
   comissoes:    'technical.technicians',
   garantias:    'technical.warranties',
   orcamentos:   'store.orcamentos',
@@ -27861,7 +27951,15 @@ function aplicarRestricoesDePlano() {
       }
     });
   });
+  // Fatia 62b: entregas e app do entregador seguem o plano (igual à página de planos)
+  const entOk = temFeatureKey('technical.delivery_schedule');
+  const be = document.getElementById('btn-entrega'); if (be) be.style.display = entOk ? '' : 'none';
+  document.querySelectorAll('.hub-card[onclick*="\'entregas\'"],.hub-card[onclick*="\'agenda\'"]').forEach(c => { c.style.opacity = entOk ? '' : '0.45'; c.title = entOk ? '' : '🔒 Não incluído no seu plano'; });
+  const opt = document.querySelector('#u-role option[value="entregador"]');
+  if (opt) { const drv = temFeatureKey('logistics.driver_app'); opt.disabled = !drv; opt.textContent = drv ? 'Entregador' : 'Entregador (plano Enterprise)'; }
 }
+// Fatia 62b: app do entregador (Minhas Entregas no celular) só no plano que libera
+function _appEntregadorLiberado(){ return temFeatureKey('logistics.driver_app'); }
 
 /* ── BADGE DO PLANO NA TOPBAR ──────────────────────────── */
 function atualizarBadgePlano() {
