@@ -5810,7 +5810,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
   <input type="hidden" id="u-id">
   <div class="fg"><label class="lbl">Nome *</label><input type="text" id="u-nome"></div>
   <div class="fg"><label class="lbl">Telefone / WhatsApp</label><input type="text" id="u-telefone" inputmode="numeric" placeholder="(DDD) 9 9999-9999"></div>
-  <div class="fg" id="u-pin-grp"><label class="lbl">PIN (4 dígitos) <span id="u-pin-hint" style="font-weight:400;color:rgba(255,255,255,.4)"></span></label><input type="text" id="u-pin" inputmode="numeric" maxlength="6" placeholder="ex: 1234"></div>
+  <div class="fg" id="u-pin-grp"><label class="lbl">PIN (4 dígitos) <span id="u-pin-hint" style="font-weight:400;color:rgba(255,255,255,.4)"></span></label><input type="text" id="u-pin" inputmode="numeric" maxlength="4" placeholder="ex: 1234"></div>
   <div class="alert-box alert-info" id="u-pin-info" style="font-size:12px;display:none"><i class="ti ti-key"></i><span>O sistema gera o PIN de 6 dígitos ao salvar (aparece uma vez, com envio pelo WhatsApp). Para trocar o PIN de alguém, use <b>Novo PIN</b> na lista.</span></div>
   <div class="fg"><label class="lbl">Nível *</label><select id="u-role" onchange="toggleComissaoField()"><option value="operador">Operador de Caixa</option><option value="tecnico">Técnico</option><option value="entregador">Entregador</option><option value="gerente">Gerente</option><option value="admin">Administrador</option></select></div>
   <div class="fg" id="u-comissao-grp" style="display:none"><label class="lbl">Comissão por OS concluída (%)</label><input type="number" id="u-comissao" step="0.1" min="0" max="100" placeholder="Ex: 10"></div>
@@ -20661,7 +20661,7 @@ async function saveUsr(){
   const editId=document.getElementById('u-id').value;
   if(!nome){notify('Nome obrigatório!','error');return;}
   if(G.pinNovo){ await _saveUsrPinNovo({editId,nome,telefone,role,ativo,comissao_pct}); return; } // Fatia 50
-  if(pin && !/^\d{4,6}$/.test(pin)){notify('O PIN deve ter de 4 a 6 dígitos.','error');return;}
+  if(pin && !/^\d{4}$/.test(pin)){notify('O PIN deve ter exatamente 4 números (o teclado de entrada só aceita 4).','error');return;} // Fatia 62a
   if(!editId && !pin){notify('Defina um PIN para o novo funcionário.','error');return;}
   setLoad(true);
   let err;
@@ -25666,7 +25666,9 @@ async function _carregarPinResumoDesk(){
     const d=(r && !r.error) ? r.data : null;
     if(d && typeof d.ativos==='number'){
       G.pinResumo=d; G.pinSqlOk=true;
-      G.pinNovo = d.ativos>0 && Number(d.sem_pin)<d.ativos;
+      // Fatia 51: só existe o PIN de 6 dígitos. Com o SQL instalado o modo novo vale
+      // sempre, mesmo antes de alguém ter PIN (aí entra o "primeiro acesso" do admin).
+      G.pinNovo = true;
     }
   }catch(_){ /* SQL da Fatia 48 ainda não rodou → fluxo antigo */ }
   _sanitizarUsuariosPin();
@@ -25693,7 +25695,7 @@ function _mostrarIdentDesk(opts){
   const tela=document.getElementById('nf-screen'), grid=document.getElementById('nf-grid');
   if(!tela||!grid) return;
   const aviso=document.getElementById('nf-aviso'); if(aviso){ aviso.style.display='none'; aviso.innerHTML=''; }
-  if(ativos.length>PIN_DESK_LIMITE_PERFIS){ _nfPerfilSelecionado=null; mostrarPinScreen(null,'identificar'); return; }
+  if(ativos.length>PIN_DESK_LIMITE_PERFIS){ _nfPerfilSelecionado=null; mostrarPinScreen(null,'identificar'); if(_nenhumAdminComPinDesk()) setTimeout(_pinEsqueciDesk,0); return; } // Fatia 51: primeiro acesso aparece sozinho
   const lembrar = opts.lembrarId ? ativos.find(u=>u.id===opts.lembrarId && _temPinNovoDesk(u)) : null;
   if(lembrar){ _nfPerfilSelecionado=lembrar; mostrarPinScreen(lembrar,'verificar'); return; }
   if(ativos.length===1 && _temPinNovoDesk(ativos[0])){ _nfPerfilSelecionado=ativos[0]; mostrarPinScreen(ativos[0],'verificar'); return; }
@@ -25709,6 +25711,8 @@ function _mostrarIdentDesk(opts){
       <div style="font-size:10.5px;margin-top:10px;color:${_txtVar(ok?'rgba(255,255,255,.62)':'rgba(255,255,255,.75)')}">${ok?'🔒 PIN de 6 dígitos':'⚪ Sem PIN'}</div>
     </div>`;
   }).join('') : `<div style="color:rgba(255,255,255,.6);font-size:13px;padding:16px 0">Nenhum funcionário cadastrado.</div>`;
+  // Fatia 51: ninguém da gestão tem PIN ainda → explica o primeiro acesso logo de cara
+  if(aviso && ativos.length && _nenhumAdminComPinDesk()){ aviso.innerHTML='<b>Primeiro acesso:</b> ninguém da gestão tem PIN de 6 dígitos ainda. O <b>administrador ou gerente</b> toca no próprio nome para gerar o PIN dele e depois gera o da equipe em Usuários.'; aviso.style.display=''; }
   document.getElementById('nf-admin-container')?.remove();
   document.getElementById('nf-manage-btn')?.remove();
   document.getElementById('pin-screen').style.display='none';
@@ -25897,7 +25901,7 @@ function _enviarPinWhatsDesk(i){
   const u=_pinshowListaDesk[i]; if(!u) return;
   let tel=String(u.telefone||'').replace(/\D/g,'');
   if(tel && !(tel.startsWith('55') && tel.length>=12)) tel='55'+tel;
-  const msg=encodeURIComponent(`Olá, ${String(u.nome||'').split(' ')[0]}! Seu PIN de acesso ao sistema da ${G.empresa?.nome||'loja'} é ${u.pin}. Ele é pessoal: não passe para ninguém. Você pode trocar em Meu PIN.`);
+  const msg=encodeURIComponent(`Olá, ${String(u.nome||'').split(' ')[0]}! Seu PIN de acesso ao sistema da ${G.empresa?.nome||'loja'} é ${u.pin}. Ele é pessoal: não passe para ninguém. Você pode trocar em Meu PIN. Para entrar pelo celular, abra ${location.origin}/app.html, escolha o seu nome e digite o PIN (no primeiro acesso do aparelho, o responsável da loja faz o login).`); // Fatia 62a: link do app
   window.open(tel?`https://wa.me/${tel}?text=${msg}`:`https://wa.me/?text=${msg}`,'_blank');
   const b=document.getElementById('pinshow-d-wa-'+i); if(b) b.innerHTML='<i class="ti ti-check"></i> Enviado';
 }
