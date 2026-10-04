@@ -5898,16 +5898,12 @@ const USER_ROLE_LABEL = {
 const _pinEstadoCache = {};
 async function pinEstadoEmpresa(empresaId, forcar) {
   if (!forcar && _pinEstadoCache[empresaId]) return _pinEstadoCache[empresaId];
-  const st = { modo: 'antigo', sql59: false, resumo: null };
+  // Fatia 51: só existe o PIN de 6 dígitos — o modo é sempre 'novo'. O resumo
+  // só diz se o SQL da Fatia 59 (gerar PIN pelo painel) está instalado.
+  const st = { modo: 'novo', sql59: false, resumo: null };
   try {
     const { data, error } = await db.rpc('admin_master_pin_resumo', { p_empresa_id: empresaId });
-    if (!error && data && data.ok) {
-      st.sql59 = true; st.resumo = data; st.modo = data.migrada ? 'novo' : 'antigo';
-    } else {
-      // SQL da Fatia 59 ainda não rodou: descobre pela coluna da Fatia 48
-      const r = await db.from('usuarios').select('ativo,pin_definido_em').eq('empresa_id', empresaId);
-      if (!r.error && (r.data || []).some(u => u.ativo !== false && u.pin_definido_em)) st.modo = 'novo';
-    }
+    if (!error && data && data.ok) { st.sql59 = true; st.resumo = data; }
   } catch (_) {}
   _pinEstadoCache[empresaId] = st;
   return st;
@@ -6458,7 +6454,7 @@ function _enviarPinMasterWhats() {
   let tel = String(u.telefone || '').replace(/\D/g, '');
   if (tel && !(tel.startsWith('55') && tel.length >= 12)) tel = '55' + tel;
   const loja = _empresaAtual?.nome || 'loja';
-  const msg = encodeURIComponent(`Olá, ${String(u.nome || '').split(' ')[0]}! Seu PIN de acesso ao sistema da ${loja} é ${u.pin}. Ele é pessoal: não passe para ninguém. Você pode trocar em Meu PIN.`);
+  const msg = encodeURIComponent(`Olá, ${String(u.nome || '').split(' ')[0]}! Seu PIN de acesso ao sistema da ${loja} é ${u.pin}. Ele é pessoal: não passe para ninguém. Você pode trocar em Meu PIN. Para entrar pelo celular, abra ${location.origin}/app.html, escolha o seu nome e digite o PIN (no primeiro acesso do aparelho, o responsável da loja faz o login).`); // Fatia 62a: link do app
   window.open(tel ? `https://wa.me/${tel}?text=${msg}` : `https://wa.me/?text=${msg}`, '_blank');
   const b = document.getElementById('pinshow-master-wa'); if (b) b.innerHTML = '<i class="ti ti-check"></i> Enviado';
 }
