@@ -5,6 +5,40 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MISU SYS — Planos e teste grátis de 7 dias</title>
 <meta name="description" content="PDV, OS, estoque, financeiro e entregas para lojas de celular e assistência técnica. Teste grátis por 7 dias, sem cartão.">
+<!-- Fatia 57: tema claro/escuro igual ao sistema. Usa a escolha salva no
+     MISU SYS (se for o mesmo aparelho) ou o tema do aparelho do cliente, e
+     declara isso pro navegador não escurecer a página por conta própria. -->
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1E5EFF">
+<script>
+(function(){
+  function temaAtual(){
+    var t=null; try{ t=localStorage.getItem('misu_tema'); }catch(e){}
+    if(t!=='dark'&&t!=='light') t=(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';
+    return t;
+  }
+  document.documentElement.setAttribute('data-theme',temaAtual());
+  try{ matchMedia('(prefers-color-scheme: dark)').addEventListener('change',function(){
+    document.documentElement.setAttribute('data-theme',temaAtual());
+    if(typeof window._aoTrocarTema==='function') window._aoTrocarTema();
+  }); }catch(e){}
+})();
+/* Cor de texto legível a partir de uma cor de status/marca: mantém o tom e
+   escurece (tema claro) ou clareia (tema escuro) até 4,5:1 sobre os cartões. */
+function corTxt(cor){
+  var h=String(cor||'').trim().replace('#','');
+  if(/^[0-9a-f]{3}$/i.test(h)) h=h.split('').map(function(c){return c+c;}).join('');
+  if(!/^[0-9a-f]{6}$/i.test(h)) return cor;
+  var c=[0,2,4].map(function(i){return parseInt(h.slice(i,i+2),16);});
+  var dark=document.documentElement.getAttribute('data-theme')==='dark';
+  var lum=function(x){var f=function(v){v/=255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4);};return 0.2126*f(x[0])+0.7152*f(x[1])+0.0722*f(x[2]);};
+  var con=function(a,b){var x=lum(a),y=lum(b);return (Math.max(x,y)+0.05)/(Math.min(x,y)+0.05);};
+  var fundos=dark?[[7,11,26],[14,23,48],[19,32,74],[40,48,80]]:[[255,255,255],[245,242,236],[239,233,223],[228,224,218]]; /* inclui os fundos tingidos dos selos */
+  var alvo=dark?[255,255,255]:[0,0,0], t=c;
+  for(var i=1;i<=20&&Math.min.apply(null,fundos.map(function(f){return con(t,f);}))<4.5;i++) t=c.map(function(v,k){return v+(alvo[k]-v)*i/20;});
+  return '#'+t.map(function(v){return Math.round(v).toString(16).padStart(2,'0');}).join('');
+}
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -24,10 +58,20 @@
 -->
 <style>
 :root{
-  --pri:#5B3FE8; --pri2:#7C5CFF; --pri-d:#3D2596;
-  --bg:#F7F6FC; --card:#fff; --txt:#191338; --txt2:#5A5280; --txt3:#9C95B6;
-  --border:#E6E2F5; --ok:#16a34a; --warn:#d97706; --danger:#dc2626;
-  --radius:16px; --shadow:0 10px 40px -12px rgba(60,40,150,.18);
+  color-scheme:only light;
+  --pri:#1E5EFF; --pri2:#3D8BFF; --pri-d:#0A2FA8; --pri-btn2:#1A4FD9; --pri-txt:#1A52E0;
+  --bg:#F5F2EC; --card:#FFFFFF; --input:#FFFFFF; --txt:#1E1530; --txt2:#54487A; --txt3:#665A88;
+  --border:#E6DED3; --ok:#16a34a; --ok-txt:#05704F; --warn:#d97706; --danger:#B91C1C;
+  --header:rgba(245,242,236,.88); --trial1:#E8EFFF; --trial2:#F5F2EC; --veu:rgba(14,10,30,.55);
+  --radius:16px; --shadow:0 10px 40px -12px rgba(30,94,255,.22);
+}
+[data-theme="dark"]{
+  color-scheme:dark;
+  --pri-d:#8AB0FF; --pri-txt:#8AB0FF;
+  --bg:#070B1A; --card:#0E1730; --input:#0A1229; --txt:#EAF0FF; --txt2:#A8BAE8; --txt3:#93A4D6;
+  --border:#1B2A55; --ok:#4ADE80; --ok-txt:#4ADE80; --danger:#FCA5A5;
+  --header:rgba(7,11,26,.88); --trial1:#13204A; --trial2:#0E1730; --veu:rgba(0,0,0,.65);
+  --shadow:0 10px 40px -12px rgba(0,0,0,.6);
 }
 *{box-sizing:border-box}
 body{margin:0;font-family:'DM Sans',sans-serif;color:var(--txt);background:var(--bg);line-height:1.5}
@@ -36,12 +80,12 @@ a{color:inherit}
 .wrap{max-width:1120px;margin:0 auto;padding:0 20px}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none;border-radius:12px;padding:13px 22px;font-weight:700;font-size:14.5px;cursor:pointer;text-decoration:none;transition:transform .12s,box-shadow .12s}
 .btn:active{transform:scale(.97)}
-.btn-pri{background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;box-shadow:0 8px 24px -6px rgba(91,63,232,.5)}
-.btn-out{background:#fff;color:var(--pri);border:1.5px solid var(--border)}
+.btn-pri{background:linear-gradient(135deg,var(--pri),var(--pri-btn2));color:#fff;box-shadow:0 8px 24px -6px rgba(30,94,255,.5)}
+.btn-out{background:var(--card);color:var(--pri-txt);border:1.5px solid var(--border)}
 .btn-ghost{background:transparent;color:var(--txt2)}
 .btn-block{width:100%}
 /* Header */
-header{position:sticky;top:0;z-index:40;background:rgba(247,246,252,.85);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+header{position:sticky;top:0;z-index:40;background:var(--header);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
 header .wrap{display:flex;align-items:center;justify-content:space-between;padding:14px 20px}
 .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:19px;color:var(--pri-d)}
 /* Hero */
@@ -72,29 +116,29 @@ header .wrap{display:flex;align-items:center;justify-content:space-between;paddi
 .plano-limites{font-size:11.5px;color:var(--txt3);border-top:1px dashed var(--border);padding-top:12px;margin-top:4px;margin-bottom:16px}
 .plano-ctas{display:flex;flex-direction:column;gap:8px}
 /* Trial banner */
-.trial-banner{background:linear-gradient(120deg,#EFE9FF,#F7F6FC);border:1.5px dashed var(--pri2);border-radius:var(--radius);padding:22px 26px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:36px}
+.trial-banner{background:linear-gradient(120deg,var(--trial1),var(--trial2));border:1.5px dashed var(--pri2);border-radius:var(--radius);padding:22px 26px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:36px}
 .trial-banner div h3{font-size:17px}
 .trial-banner div p{color:var(--txt2);font-size:13.5px;margin:4px 0 0}
 /* Footer */
 footer{border-top:1px solid var(--border);padding:30px 0;text-align:center;color:var(--txt3);font-size:12.5px}
-footer a{color:var(--pri);text-decoration:none}
+footer a{color:var(--pri-txt);text-decoration:none}
 /* Modais */
-.modal-overlay{position:fixed;inset:0;background:rgba(25,19,56,.55);display:none;align-items:center;justify-content:center;z-index:100;padding:16px}
+.modal-overlay{position:fixed;inset:0;background:var(--veu);display:none;align-items:center;justify-content:center;z-index:100;padding:16px}
 .modal-overlay.show{display:flex}
-.modal{background:#fff;border-radius:18px;max-width:440px;width:100%;padding:28px;box-shadow:0 30px 80px -20px rgba(0,0,0,.35);max-height:90vh;overflow-y:auto}
+.modal{background:var(--card);border-radius:18px;max-width:440px;width:100%;padding:28px;box-shadow:0 30px 80px -20px rgba(0,0,0,.35);max-height:90vh;overflow-y:auto}
 .modal h3{font-size:20px;margin-bottom:8px}
 .modal p.sub{color:var(--txt2);font-size:13.5px;margin:0 0 18px}
 .modal-close{position:absolute;top:16px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:var(--txt3)}
 .fg{margin-bottom:13px}
 .fg label{display:block;font-size:12.5px;font-weight:600;color:var(--txt2);margin-bottom:5px}
-.fg input,.fg select{width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit}
+.fg input,.fg select{width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;background:var(--input);color:var(--txt)}
 .fg input:focus,.fg select:focus{outline:none;border-color:var(--pri)}
 .chk-row{display:flex;gap:9px;align-items:flex-start;font-size:12px;color:var(--txt2);margin-bottom:9px}
 .chk-row input{margin-top:2px;flex-shrink:0}
-.chk-row a{color:var(--pri);text-decoration:underline}
+.chk-row a{color:var(--pri-txt);text-decoration:underline}
 .form-erro{color:var(--danger);font-size:12.5px;margin-top:6px;display:none}
 /* Cookie banner */
-#cookie-banner{position:fixed;left:16px;right:16px;bottom:16px;max-width:640px;margin:0 auto;background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow);z-index:90;display:none;font-size:13px;color:var(--txt2)}
+#cookie-banner{position:fixed;left:16px;right:16px;bottom:16px;max-width:640px;margin:0 auto;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow);z-index:90;display:none;font-size:13px;color:var(--txt2)}
 #cookie-banner.show{display:block}
 #cookie-banner .row{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
 #cookie-banner .btn{padding:9px 16px;font-size:13px}
@@ -190,7 +234,7 @@ footer a{color:var(--pri);text-decoration:none}
         <button type="button" class="btn btn-pri" style="white-space:nowrap;padding:11px 14px;font-size:12.5px" onclick="confirmarCodigoSms()">Confirmar</button>
       </div>
       <p class="form-erro" id="cad-sms-erro" style="margin-top:6px"></p>
-      <p style="font-size:11px;color:var(--ok);margin-top:5px;display:none" id="cad-sms-ok"><i class="ti ti-circle-check"></i> Número verificado.</p>
+      <p style="font-size:11px;color:var(--ok-txt);margin-top:5px;display:none" id="cad-sms-ok"><i class="ti ti-circle-check"></i> Número verificado.</p>
     </div>
     <div class="fg"><label>Senha</label><input id="cad-senha" type="password" placeholder="Mínimo 8 caracteres"></div>
 
@@ -207,7 +251,7 @@ footer a{color:var(--pri);text-decoration:none}
       <span id="cad-btn-texto"><i class="ti ti-rocket"></i> Criar minha conta</span>
     </button>
     <div class="form-erro" id="cad-erro"></div>
-    <p style="font-size:11.5px;color:var(--txt3);text-align:center;margin-top:14px">Já tem conta? <a href="/index.html" style="color:var(--pri)">Fazer login</a></p>
+    <p style="font-size:11.5px;color:var(--txt3);text-align:center;margin-top:14px">Já tem conta? <a href="/index.html" style="color:var(--pri-txt)">Fazer login</a></p>
   </div>
 </div>
 
