@@ -184,7 +184,7 @@ footer a{color:var(--pri-txt);text-decoration:none}
 
     <div class="trial-banner">
       <div>
-        <h3>🎁 Teste grátis por 7 dias no plano Premium</h3>
+        <h3>🎁 Teste grátis por 7 dias no plano <span id="trial-plano-nome">Enterprise</span></h3>
         <p>Use os recursos mais completos do MISU SYS por uma semana, com limite de IA reduzido pra proteger a plataforma. Sem cobrança automática — só assina se quiser continuar.</p>
       </div>
       <button class="btn btn-pri" onclick="abrirCadastro('trial')"><i class="ti ti-rocket"></i> Começar teste grátis</button>
@@ -208,7 +208,7 @@ footer a{color:var(--pri-txt);text-decoration:none}
   <div class="modal" style="position:relative">
     <button class="modal-close" onclick="fecharCadastro()"><i class="ti ti-x"></i></button>
     <h3 id="cad-titulo">Comece seu teste grátis</h3>
-    <p class="sub" id="cad-sub">7 dias, plano Premium, sem cartão de crédito.</p>
+    <p class="sub" id="cad-sub">7 dias, plano Enterprise, sem cartão de crédito.</p>
 
     <div class="fg"><label>Nome da loja</label><input id="cad-empresa" placeholder="Ex.: TechCell Assistência"></div>
     <div class="fg"><label>Seu nome</label><input id="cad-nome" placeholder="Seu nome completo"></div>
@@ -433,38 +433,58 @@ const VERSOES_DOC = { termos: '1.0', privacidade: '1.0', cookies: '1.0', contrat
    espelha o que deve estar configurado na tabela `planos` do Supabase via
    sql/fatia22_saas_selfservice_ia.sql; os `id` batem com os planos JÁ
    existentes no sistema — basico/pro/enterprise — pra não quebrar nenhuma
-   empresa antiga; só o NOME comercial mudou pra Essencial/Profissional/
-   Premium, como pedido). ── */
+   empresa antiga). Fatia 62b: nome e preço passam a vir do Painel Master. ── */
 const PLANOS_VITRINE = [
   {
-    id: 'basico', nome: 'Essencial', preco: 97,
+    id: 'basico', nome: 'Básico', preco: 99,
     desc: 'Para lojas que querem organizar vendas, produtos e estoque.',
     itens: ['PDV completo','Produtos e estoque básico','Clientes','Caixa e vendas','Relatórios básicos','Catálogo simples','Suporte padrão'],
     limites: 'Até 2 usuários · 1 loja · 5 consultas de IA/dia',
   },
   {
-    id: 'pro', nome: 'Profissional', preco: 197, destaque: true,
+    id: 'pro', nome: 'Pro', preco: 197, destaque: true,
     desc: 'Para lojas que vendem, fazem assistência e querem controle completo.',
-    itens: ['Tudo do Essencial','OS completa e garantias','Financeiro e crediário','Catálogo online completo','App mobile','Permissões avançadas','Entregas simples','Integrações principais'],
+    itens: ['Tudo do {anterior}','OS completa e garantias','Financeiro e crediário','Catálogo online completo','App mobile','Permissões avançadas','Entregas simples','Integrações principais'],
     limites: 'Até 5 usuários · 1 loja · 30 consultas de IA/dia',
   },
   {
-    id: 'enterprise', nome: 'Premium', preco: 397,
+    id: 'enterprise', nome: 'Enterprise', preco: 399,
     desc: 'Gestão avançada, automações, IA, entregas e suporte prioritário.',
-    itens: ['Tudo do Profissional','Logística com entregador','Assinatura digital de entrega','Automações','IA avançada','Relatórios executivos','Logs avançados','Suporte prioritário'],
+    itens: ['Tudo do {anterior}','Logística com entregador','Assinatura digital de entrega','Automações','IA avançada','Relatórios executivos','Logs avançados','Suporte prioritário'],
     limites: 'Até 10 usuários · 100 consultas de IA/dia',
   },
 ];
 
+/* Fatia 62b: nome e preço vêm do Painel Master (tabela planos — o mesmo que
+   o sistema da loja cobra). Os valores acima são só o reserva, caso o banco
+   não responda. No banco o Básico se chama 'basic'. */
+function _escPl(v){ return String(v==null?'':v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function _precoPl(v){ const n = Number(v)||0; return n % 1 ? n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : String(n); }
+async function sincronizarPlanosPainel(){
+  try{
+    const { data, error } = await db.from('planos').select('id,nome,preco,usuarios');
+    if (error || !Array.isArray(data) || !data.length) return;
+    let mudou = false;
+    data.forEach(r => {
+      const id = String(r.id||'').toLowerCase() === 'basic' ? 'basico' : String(r.id||'').toLowerCase();
+      const p = PLANOS_VITRINE.find(x => x.id === id); if (!p) return;
+      if (r.nome) { p.nome = r.nome; mudou = true; }
+      if (r.preco != null && Number(r.preco) > 0) { p.preco = Number(r.preco); mudou = true; }
+      if (Number(r.usuarios) > 0) p.limites = p.limites.replace(/Até \d+ usuários?/, 'Até ' + Number(r.usuarios) + ' usuário' + (Number(r.usuarios) > 1 ? 's' : ''));
+    });
+    if (mudou) renderPlanos();
+  }catch(e){ /* mantém os valores de reserva */ }
+}
 function renderPlanos(){
   const grid = document.getElementById('planos-grid');
-  grid.innerHTML = PLANOS_VITRINE.map(p => `
+  const tn = document.getElementById('trial-plano-nome'); if (tn) tn.textContent = PLANOS_VITRINE[PLANOS_VITRINE.length-1].nome;
+  grid.innerHTML = PLANOS_VITRINE.map((p, i) => `
     <div class="plano-card ${p.destaque?'destaque':''}">
       ${p.destaque?'<div class="plano-selo">Mais escolhido</div>':''}
-      <div class="plano-nome">${p.nome}</div>
+      <div class="plano-nome">${_escPl(p.nome)}</div>
       <div class="plano-desc">${p.desc}</div>
-      <div class="plano-preco"><b>R$ ${p.preco}</b><span>/mês</span></div>
-      <ul class="plano-lista">${p.itens.map(i=>`<li><i class="ti ti-check"></i>${i}</li>`).join('')}</ul>
+      <div class="plano-preco"><b>R$ ${_precoPl(p.preco)}</b><span>/mês</span></div>
+      <ul class="plano-lista">${p.itens.map(it=>`<li><i class="ti ti-check"></i>${_escPl(it.replace('{anterior}', i ? PLANOS_VITRINE[i-1].nome : ''))}</li>`).join('')}</ul>
       <div class="plano-limites">${p.limites}</div>
       <div class="plano-ctas">
         <button class="btn btn-out btn-block" onclick="abrirCadastro('trial')">Começar teste grátis</button>
@@ -474,6 +494,7 @@ function renderPlanos(){
   `).join('');
 }
 renderPlanos();
+sincronizarPlanosPainel();
 
 function scrollParaPlanos(){
   document.getElementById('planos').scrollIntoView({ behavior:'smooth', block:'start' });
@@ -486,9 +507,10 @@ function abrirCadastro(modo, planoId){
   _modoCadastro = modo; _planoEscolhido = planoId || null;
   const p = PLANOS_VITRINE.find(x=>x.id===planoId);
   document.getElementById('cad-titulo').textContent = modo==='trial' ? 'Comece seu teste grátis' : `Assinar plano ${p?p.nome:''}`;
+  const topo = PLANOS_VITRINE[PLANOS_VITRINE.length-1];
   document.getElementById('cad-sub').textContent = modo==='trial'
-    ? '7 dias, plano Premium, sem cartão de crédito.'
-    : `R$ ${p?p.preco:''}/mês. Você paga só depois de confirmar os dados.`;
+    ? `7 dias, plano ${topo.nome}, sem cartão de crédito.`
+    : `R$ ${p?_precoPl(p.preco):''}/mês. Você paga só depois de confirmar os dados.`;
   document.getElementById('cad-erro').style.display='none';
   document.getElementById('modal-cadastro-overlay').classList.add('show');
 }
