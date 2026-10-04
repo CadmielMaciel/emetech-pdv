@@ -2022,7 +2022,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 <div id="modal-meupin-overlay" onclick="if(event.target===this)fecharMeuPin()">
   <div id="modal-meupin">
     <div class="mp-title">Meu PIN</div>
-    <div class="mp-sub" id="meupin-sub">Defina um PIN de 4 a 6 dígitos para se identificar mais rápido neste aparelho.</div>
+    <div class="mp-sub" id="meupin-sub">Defina um PIN de 4 dígitos para se identificar mais rápido neste aparelho.</div>
     <div id="meupin-atual-row" style="display:none">
       <input class="inp" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" id="meupin-atual" placeholder="PIN atual" style="margin-bottom:10px">
     </div>
@@ -2071,7 +2071,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 <div id="modal-applock-setup-overlay" onclick="if(event.target===this)fecharApplockSetup()">
   <div id="modal-applock-setup">
     <div class="mp-title" id="applock-setup-title">Criar PIN do aparelho</div>
-    <div class="mp-sub" id="applock-setup-sub">Escolha um PIN de 4 a 6 dígitos para bloquear o app neste celular.</div>
+    <div class="mp-sub" id="applock-setup-sub">Escolha um PIN de 6 dígitos para bloquear o app neste celular.</div>
     <div id="applock-setup-remover-row" style="display:none">
       <input class="inp" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" id="applock-setup-atual" placeholder="PIN atual do aparelho" style="margin-bottom:10px">
     </div>
@@ -2103,7 +2103,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
     </select>
     <div id="ps-pin-row">
       <label class="lbl">PIN (4 dígitos) <span id="ps-pin-hint" style="font-weight:400;color:var(--txt3)"></span></label>
-      <input class="inp" id="ps-pin" inputmode="numeric" maxlength="6" placeholder="ex: 1234">
+      <input class="inp" id="ps-pin" inputmode="numeric" maxlength="4" placeholder="ex: 1234">
     </div>
     <div id="ps-pin-info" class="pin-status hidden" style="margin-top:12px"><i class="ti ti-key"></i> O sistema gera o PIN de 6 dígitos ao salvar.</div>
     <label class="lbl">Status</label>
@@ -2412,7 +2412,7 @@ function _applockAbrirCriar(){
   $('applock-setup-remover-row').style.display='none';
   $('applock-setup-criar-row').style.display='';
   $('applock-setup-title').textContent='Criar PIN do aparelho';
-  $('applock-setup-sub').textContent='Escolha um PIN de 4 a 6 dígitos para bloquear o app neste celular.';
+  $('applock-setup-sub').textContent='Escolha um PIN de 6 dígitos para bloquear o app neste celular.';
   $('applock-setup-atual').value=''; $('applock-setup-novo').value=''; $('applock-setup-novo2').value=''; $('applock-setup-erro').textContent='';
   $('modal-applock-setup-overlay').style.display='flex';
 }
@@ -2430,7 +2430,7 @@ async function confirmarApplockSetup(){
   if(_applockSetupModo==='criar'){
     const novo=($('applock-setup-novo').value||'').trim();
     const novo2=($('applock-setup-novo2').value||'').trim();
-    if(!/^\d{4,6}$/.test(novo)){ $('applock-setup-erro').textContent='O PIN deve ter de 4 a 6 dígitos.'; return; }
+    if(!/^\d{6}$/.test(novo)){ $('applock-setup-erro').textContent='O PIN do aparelho deve ter 6 números.'; return; } // Fatia 51: tudo com 6 dígitos (cadeados já criados com 4 continuam abrindo)
     if(novo!==novo2){ $('applock-setup-erro').textContent='Os PINs não conferem.'; return; }
     const salt=_applockRandomSalt();
     const hash=await _hashPin(novo, salt);
@@ -2483,8 +2483,8 @@ function abrirMeuPin(){
   const temPin=!!G.operador.pin;
   $('meupin-atual-row').style.display = temPin ? '' : 'none';
   $('meupin-sub').textContent = temPin
-    ? 'Digite seu PIN atual e o novo PIN de 4 a 6 dígitos.'
-    : 'Defina um PIN de 4 a 6 dígitos para se identificar mais rápido neste aparelho.';
+    ? 'Digite seu PIN atual e o novo PIN de 4 dígitos.'
+    : 'Defina um PIN de 4 dígitos para se identificar mais rápido neste aparelho.';
   $('meupin-atual').value=''; $('meupin-novo').value=''; $('meupin-novo2').value=''; $('meupin-erro').textContent='';
   $('modal-meupin-overlay').style.display='flex';
 }
@@ -2509,7 +2509,7 @@ async function salvarMeuPin(){
     return;
   }
   if(u.pin && atual!==String(u.pin)){ $('meupin-erro').textContent='PIN atual incorreto.'; return; }
-  if(!/^\d{4,6}$/.test(novo)){ $('meupin-erro').textContent='O novo PIN deve ter de 4 a 6 dígitos.'; return; }
+  if(!/^\d{4}$/.test(novo)){ $('meupin-erro').textContent='O novo PIN deve ter exatamente 4 números.'; return; } // Fatia 62a: o teclado antigo só aceita 4
   if(novo!==novo2){ $('meupin-erro').textContent='Os PINs não conferem.'; return; }
   try{
     const {error}=await db.from('usuarios').update({pin:novo}).eq('id',u.id);
@@ -7876,7 +7876,7 @@ async function _carregarPinResumo(){
     if(d && typeof d.ativos==='number'){
       G.pinResumo=d; G.pinSqlOk=true;
       // PIN novo em uso = pelo menos uma pessoa ativa já tem PIN de 6 dígitos
-      G.pinNovo = d.ativos>0 && Number(d.sem_pin)<d.ativos;
+      G.pinNovo = true; // Fatia 51: só existe o PIN de 6 dígitos (primeiro acesso do admin cobre quem ainda não tem)
     }
   }catch(_){ /* SQL da Fatia 48 ainda não rodou → fluxo antigo */ }
 }
@@ -7940,6 +7940,7 @@ function abrirIdentificacao(opts){
     $('id-pinbox').classList.remove('hidden');
     _idLimpar(); _idMsg('');
   }
+  if(_nenhumAdminComPin()) _idEsqueci(); // Fatia 51: primeiro acesso aparece sozinho
   _idAtualizarBloqueio();
 }
 function _idMostrarLista(){
@@ -8147,7 +8148,7 @@ function _mostrarPins(lista){
   $('modal-pinshow-overlay').style.display='flex';
   return new Promise(res=>{ _pinshowResolve=res; });
 }
-function _textoPin(u){ return `Olá, ${String(u.nome||'').split(' ')[0]}! Seu PIN de acesso ao sistema da ${G.empresa?.nome||'loja'} é ${u.pin}. Ele é pessoal: não passe para ninguém. Você pode trocar em Perfil → Meu PIN.`; }
+function _textoPin(u){ return `Olá, ${String(u.nome||'').split(' ')[0]}! Seu PIN de acesso ao sistema da ${G.empresa?.nome||'loja'} é ${u.pin}. Ele é pessoal: não passe para ninguém. Você pode trocar em Perfil → Meu PIN. Para entrar pelo celular, abra ${location.origin}/app.html, escolha o seu nome e digite o PIN (no primeiro acesso do aparelho, o responsável da loja faz o login).`; } // Fatia 62a: link do app
 function _enviarPinWhats(i){
   const u=_pinshowLista[i]; if(!u) return;
   let tel=String(u.telefone||'').replace(/\D/g,'');
@@ -8433,7 +8434,7 @@ async function salvarPessoa(){
   const editId=$('ps-id').value;
   if(!nome){ $('pessoa-erro').textContent='Informe o nome.'; return; }
   if(G.pinNovo){ await _salvarPessoaPinNovo({editId,nome,telefone,role,ativo}); return; } // Fatia 49
-  if(pin && !/^\d{4,6}$/.test(pin)){ $('pessoa-erro').textContent='O PIN deve ter de 4 a 6 dígitos.'; return; }
+  if(pin && !/^\d{4}$/.test(pin)){ $('pessoa-erro').textContent='O PIN deve ter exatamente 4 números.'; return; } // Fatia 62a
   if(!editId && !pin){ $('pessoa-erro').textContent='Defina um PIN para o novo funcionário.'; return; }
   try{
     if(editId){
