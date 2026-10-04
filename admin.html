@@ -3380,10 +3380,6 @@ async function setInadimplenciaHistorico(dataRef, taxa) {
   if (error) console.error('Erro ao gravar inadimplência histórico:', error);
 }
 
-// Webhook simulado (preparação para Asaas/PagSeguro)
-function simularWebhook(tipo, payload) {
-  addLog('webhook', `[Simulado] Webhook "${tipo}" recebido: ${JSON.stringify(payload)}`, payload.empresa || 'Global');
-}
 
 /* ── AUTH ── */
 // Fatia 58: além do papel admin_master em usuarios, respeita a lista de
@@ -6990,8 +6986,7 @@ async function renderCobrancas() {
       <td>
         <div style="display:flex;gap:4px;flex-wrap:wrap">
           <button class="btn btn-out btn-xs" onclick="enviarLembreteWhatsApp('${e.id}')" title="Enviar lembrete"><i class="ti ti-brand-whatsapp"></i></button>
-          <button class="btn btn-out btn-xs" onclick="gerarBoletoSimulado('${e.id}')" title="Gerar boleto (simulado)"><i class="ti ti-file-invoice"></i></button>
-          <button class="btn btn-pri btn-xs" onclick="cobrarEmpresaAsaas('${e.id}')" title="Cobrar via Asaas (PIX/boleto real)"><i class="ti ti-qrcode"></i></button>
+          <button class="btn btn-pri btn-xs" onclick="cobrarEmpresaAsaas('${e.id}')" title="Cobrar via Asaas (PIX ou boleto)" aria-label="Cobrar via Asaas (PIX ou boleto)"><i class="ti ti-qrcode"></i></button>
           <button class="btn btn-pri btn-xs" onclick="abrirRegistrarPagamento('${e.id}')" title="Registrar pagamento"><i class="ti ti-cash"></i></button>
           <button class="btn btn-out btn-xs" onclick="abrirDetalhes('${e.id}')" title="Detalhes"><i class="ti ti-eye"></i></button>
         </div>
@@ -7106,25 +7101,8 @@ function mostrarQrEmpresa(data){
   openModal('modal-qr-empresa');
 }
 
-async function gerarBoletoSimulado(id) {
-  const e = await getEmpresaById(id);
-  if (!e) return;
-  const fin = statusFinanceiro(e);
-  const plano = G.planos.find(p => p.id === e.plano);
-  const vencStr = fin.venc ? fin.venc.toLocaleDateString('pt-BR') : '—';
-  const linhaDigitavel = '34191.79001 01043.510047 91020.150008 ' + Math.floor(Math.random()*9) + ' ' + (90000000000 + Math.floor(Math.random()*9999999999));
-
-  confirmAct(
-    'Boleto gerado (simulado)',
-    `Boleto para "${e.nome}" — R$ ${(plano?.preco||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}, vencimento ${vencStr}.\n\nLinha digitável: ${linhaDigitavel}\n\nDeseja registrar o envio deste boleto?`,
-    () => {
-      addLog('boleto', `Boleto simulado gerado e enviado para "${e.nome}" (venc. ${vencStr})`, e.nome);
-      simularWebhook('boleto.gerado', { empresa: e.nome, valor: plano?.preco||0, vencimento: vencStr });
-      notify(`🧾 Boleto registrado para "${e.nome}".`, 'success');
-    },
-    'Registrar envio'
-  );
-}
+// Fatia 63a: "Gerar boleto (simulado)" removido — inventava uma linha digitável
+// falsa. Boleto/PIX de verdade: botão "Cobrar via Asaas".
 
 // Registrar pagamento manual (com data e comprovante) (NOVO)
 async function abrirRegistrarPagamento(empresaId) {
@@ -7186,7 +7164,6 @@ async function salvarPagamento() {
     await saveEmpresa(e);
 
     addLog('pagamento', `Pagamento de R$ ${valor.toLocaleString('pt-BR',{minimumFractionDigits:2})} registrado para "${e.nome}" — em dia até ${pagoAte.toLocaleDateString('pt-BR')}`, e.nome, e.id);
-    simularWebhook('pagamento.recebido', { empresa: e.nome, valor, data });
     notify(`💰 Pagamento registrado para "${e.nome}"! Em dia até ${pagoAte.toLocaleDateString('pt-BR')}.`, 'success');
 
     await refreshDados();
