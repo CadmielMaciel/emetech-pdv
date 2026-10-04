@@ -9,6 +9,8 @@
 try{
   var _temaSalvo = localStorage.getItem('misu_tema');
   if(_temaSalvo === 'dark' || _temaSalvo === 'light') document.documentElement.setAttribute('data-theme', _temaSalvo);
+  // Fatia 55: sem escolha salva, segue o tema do aparelho (igual ao app.html)
+  else if(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.setAttribute('data-theme', 'dark');
 }catch(e){}
 </script>
 <script>
@@ -30,6 +32,8 @@ try{
 <!-- ═══ PWA — App instalável (mobile + desktop) ═══ -->
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#1E5EFF">
+<!-- Fatia 55: tema claro/escuro próprios — evita o escurecimento forçado do navegador -->
+<meta name="color-scheme" content="light dark">
 <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -453,6 +457,8 @@ try{
   .tour-btn{padding:10px 16px;font-size:13px}
   .tour-invite{left:12px;right:12px;bottom:12px;width:auto}
 }
+:root{color-scheme:only light} /* Fatia 55 */
+[data-theme="dark"]{color-scheme:dark}
 [data-theme="dark"]{--pri-txt:#8AB0FF;--success-txt:#4ADE80;--danger-txt:#FCA5A5;--warn-txt:#FBBF24;--info-txt:#93C5FD;--bg:#070B1A;--bg2:#0B1228;--surface:#101A38;--surface2:#152147;--txt:#EAF0FF;--txt2:#A8BAE8;--txt3:#93A4D6;--txt4:#3A4A78;--border:#1B2A55;--border2:#25376B;--pri-light:#0F2058;--accent:#E8915B;--accent-soft:#3A2218;
 --shadow:0 2px 12px rgba(0,0,0,.25);
 --shadow-lg:0 8px 28px rgba(0,0,0,.36);
@@ -2713,6 +2719,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
         <div class="hub-grid">
           <div class="hub-card" onclick="go('financeiro')"><div class="hc-icon"><i class="ti ti-wallet"></i></div><div><div class="hc-label">Contas e fluxo de caixa</div><div class="hc-desc">Contas a pagar, receber e fluxo de caixa</div></div></div>
           <div class="hub-card" onclick="go('caixas')" id="nav-caixas"><div class="hc-icon"><i class="ti ti-device-desktop-analytics"></i></div><div><div class="hc-label">Gestão de Caixas</div><div class="hc-desc">Abertura, fechamento e operações de caixa</div></div></div>
+          <div class="hub-card" onclick="go('maquininhas')"><div class="hc-icon"><i class="ti ti-device-mobile-dollar"></i></div><div><div class="hc-label">Maquininhas</div><div class="hc-desc">Maquininhas de cartão e as taxas de cada uma</div></div></div>
           <div class="hub-card" onclick="go('dre')"><div class="hc-icon"><i class="ti ti-report-money"></i></div><div><div class="hc-label">DRE — Resultado</div><div class="hc-desc">Faturamento, custos, lucro bruto e líquido</div></div></div>
           <div class="hub-card" onclick="go('comissoes')"><div class="hc-icon"><i class="ti ti-award"></i></div><div><div class="hc-label">Comissão Técnicos</div><div class="hc-desc">Cálculo de comissões por técnico</div></div></div>
           <div class="hub-card" onclick="go('catalogo')"><div class="hc-icon"><i class="ti ti-building-store"></i></div><div><div class="hc-label">Catálogo Online</div><div class="hc-desc">Vitrine pública de produtos da loja</div></div></div>
@@ -3334,13 +3341,8 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
           <div class="sec-title" style="margin-bottom:2px"><i class="ti ti-calculator" style="color:var(--pri-txt)"></i>Simulador de Taxa de Cartão</div>
           <div style="font-size:12.5px;color:var(--txt2)">Calcule o valor das parcelas e quanto a loja recebe líquido depois da taxa da maquininha.</div>
         </div>
-        <div class="fin-tabs" style="margin:12px 0">
-          <button class="fin-tab active" onclick="simTab('calc',this)"><i class="ti ti-calculator" style="font-size:13px"></i> Simular</button>
-          <button class="fin-tab" onclick="simTab('taxas',this)"><i class="ti ti-device-mobile-dollar" style="font-size:13px"></i> Maquininhas</button>
-        </div>
-
-        <!-- SIMULAR -->
-        <div id="sim-calc">
+        <!-- SIMULAR (Fatia 54: o cadastro de maquininhas virou página própria) -->
+        <div id="sim-calc" style="margin-top:12px">
           <div class="g2" style="gap:14px;align-items:start">
             <div class="card">
               <div class="fg"><label class="lbl">Maquininha</label>
@@ -3361,8 +3363,15 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
           </div>
         </div>
 
-        <!-- MAQUININHAS (gerenciar) -->
-        <div id="sim-taxas" style="display:none">
+      </div>
+
+      <!-- Fatia 54: MAQUININHAS DE CARTÃO (cadastro separado do simulador; só admin/gerente) -->
+      <div class="page" id="page-maquininhas">
+        <div style="margin-bottom:12px">
+          <div class="sec-title" style="margin-bottom:2px"><i class="ti ti-device-mobile-dollar" style="color:var(--pri-txt)"></i>Maquininhas de Cartão</div>
+          <div style="font-size:12.5px;color:var(--txt2)">Cadastre as maquininhas e as taxas de cada uma. Elas valem para todo o sistema: PDV, pagamento de OS e simulador.</div>
+        </div>
+        <div id="sim-taxas">
           <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
             <div class="fg" style="margin:0;flex:1;min-width:180px"><label class="lbl">Maquininha em edição</label>
               <select id="maq-sel" onchange="selecionarMaquina(this.value)"></select>
@@ -7917,7 +7926,11 @@ function toggleDark(){
 function restaurarTemaSalvo(){
   let salvo=null;
   try{ salvo=localStorage.getItem('misu_tema'); }catch(e){}
-  if(salvo!=='dark' && salvo!=='light') return;
+  if(salvo!=='dark' && salvo!=='light'){ // Fatia 55: sem escolha salva → tema do aparelho (já aplicado no <head>); só acerta o ícone
+    const b2=document.getElementById('dark-btn'); const d=document.documentElement.getAttribute('data-theme')==='dark';
+    if(b2) b2.innerHTML = d ? '<i class="ti ti-sun"></i>' : '<i class="ti ti-moon"></i>';
+    return;
+  }
   document.documentElement.setAttribute('data-theme', salvo);
   const btn=document.getElementById('dark-btn');
   if(btn) btn.innerHTML = salvo==='dark' ? '<i class="ti ti-sun"></i>' : '<i class="ti ti-moon"></i>';
@@ -7976,6 +7989,7 @@ function canAccess(role,page){
   if(page==='entregas') return true; // gestão de entregas (operacional)
   if(page==='parados') return ['admin','admin_master','gerente'].includes(role); // mostra custo/valor parado
   if(page==='dre') return ['admin','admin_master','gerente'].includes(role); // lucro/custos
+  if(page==='maquininhas') return ['admin','admin_master','gerente'].includes(role); // Fatia 54: taxas de cartão só admin/gerente (decisão do usuário)
   if(role==='admin_master') return true; // master irrestrito
   if(role==='admin') return true;        // dono vê tudo (Usuários/Aparência inclusos)
   if(role==='gerente'&&(page==='usuarios'||page==='aparencia')) return true; // gerente pode ver usuários
@@ -9465,7 +9479,7 @@ const PT={
   aparencia:'Aparência & Marca',inteligencia:'Inteligência Operacional',
   caixas:'Gestão de Caixas',crediario:'Crediário',configuracoes:'Configurações',
   contratos:'Contratos & Termos',garantias:'Garantias',diagnostico:'Diagnóstico',
-  simulador:'Simulador de Cartão',troca:'Troca de Aparelhos',crm:'Relacionamento (CRM)',
+  simulador:'Simulador de Cartão',maquininhas:'Maquininhas de Cartão',troca:'Troca de Aparelhos',crm:'Relacionamento (CRM)',
   catalogo:'Catálogo Online',permissoes:'Permissões',
   'hub-vendas':'Vendas','hub-servicos':'Serviços','hub-clientes':'Clientes',
   'hub-estoque':'Estoque & Produtos','hub-financeiro':'Financeiro & Gestão',
@@ -9511,7 +9525,7 @@ function go(page){
   document.getElementById('topbar-title').textContent=PT[page]||page;
   document.querySelectorAll('.ni').forEach(el=>{if(el.getAttribute('onclick')?.includes(`'${page}'`))el.classList.add('active');});
   // Manter grupo pai ativo quando dentro de um módulo filho
-  const _hubMap={orcamentos:'vendas',crediario:'vendas',devolucoes:'vendas',simulador:'vendas',entregas:'vendas',
+  const _hubMap={orcamentos:'vendas',crediario:'vendas',devolucoes:'vendas',simulador:'vendas',maquininhas:'financeiro',entregas:'vendas',
     os:'servicos','os-hist':'servicos',diagnostico:'servicos',garantias:'servicos',contratos:'servicos',
     clientes:'clientes',crm:'clientes',troca:'clientes',agenda:'clientes',
     produtos:'estoque',estoque:'estoque',fornecedores:'estoque',reposicao:'estoque',parados:'estoque',dre:'financeiro',
@@ -9550,6 +9564,7 @@ function go(page){
     crm:renderCrm,
     catalogo:renderCatalogo,
     simulador:renderSimulador,
+    maquininhas:renderMaquininhas, // Fatia 54
     diagnostico:renderDiagnostico,
     inteligencia:()=>{initIntel();renderAlertasOperacionais();popPrecoEspSelects();},
     caixas:()=>{initCaixas();go_caixas();},
@@ -11680,9 +11695,9 @@ function renderTaxaCartao(){
   // Ocultar parcelas no débito (débito é sempre 1x)
   if(parcRow) parcRow.style.display=modalidade==='debito'?'none':'flex';
 
-  if(maqId==='__nova'){go('simulador');return;}
+  if(maqId==='__nova'){ if(_podeGerirMaquinas()) go('maquininhas'); else notify('Peça a um administrador ou gerente para cadastrar a maquininha (Financeiro → Maquininhas).','warn'); return; } // Fatia 54
   if(!maqId||!(G_MAQUINAS||[]).length){
-    if(info)info.innerHTML='<span style="color:var(--txt3)">Nenhuma maquininha cadastrada. <a onclick="go(\'simulador\')" style="color:var(--pri-txt);cursor:pointer">Cadastrar</a></span>';
+    if(info)info.innerHTML='<span style="color:var(--txt3)">Nenhuma maquininha cadastrada. '+(_podeGerirMaquinas()?'<a onclick="go(\'maquininhas\')" style="color:var(--pri-txt);cursor:pointer;text-decoration:underline">Cadastrar</a>':'Peça ao administrador ou gerente.')+'</span>';
     return;
   }
   if(!info)return;
@@ -18214,6 +18229,13 @@ async function renderSimulador(){
   simParcelasUI();
   simularCartao();
 }
+// Fatia 54: cadastro de maquininhas em página própria — só admin/gerente
+function _podeGerirMaquinas(){ return typeof canAccess==='function' ? canAccess(G.role,'maquininhas') : ['admin','admin_master','gerente'].includes(G.role); }
+async function renderMaquininhas(){
+  await carregarMaquinas();
+  popMaquinaSelects();
+  selecionarMaquina(_maqEditId && (_maqEditId==='__nova' || G_MAQUINAS.some(m=>m.id===_maqEditId)) ? _maqEditId : ((G_MAQUINAS[0]&&G_MAQUINAS[0].id)||'__nova'));
+}
 
 function popMaquinaSelects(){
   // seletor da aba Simular
@@ -18231,12 +18253,8 @@ function popMaquinaSelects(){
   }
 }
 
-function simTab(tab,btn){
-  document.querySelectorAll('#page-simulador .fin-tab').forEach(b=>b.classList.remove('active'));
-  if(btn)btn.classList.add('active');
-  ['calc','taxas'].forEach(t=>{const el=document.getElementById('sim-'+t);if(el)el.style.display=t===tab?'':'none';});
-  if(tab==='taxas'){ popMaquinaSelects(); selecionarMaquina(_maqEditId|| (G_MAQUINAS[0]&&G_MAQUINAS[0].id) || '__nova'); }
-}
+// Fatia 54: as abas Simular/Maquininhas viraram duas páginas; simTab só redireciona.
+function simTab(tab){ go(tab==='taxas'?'maquininhas':'simulador'); }
 
 function simParcelasUI(){
   const forma=document.getElementById('sim-forma')?.value||'credito';
@@ -18264,7 +18282,7 @@ function simularCartao(){
   const out=document.getElementById('sim-resultado');
   if(!out)return;
   const maq=_maquinaSimAtual();
-  if(!maq){ out.innerHTML='<div class="card" style="text-align:center;padding:30px;color:var(--txt3)">Cadastre uma maquininha na aba <b>Maquininhas</b> para simular.</div>'; return; }
+  if(!maq){ out.innerHTML='<div class="card" style="text-align:center;padding:30px;color:var(--txt3)">Nenhuma maquininha cadastrada.'+(_podeGerirMaquinas()?'<br><button class="btn btn-pri" style="margin-top:12px" onclick="go(\'maquininhas\')"><i class="ti ti-device-mobile-dollar"></i> Cadastrar maquininha</button>':'<br>Peça a um administrador ou gerente para cadastrar em <b>Financeiro → Maquininhas</b>.')+'</div>'; return; }
   const valor=parseFloat(document.getElementById('sim-valor')?.value)||0;
   const forma=document.getElementById('sim-forma')?.value||'credito';
   const parcelas=forma==='debito'?1:(parseInt(document.getElementById('sim-parcelas')?.value)||1);
@@ -18335,9 +18353,11 @@ function _lerGradeTaxas(){
   return { taxa_debito:parseFloat(document.getElementById('tx-debito')?.value)||0, taxas_credito:cred };
 }
 async function salvarMaquina(){
+  if(!_podeGerirMaquinas()){notify('Só administrador ou gerente altera as maquininhas.','warn');return;} // Fatia 54
   const nome=document.getElementById('maq-nome').value.trim();
   if(!nome){notify('Dê um nome para a maquininha.','warn');return;}
   const t=_lerGradeTaxas();
+  if([t.taxa_debito,...Object.values(t.taxas_credito)].some(v=>!(v>=0&&v<100))){notify('As taxas precisam estar entre 0% e 99,99%.','warn');return;} // Fatia 54
   setLoad(true);
   let err, novo;
   if(_maqEditId && _maqEditId!=='__nova'){
@@ -18354,6 +18374,7 @@ async function salvarMaquina(){
   notify('Maquininha salva!','success');
 }
 async function excluirMaquina(){
+  if(!_podeGerirMaquinas()){notify('Só administrador ou gerente altera as maquininhas.','warn');return;} // Fatia 54
   if(!_maqEditId || _maqEditId==='__nova')return;
   confirmAct('Excluir maquininha','Tem certeza que deseja excluir esta maquininha?',async()=>{
     const {error}=await db.from('maquininhas_cartao').delete().eq('id',_maqEditId);
@@ -30504,6 +30525,7 @@ html.ac-readable p,html.ac-readable li,html.ac-readable td,html.ac-readable labe
     devolucoes:'Registre a devolução de um produto vendido para acertar estoque e financeiro.',
     'hist-vendas':'Consulte todas as vendas feitas. Use os filtros por período e vendedor.',
     simulador:'Calcule taxas e parcelas de cartão antes de fechar a venda.',
+    maquininhas:'Cadastre cada maquininha com as taxas de débito e crédito. Elas valem no PDV, nas OS e no simulador.',
     os:'Abra a OS com cliente, aparelho e defeito. Vá atualizando o status até "Ag. Pagamento" e depois "Entregue".',
     'os-hist':'Veja as OS já finalizadas e reimprima documentos quando precisar.',
     diagnostico:'Registre o diagnóstico técnico do aparelho.',
