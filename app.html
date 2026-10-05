@@ -8864,7 +8864,12 @@ function abrirDetalheEntrega(id){
   if(gestor && e.origem_tipo==='os' && e.origem_id) gest+=`<button class="btn btn-ghost" style="margin-top:6px" onclick="verOSDaEntrega()"><i class="ti ti-external-link"></i>Ver OS de origem</button>`;
   const gb=$('ent-gestao'); if(gb){ gb.innerHTML=gest; gb.style.display=gest?'':'none'; }
 
-  $('ent-telefone-acoes').innerHTML=e.telefone?`<button class="btn btn-out" style="width:100%" onclick="whatsappEntregaMob()"><i class="ti ti-brand-whatsapp"></i>Falar com o cliente</button>`:'';
+  // Fatia 67: mapa no ponto que o cliente enviou (ou pelo endereço)
+  const _temLoc=e.forma!=='retirada'&&e.loc_lat!=null&&e.loc_lng!=null;
+  const _end=e.forma!=='retirada'?([e.rua,e.numero,e.bairro,e.cidade,e.uf,e.cep].filter(Boolean).join(', ')||e.endereco||''):'';
+  const _dest=_temLoc?(e.loc_lat+','+e.loc_lng):_end;
+  $('ent-telefone-acoes').innerHTML=(e.telefone?`<button class="btn btn-out" style="width:100%" onclick="whatsappEntregaMob()"><i class="ti ti-brand-whatsapp"></i>Falar com o cliente</button>`:'')
+    +(_dest?`<a class="btn btn-out" style="width:100%;margin-top:6px;text-decoration:none" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(_dest)}" target="_blank" rel="noopener"><i class="ti ti-map-2"></i>${_temLoc?'Mapa (ponto enviado pelo cliente'+(e.loc_precisao_m?', ~'+esc(String(e.loc_precisao_m))+' m':'')+')':'Abrir endereço no mapa'}</a>`:'');
 
   $('sheet-entrega-overlay').style.display='block';
   $('sheet-entrega').style.display='block';
