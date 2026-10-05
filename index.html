@@ -2394,7 +2394,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
     <div id="turnstile-box" style="margin:12px 0 0;justify-content:center;display:none"></div>
     <button class="l-btn" id="l-btn" onclick="doLogin()"><i class="ti ti-lock" style="font-size:17px"></i>Entrar</button>
     <div style="text-align:center;margin-top:12px"><a href="javascript:void(0)" onclick="abrirRecuperarSenha()" style="font-size:12.5px;color:#665A88;text-decoration:underline;cursor:pointer">Esqueci minha senha</a></div>
-    <p style="text-align:center;font-size:11.5px;color:#665A88;margin-top:16px">MISU SYS © 2025 — Todos os direitos reservados</p>
+    <p style="text-align:center;font-size:11.5px;color:#665A88;margin-top:16px">MISU SYS © 2025 — Todos os direitos reservados · <a href="/documentos.html" target="_blank" rel="noopener" style="color:#665A88;text-decoration:underline">Termos e políticas</a></p>
   </div>
 </div>
 
@@ -2441,7 +2441,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
       <span style="font-size:13px;color:var(--txt)">Li e aceito os Termos de Uso e a Política de Privacidade.</span>
     </label>
     <div class="modal-footer" style="margin-top:0">
-      <a href="/termos.html" target="_blank" class="btn btn-out btn-sm"><i class="ti ti-external-link"></i> Abrir em página</a>
+      <a href="/documentos.html?doc=termos_uso" target="_blank" class="btn btn-out btn-sm"><i class="ti ti-external-link"></i> Abrir em página</a>
       <button class="btn btn-out" onclick="doLogout()">Sair</button>
       <button class="btn btn-pri" id="termos-btn-aceitar" disabled style="opacity:.5;cursor:not-allowed" onclick="aceitarTermosUso()"><i class="ti ti-check"></i> Aceitar e continuar</button>
     </div>
@@ -2745,6 +2745,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
           <div class="hub-card" onclick="go('permissoes')"><div class="hc-icon"><i class="ti ti-key"></i></div><div><div class="hc-label">Permissões</div><div class="hc-desc">Configure o que cada perfil pode acessar</div></div></div>
           <div class="hub-card" onclick="go('aparencia')"><div class="hc-icon"><i class="ti ti-palette"></i></div><div><div class="hc-label">Marca e aparência</div><div class="hc-desc">Logo, cores e identidade visual da loja</div></div></div>
           <div class="hub-card" onclick="go('configuracoes')"><div class="hc-icon"><i class="ti ti-adjustments-horizontal"></i></div><div><div class="hc-label">Configurações</div><div class="hc-desc">Gateway de pagamento, impressora térmica e integrações</div></div></div>
+          <a class="hub-card" href="/documentos.html" target="_blank" rel="noopener" style="text-decoration:none;color:inherit"><div class="hc-icon"><i class="ti ti-file-certificate"></i></div><div><div class="hc-label">Termos e políticas</div><div class="hc-desc">Termos de Uso, Privacidade, Contrato e demais documentos (ler e baixar em PDF)</div></div></a><!-- Fatia 66 -->
         </div>
       </div>
 
@@ -4405,6 +4406,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
             <div style="display:flex;gap:8px;flex-wrap:wrap">
               <button class="btn btn-out btn-sm" onclick="verTermosSalvos()" data-tour="termos-uso"><i class="ti ti-file-text"></i> Ver Termos de Uso</button>
               <button class="btn btn-out btn-sm" onclick="verContratoSalvo()" data-tour="contrato-saas"><i class="ti ti-file-dollar"></i> Ver Contrato do Serviço</button>
+              <a class="btn btn-out btn-sm" href="/documentos.html" target="_blank" rel="noopener"><i class="ti ti-files"></i> Todos os termos e políticas</a><!-- Fatia 66 -->
             </div>
           </div>
 
@@ -8601,13 +8603,13 @@ function _verDocLeitura(titulo, conteudo, versao){
   const chkLabel=document.querySelector('#modal-termos-uso label'); if(chkLabel)chkLabel.style.display='none';
   const avisoRol=document.getElementById('termos-aviso-rolagem'); if(avisoRol)avisoRol.style.display='none';
   const footer=document.querySelector('#modal-termos-uso .modal-footer');
-  if(footer) footer.innerHTML=`<a href="/termos.html" target="_blank" class="btn btn-out btn-sm"><i class="ti ti-external-link"></i> Abrir em página</a><button class="btn btn-pri" onclick="closeModal('modal-termos-uso');_restaurarModalTermos()">Fechar</button>`;
+  if(footer) footer.innerHTML=`<a href="/documentos.html?doc=termos_uso" target="_blank" class="btn btn-out btn-sm"><i class="ti ti-external-link"></i> Abrir em página</a><button class="btn btn-pri" onclick="closeModal('modal-termos-uso');_restaurarModalTermos()">Fechar</button>`;
   openModal('modal-termos-uso');
 }
 function _restaurarModalTermos(){
   const chkLabel=document.querySelector('#modal-termos-uso label'); if(chkLabel)chkLabel.style.display='';
   const footer=document.querySelector('#modal-termos-uso .modal-footer');
-  if(footer) footer.innerHTML=`<a href="/termos.html" target="_blank" class="btn btn-out btn-sm"><i class="ti ti-external-link"></i> Abrir em página</a><button class="btn btn-out" onclick="doLogout()">Sair</button><button class="btn btn-pri" id="termos-btn-aceitar" disabled style="opacity:.5;cursor:not-allowed" onclick="aceitarTermosUso()"><i class="ti ti-check"></i> Aceitar e continuar</button>`;
+  if(footer) footer.innerHTML=`<a href="/documentos.html?doc=termos_uso" target="_blank" class="btn btn-out btn-sm"><i class="ti ti-external-link"></i> Abrir em página</a><button class="btn btn-out" onclick="doLogout()">Sair</button><button class="btn btn-pri" id="termos-btn-aceitar" disabled style="opacity:.5;cursor:not-allowed" onclick="aceitarTermosUso()"><i class="ti ti-check"></i> Aceitar e continuar</button>`;
 }
 async function aceitarTermosUso(){
   if(!document.getElementById('termos-check')?.checked){
