@@ -1,0 +1,20 @@
+{
+  "name": "MISU Entregas — app do entregador",
+  "short_name": "MISU Entregas",
+  "description": "Minhas entregas: endereço, mapa, confirmação e tentativas. Só o que a loja passou para você.",
+  "id": "/entregador.html",
+  "start_url": "/entregador.html",
+  "scope": "/entregador.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0A5CF5",
+  "theme_color": "#1E5EFF",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "categories": ["business", "productivity"],
+  "icons": [
+    { "src": "/icons/entregas-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/entregas-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/entregas-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
