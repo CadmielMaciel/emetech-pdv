@@ -9,8 +9,8 @@
      declara isso pro navegador não escurecer a página por conta própria. -->
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1E5EFF">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/entregas-32.png">
-<link rel="apple-touch-icon" href="icons/entregas-apple-180.png">
+<link rel="icon" type="image/png" sizes="32x32" href="entregas-32.png">
+<link rel="apple-touch-icon" href="entregas-apple-180.png">
 <script>
 (function(){
   function temaAtual(){
@@ -49,7 +49,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .wrap{max-width:460px;margin:0 auto}
 .card{background:var(--bg2);border:1px solid var(--border);border-radius:18px;padding:20px;box-shadow:var(--sombra)}
 .logo{text-align:center;margin-bottom:14px;font-weight:800;font-size:20px;color:var(--pri-txt);display:flex;flex-direction:column;align-items:center;gap:8px}
-.logo::before{content:"";width:56px;height:56px;border-radius:15px;background:url(icons/entregas-192.png) center/cover;box-shadow:0 6px 18px rgba(30,94,255,.30)} /* ícone das entregas */
+.logo::before{content:"";width:56px;height:56px;border-radius:15px;background:url(entregas-192.png) center/cover;box-shadow:0 6px 18px rgba(30,94,255,.30)} /* ícone das entregas */
 h1{font-size:18px;margin-bottom:4px}
 .sub{color:var(--txt2);font-size:13px;margin-bottom:14px}
 .badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:5px 11px;border-radius:999px}
@@ -66,6 +66,15 @@ input:focus,textarea:focus{outline:none;border-color:var(--pri)}
 .btn{width:100%;padding:14px;border:none;border-radius:13px;background:linear-gradient(135deg,var(--pri),var(--pri-btn2));color:#fff;font-weight:700;font-size:15px;cursor:pointer;margin-top:8px}
 .btn:disabled{opacity:.5}
 .hide{display:none}
+/* Fatia 67: CEP automático e localização do cliente */
+.cep-st{font-size:12px;color:var(--txt2);margin-top:4px;min-height:1em}
+.loc-box{margin-top:14px;border:1.5px dashed var(--border);border-radius:13px;padding:12px}
+.btn-loc{width:100%;padding:12px;border-radius:11px;border:1.5px solid var(--pri);background:var(--pri-soft);color:var(--pri-txt);font-weight:700;font-size:14px;cursor:pointer;font-family:inherit}
+.btn-loc:disabled{opacity:.6;cursor:default}
+.btn-loc:focus-visible,.btn:focus-visible{outline:3px solid var(--pri-txt);outline-offset:2px}
+.loc-st{font-size:12.5px;color:var(--txt2);margin-top:8px;line-height:1.45}
+.loc-st.ok{color:var(--ok)} .loc-st.erro{color:var(--warn)}
+.loc-st a{color:var(--pri-txt);font-weight:700}
 .msg{text-align:center;padding:34px 10px;font-size:15px;line-height:1.6;white-space:pre-line}
 .msg .sub2{display:block;font-size:12.5px;color:var(--txt3);margin-top:6px}
 .store{font-size:12.5px;color:var(--txt2);background:var(--bg3);border-radius:12px;padding:12px;margin:12px 0}
@@ -224,12 +233,17 @@ function render(){
     <div id="form-entrega">
       <label>Nome do recebedor *</label><input id="f-rec" value="${esc(d.rec_nome)}">
       <label>Telefone</label><input id="f-tel" inputmode="tel" value="${esc(d.rec_telefone)}">
-      <div class="row"><div><label>CEP</label><input id="f-cep" inputmode="numeric" value="${esc(d.cep)}"></div><div><label>UF</label><input id="f-uf" maxlength="2" style="text-transform:uppercase" value="${esc(d.uf)}"></div></div>
+      <div class="row"><div><label for="f-cep">CEP</label><input id="f-cep" inputmode="numeric" maxlength="9" autocomplete="postal-code" placeholder="00000-000" value="${esc(d.cep)}" oninput="cepDigitado(this)" aria-describedby="cep-st"></div><div><label for="f-uf">UF</label><input id="f-uf" maxlength="2" style="text-transform:uppercase" autocomplete="address-level1" value="${esc(d.uf)}"></div></div>
+      <div class="cep-st" id="cep-st" role="status">Digite o CEP que preenchemos rua, bairro e cidade.</div>
       <label>Rua *</label><input id="f-rua" value="${esc(d.rua)}">
       <div class="row"><div><label>Número *</label><input id="f-num" value="${esc(d.numero)}"></div><div><label>Complemento</label><input id="f-comp" value="${esc(d.complemento)}"></div></div>
       <label>Bairro</label><input id="f-bairro" value="${esc(d.bairro)}">
       <label>Cidade *</label><input id="f-cidade" value="${esc(d.cidade)}">
-      <label>Ponto de referência</label><input id="f-ref" value="${esc(d.referencia)}">
+      <label>Ponto de referência</label><input id="f-ref" value="${esc(d.referencia)}" placeholder="Ex.: portão azul, ao lado da padaria">
+      <div class="loc-box" id="loc-box">
+        <button type="button" class="btn-loc" id="btn-loc" onclick="usarLocalizacao()">📍 ${E.localizacao_enviada_em?'Atualizar minha localização':'Usar minha localização atual'}</button>
+        <div class="loc-st${E.localizacao_enviada_em?' ok':''}" id="loc-st" role="status">${E.localizacao_enviada_em?'✓ Sua localização já foi enviada para a loja.':'Opcional: ajuda o entregador a chegar no lugar exato. Use quando estiver no endereço da entrega.'}</div>
+      </div>
     </div>
     <div id="form-retirada" class="hide"><div class="store">Você retira na loja${E.loja_nome?(' — '+esc(E.loja_nome)):''}. Escolha a data desejada abaixo.</div>
       <label>Nome de quem vai retirar *</label><input id="f-rec-r" value="${esc(d.rec_nome)}">
@@ -242,6 +256,51 @@ function render(){
     <div style="text-align:center"><button class="copiar-link" onclick="copiarLinkPagina()">🔗 Copiar link desta entrega</button></div>
   </div>`;
   setForma(forma);
+}
+
+/* ── Fatia 67: CEP automático (ViaCEP) ── */
+let _cepUlt='';
+function cepDigitado(el){
+  const dg=el.value.replace(/\D/g,'').slice(0,8);
+  el.value=dg.length>5?dg.slice(0,5)+'-'+dg.slice(5):dg;
+  if(dg.length===8 && dg!==_cepUlt){ _cepUlt=dg; buscarCep(dg); }
+}
+async function buscarCep(cep){
+  const st=document.getElementById('cep-st'); if(st) st.textContent='Buscando o CEP…';
+  try{
+    const r=await fetch('https://viacep.com.br/ws/'+cep+'/json/'); const j=await r.json();
+    if(!j || j.erro){ if(st) st.textContent='CEP não encontrado. Confira os números ou preencha o endereço.'; return; }
+    const por=(id,v)=>{ const i=document.getElementById(id); if(i && v) i.value=v; };
+    por('f-rua',j.logradouro); por('f-bairro',j.bairro); por('f-cidade',j.localidade); por('f-uf',j.uf);
+    if(st) st.textContent='✓ Endereço encontrado. Confira e informe o número.';
+    const n=document.getElementById(j.logradouro?'f-num':'f-rua'); if(n){ n.focus(); }
+  }catch(e){ if(st) st.textContent='Não deu para buscar o CEP agora. Preencha o endereço normalmente.'; }
+}
+
+/* ── Fatia 67: localização do cliente (opcional, só com permissão) ── */
+function usarLocalizacao(){
+  const st=document.getElementById('loc-st'), b=document.getElementById('btn-loc');
+  const msg=(t,cls)=>{ st.className='loc-st'+(cls?' '+cls:''); st.innerHTML=t; };
+  if(!('geolocation' in navigator)){ msg('Este navegador não envia localização. Preencha o endereço e o ponto de referência.','erro'); return; }
+  b.disabled=true; msg('Pegando sua localização… (o celular pode pedir permissão)');
+  navigator.geolocation.getCurrentPosition(async pos=>{
+    const lat=pos.coords.latitude, lng=pos.coords.longitude, acc=Math.round(pos.coords.accuracy||0);
+    try{
+      const { data, error } = await db.rpc('entrega_publica_localizacao',{ tok:token, p_lat:lat, p_lng:lng, p_precisao:acc||null });
+      if(error || !data || data.ok===false){
+        msg(data&&data.erro==='encerrada'?'Esta entrega já foi concluída.':'Não foi possível enviar a localização agora. Tente de novo em instantes.','erro');
+      } else {
+        msg('✓ Localização enviada para a loja'+(acc?` (precisão de ~${acc} m)`:'')+`. <a href="https://www.google.com/maps/search/?api=1&query=${lat},${lng}" target="_blank" rel="noopener">Ver no mapa</a>`+(acc>150?'<br>A precisão está baixa: se puder, tente de novo ao ar livre.':''),'ok');
+        b.textContent='📍 Atualizar minha localização';
+      }
+    }catch(e){ msg('Sem conexão para enviar a localização. Tente de novo.','erro'); }
+    finally{ b.disabled=false; }
+  }, err=>{
+    b.disabled=false;
+    msg(err && err.code===1
+      ? 'Você não permitiu a localização. Se quiser enviar, libere nas configurações do navegador — ou só preencha o endereço.'
+      : 'Não deu para pegar a localização agora. Tente de novo perto de uma janela, ou só preencha o endereço.','erro');
+  }, { enableHighAccuracy:true, timeout:20000, maximumAge:0 });
 }
 
 function setForma(f){
