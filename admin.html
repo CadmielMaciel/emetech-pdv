@@ -970,8 +970,8 @@ select option { background: var(--bg2); }
         <div class="sb-sec sb-sec-toggle" onclick="toggleSbGroup('compliance')"><i class="ti ti-chevron-down sb-chev"></i> Compliance</div>
         <div class="sb-group-body">
           <div class="sb-item" onclick="go('lgpd')" data-tour="admin-termos"><i class="ti ti-shield-check"></i> LGPD e Privacidade</div>
-          <!-- Fatia 63b: Central de Termos e Cookies saíram do menu (nenhum app lia). Telas e dados continuam no arquivo. -->
-          <div class="sb-item" onclick="go('suporte');setTimeout(()=>document.getElementById('csaas-titulo')?.scrollIntoView({behavior:'smooth',block:'center'}),80)"><i class="ti ti-file-dollar"></i> Contrato SaaS</div>
+          <!-- Fatia 63b: Cookies saiu do menu. Fatia 66: Central de Termos voltou (agora alimenta documentos.html e o aceite das lojas). -->
+          <div class="sb-item" onclick="go('termos_central')"><i class="ti ti-files"></i> Central de Termos</div><!-- Fatia 66: único lugar dos documentos (volta ao menu) -->
         </div>
       </div>
       <div class="sb-group" data-grp="fiscal">
@@ -1669,10 +1669,14 @@ select option { background: var(--bg2); }
       <div class="page" id="page-termos_central">
         <div class="sec-hdr">
           <div class="sec-title"><i class="ti ti-files" style="color:var(--pri-txt)"></i> Central de Termos</div>
-          <button class="btn btn-pri btn-sm" onclick="abrirNovoTermoModal()"><i class="ti ti-plus"></i> Novo termo / nova versão</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <a class="btn btn-out btn-sm" href="/documentos.html" target="_blank" rel="noopener"><i class="ti ti-external-link"></i> Ver página pública</a>
+            <button class="btn btn-pri btn-sm" onclick="abrirNovoTermoModal()"><i class="ti ti-plus"></i> Novo termo / nova versão</button>
+          </div>
         </div>
         <div style="background:rgba(30,94,255,.06);border:1.5px solid rgba(30,94,255,.2);border-radius:10px;padding:12px 16px;margin-bottom:18px;font-size:12.5px;color:var(--txt2);max-width:720px">
           <i class="ti ti-info-circle"></i> Redija cada documento legal por cláusulas (título + corpo). Clique em um termo abaixo pra abrir o conteúdo completo; clique de novo pra fechar. Cada novo salvamento cria uma nova versão — as anteriores ficam guardadas no histórico de cada termo.
+          <br><b>Fatia 66:</b> tudo que é publicado aqui aparece na página pública <b>Termos e políticas</b> (sumário + leitura + PDF), com link no login, nos planos e dentro do sistema. Publicar <b>Termos de Uso</b> ou <b>Contrato do Serviço</b> também gera a nova versão que as lojas aceitam ao entrar.
         </div>
         <div id="termos-central-list"><div style="display:flex;flex-direction:column;gap:8px;padding:6px 0"><div class="motion-shimmer" style="height:60px;width:100%;border-radius:12px"></div><div class="motion-shimmer" style="height:60px;width:100%;border-radius:12px"></div></div></div>
       </div>
@@ -2058,58 +2062,17 @@ CREATE POLICY "admin_master_somente_master" ON admin_master FOR ALL TO authentic
           <span id="ver-status" style="font-size:12px;color:var(--txt3)"></span>
         </div>
 
+        <!-- Fatia 66: Termos de Uso e Contrato do SaaS agora são escritos só na Central de Termos -->
         <div class="card" style="max-width:760px;margin-top:18px">
-          <div class="sec-title" style="margin-bottom:10px"><i class="ti ti-file-certificate"></i> Termos de Uso (aceite das lojas)</div>
-          <div style="font-size:12.5px;color:var(--txt2);margin-bottom:14px">
-            Este texto aparece para as lojas no login. Elas precisam aceitar para usar o sistema. Ao <b>publicar uma nova versão</b>, todas as lojas terão que aceitar de novo. Versão atual: <b id="termos-versao-atual" style="color:var(--pri-txt)">—</b>
+          <div class="sec-title" style="margin-bottom:10px"><i class="ti ti-file-certificate"></i> Termos de Uso e Contrato do Serviço</div>
+          <div style="font-size:12.5px;color:var(--txt2);line-height:1.55;margin-bottom:12px">
+            Agora todos os documentos (Termos de Uso, Contrato do Serviço, Privacidade, Cookies e os que você criar) ficam na <b>Central de Termos</b>.
+            Publicar Termos de Uso ou Contrato do Serviço lá já gera a nova versão que as lojas aceitam ao entrar.
           </div>
-          <div class="fg">
-            <label class="lbl">Título</label>
-            <input type="text" id="termos-adm-titulo" placeholder="Termos de Uso — MISU SYS">
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-pri btn-sm" onclick="go('termos_central')"><i class="ti ti-files"></i> Abrir a Central de Termos</button>
+            <a href="/documentos.html" target="_blank" rel="noopener" class="btn btn-out btn-sm"><i class="ti ti-external-link"></i> Ver página pública</a>
           </div>
-          <div class="fg">
-            <label class="lbl">Conteúdo</label>
-            <textarea id="termos-adm-conteudo" rows="12" placeholder="Escreva os termos aqui..." style="font-family:inherit;line-height:1.6"></textarea>
-          </div>
-          <div class="fg">
-            <label class="lbl">O que mudou nesta versão (aviso rápido para as lojas)</label>
-            <textarea id="termos-adm-resumo" rows="3" placeholder="Ex: Atualizamos a cláusula de pagamento e adicionamos a política de cancelamento." style="font-family:inherit;line-height:1.5"></textarea>
-            <div style="font-size:11px;color:var(--txt3);margin-top:3px">Aparece em destaque quando a loja precisar reaceitar. Deixe vazio na 1ª versão.</div>
-          </div>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <button class="btn btn-pri" onclick="publicarTermos()"><i class="ti ti-cloud-upload"></i> Publicar nova versão</button>
-            <a href="/termos.html" target="_blank" class="btn btn-out btn-sm"><i class="ti ti-external-link"></i> Ver página pública</a>
-            <span id="termos-adm-status" style="font-size:12px;color:var(--txt3)"></span>
-          </div>
-          <div style="font-size:11px;color:var(--txt3);margin-top:8px"><i class="ti ti-info-circle"></i> Publicar incrementa a versão e exige novo aceite de todas as lojas. Edite com cuidado.</div>
-        </div>
-
-        <div class="card" style="max-width:760px;margin-top:18px">
-          <div class="sec-title" style="margin-bottom:10px"><i class="ti ti-file-dollar"></i> Contrato do SaaS (você ↔ lojas)</div>
-          <div style="font-size:12.5px;color:var(--txt2);margin-bottom:12px">
-            Este é o <b>seu contrato de prestação</b> com cada loja-cliente — diferente dos modelos que as lojas usam com os clientes finais delas. Use variáveis que o sistema preenche por empresa:
-          </div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
-            <code style="background:var(--bg2);padding:2px 7px;border-radius:5px;font-size:11px">{empresa}</code>
-            <code style="background:var(--bg2);padding:2px 7px;border-radius:5px;font-size:11px">{documento}</code>
-            <code style="background:var(--bg2);padding:2px 7px;border-radius:5px;font-size:11px">{plano}</code>
-            <code style="background:var(--bg2);padding:2px 7px;border-radius:5px;font-size:11px">{valor}</code>
-            <code style="background:var(--bg2);padding:2px 7px;border-radius:5px;font-size:11px">{periodicidade}</code>
-          </div>
-          <div class="fg">
-            <label class="lbl">Título</label>
-            <input type="text" id="csaas-titulo" placeholder="Contrato de Prestação de Serviço — MISU SYS">
-          </div>
-          <div class="fg">
-            <label class="lbl">Conteúdo (com variáveis)</label>
-            <textarea id="csaas-conteudo" rows="14" placeholder="Escreva o contrato aqui, usando {plano}, {valor}..." style="font-family:inherit;line-height:1.6"></textarea>
-          </div>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <button class="btn btn-pri" onclick="publicarContratoSaas()"><i class="ti ti-cloud-upload"></i> Publicar contrato</button>
-            <span style="font-size:12px;color:var(--txt3)">Versão atual: <b id="csaas-versao" style="color:var(--pri-txt)">—</b></span>
-            <span id="csaas-status" style="font-size:12px;color:var(--txt3)"></span>
-          </div>
-          <div style="font-size:11px;color:var(--txt3);margin-top:8px"><i class="ti ti-info-circle"></i> A loja aceita este contrato no login (com o plano e valor dela preenchidos). Publicar nova versão exige novo aceite.</div>
         </div>
       </div><!-- /page-suporte -->
 
@@ -2568,6 +2531,7 @@ CREATE POLICY "admin_master_somente_master" ON admin_master FOR ALL TO authentic
       </div>
     </div>
     <div id="tcm-versao-info" style="font-size:11.5px;color:var(--txt3);margin:-6px 0 12px"></div>
+    <div id="tcm-aceite-aviso" style="display:none;font-size:12px;color:var(--warn-txt);background:rgba(245,158,11,.10);border:1px solid rgba(245,158,11,.35);border-radius:9px;padding:9px 11px;margin:-4px 0 12px"></div><!-- Fatia 66 -->
     <div class="fg">
       <label class="lbl">Título do documento</label>
       <input type="text" id="tcm-titulo" placeholder="Ex: Termos de Uso do MISU SYS">
@@ -6324,70 +6288,9 @@ async function salvarContaEmpresa(empresaId) {
 }
 
 // ── CONFIG DE SUPORTE (global, exibida no app das empresas) ──
-async function carregarTermosAdm(){
-  try{
-    const {data}=await db.rpc('termos_vigente');
-    if(data && data.versao){
-      document.getElementById('termos-versao-atual').textContent=data.versao;
-      document.getElementById('termos-adm-titulo').value=data.titulo||'';
-      document.getElementById('termos-adm-conteudo').value=data.conteudo||'';
-      const r=document.getElementById('termos-adm-resumo'); if(r)r.value='';
-    } else {
-      document.getElementById('termos-versao-atual').textContent='nenhuma';
-    }
-  }catch(e){ const el=document.getElementById('termos-versao-atual'); if(el)el.textContent='—'; }
-  // Contrato do SaaS (você ↔ lojas)
-  try{
-    const {data}=await db.rpc('contrato_saas_vigente');
-    if(data && data.versao){
-      document.getElementById('csaas-versao').textContent=data.versao;
-      document.getElementById('csaas-titulo').value=data.titulo||'';
-      document.getElementById('csaas-conteudo').value=data.conteudo||'';
-    } else { document.getElementById('csaas-versao').textContent='nenhuma'; }
-  }catch(e){ const el=document.getElementById('csaas-versao'); if(el)el.textContent='—'; }
-}
-async function publicarContratoSaas(){
-  const titulo=document.getElementById('csaas-titulo').value.trim()||'Contrato de Prestação de Serviço';
-  const conteudo=document.getElementById('csaas-conteudo').value.trim();
-  if(conteudo.length<20){ notify('Escreva o conteúdo do contrato.','warn'); return; }
-  if(!confirm('Publicar nova versão do contrato do SaaS? As lojas terão que aceitar de novo no próximo login.')) return;
-  setLoad(true);
-  let prox=1;
-  try{ const {data}=await db.from('contrato_saas').select('versao').order('versao',{ascending:false}).limit(1).maybeSingle(); if(data)prox=(data.versao||0)+1; }catch(e){}
-  const {error}=await db.from('contrato_saas').insert({versao:prox,titulo,conteudo,publicado:true});
-  setLoad(false);
-  if(error){
-    if(/does not exist|relation/i.test(error.message||'')) notify('Rode a migração CS01 no Supabase primeiro.','warn',7000);
-    else notify('Erro: '+error.message,'error',6000);
-    return;
-  }
-  document.getElementById('csaas-versao').textContent=prox;
-  const st=document.getElementById('csaas-status'); if(st){st.textContent='✓ Versão '+prox+' publicada';st.style.color='var(--success-txt)';}
-  notify('Contrato do SaaS publicado (v'+prox+')!','success',6000);
-}
-async function publicarTermos(){
-  const titulo=document.getElementById('termos-adm-titulo').value.trim()||'Termos de Uso';
-  const conteudo=document.getElementById('termos-adm-conteudo').value.trim();
-  const resumo=document.getElementById('termos-adm-resumo')?.value?.trim()||null;
-  if(conteudo.length<20){ notify('Escreva o conteúdo dos termos.','warn'); return; }
-  if(!confirm('Publicar uma nova versão dos termos? Todas as lojas terão que aceitar de novo no próximo login.')) return;
-  setLoad(true);
-  let prox=1;
-  try{ const {data}=await db.from('termos_uso').select('versao').order('versao',{ascending:false}).limit(1).maybeSingle(); if(data)prox=(data.versao||0)+1; }catch(e){}
-  const {error}=await db.from('termos_uso').insert({versao:prox,titulo,conteudo,resumo_mudancas:resumo,publicado:true});
-  setLoad(false);
-  if(error){
-    if(/does not exist|relation/i.test(error.message||'')) notify('Rode a migração TU01 no Supabase primeiro.','warn',7000);
-    else notify('Erro: '+error.message,'error',6000);
-    return;
-  }
-  document.getElementById('termos-versao-atual').textContent=prox;
-  const st=document.getElementById('termos-adm-status'); if(st){st.textContent='✓ Versão '+prox+' publicada';st.style.color='var(--success-txt)';}
-  notify('Termos publicados (v'+prox+')! As lojas aceitarão no próximo login.','success',6000);
-}
+// Fatia 66: carregarTermosAdm/publicarTermos/publicarContratoSaas saíram — os documentos são publicados na Central de Termos.
 
 async function carregarSuporteConfig() {
-  carregarTermosAdm();
   const st = document.getElementById('sup-status');
   try {
     const { data, error } = await db.from('app_config').select('*').eq('id', 1).maybeSingle();
@@ -9167,7 +9070,7 @@ async function renderTermosCentral(){
   }catch(e){
     wrap.innerHTML = `<div class="card" style="text-align:center;padding:24px;color:var(--txt3);font-size:12.5px">
       <i class="ti ti-database-off" style="font-size:22px;display:block;margin-bottom:8px"></i>
-      Central de Termos ainda não disponível — rode a migração <code>sql/fatia24_central_termos.sql</code> no Supabase.
+      Central de Termos ainda não disponível — rode o SQL da Fatia 66 (<code>sql_f66_documentos.sql</code>) no Supabase.
     </div>`;
     return;
   }
@@ -9221,6 +9124,7 @@ function _tcRenderCorpo(tipo, versaoParaMostrar){
       : `<div class="tc-clausula"><div class="tc-cl-corpo" style="color:var(--txt3)">Sem cláusulas cadastradas nesta versão.</div></div>`}
     <div class="tc-actions">
       <button class="btn btn-pri btn-xs" onclick="abrirNovoTermoModal('${esc(tipo)}')"><i class="ti ti-plus"></i> Nova versão</button>
+      <a class="btn btn-out btn-xs" href="/documentos.html?doc=${encodeURIComponent(tipo)}" target="_blank" rel="noopener"><i class="ti ti-external-link"></i> Ver como a loja vê</a>
       ${docs.length>1 ? `<button class="btn btn-out btn-xs" onclick="_tcToggleHistorico('${esc(tipo)}')"><i class="ti ti-history"></i> ${docs.length-1} versão(ões) anterior(es)</button>` : ''}
     </div>
     ${docs.length>1 ? `<div class="tc-hist-list${historicoAberto?' tc-hist-open':''}" id="tc-hist-${esc(tipo)}">
@@ -9312,6 +9216,14 @@ function _tcmTipoAlterado(){
 function _tcmAtualizarVersaoInfo(){
   const sel = document.getElementById('tcm-tipo');
   const info = document.getElementById('tcm-versao-info');
+  const av = document.getElementById('tcm-aceite-aviso'); // Fatia 66
+  if(av){
+    const t = sel.value;
+    av.style.display = (t==='termos_uso'||t==='contrato_saas') ? '' : 'none';
+    av.innerHTML = t==='contrato_saas'
+      ? '<i class="ti ti-alert-triangle"></i> Publicar o <b>Contrato do Serviço</b> faz todas as lojas aceitarem de novo no próximo login. Variáveis que o sistema preenche por loja: <code>{empresa}</code> <code>{documento}</code> <code>{plano}</code> <code>{valor}</code> <code>{periodicidade}</code> (na página pública aparecem como [nome da empresa] etc.).'
+      : '<i class="ti ti-alert-triangle"></i> Publicar os <b>Termos de Uso</b> faz todas as lojas aceitarem de novo no próximo login. Use "O que mudou" para avisar as lojas.';
+  }
   if(sel.value === '__custom__'){ info.textContent = 'Este será a versão 1 do novo tipo de documento.'; return; }
   const docs = _tcPorTipo[sel.value] || [];
   const proxima = docs.length ? Math.max(...docs.map(d=>d.versao)) + 1 : 1;
@@ -9354,6 +9266,7 @@ async function salvarTermoCentral(){
   const docsExistentes = _tcPorTipo[tipo] || [];
   const proximaVersao = docsExistentes.length ? Math.max(...docsExistentes.map(d=>d.versao)) + 1 : 1;
   const tipoLabel = isCustom ? tipoCustomTxt : _tcLabelTipo(tipo);
+  if((tipo==='termos_uso'||tipo==='contrato_saas') && !confirm(`Publicar "${tipoLabel}" v${proximaVersao}? Todas as lojas terão que aceitar de novo no próximo login.`)) return; // Fatia 66
 
   try{
     const { error } = await db.from('termos_documentos').insert({
@@ -9368,7 +9281,7 @@ async function salvarTermoCentral(){
     _tcVersaoExibida[tipo] = undefined;
     await renderTermosCentral();
   }catch(e){
-    notify('Não foi possível publicar. Rode a migração sql/fatia24_central_termos.sql no Supabase.', 'error', 6000);
+    notify('Não foi possível publicar: '+(e?.message||'rode o SQL da Fatia 66 (sql_f66_documentos.sql) no Supabase.'), 'error', 7000);
   }
 }
 </script>
