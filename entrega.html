@@ -9,6 +9,8 @@
      declara isso pro navegador não escurecer a página por conta própria. -->
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1E5EFF">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/entregas-32.png">
+<link rel="apple-touch-icon" href="icons/entregas-apple-180.png">
 <script>
 (function(){
   function temaAtual(){
@@ -46,7 +48,8 @@ function corTxt(cor){
 body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;padding:16px}
 .wrap{max-width:460px;margin:0 auto}
 .card{background:var(--bg2);border:1px solid var(--border);border-radius:18px;padding:20px;box-shadow:var(--sombra)}
-.logo{text-align:center;margin-bottom:14px;font-weight:800;font-size:20px;color:var(--pri-txt)}
+.logo{text-align:center;margin-bottom:14px;font-weight:800;font-size:20px;color:var(--pri-txt);display:flex;flex-direction:column;align-items:center;gap:8px}
+.logo::before{content:"";width:56px;height:56px;border-radius:15px;background:url(icons/entregas-192.png) center/cover;box-shadow:0 6px 18px rgba(30,94,255,.30)} /* ícone das entregas */
 h1{font-size:18px;margin-bottom:4px}
 .sub{color:var(--txt2);font-size:13px;margin-bottom:14px}
 .badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:5px 11px;border-radius:999px}
