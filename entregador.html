@@ -10,7 +10,12 @@
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1E5EFF">
 <meta name="robots" content="noindex">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="apple-touch-icon" href="icons/entregas-apple-180.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/entregas-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/entregas-192.png">
+<link rel="manifest" href="manifest-entregador.json">
+<meta name="apple-mobile-web-app-title" content="MISU Entregas">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <script>
 (function(){
   function temaAtual(){
@@ -85,7 +90,7 @@ canvas{width:100%;height:160px;border:1.5px dashed var(--border);border-radius:1
 </head>
 <body>
 <div class="wrap">
-  <div class="marca"><i class="ti ti-truck-delivery" aria-hidden="true"></i> MISU Entregas</div>
+  <div class="marca"><img src="icons/entregas-64.png" alt="" width="40" height="40" style="border-radius:11px;box-shadow:0 4px 14px rgba(30,94,255,.35)"> MISU Entregas</div>
 
   <div id="tela-carregando" class="carregando" role="status">Carregando…</div>
 
