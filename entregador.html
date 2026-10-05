@@ -10,9 +10,9 @@
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1E5EFF">
 <meta name="robots" content="noindex">
-<link rel="apple-touch-icon" href="icons/entregas-apple-180.png">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/entregas-32.png">
-<link rel="icon" type="image/png" sizes="192x192" href="icons/entregas-192.png">
+<link rel="apple-touch-icon" href="entregas-apple-180.png">
+<link rel="icon" type="image/png" sizes="32x32" href="entregas-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="entregas-192.png">
 <link rel="manifest" href="manifest-entregador.json">
 <meta name="apple-mobile-web-app-title" content="MISU Entregas">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -79,7 +79,7 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--pri);outline-off
 .campo{margin-top:12px}
 .campo .t{font-size:11.5px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px}
 .campo .v{font-size:14.5px;margin-top:2px;line-height:1.45;white-space:pre-wrap}
-.acoes-rapidas{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.acoes-rapidas{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:8px;margin-top:14px}
 .acoes-rapidas a,.acoes-rapidas button{display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;padding:11px 6px;border-radius:13px;border:1.5px solid var(--border);background:var(--bg3);color:var(--txt);font-weight:700;font-size:12.5px;text-decoration:none;font-family:inherit;cursor:pointer}
 .acoes-rapidas i{font-size:20px;color:var(--pri-txt)}
 canvas{width:100%;height:160px;border:1.5px dashed var(--border);border-radius:12px;background:#fff;touch-action:none;display:block}
@@ -90,7 +90,7 @@ canvas{width:100%;height:160px;border:1.5px dashed var(--border);border-radius:1
 </head>
 <body>
 <div class="wrap">
-  <div class="marca"><img src="icons/entregas-64.png" alt="" width="40" height="40" style="border-radius:11px;box-shadow:0 4px 14px rgba(30,94,255,.35)"> MISU Entregas</div>
+  <div class="marca"><img src="entregas-64.png" alt="" width="40" height="40" style="border-radius:11px;box-shadow:0 4px 14px rgba(30,94,255,.35)"> MISU Entregas</div>
 
   <div id="tela-carregando" class="carregando" role="status">Carregando…</div>
 
@@ -352,14 +352,20 @@ function abrirDetalhe(id){
   const st=ST[e.status]||[e.status,''];
   $('det-tit').textContent=e.cliente_nome||'Entrega';
   $('det-status').className='selo '+st[1]; $('det-status').textContent=st[0];
-  const campos=[['Endereço',enderecoTxt(e)],['Ponto de referência',e.referencia],['Quem vai receber',[e.rec_nome,e.rec_telefone].filter(Boolean).join(' · ')],
+  const temLoc=e.forma!=='retirada' && e.loc_lat!=null && e.loc_lng!=null; // Fatia 67: o cliente mandou a localização
+  const campos=[['Endereço',enderecoTxt(e)],['Localização',temLoc?('📍 Enviada pelo cliente'+(e.loc_precisao_m?` (precisão de ~${e.loc_precisao_m} m)`:'')+' — o mapa abre no ponto exato'):''],['Ponto de referência',e.referencia],['Quem vai receber',[e.rec_nome,e.rec_telefone].filter(Boolean).join(' · ')],
     ['O que entregar',e.descricao],['Quando',dataTxt(e)],['Observações',e.observacoes],
     ['Entregue',e.status==='entregue'?[e.entregue_em?new Date(e.entregue_em).toLocaleString('pt-BR'):'',e.recebido_por?('recebido por '+e.recebido_por):''].filter(Boolean).join(' · '):'']];
   $('det-campos').innerHTML=campos.filter(c=>c[1]).map(c=>`<div class="campo"><div class="t">${esc(c[0])}</div><div class="v">${esc(c[1])}</div></div>`).join('');
   const tel=String(e.rec_telefone||e.telefone||'').replace(/\D/g,''), tel55=tel&&!(tel.startsWith('55')&&tel.length>=12)?'55'+tel:tel;
   const endBusca=e.forma!=='retirada'?[e.rua,e.numero,e.bairro,e.cidade,e.uf,e.cep].filter(Boolean).join(', ')||e.endereco||'':'';
   let rap='';
-  if(endBusca) rap+=`<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(endBusca)}" target="_blank" rel="noopener"><i class="ti ti-map-2" aria-hidden="true"></i>Abrir no mapa</a>`;
+  // Fatia 67: com a localização do cliente o mapa/Waze vão no ponto exato; sem ela, pelo endereço
+  const destino=temLoc?`${e.loc_lat},${e.loc_lng}`:endBusca;
+  if(destino){
+    rap+=`<a href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destino)}&travelmode=driving" target="_blank" rel="noopener"><i class="ti ti-map-2" aria-hidden="true"></i>${temLoc?'Mapa (ponto exato)':'Abrir no mapa'}</a>`;
+    rap+=`<a href="https://waze.com/ul?${temLoc?'ll='+encodeURIComponent(destino):'q='+encodeURIComponent(destino)}&navigate=yes" target="_blank" rel="noopener"><i class="ti ti-navigation" aria-hidden="true"></i>Waze</a>`;
+  }
   if(tel) rap+=`<a href="tel:+${esc(tel55)}"><i class="ti ti-phone" aria-hidden="true"></i>Ligar</a><a href="https://wa.me/${esc(tel55)}?text=${encodeURIComponent('Olá'+(e.cliente_nome?' '+String(e.cliente_nome).split(' ')[0]:'')+'! Sou o entregador da '+(S.eu?.loja_nome||'loja')+'.')}" target="_blank" rel="noopener"><i class="ti ti-brand-whatsapp" aria-hidden="true"></i>WhatsApp</a>`;
   $('det-rapidas').innerHTML=rap; $('det-rapidas').classList.toggle('hidden',!rap);
   let ac='';
