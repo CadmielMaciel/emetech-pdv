@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Termos e políticas — MISU SYS</title>
+<meta name="description" content="Termos de Uso, Política de Privacidade, Contrato do Serviço e demais documentos do MISU SYS.">
+<!-- Fatia 66: sumário de todos os documentos publicados na Central de Termos
+     do Painel Master; cada título abre o documento para leitura e download
+     em PDF. Lê só o que está publicado (funções documentos_publicos /
+     documento_publico). -->
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1E5EFF">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<script>
+(function(){
+  function temaAtual(){
+    var t=null; try{ t=localStorage.getItem('misu_tema'); }catch(e){}
+    if(t!=='dark'&&t!=='light') t=(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';
+    return t;
+  }
+  document.documentElement.setAttribute('data-theme',temaAtual());
+  try{ matchMedia('(prefers-color-scheme: dark)').addEventListener('change',function(){ document.documentElement.setAttribute('data-theme',temaAtual()); }); }catch(e){}
+})();
+</script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{color-scheme:only light;--pri:#1E5EFF;--pri2:#1A4FD9;--pri-txt:#1A52E0;--pri-soft:#EEF3FF;--bg:#F5F2EC;--bg2:#FFFFFF;--bg3:#F7F4EF;--txt:#1E1530;--txt2:#54487A;--txt3:#665A88;--border:#E6DED3;--warn:#92400E;--warn-bg:#FDF0E0;--sombra:0 4px 24px rgba(0,0,0,.06)}
+[data-theme="dark"]{color-scheme:dark;--pri-txt:#8AB0FF;--pri-soft:rgba(30,94,255,.20);--bg:#070B1A;--bg2:#0E1730;--bg3:#13204A;--txt:#EAF0FF;--txt2:#A8BAE8;--txt3:#93A4D6;--border:#1B2A55;--warn:#FBBF24;--warn-bg:rgba(251,191,36,.12);--sombra:0 8px 32px rgba(0,0,0,.35)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--txt);line-height:1.6;min-height:100vh}
+a{color:var(--pri-txt)}
+.topo{background:linear-gradient(135deg,#1E5EFF,#0A2FA8);color:#fff;padding:26px 16px 30px;text-align:center}
+.topo h1{font-size:22px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:9px}
+.topo p{color:rgba(255,255,255,.92);font-size:13.5px;margin-top:4px}
+.wrap{max-width:780px;margin:-14px auto 0;padding:0 16px 40px}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;box-shadow:var(--sombra)}
+.hidden{display:none!important}
+/* sumário */
+.sum-tit{font-size:12px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--txt3);padding:18px 20px 6px}
+.sum-lista{list-style:none;padding:0 8px 8px}
+.sum-item a{display:flex;align-items:center;gap:12px;padding:13px 12px;border-radius:12px;text-decoration:none;color:var(--txt)}
+.sum-item a:hover{background:var(--bg3)}
+.sum-item a:focus-visible{outline:3px solid var(--pri-txt);outline-offset:1px}
+.sum-num{flex:0 0 30px;height:30px;border-radius:9px;background:var(--pri-soft);color:var(--pri-txt);font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center}
+.sum-txt{flex:1;min-width:0}
+.sum-txt b{display:block;font-size:15px;text-decoration:underline;text-decoration-color:var(--txt3);text-underline-offset:3px}
+.sum-txt span{font-size:12.5px;color:var(--txt2)}
+.sum-item i.ti-chevron-right{color:var(--txt3);font-size:18px}
+.sum-item+.sum-item{border-top:1px solid var(--border)}
+/* leitura */
+.barra{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border)}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:10px 14px;border-radius:11px;border:1.5px solid var(--border);background:var(--bg2);color:var(--txt);font-family:inherit;font-weight:700;font-size:13.5px;cursor:pointer;text-decoration:none}
+.btn-pri{background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;border-color:transparent}
+.btn:focus-visible{outline:3px solid var(--pri-txt);outline-offset:2px}
+.btn:disabled{opacity:.6;cursor:default}
+.doc{padding:22px 22px 26px}
+.doc h2{font-size:22px;line-height:1.3}
+.doc .meta{font-size:12.5px;color:var(--txt2);margin-top:4px}
+.aviso{background:var(--warn-bg);color:var(--warn);border-radius:11px;padding:10px 12px;font-size:13px;margin-top:12px}
+.indice{background:var(--bg3);border-radius:12px;padding:12px 16px;margin:16px 0 6px}
+.indice b{font-size:12px;letter-spacing:.5px;text-transform:uppercase;color:var(--txt3)}
+.indice ol{margin:6px 0 0 20px;font-size:14px}
+.indice li{margin:3px 0}
+.cl{margin-top:18px;scroll-margin-top:12px}
+.cl h3{font-size:16px;margin-bottom:4px}
+.cl p{white-space:pre-wrap;font-size:14.5px;color:var(--txt)}
+.versoes{margin-top:22px;border-top:1px solid var(--border);padding-top:14px;font-size:13px;color:var(--txt2)}
+.versoes select{font-family:inherit;font-size:13.5px;padding:7px 9px;border-radius:9px;border:1.5px solid var(--border);background:var(--bg2);color:var(--txt);margin-left:6px}
+.carregando,.vazio{text-align:center;color:var(--txt2);padding:34px 16px;font-size:14px}
+.rodape{text-align:center;font-size:12.5px;color:var(--txt3);margin-top:18px}
+@media print{
+  .topo,.barra,.versoes,.rodape,#sumario{display:none!important}
+  body,.card{background:#fff!important;color:#000!important;box-shadow:none!important;border:none!important}
+  .wrap{margin:0;max-width:none;padding:0}
+  .indice{background:#f2f2f2!important}
+  .doc .meta,.cl p{color:#000!important}
+}
+</style>
+</head>
+<body>
+<header class="topo">
+  <h1><i class="ti ti-file-certificate" aria-hidden="true"></i> Termos e políticas</h1>
+  <p>MISU SYS — Sistema de Gestão</p>
+</header>
+<main class="wrap">
+  <section id="sumario" class="card" aria-labelledby="sum-tit">
+    <h2 class="sum-tit" id="sum-tit">Sumário</h2>
+    <div id="sum-corpo"><div class="carregando" role="status">Carregando documentos…</div></div>
+  </section>
+
+  <article id="leitura" class="card hidden" aria-labelledby="doc-tit">
+    <div class="barra">
+      <a class="btn" href="documentos.html" onclick="return voltarSumario(event)"><i class="ti ti-arrow-left" aria-hidden="true"></i> Sumário</a>
+      <span style="flex:1"></span>
+      <button class="btn btn-pri" type="button" id="btn-pdf" onclick="baixarPdf()"><i class="ti ti-download" aria-hidden="true"></i> Baixar PDF</button>
+      <button class="btn" type="button" onclick="window.print()"><i class="ti ti-printer" aria-hidden="true"></i> Imprimir</button>
+    </div>
+    <div class="doc" id="doc"></div>
+  </article>
+  <p class="rodape">Dúvidas sobre estes documentos? Fale com o suporte da MISU SYS.</p>
+</main>
+
+<script>
+const SURL='https://icgfpfwcnhkjglrmnuca.supabase.co';
+const SKEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljZ2ZwZndjbmhramdscm1udWNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwODA2OTEsImV4cCI6MjA5NTY1NjY5MX0.xDGiGCIlqXaqdWhWo0NoNi_XUdlw5raCogO_Jnc0ezw';
+const db=supabase.createClient(SURL,SKEY,{auth:{persistSession:false,autoRefreshToken:false}});
+const $=id=>document.getElementById(id);
+const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const dataBR=d=>{ try{ return new Date(d).toLocaleDateString('pt-BR'); }catch(_){ return ''; } };
+// No contrato, as variáveis só são preenchidas dentro do sistema (com os dados da loja)
+const VARS={empresa:'[nome da empresa]',documento:'[CPF/CNPJ]',plano:'[plano contratado]',valor:'[valor do plano]',periodicidade:'[mensal/anual]'};
+const semVars=t=>String(t||'').replace(/\{(empresa|documento|plano|valor|periodicidade)\}/g,(m,k)=>VARS[k]);
+let _lista=null, _doc=null;
+
+async function rpc(fn,args){ const {data,error}=await db.rpc(fn,args||{}); if(error) throw error; return data; }
+
+function rota(){
+  const q=new URLSearchParams(location.search);
+  let tipo=q.get('doc'), v=parseInt(q.get('v'),10)||null;
+  // links antigos: termos.html#privacidade etc.
+  if(!tipo && location.hash){ tipo=({'#privacidade':'politica_privacidade','#cookies':'politica_cookies','#contrato':'contrato_saas','#termos':'termos_uso'})[location.hash]||null; }
+  if(tipo) abrirDoc(tipo,v,false); else mostrarSumario();
+}
+window.addEventListener('popstate',rota);
+
+async function carregarLista(){
+  if(_lista) return _lista;
+  _lista=await rpc('documentos_publicos');
+  return Array.isArray(_lista)?_lista:[];
+}
+async function mostrarSumario(){
+  $('leitura').classList.add('hidden'); $('sumario').classList.remove('hidden');
+  document.title='Termos e políticas — MISU SYS';
+  try{
+    const l=await carregarLista();
+    $('sum-corpo').innerHTML=l.length?`<ol class="sum-lista">${l.map((d,i)=>`<li class="sum-item"><a href="documentos.html?doc=${encodeURIComponent(d.tipo)}" onclick="return irPara(event,'${esc(d.tipo)}')">
+        <span class="sum-num" aria-hidden="true">${i+1}</span>
+        <span class="sum-txt"><b>${esc(d.rotulo)}</b><span>Versão ${esc(d.versao)} · atualizado em ${esc(dataBR(d.publicado_em))}</span></span>
+        <i class="ti ti-chevron-right" aria-hidden="true"></i></a></li>`).join('')}</ol>`
+      :'<div class="vazio">Nenhum documento publicado ainda.</div>';
+  }catch(e){ $('sum-corpo').innerHTML='<div class="vazio">Não foi possível carregar os documentos agora. Tente de novo em instantes.</div>'; }
+}
+function irPara(ev,tipo){ if(ev&&(ev.ctrlKey||ev.metaKey||ev.shiftKey)) return true; ev&&ev.preventDefault(); abrirDoc(tipo,null,true); return false; }
+function voltarSumario(ev){ if(ev&&(ev.ctrlKey||ev.metaKey)) return true; ev&&ev.preventDefault(); history.pushState(null,'','documentos.html'); mostrarSumario(); window.scrollTo(0,0); return false; }
+
+async function abrirDoc(tipo,versao,empilhar){
+  $('sumario').classList.add('hidden'); $('leitura').classList.remove('hidden');
+  $('doc').innerHTML='<div class="carregando" role="status">Carregando documento…</div>';
+  if(empilhar) history.pushState(null,'','documentos.html?doc='+encodeURIComponent(tipo)+(versao?'&v='+versao:''));
+  try{
+    const d=await rpc('documento_publico',{p_tipo:tipo,p_versao:versao||null});
+    if(!d||!d.ok){ $('doc').innerHTML='<div class="vazio">Documento não encontrado. <a href="documentos.html" onclick="return voltarSumario(event)">Ver todos os documentos</a></div>'; _doc=null; return; }
+    _doc=d; desenharDoc(d); window.scrollTo(0,0);
+    document.title=(d.rotulo||d.titulo)+' — MISU SYS';
+    setTimeout(()=>{ const h=$('doc-tit'); if(h) h.focus({preventScroll:true}); },30);
+  }catch(e){ $('doc').innerHTML='<div class="vazio">Não foi possível carregar o documento agora. Tente de novo em instantes.</div>'; }
+}
+function clausulasDe(d){
+  let n=0;
+  return (Array.isArray(d.clausulas)?d.clausulas:[]).map(c=>({t:String(c.titulo||'').trim(),b:semVars(String(c.corpo||'').trim())}))
+    .filter(c=>c.t||c.b).map(c=>({...c,num:c.t?++n:null}));
+}
+function desenharDoc(d){
+  const cl=clausulasDe(d), tit=cl.filter(c=>c.num);
+  $('doc').innerHTML=`<h2 id="doc-tit" tabindex="-1">${esc(d.titulo)}</h2>
+    <div class="meta">${esc(d.rotulo&&d.rotulo!==d.titulo?d.rotulo+' · ':'')}Versão ${esc(d.versao)} · publicado em ${esc(dataBR(d.publicado_em))}</div>
+    ${d.vigente?'':`<div class="aviso">Você está vendo uma versão antiga. <a href="documentos.html?doc=${encodeURIComponent(d.tipo)}" onclick="return irVersao(event,null)">Ver a versão atual</a></div>`}
+    ${d.resumo&&d.vigente?`<div class="meta" style="margin-top:6px">O que mudou: ${esc(d.resumo)}</div>`:''}
+    ${tit.length>1?`<nav class="indice" aria-label="Índice do documento"><b>Índice</b><ol>${tit.map(c=>`<li><a href="#cl-${c.num}" onclick="return irCl(event,${c.num})">${esc(c.t)}</a></li>`).join('')}</ol></nav>`:''}
+    ${cl.map(c=>`<section class="cl"${c.num?` id="cl-${c.num}"`:''}>${c.t?`<h3>${c.num}. ${esc(c.t)}</h3>`:''}${c.b?`<p>${esc(c.b)}</p>`:''}</section>`).join('')||'<p class="vazio">Documento sem conteúdo.</p>'}
+    ${(d.versoes||[]).length>1?`<div class="versoes"><label for="sel-versao">Versões anteriores:</label><select id="sel-versao" onchange="irVersao(event,this.value)">${d.versoes.map(v=>`<option value="${esc(v.versao)}"${v.versao===d.versao?' selected':''}>Versão ${esc(v.versao)} · ${esc(dataBR(v.publicado_em))}</option>`).join('')}</select></div>`:''}`;
+}
+function irCl(ev,n){ ev.preventDefault(); const el=$('cl-'+n); if(el){ el.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}); } return false; }
+function irVersao(ev,v){ ev&&ev.preventDefault&&ev.preventDefault(); if(!_doc) return false; const vig=Math.max(...(_doc.versoes||[]).map(x=>x.versao)); abrirDoc(_doc.tipo,(v&&+v!==vig)?+v:null,true); return false; }
+
+/* ── PDF: título, versão, data e cláusulas numeradas, com nº de página ── */
+function carregarJsPdf(){
+  if(window.jspdf) return Promise.resolve(true);
+  return new Promise(res=>{ const s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js'; s.onload=()=>res(!!window.jspdf); s.onerror=()=>res(false); document.head.appendChild(s); });
+}
+async function baixarPdf(){
+  const d=_doc; if(!d) return;
+  const b=$('btn-pdf'); b.disabled=true;
+  try{
+    if(!(await carregarJsPdf())){ window.print(); return; } // sem a biblioteca: salvar como PDF pela impressão
+    const pdf=new window.jspdf.jsPDF({unit:'mm',format:'a4'});
+    const M=18, L=210-2*M, ALT=297; let y=M;
+    const linha=(txt,tam,estilo,cor,esp)=>{ pdf.setFont('helvetica',estilo||'normal'); pdf.setFontSize(tam); pdf.setTextColor(...(cor||[20,20,30]));
+      pdf.splitTextToSize(txt,L).forEach(l=>{ if(y>ALT-M-8){ pdf.addPage(); y=M; } pdf.text(l,M,y); y+=tam*0.43; }); y+=(esp||0); };
+    linha('MISU SYS',9,'bold',[26,82,224],2);
+    linha(d.titulo,17,'bold',null,1);
+    linha(`${d.rotulo&&d.rotulo!==d.titulo?d.rotulo+' · ':''}Versão ${d.versao} · publicado em ${dataBR(d.publicado_em)}`,9.5,'normal',[90,90,110],5);
+    clausulasDe(d).forEach(c=>{ if(c.t) linha(`${c.num}. ${c.t}`,12,'bold',null,1); if(c.b) linha(c.b,10.5,'normal',null,4); });
+    const tot=pdf.getNumberOfPages();
+    for(let i=1;i<=tot;i++){ pdf.setPage(i); pdf.setFont('helvetica','normal'); pdf.setFontSize(8.5); pdf.setTextColor(120,120,135);
+      pdf.text(`${d.titulo} — v${d.versao}`,M,ALT-9); pdf.text(`Página ${i} de ${tot}`,210-M,ALT-9,{align:'right'}); }
+    const nome=String(d.rotulo||d.titulo).normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-zA-Z0-9]+/g,'-').replace(/^-|-$/g,'').toLowerCase()||'documento';
+    pdf.save(`${nome}-v${d.versao}.pdf`);
+  }catch(e){ window.print(); }
+  finally{ b.disabled=false; }
+}
+rota();
+</script>
+</body>
+</html>

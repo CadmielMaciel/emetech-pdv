@@ -4,82 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Termos de Uso — MISU SYS</title>
-<!-- Fatia 57: tema claro/escuro igual ao sistema. Usa a escolha salva no
-     MISU SYS (se for o mesmo aparelho) ou o tema do aparelho do cliente, e
-     declara isso pro navegador não escurecer a página por conta própria. -->
+<!-- Fatia 66: os documentos agora ficam todos em documentos.html (sumário +
+     leitura + PDF). Este endereço antigo continua funcionando e leva ao
+     documento certo (#privacidade, #cookies, #contrato). -->
 <meta name="color-scheme" content="light dark">
-<meta name="theme-color" content="#1E5EFF">
+<meta name="robots" content="noindex">
 <script>
 (function(){
-  function temaAtual(){
-    var t=null; try{ t=localStorage.getItem('misu_tema'); }catch(e){}
-    if(t!=='dark'&&t!=='light') t=(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';
-    return t;
-  }
-  document.documentElement.setAttribute('data-theme',temaAtual());
-  try{ matchMedia('(prefers-color-scheme: dark)').addEventListener('change',function(){
-    document.documentElement.setAttribute('data-theme',temaAtual());
-    if(typeof window._aoTrocarTema==='function') window._aoTrocarTema();
-  }); }catch(e){}
+  var mapa={'#privacidade':'politica_privacidade','#cookies':'politica_cookies','#contrato':'contrato_saas'};
+  var doc=mapa[location.hash]||'termos_uso';
+  location.replace('documentos.html?doc='+doc);
 })();
-/* Cor de texto legível a partir de uma cor de status/marca: mantém o tom e
-   escurece (tema claro) ou clareia (tema escuro) até 4,5:1 sobre os cartões. */
-function corTxt(cor){
-  var h=String(cor||'').trim().replace('#','');
-  if(/^[0-9a-f]{3}$/i.test(h)) h=h.split('').map(function(c){return c+c;}).join('');
-  if(!/^[0-9a-f]{6}$/i.test(h)) return cor;
-  var c=[0,2,4].map(function(i){return parseInt(h.slice(i,i+2),16);});
-  var dark=document.documentElement.getAttribute('data-theme')==='dark';
-  var lum=function(x){var f=function(v){v/=255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4);};return 0.2126*f(x[0])+0.7152*f(x[1])+0.0722*f(x[2]);};
-  var con=function(a,b){var x=lum(a),y=lum(b);return (Math.max(x,y)+0.05)/(Math.min(x,y)+0.05);};
-  var fundos=dark?[[7,11,26],[14,23,48],[19,32,74],[40,48,80]]:[[255,255,255],[245,242,236],[239,233,223],[228,224,218]]; /* inclui os fundos tingidos dos selos */
-  var alvo=dark?[255,255,255]:[0,0,0], t=c;
-  for(var i=1;i<=20&&Math.min.apply(null,fundos.map(function(f){return con(t,f);}))<4.5;i++) t=c.map(function(v,k){return v+(alvo[k]-v)*i/20;});
-  return '#'+t.map(function(v){return Math.round(v).toString(16).padStart(2,'0');}).join('');
-}
 </script>
-<link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  /* Fatia 57: segue o tema do sistema/aparelho (antes era só escuro) */
-  :root{color-scheme:only light;--bg:#F5F2EC;--card:#FFFFFF;--borda:#E6DED3;--txt:#1E1530;--txt2:#54487A;--link:#1A52E0}
-  [data-theme="dark"]{color-scheme:dark;--bg:#070B1A;--card:#0E1730;--borda:#1B2A55;--txt:#EAF0FF;--txt2:#A8BAE8;--link:#8AB0FF}
-  body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--txt);line-height:1.7;padding:0}
-  .top{background:linear-gradient(135deg,#1E5EFF,#0A2FA8);padding:28px 20px;text-align:center}
-  .top h1{font-size:22px;font-weight:800;color:#fff;display:flex;align-items:center;justify-content:center;gap:10px}
-  .top .sub{color:rgba(255,255,255,.92);font-size:13px;margin-top:6px}
-  .wrap{max-width:760px;margin:0 auto;padding:32px 22px}
-  .card{background:var(--card);border:1px solid var(--borda);border-radius:14px;padding:26px;white-space:pre-wrap;font-size:14.5px}
-  .meta{font-size:12px;color:var(--txt2);margin-top:18px;text-align:center}
-  .loading{text-align:center;padding:40px;color:var(--txt2)}
-  a{color:var(--link)}
-</style>
+<style>body{font-family:system-ui,sans-serif;padding:32px 16px;text-align:center;background:#F5F2EC;color:#1E1530}@media (prefers-color-scheme:dark){body{background:#070B1A;color:#EAF0FF}a{color:#8AB0FF}}a{color:#1A52E0}</style>
 </head>
 <body>
-  <div class="top">
-    <h1><i class="ti ti-file-certificate"></i> <span id="titulo">Termos de Uso</span></h1>
-    <div class="sub">MISU SYS — Sistema de Gestão</div>
-  </div>
-  <div class="wrap">
-    <div class="card" id="conteudo"><div class="loading"><i class="ti ti-loader-2" style="font-size:28px"></i><br>Carregando termos…</div></div>
-    <div class="meta" id="meta"></div>
-  </div>
-<script>
-  const SURL='https://icgfpfwcnhkjglrmnuca.supabase.co';
-  const SKEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljZ2ZwZndjbmhramdscm1udWNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwODA2OTEsImV4cCI6MjA5NTY1NjY5MX0.xDGiGCIlqXaqdWhWo0NoNi_XUdlw5raCogO_Jnc0ezw';
-  const db=supabase.createClient(SURL,SKEY);
-  (async()=>{
-    try{
-      const {data,error}=await db.rpc('termos_vigente');
-      if(error||!data){ throw error||new Error('sem dados'); }
-      document.getElementById('titulo').textContent=data.titulo||'Termos de Uso';
-      document.getElementById('conteudo').textContent=data.conteudo||'';
-      document.getElementById('meta').textContent='Versão '+data.versao;
-    }catch(e){
-      document.getElementById('conteudo').innerHTML='<div class="loading">Não foi possível carregar os termos no momento.</div>';
-    }
-  })();
-</script>
+  <p>Abrindo os Termos de Uso… Se não abrir, <a href="documentos.html?doc=termos_uso">toque aqui</a>.</p>
 </body>
 </html>
