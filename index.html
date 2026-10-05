@@ -20030,12 +20030,14 @@ function _cardEntrega(e){
     <div style="font-size:11.5px;color:var(--txt3);margin-top:6px">${e.forma==='retirada'?'<i class="ti ti-building-store"></i> Retirada na loja':'<i class="ti ti-truck"></i> Entrega'} · ${dataTxt}</div>
     <div style="display:flex;gap:8px;align-items:center;margin-top:6px">${pagoBadge}<span class="tag tag-blu" style="font-size:10px">${stLbl}</span></div>
     ${e.endereco?`<div style="font-size:11px;color:var(--txt3);margin-top:4px"><i class="ti ti-map-pin"></i> ${esc(e.endereco)}</div>`:''}
+    ${e.loc_lat!=null&&e.forma!=='retirada'?`<div style="font-size:11px;color:var(--success-txt);margin-top:3px"><i class="ti ti-current-location"></i> Cliente enviou a localização${e.loc_precisao_m?' (~'+esc(e.loc_precisao_m)+' m)':''}</div>`:''}
     ${entregadorTxt}
     <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:10px">
       <button class="btn btn-out btn-xs" title="Agendar" onclick="agendarEntrega('${e.id}')"><i class="ti ti-calendar"></i></button>
       ${e.forma!=='retirada'&&_appEntregadorLiberado()?`<button class="btn btn-out btn-xs" title="${e.entregador_nome?'Trocar entregador':'Atribuir entregador'}" onclick="atribuirEntregador('${e.id}')"><i class="ti ti-user-cog"></i></button>`:''}
       <button class="btn btn-out btn-xs" title="Gerar link do cliente" onclick="gerarLinkEntrega('${e.id}')"><i class="ti ti-link"></i></button>
       ${e.telefone?`<button class="btn btn-out btn-xs" title="WhatsApp" onclick="whatsappEntrega('${e.id}')"><i class="ti ti-brand-whatsapp"></i></button>`:''}
+      ${_linkMapaEntrega(e)?`<a class="btn btn-out btn-xs" title="${e.loc_lat!=null?'Abrir no mapa (ponto enviado pelo cliente)':'Abrir endereço no mapa'}" aria-label="Abrir no mapa" href="${esc(_linkMapaEntrega(e))}" target="_blank" rel="noopener"><i class="ti ti-map-2"></i></a>`:''}
       ${e.status!=='entregue'&&e.forma!=='retirada'?`<button class="btn btn-out btn-xs" title="Iniciar entrega" onclick="iniciarEntrega('${e.id}')"><i class="ti ti-route"></i></button>`:''}
       ${e.status!=='entregue'?`<button class="btn ${podeEntregar?'btn-pri':'btn-out'} btn-xs" onclick="marcarEntregueEntrega('${e.id}')"><i class="ti ti-check"></i> Entregue</button>`:''}
       ${e.origem_id&&!isAvulsa?`<button class="btn btn-out btn-xs" title="Ver origem" onclick="verOrigemEntrega('${e.id}')"><i class="ti ti-external-link"></i></button>`:''}
@@ -20110,6 +20112,13 @@ function verOrigemEntrega(id){
   if(e.origem_tipo==='os') go('os'); else if(e.origem_tipo==='venda') go('hist-vendas');
 }
 
+/* Fatia 67: link do mapa — ponto exato que o cliente enviou ou, sem ele, o endereço */
+function _linkMapaEntrega(e){
+  if(!e || e.forma==='retirada') return '';
+  if(e.loc_lat!=null && e.loc_lng!=null) return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(e.loc_lat+','+e.loc_lng);
+  const end=[e.rua,e.numero,e.bairro,e.cidade,e.uf,e.cep].filter(Boolean).join(', ')||e.endereco||'';
+  return end?'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(end):'';
+}
 /* Fatia 21: atribuir entrega a um usuário com perfil Entregador — ele passa
    a ver essa entrega em "Minhas Entregas" no app mobile. Só lista usuários
    ativos com role='entregador' (perfil novo desta fatia). */
