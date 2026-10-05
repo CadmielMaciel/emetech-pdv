@@ -2987,10 +2987,11 @@ async function saveEmpresa(empresa) {
     if (error) throw error;
     return empresa.id;
   } else {
-    const id = empresa.id || ('emp_' + Date.now());
-    let { error } = await db.from('empresas').insert({ id, ...payload, senha_inicial: empresa.senha || null });
+    // Fatia 64a: id imprevisível (antes era emp_<horário>, dava para adivinhar o das vizinhas)
+    const id = empresa.id || ('emp_' + ((crypto.randomUUID && crypto.randomUUID().replace(/-/g,'')) || (Date.now().toString(36) + Math.random().toString(36).slice(2))));
+    let { error } = await db.from('empresas').insert({ id, ...payload }); // Fatia 64a: a senha não fica guardada (vai só para o login)
     if (error && _erroColunaFiscalInexistente(error)) {
-      ({ error } = await db.from('empresas').insert({ id, ..._semCamposFiscais(payload), senha_inicial: empresa.senha || null }));
+      ({ error } = await db.from('empresas').insert({ id, ..._semCamposFiscais(payload) }));
       if (!error) notify('Empresa criada, mas os dados fiscais não foram gravados — rode sql/fatia17_admin_saas.sql.', 'warn', 7000);
     }
     if (error) throw error;
