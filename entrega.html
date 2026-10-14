@@ -47,6 +47,7 @@ function corTxt(cor){
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;padding:16px}
 .wrap{max-width:460px;margin:0 auto}
+@media (max-width:560px){body{padding-top:62px}} /* espaço do botão claro/escuro */
 .card{background:var(--bg2);border:1px solid var(--border);border-radius:18px;padding:20px;box-shadow:var(--sombra)}
 .logo{text-align:center;margin-bottom:14px;font-weight:800;font-size:20px;color:var(--pri-txt);display:flex;flex-direction:column;align-items:center;gap:8px}
 .logo::before{content:"";width:56px;height:56px;border-radius:15px;background:url(entregas-192.png) center/cover;box-shadow:0 6px 18px rgba(30,94,255,.30)} /* ícone das entregas */
@@ -118,6 +119,7 @@ input:focus,textarea:focus{outline:none;border-color:var(--pri)}
 #copia-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(14px);background:var(--toast);color:var(--bg);border:none;padding:10px 18px;border-radius:12px;font-size:13px;font-weight:600;box-shadow:0 12px 30px rgba(0,0,0,.25);z-index:400;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none}
 #copia-toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
+<script src="/tema-botao.js" defer></script><!-- botão claro/escuro no canto -->
 </head>
 <body>
 <div class="wrap" id="app">
