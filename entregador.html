@@ -58,6 +58,7 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--pri);outline-off
 .olho button{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:none;background:none;color:var(--txt2);font-size:20px;padding:6px;cursor:pointer}
 /* topo do app */
 .topo{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+@media (max-width:640px){.topo{padding-right:50px}} /* não ficar embaixo do botão claro/escuro */
 .topo .quem{flex:1;min-width:0}
 .topo .quem b{display:block;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .topo .quem span{font-size:12.5px;color:var(--txt2)}
@@ -87,6 +88,7 @@ canvas{width:100%;height:160px;border:1.5px dashed var(--border);border-radius:1
 .carregando{text-align:center;color:var(--txt2);padding:40px 0;font-size:14px}
 @media (prefers-reduced-motion:no-preference){.folha{animation:sobe .18s ease-out}@keyframes sobe{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}}
 </style>
+<script src="/tema-botao.js" defer></script><!-- botão claro/escuro no canto -->
 </head>
 <body>
 <div class="wrap">
