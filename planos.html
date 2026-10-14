@@ -101,6 +101,10 @@ header .wrap{display:flex;align-items:center;justify-content:space-between;paddi
 .planos-title h2{font-size:clamp(24px,3.6vw,34px)}
 .planos-title p{color:var(--txt2);margin-top:10px}
 .planos-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+/* Cabeçalho no celular: cabe logo + 'Já sou cliente' + 'Ver planos' + botão claro/escuro */
+.logo{white-space:nowrap}
+@media(max-width:520px){header .wrap{padding:10px 12px;gap:8px}header nav{gap:6px!important}header nav .btn{padding:10px 12px;font-size:13px;white-space:nowrap}header nav .btn-ghost{padding:10px 6px}.logo{font-size:17px}}
+@media(max-width:380px){header nav .btn-pri i{display:none}}
 @media(max-width:860px){.planos-grid{grid-template-columns:1fr;max-width:420px;margin:0 auto}}
 .plano-card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:28px 24px;display:flex;flex-direction:column;position:relative}
 .plano-card.destaque{border-color:var(--pri);box-shadow:var(--shadow);transform:translateY(-6px)}
@@ -146,6 +150,7 @@ footer a{color:var(--pri-txt);text-decoration:none}
 .spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 </style>
+<script src="/tema-botao.js" defer></script><!-- botão claro/escuro no canto -->
 </head>
 <body>
 
@@ -155,6 +160,7 @@ footer a{color:var(--pri-txt);text-decoration:none}
     <nav style="display:flex;gap:10px;align-items:center">
       <a href="/index.html" class="btn btn-ghost" style="font-size:13px">Já sou cliente</a>
       <button class="btn btn-pri" onclick="scrollParaPlanos()"><i class="ti ti-arrow-down"></i> Ver planos</button>
+      <span data-tema-slot style="display:inline-flex"></span>
     </nav>
   </div>
 </header>
