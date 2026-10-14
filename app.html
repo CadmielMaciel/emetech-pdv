@@ -194,6 +194,11 @@ html[data-fontsize="xl"] body{zoom:1.28}
    clara em qualquer um desses elementos. */
 button:focus-visible,[role="button"]:focus-visible,[role="switch"]:focus-visible,a:focus-visible,.mod:focus-visible,.qa-btn:focus-visible,.sheet-it:focus-visible,.rc:focus-visible,.avatar-btn:focus-visible{outline:2.5px solid var(--pri);outline-offset:2px;border-radius:12px}
 [data-theme="dark"] .login-card,[data-theme="dark"] .success-ic{background:var(--card)}
+/* Botão claro/escuro no canto da tela de login — vidro branco sobre o fundo azul (azul nos dois temas) */
+.tema-login-btn{position:absolute;top:calc(12px + var(--sat,env(safe-area-inset-top,0px)));right:calc(12px + env(safe-area-inset-right,0px));z-index:3;width:44px;height:44px;border-radius:50%;border:1.5px solid rgba(255,255,255,.6);background:rgba(255,255,255,.16);color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;padding:0;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:0 6px 18px -6px rgba(0,0,0,.35);-webkit-tap-highlight-color:transparent;transition:background .15s,transform .15s}
+.tema-login-btn:active{transform:scale(.94)}
+.tema-login-btn:focus-visible{outline:3px solid #fff;outline-offset:3px;border-radius:50%}
+[data-theme="dark"] #login{background:linear-gradient(155deg,#0A1A52,#123AA8 52%,#1E5EFF)}
 [data-theme="dark"] .inp{background:var(--card);color:var(--txt)}
 [data-theme="dark"] .btn-out{background:var(--card)}
 /* Fatia 31: chips (.pg) e botões de escolha (.quemusa-btn) tinham fundo branco fixo — no tema escuro o texto claro ficava ilegível */
@@ -1025,6 +1030,7 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 
 <!-- LOGIN -->
 <div id="login">
+  <button type="button" class="tema-login-btn" id="tema-login-btn" onclick="toggleTemaApp()" aria-label="Mudar para tema escuro" aria-pressed="false" title="Mudar para tema escuro"><i class="ti ti-moon" aria-hidden="true"></i></button>
   <div class="login-blob b1" aria-hidden="true"></div>
   <div class="login-blob b2" aria-hidden="true"></div>
   <div class="login-blob b3" aria-hidden="true"></div>
@@ -6048,7 +6054,11 @@ function _atualizarIconeTema(){
   const ic=$('tema-ic'), lbl=$('tema-lbl');
   if(ic) ic.className='ti '+(dark?'ti-sun':'ti-moon');
   if(lbl) lbl.textContent=dark?'Tema claro':'Tema escuro';
+  const lb=$('tema-login-btn'); // botão do canto na tela de login
+  if(lb){ const rot=dark?'Mudar para tema claro':'Mudar para tema escuro'; lb.innerHTML='<i class="ti '+(dark?'ti-sun':'ti-moon')+'" aria-hidden="true"></i>'; lb.setAttribute('aria-label',rot); lb.title=rot; lb.setAttribute('aria-pressed',dark?'true':'false'); }
 }
+// Ícone certo no botão do login já ao abrir (tema salvo ou do aparelho)
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',_atualizarIconeTema); else _atualizarIconeTema();
 function toggleTemaApp(){
   const dark=document.documentElement.getAttribute('data-theme')==='dark';
   const novo=dark?'light':'dark';
