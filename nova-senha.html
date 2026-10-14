@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Criar nova senha — MISU SYS</title>
+<!-- Fatia 68: destino do link "Esqueci minha senha" (e-mail). O Supabase traz
+     a pessoa logada em modo de recuperação; aqui ela cria a senha nova e
+     segue para o computador ou para o celular. Link vencido/usado: pede um
+     novo sem sair da página. -->
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1E5EFF">
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" href="icon-192.png">
+<script>
+(function(){
+  var t=null; try{ t=localStorage.getItem('misu_tema'); }catch(e){}
+  if(t!=='dark'&&t!=='light') t=(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';
+  document.documentElement.setAttribute('data-theme',t);
+})();
+</script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{color-scheme:only light;--pri:#1E5EFF;--pri2:#1A4FD9;--pri-txt:#1A52E0;--bg:#F5F2EC;--bg2:#FFFFFF;--input:#FFFFFF;--txt:#1E1530;--txt2:#54487A;--txt3:#665A88;--border:#E6DED3;--ok:#05704F;--ok-bg:#E7F6EC;--erro:#B42318;--erro-bg:#FDECEA;--sombra:0 4px 24px rgba(0,0,0,.06)}
+[data-theme="dark"]{color-scheme:dark;--pri-txt:#8AB0FF;--bg:#070B1A;--bg2:#0E1730;--input:#0A1229;--txt:#EAF0FF;--txt2:#A8BAE8;--txt3:#93A4D6;--border:#1B2A55;--ok:#4ADE80;--ok-bg:rgba(74,222,128,.12);--erro:#FCA5A5;--erro-bg:rgba(248,113,113,.14);--sombra:0 8px 32px rgba(0,0,0,.35)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:40px 16px}
+@media (max-width:540px){body{padding-top:64px}} /* espaço do botão claro/escuro */
+.card{width:100%;max-width:420px;background:var(--bg2);border:1px solid var(--border);border-radius:18px;padding:24px 22px;box-shadow:var(--sombra)}
+.marca{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+.marca span{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,#1E5EFF,#0A2FA8);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:19px}
+.marca b{font-size:17px;font-weight:800}
+h1{font-size:20px;margin-bottom:6px}
+.sub{font-size:13.5px;color:var(--txt2);line-height:1.5;margin-bottom:6px}
+label{display:block;font-size:12.5px;font-weight:700;color:var(--txt2);margin:14px 0 5px}
+input{width:100%;padding:12px 13px;border:1.5px solid var(--border);border-radius:12px;font-size:16px;font-family:inherit;color:var(--txt);background:var(--input)}
+input:focus{outline:2px solid var(--pri);outline-offset:1px;border-color:var(--pri)}
+.forca{height:6px;border-radius:99px;background:var(--border);margin-top:8px;overflow:hidden}
+.forca i{display:block;height:100%;width:0;border-radius:99px;transition:width .2s}
+.dica{font-size:12px;color:var(--txt3);margin-top:6px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;border:none;border-radius:13px;background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;font-weight:800;font-size:15px;font-family:inherit;cursor:pointer;margin-top:18px;text-decoration:none}
+.btn-out{background:var(--bg2);color:var(--txt);border:1.5px solid var(--border);margin-top:10px}
+.btn:disabled{opacity:.6;cursor:default}
+.btn:focus-visible{outline:3px solid var(--pri-txt);outline-offset:2px}
+.msg{font-size:13.5px;line-height:1.5;border-radius:12px;padding:11px 13px;margin-top:14px}
+.msg.erro{background:var(--erro-bg);color:var(--erro)} .msg.ok{background:var(--ok-bg);color:var(--ok)}
+.hidden{display:none!important}
+.rodape{font-size:12px;color:var(--txt3);text-align:center;margin-top:18px}
+.rodape a{color:var(--txt2)}
+</style>
+<script src="/tema-botao.js" defer></script><!-- botão claro/escuro no canto -->
+</head>
+<body>
+<main class="card">
+  <div class="marca"><span aria-hidden="true">M</span><b>MISU SYS</b></div>
+
+  <section id="t-carregando" role="status"><p class="sub">Conferindo o link…</p></section>
+
+  <section id="t-senha" class="hidden" aria-labelledby="h-senha">
+    <h1 id="h-senha">Criar nova senha</h1>
+    <p class="sub" id="senha-quem">Escolha uma senha nova para entrar no sistema.</p>
+    <form onsubmit="salvar(event)" novalidate>
+      <label for="s1">Nova senha</label>
+      <input id="s1" type="password" autocomplete="new-password" minlength="8" maxlength="72" oninput="medir()" aria-describedby="s1-dica">
+      <div class="forca" aria-hidden="true"><i id="forca"></i></div>
+      <div class="dica" id="s1-dica">Mínimo de 8 caracteres. Misture letras e números.</div>
+      <label for="s2">Repita a nova senha</label>
+      <input id="s2" type="password" autocomplete="new-password" maxlength="72">
+      <button class="btn" id="btn-salvar" type="submit">Salvar nova senha</button>
+      <div class="msg erro hidden" id="senha-msg" role="alert"></div>
+    </form>
+  </section>
+
+  <section id="t-pronto" class="hidden" aria-labelledby="h-pronto">
+    <h1 id="h-pronto">Senha alterada ✓</h1>
+    <p class="sub">Pronto! Use a senha nova a partir de agora. Você já está conectado neste aparelho.</p>
+    <a class="btn" href="/">Entrar no computador</a>
+    <a class="btn btn-out" href="/app.html">Abrir no celular</a>
+  </section>
+
+  <section id="t-novo" class="hidden" aria-labelledby="h-novo">
+    <h1 id="h-novo">Link vencido ou já usado</h1>
+    <p class="sub">Por segurança, o link de redefinição vale por pouco tempo e só uma vez. Peça um novo:</p>
+    <form onsubmit="pedirNovo(event)" novalidate>
+      <label for="em">Seu e-mail de acesso</label>
+      <input id="em" type="email" autocomplete="email" inputmode="email" placeholder="seu@email.com">
+      <button class="btn" id="btn-novo" type="submit">Enviar novo link</button>
+      <div class="msg hidden" id="novo-msg" role="status"></div>
+    </form>
+  </section>
+
+  <p class="rodape"><a href="/">Voltar ao login</a> · <a href="/documentos.html" target="_blank" rel="noopener">Termos e políticas</a></p>
+</main>
+<script>
+const SURL='https://icgfpfwcnhkjglrmnuca.supabase.co';
+const SKEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljZ2ZwZndjbmhramdscm1udWNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwODA2OTEsImV4cCI6MjA5NTY1NjY5MX0.xDGiGCIlqXaqdWhWo0NoNi_XUdlw5raCogO_Jnc0ezw';
+const db=supabase.createClient(SURL,SKEY);
+const $=id=>document.getElementById(id);
+function tela(t){ ['carregando','senha','pronto','novo'].forEach(x=>$('t-'+x).classList.toggle('hidden',x!==t)); const h=$('t-'+t).querySelector('h1'); if(h){ h.tabIndex=-1; h.focus({preventScroll:true}); } }
+function msg(id,txt,cls){ const m=$(id); m.textContent=txt; m.className='msg '+(cls||'')+(txt?'':' hidden'); }
+// mensagens do Supabase em português
+function traduz(e){
+  const t=String((e&&e.message)||e||'');
+  let m;
+  if((m=t.match(/after (\d+) seconds?/i))) return `Por segurança, aguarde ${m[1]} segundos para pedir de novo.`;
+  if(/rate limit/i.test(t)) return 'Muitos pedidos seguidos. Aguarde alguns minutos e tente de novo.';
+  if(/should be different/i.test(t)) return 'A senha nova precisa ser diferente da anterior.';
+  if(/at least|too short|weak|characters/i.test(t)) return 'Senha fraca: use pelo menos 8 caracteres, misturando letras e números.';
+  if(/expired|invalid/i.test(t)) return 'O link venceu. Peça um novo abaixo.';
+  if(/session|not authenticated|missing/i.test(t)) return 'O link venceu ou já foi usado. Peça um novo.';
+  return 'Não foi possível concluir agora. Tente de novo em instantes.';
+}
+function forcaSenha(s){ let p=0; if(s.length>=8)p++; if(s.length>=12)p++; if(/[a-z]/i.test(s)&&/\d/.test(s))p++; if(/[^a-z0-9]/i.test(s)||/[A-Z]/.test(s)&&/[a-z]/.test(s))p++; return p; }
+function medir(){ const p=forcaSenha($('s1').value), b=$('forca'); b.style.width=(p*25)+'%'; b.style.background=p<=1?'#DC2626':p===2?'#D97706':'#059669'; }
+
+let _pronto=false;
+function mostrarFormSenha(sess){
+  if(_pronto) return; _pronto=true;
+  const em=sess&&sess.user&&sess.user.email; if(em) $('senha-quem').textContent='Conta: '+em+'. Escolha uma senha nova para entrar no sistema.';
+  tela('senha'); setTimeout(()=>$('s1').focus(),50);
+}
+async function iniciar(){
+  // erro devolvido pelo próprio link (vencido, já usado…)
+  const h=new URLSearchParams(location.hash.slice(1)), q=new URLSearchParams(location.search);
+  if(h.get('error')||q.get('error')||h.get('error_code')){ history.replaceState(null,'',location.pathname); tela('novo'); return; }
+  db.auth.onAuthStateChange((ev,sess)=>{ if(ev==='PASSWORD_RECOVERY'||(ev==='SIGNED_IN'&&sess)) mostrarFormSenha(sess); });
+  try{
+    if(q.get('code')){ await db.auth.exchangeCodeForSession(q.get('code')).catch(()=>{}); }
+    const {data:{session}}=await db.auth.getSession();
+    if(session){ history.replaceState(null,'',location.pathname); mostrarFormSenha(session); return; }
+  }catch(_){}
+  setTimeout(()=>{ if(!_pronto) tela('novo'); },1500);
+}
+async function salvar(ev){
+  ev.preventDefault();
+  const s1=$('s1').value, s2=$('s2').value;
+  msg('senha-msg','');
+  if(s1.length<8){ msg('senha-msg','A senha precisa ter pelo menos 8 caracteres.','erro'); $('s1').focus(); return; }
+  if(forcaSenha(s1)<2){ msg('senha-msg','Senha fraca: misture letras e números (ex.: Loja2026!).','erro'); $('s1').focus(); return; }
+  if(s1!==s2){ msg('senha-msg','As duas senhas não são iguais.','erro'); $('s2').focus(); return; }
+  const b=$('btn-salvar'); b.disabled=true; b.textContent='Salvando…';
+  try{
+    const {error}=await db.auth.updateUser({password:s1});
+    if(error) throw error;
+    $('s1').value=''; $('s2').value=''; tela('pronto');
+  }catch(e){ msg('senha-msg',traduz(e),'erro'); if(/venceu|usado/.test(traduz(e))) setTimeout(()=>tela('novo'),1800); }
+  finally{ b.disabled=false; b.textContent='Salvar nova senha'; }
+}
+async function pedirNovo(ev){
+  ev.preventDefault();
+  const em=$('em').value.trim();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){ msg('novo-msg','Digite um e-mail válido.','erro'); $('em').focus(); return; }
+  const b=$('btn-novo'); b.disabled=true;
+  try{
+    const {error}=await db.auth.resetPasswordForEmail(em,{redirectTo:location.origin+'/nova-senha.html'});
+    if(error) throw error;
+    msg('novo-msg','Se este e-mail estiver cadastrado, enviamos um link novo. Confira a caixa de entrada e o spam.','ok');
+  }catch(e){ msg('novo-msg',traduz(e),'erro'); }
+  finally{ b.disabled=false; }
+}
+iniciar();
+</script>
+</body>
+</html>
