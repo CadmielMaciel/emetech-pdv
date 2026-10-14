@@ -505,6 +505,24 @@ button,.btn,.card,.tag,input,select,textarea{transition:var(--trans)}
 .l-input-eye:hover{background:var(--pri-light)}
 .l-inp{width:100%;padding:12px 14px;border:1.5px solid #E4DEFF;border-radius:11px;font-size:14px;font-family:'DM Sans',sans-serif;color:#1A0F3C;outline:none;margin-bottom:14px;transition:border-color .2s,box-shadow .2s}
 .lb .l-inp.l-inp-icon{padding-left:40px}
+/* Botão claro/escuro no canto da tela de login — vidro branco sobre o fundo azul (azul nos dois temas) */
+.tema-login-btn{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:calc(12px + env(safe-area-inset-right,0px));z-index:3;width:44px;height:44px;border-radius:50%;border:1.5px solid rgba(255,255,255,.6);background:rgba(255,255,255,.16);color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:0 6px 18px -6px rgba(0,0,0,.35);transition:background .15s,transform .15s}
+.tema-login-btn:hover{background:rgba(255,255,255,.26)}
+.tema-login-btn:active{transform:scale(.94)}
+.tema-login-btn:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.l-link{font-size:12.5px;color:#665A88;text-decoration:underline;cursor:pointer}
+.l-foot{text-align:center;font-size:11.5px;color:#665A88;margin-top:16px}
+.l-foot a{color:inherit;text-decoration:underline}
+/* Login no tema escuro: cartão escuro, fundo continua azul */
+[data-theme="dark"] .ls{background:linear-gradient(145deg,#0A1A52 0%,#123AA8 50%,#1E5EFF 100%)}
+[data-theme="dark"] .lb{background:var(--surface);box-shadow:0 32px 80px rgba(0,0,0,.5),0 0 0 1px var(--border2)}
+[data-theme="dark"] .l-title{color:var(--txt)}
+[data-theme="dark"] .l-title span{background:linear-gradient(135deg,#6E9BFF,#9DBDFF)!important;-webkit-background-clip:text!important;background-clip:text!important} /* 'SYS' mais claro no cartão escuro */
+[data-theme="dark"] .l-sub,[data-theme="dark"] .l-lbl,[data-theme="dark"] .l-link,[data-theme="dark"] .l-foot{color:var(--txt2)}
+[data-theme="dark"] .l-input-icon,[data-theme="dark"] .l-input-eye{color:var(--txt3)}
+[data-theme="dark"] .l-inp{background:var(--bg2);border-color:var(--border2);color:var(--txt)}
+[data-theme="dark"] .l-inp::placeholder{color:var(--txt3)}
+[data-theme="dark"] .l-err{background:rgba(248,113,113,.12);border-color:rgba(248,113,113,.35)}
 .l-inp:focus{border-color:var(--pri);box-shadow:0 0 0 3.5px rgba(30,94,255,.14)}
 .l-btn{width:100%;padding:13px;background:linear-gradient(135deg,var(--pri-btn),var(--pri-btn2));color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 16px rgba(30,94,255,.32)}
 .l-btn:hover{opacity:.93;transform:translateY(-1px);box-shadow:0 8px 24px rgba(30,94,255,.4)}.l-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
@@ -2370,6 +2388,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
 
 <!-- LOGIN -->
 <div class="ls" id="ls">
+  <button type="button" class="tema-login-btn" id="tema-login-btn" onclick="toggleTemaLogin()" aria-label="Mudar para tema escuro" aria-pressed="false" title="Mudar para tema escuro"><i class="ti ti-moon" aria-hidden="true"></i></button>
   <div class="l-blob b1" aria-hidden="true"></div>
   <div class="l-blob b2" aria-hidden="true"></div>
   <div class="l-blob b3" aria-hidden="true"></div>
@@ -2393,8 +2412,8 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
     </div>
     <div id="turnstile-box" style="margin:12px 0 0;justify-content:center;display:none"></div>
     <button class="l-btn" id="l-btn" onclick="doLogin()"><i class="ti ti-lock" style="font-size:17px"></i>Entrar</button>
-    <div style="text-align:center;margin-top:12px"><a href="javascript:void(0)" onclick="abrirRecuperarSenha()" style="font-size:12.5px;color:#665A88;text-decoration:underline;cursor:pointer">Esqueci minha senha</a></div>
-    <p style="text-align:center;font-size:11.5px;color:#665A88;margin-top:16px">MISU SYS © 2025 — Todos os direitos reservados · <a href="/documentos.html" target="_blank" rel="noopener" style="color:#665A88;text-decoration:underline">Termos e políticas</a></p>
+    <div style="text-align:center;margin-top:12px"><a href="javascript:void(0)" onclick="abrirRecuperarSenha()" class="l-link">Esqueci minha senha</a></div>
+    <p class="l-foot">MISU SYS © 2025 — Todos os direitos reservados · <a href="/documentos.html" target="_blank" rel="noopener">Termos e políticas</a></p>
   </div>
 </div>
 
@@ -7924,6 +7943,20 @@ function toggleDark(){
   if(G.charts.v7)renderDashboard();
 }
 
+// Botão claro/escuro da tela de login: usa a mesma troca do sistema (toggleDark)
+function _pintarTemaLogin(){
+  const b=document.getElementById('tema-login-btn'); if(!b) return;
+  const d=document.documentElement.getAttribute('data-theme')==='dark';
+  const rot=d?'Mudar para tema claro':'Mudar para tema escuro';
+  b.innerHTML=d?'<i class="ti ti-sun" aria-hidden="true"></i>':'<i class="ti ti-moon" aria-hidden="true"></i>';
+  b.setAttribute('aria-label',rot); b.title=rot; b.setAttribute('aria-pressed',d?'true':'false');
+}
+function toggleTemaLogin(){ toggleDark(); _pintarTemaLogin(); }
+try{
+  new MutationObserver(_pintarTemaLogin).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',_pintarTemaLogin); else _pintarTemaLogin();
+}catch(e){}
+
 // Restaura o tema salvo (chamado no início e após o login)
 function restaurarTemaSalvo(){
   let salvo=null;
@@ -8197,11 +8230,19 @@ async function enviarRecuperacaoSenha(){
   const btn=document.getElementById('rec-btn');
   if(!em){ notify('Informe o e-mail.','warn'); return; }
   if(btn){ btn.disabled=true; btn.innerHTML='<div class="spinner" style="width:16px;height:16px;border-width:2px"></div> Enviando...'; }
-  const { error } = await db.auth.resetPasswordForEmail(em, { redirectTo: location.origin });
+  // Fatia 68: o link do e-mail abre a página própria de nova senha (serve para computador e celular)
+  const { error } = await db.auth.resetPasswordForEmail(em, { redirectTo: location.origin + '/nova-senha.html' });
   if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-mail"></i> Enviar link'; }
-  if(error){ notify('Erro: '+error.message,'error'); return; }
+  if(error){ notify(_msgErroRecuperacao(error),'error',7000); return; }
   closeModal('modal-recuperar-senha');
   notify('Se este e-mail estiver cadastrado, enviamos um link de redefinição. Confira a caixa de entrada e o spam.','success',7000);
+}
+function _msgErroRecuperacao(e){ // Fatia 68: mensagens do Supabase em português
+  const t=String(e&&e.message||e||''); const m=t.match(/after (\d+) seconds?/i);
+  if(m) return 'Por segurança, aguarde '+m[1]+' segundos para pedir outro link.';
+  if(/rate limit/i.test(t)) return 'Muitos pedidos seguidos. Aguarde alguns minutos e tente de novo.';
+  if(/invalid.*email|email.*invalid/i.test(t)) return 'E-mail inválido. Confira e tente de novo.';
+  return 'Não foi possível enviar agora. Tente de novo em instantes.';
 }
 function abrirModalNovaSenha(){ openModal('modal-nova-senha'); }
 async function salvarNovaSenha(){
