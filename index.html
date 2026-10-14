@@ -505,6 +505,10 @@ button,.btn,.card,.tag,input,select,textarea{transition:var(--trans)}
 .l-input-eye:hover{background:var(--pri-light)}
 .l-inp{width:100%;padding:12px 14px;border:1.5px solid #E4DEFF;border-radius:11px;font-size:14px;font-family:'DM Sans',sans-serif;color:#1A0F3C;outline:none;margin-bottom:14px;transition:border-color .2s,box-shadow .2s}
 .lb .l-inp.l-inp-icon{padding-left:40px}
+/* Fatia 71: cadeado "Pro" nos recursos de IA quando o plano da loja não tem IA */
+.ia-pro-badge{display:none;align-items:center;gap:3px;margin-left:6px;padding:1px 7px;border-radius:999px;font-size:10.5px;font-weight:700;vertical-align:middle;background:var(--pri-light);color:var(--pri-txt);border:1px solid var(--border2)}
+.ia-pro-badge.on-btn{background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.45)}
+html.ia-fora-plano .ia-pro-badge{display:inline-flex}
 /* Botão claro/escuro no canto da tela de login — vidro branco sobre o fundo azul (azul nos dois temas) */
 .tema-login-btn{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:calc(12px + env(safe-area-inset-right,0px));z-index:3;width:44px;height:44px;border-radius:50%;border:1.5px solid rgba(255,255,255,.6);background:rgba(255,255,255,.16);color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:0 6px 18px -6px rgba(0,0,0,.35);transition:background .15s,transform .15s}
 .tema-login-btn:hover{background:rgba(255,255,255,.26)}
@@ -2598,7 +2602,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
         <div id="net-pill" class="net-pill online" onclick="syncOfflineQueue(true)" title="Status de conexão"><i class="ti ti-wifi" style="font-size:14px"></i><span id="net-pill-txt">Online</span><span id="net-pending" class="pending-badge" style="display:none">0</span></div>
         <div id="caixa-pill" class="caixa-pill caixa-fechado" style="cursor:pointer" onclick="go('pdv')"><i class="ti ti-cash" style="font-size:14px"></i><span id="caixa-pill-txt">Caixa Fechado</span></div>
         <button class="tb-btn" onclick="mhOpen()" title="Ajuda" aria-label="Ajuda"><i class="ti ti-help"></i></button>
-        <button class="tb-btn" onclick="a11yToggle()" title="Acessibilidade" aria-label="Acessibilidade" style="font-size:16px">♿</button>
+        <button class="tb-btn" id="a11y-tb-btn" onclick="a11yToggle()" title="Acessibilidade" aria-label="Acessibilidade" aria-expanded="false" aria-controls="a11y-panel"><i class="ti ti-accessible"></i></button>
         <span style="font-size:11.5px;color:var(--txt3)" id="tb-date"></span>
         <button class="tb-btn" onclick="toggleDark()" id="dark-btn"><i class="ti ti-moon"></i></button>
       </div>
@@ -2700,7 +2704,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
         <div class="hub-grid">
           <div class="hub-card" onclick="go('os')"><div class="hc-icon"><i class="ti ti-tools"></i></div><div><div class="hc-label">Ordens de Serviço</div><div class="hc-desc">Crie e acompanhe OS em aberto</div></div></div>
           <div class="hub-card" onclick="go('os-hist')"><div class="hc-icon"><i class="ti ti-history"></i></div><div><div class="hc-label">OS finalizadas</div><div class="hc-desc">Consulte OS entregues e arquivadas</div></div></div>
-          <div class="hub-card" onclick="go('diagnostico')"><div class="hc-icon"><i class="ti ti-stethoscope"></i></div><div><div class="hc-label">Diagnóstico IA</div><div class="hc-desc">Modo Panic — diagnóstico rápido do aparelho</div></div></div>
+          <div class="hub-card" onclick="go('diagnostico')"><div class="hc-icon"><i class="ti ti-stethoscope"></i></div><div><div class="hc-label">Diagnóstico IA<span class="ia-pro-badge" title="IA a partir do plano Pro"><i class="ti ti-lock"></i> Pro</span></div><div class="hc-desc">Modo Panic — diagnóstico rápido do aparelho</div></div></div>
           <div class="hub-card" onclick="go('garantias')"><div class="hc-icon"><i class="ti ti-shield-check"></i></div><div><div class="hc-label">Garantias</div><div class="hc-desc">Acompanhe garantias ativas e expiradas</div></div></div>
           <div class="hub-card" onclick="go('contratos')"><div class="hc-icon"><i class="ti ti-file-certificate"></i></div><div><div class="hc-label">Contratos & Termos</div><div class="hc-desc">Modelos de contratos e termos de entrada</div></div></div>
         </div>
@@ -5149,7 +5153,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
       <div id="p-compat-bloco" style="display:none;background:var(--pri-light);border:1px solid var(--border2);border-radius:12px;padding:12px 14px;margin-bottom:12px">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap">
           <div style="font-size:11px;font-weight:700;color:var(--pri-txt);text-transform:uppercase;letter-spacing:.6px"><i class="ti ti-git-compare"></i> Compatibilidade da peça</div>
-          <button type="button" class="btn btn-pri btn-sm" onclick="buscarCompatIA()"><i class="ti ti-sparkles"></i> Buscar com IA</button>
+          <button type="button" class="btn btn-pri btn-sm" onclick="buscarCompatIA()"><i class="ti ti-sparkles"></i> Buscar com IA<span class="ia-pro-badge on-btn" title="IA a partir do plano Pro"><i class="ti ti-lock"></i> Pro</span></button>
         </div>
         <div style="font-size:11.5px;color:var(--txt3);margin-bottom:8px">Modelos de aparelho que usam esta mesma peça. A IA sugere, você confirma.</div>
         <!-- Sugestões da IA para confirmar -->
@@ -27670,6 +27674,7 @@ async function carregarEntitlements() {
     const { data, error } = await db.rpc('meus_entitlements');
     if (error) { console.error('Erro ao carregar entitlements:', error); G.entitlements = null; return; }
     G.entitlements = data || {};
+    _marcarIAPlano(); // Fatia 71: cadeado "Pro" nos botões de IA quando o plano não tem IA
   } catch (e) {
     console.error('Falha ao carregar entitlements:', e);
     G.entitlements = null; // null = modo tolerante (não trava o app)
@@ -27816,6 +27821,16 @@ function _erroFuncaoServidorInexistente(error){
 // jsonb completo devolvido pela função (liberado, motivo, limites e uso
 // atual) ou null se a RPC ainda não existir neste banco (fatia 22 não
 // rodada) ou a chamada falhar por qualquer outro motivo.
+/* Fatia 71: Básico sem IA. Quem decide é o servidor (rpc_verificar_cota_ia);
+   aqui só mostra o cadeado "Pro" nos botões de IA para a loja já saber antes
+   de clicar. O clique continua passando por verificarEBloquearIA. */
+async function _marcarIAPlano(){
+  try{
+    const c = await _consultarCotaIAServidor('diagnostico_ia');
+    const fora = !!(c && !c.liberado && (c.motivo==='ia_desativada_no_plano' || c.motivo==='feature_nao_liberada_no_plano'));
+    document.documentElement.classList.toggle('ia-fora-plano', fora);
+  }catch(e){}
+}
 async function _consultarCotaIAServidor(feature){
   try{
     const { data, error } = await db.rpc('rpc_verificar_cota_ia', { p_feature: feature || null });
@@ -30561,20 +30576,31 @@ function gerarLaudoEntrega() {
 <style id="a11y-style">
 #a11y-btn{position:fixed;left:16px;bottom:16px;z-index:99998;width:54px;height:54px;border-radius:50%;border:none;background:#5B3FE8;color:#fff;font-size:27px;line-height:1;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 22px rgba(30,10,80,.35);cursor:pointer}
 #a11y-btn:focus-visible{outline:3px solid #fff;outline-offset:3px}
-#a11y-panel{position:fixed;right:16px;top:60px;z-index:99999;width:300px;max-width:calc(100vw - 32px);max-height:72vh;overflow:auto;background:#fff;color:#191338;border-radius:18px;box-shadow:0 16px 48px rgba(20,8,60,.32);padding:16px;display:none;font-family:'DM Sans',system-ui,Arial,sans-serif}
+/* Painel no tema do sistema (claro/escuro), azul MISU, ícones iguais aos da barra */
+#a11y-panel{position:fixed;right:16px;top:60px;z-index:99999;width:300px;max-width:calc(100vw - 32px);max-height:72vh;overflow:auto;background:var(--bg2);color:var(--txt);border:1px solid var(--border);border-radius:18px;box-shadow:0 16px 48px rgba(7,11,26,.28);padding:16px;display:none;font-family:'DM Sans',system-ui,Arial,sans-serif}
 #a11y-panel.open{display:block}
-#a11y-panel .a11y-h{font-size:15px;font-weight:800;margin:0 0 3px;display:flex;align-items:center;gap:8px}
-#a11y-panel .a11y-sub{font-size:12px;color:#6b6488;margin-bottom:13px}
-#a11y-close{margin-left:auto;background:none;border:none;font-size:22px;line-height:1;color:#9a93b8;cursor:pointer;padding:0 2px}
-.a11y-row{display:flex;align-items:center;justify-content:space-between;gap:8px;border:1.5px solid #e6e1f2;border-radius:12px;padding:11px 13px;margin-bottom:9px;font-size:13.5px;font-weight:600}
+#a11y-panel .a11y-h{font-size:15px;font-weight:800;margin:0 0 3px;display:flex;align-items:center;gap:8px;color:var(--txt)}
+#a11y-panel .a11y-h>i{color:var(--pri-txt);font-size:19px}
+#a11y-panel .a11y-sub{font-size:12px;color:var(--txt2);margin-bottom:13px}
+#a11y-close{margin-left:auto;background:none;border:none;font-size:18px;line-height:1;color:var(--txt2);cursor:pointer;width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center}
+#a11y-close:hover{background:var(--pri-light)}
+.a11y-row{display:flex;align-items:center;justify-content:space-between;gap:8px;border:1.5px solid var(--border);border-radius:12px;padding:11px 13px;margin-bottom:9px;font-size:13.5px;font-weight:600;color:var(--txt)}
 .a11y-step{display:flex;gap:6px;align-items:center}
-.a11y-step button{width:36px;height:36px;border-radius:10px;border:1.5px solid #e6e1f2;background:#fff;font-size:15px;font-weight:800;color:#5B3FE8;cursor:pointer}
-.a11y-lvl{font-size:12px;color:#6b6488;min-width:38px;text-align:center}
+.a11y-step button{width:36px;height:36px;border-radius:10px;border:1.5px solid var(--border2);background:var(--bg2);font-size:14px;font-weight:800;color:var(--pri-txt);cursor:pointer}
+.a11y-step button:hover{background:var(--pri-light)}
+.a11y-lvl{font-size:12px;color:var(--txt2);min-width:38px;text-align:center}
 .a11y-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-.a11y-item{border:1.5px solid #e6e1f2;border-radius:13px;padding:11px 8px;font-size:12px;font-weight:600;color:#3a3358;background:#fff;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;min-height:70px;justify-content:center;line-height:1.25}
-.a11y-item .em{font-size:22px}
-.a11y-item[aria-pressed="true"]{background:#5B3FE8;color:#fff;border-color:#5B3FE8}
-#a11y-reset{width:100%;margin-top:11px;border:none;background:#f1eefb;color:#5B3FE8;font-weight:700;border-radius:12px;padding:12px;cursor:pointer;font-size:13px}
+.a11y-item{border:1.5px solid var(--border);border-radius:13px;padding:11px 8px;font-size:12px;font-weight:600;color:var(--txt);background:var(--bg2);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;min-height:70px;justify-content:center;line-height:1.25;font-family:inherit}
+.a11y-item:hover{border-color:var(--pri)}
+.a11y-item .em{font-size:21px;color:var(--pri-txt);line-height:1}
+.a11y-item[aria-pressed="true"]{background:var(--pri);color:#fff;border-color:var(--pri)}
+.a11y-item[aria-pressed="true"] .em{color:#fff}
+#a11y-panel button:focus-visible{outline:2.5px solid var(--pri);outline-offset:2px}
+#a11y-reset{width:100%;margin-top:11px;border:none;background:var(--pri-light);color:var(--pri-txt);font-weight:700;border-radius:12px;padding:12px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;gap:6px;font-family:inherit}
+[data-theme="dark"] #a11y-panel{background:var(--surface);border-color:var(--border2);box-shadow:0 16px 48px rgba(0,0,0,.55)}
+[data-theme="dark"] .a11y-item,[data-theme="dark"] .a11y-step button{background:var(--bg2);border-color:var(--border2)}
+[data-theme="dark"] .a11y-item[aria-pressed="true"]{background:var(--pri);border-color:var(--pri)}
+[data-theme="dark"] #a11y-reset{background:rgba(30,94,255,.18)}
 /* estados aplicados na raiz (opt-in, reversíveis) */
 html.ac-links a{text-decoration:underline !important;text-underline-offset:2px}
 html.ac-motion *,html.ac-motion *::before,html.ac-motion *::after{animation-duration:.001s !important;animation-iteration-count:1 !important;transition-duration:.001s !important;scroll-behavior:auto !important}
@@ -30582,18 +30608,18 @@ html.ac-cursor,html.ac-cursor *{cursor:url("data:image/svg+xml,%3Csvg xmlns='htt
 html.ac-readable p,html.ac-readable li,html.ac-readable td,html.ac-readable label,html.ac-readable a{line-height:1.7 !important;letter-spacing:.03em !important;word-spacing:.07em !important}
 </style>
 <div id="a11y-panel" role="dialog" aria-label="Opções de acessibilidade">
-  <div class="a11y-h">&#9855; Acessibilidade <button id="a11y-close" aria-label="Fechar" onclick="a11yToggle(false)">&times;</button></div>
+  <div class="a11y-h"><i class="ti ti-accessible" aria-hidden="true"></i> Acessibilidade <button id="a11y-close" aria-label="Fechar" onclick="a11yToggle(false)"><i class="ti ti-x" aria-hidden="true"></i></button></div>
   <div class="a11y-sub">Ajuste o sistema ao seu conforto de leitura.</div>
   <div class="a11y-row"><span>Tamanho do texto</span><span class="a11y-step"><button aria-label="Diminuir texto" onclick="a11yZoom(-1)">A&minus;</button><span class="a11y-lvl" id="a11y-lvl">100%</span><button aria-label="Aumentar texto" onclick="a11yZoom(1)">A+</button></span></div>
   <div class="a11y-grid">
-    <button class="a11y-item" data-f="contrast" aria-pressed="false" onclick="a11yFeat('contrast')"><span class="em">&#127765;</span>Alto contraste</button>
-    <button class="a11y-item" data-f="gray" aria-pressed="false" onclick="a11yFeat('gray')"><span class="em">&#9681;</span>Tons de cinza</button>
-    <button class="a11y-item" data-f="links" aria-pressed="false" onclick="a11yFeat('links')"><span class="em">&#128279;</span>Destacar links</button>
-    <button class="a11y-item" data-f="motion" aria-pressed="false" onclick="a11yFeat('motion')"><span class="em">&#9208;</span>Reduzir anima&ccedil;&atilde;o</button>
-    <button class="a11y-item" data-f="cursor" aria-pressed="false" onclick="a11yFeat('cursor')"><span class="em">&#128070;</span>Cursor grande</button>
-    <button class="a11y-item" data-f="readable" aria-pressed="false" onclick="a11yFeat('readable')"><span class="em">&#128214;</span>Espa&ccedil;o leitura</button>
+    <button class="a11y-item" data-f="contrast" aria-pressed="false" onclick="a11yFeat('contrast')"><i class="ti ti-contrast-2 em" aria-hidden="true"></i>Alto contraste</button>
+    <button class="a11y-item" data-f="gray" aria-pressed="false" onclick="a11yFeat('gray')"><i class="ti ti-color-filter em" aria-hidden="true"></i>Tons de cinza</button>
+    <button class="a11y-item" data-f="links" aria-pressed="false" onclick="a11yFeat('links')"><i class="ti ti-link em" aria-hidden="true"></i>Destacar links</button>
+    <button class="a11y-item" data-f="motion" aria-pressed="false" onclick="a11yFeat('motion')"><i class="ti ti-player-pause em" aria-hidden="true"></i>Reduzir anima&ccedil;&atilde;o</button>
+    <button class="a11y-item" data-f="cursor" aria-pressed="false" onclick="a11yFeat('cursor')"><i class="ti ti-pointer em" aria-hidden="true"></i>Cursor grande</button>
+    <button class="a11y-item" data-f="readable" aria-pressed="false" onclick="a11yFeat('readable')"><i class="ti ti-book-2 em" aria-hidden="true"></i>Espa&ccedil;o leitura</button>
   </div>
-  <button id="a11y-reset" onclick="a11yReset()">&#8635; Redefinir tudo</button>
+  <button id="a11y-reset" onclick="a11yReset()"><i class="ti ti-refresh" aria-hidden="true"></i> Redefinir tudo</button>
 </div>
 <script>
 (function(){
@@ -30612,7 +30638,10 @@ html.ac-readable p,html.ac-readable li,html.ac-readable td,html.ac-readable labe
     r.classList.toggle('ac-readable',!!st.feats.readable);
     document.querySelectorAll('#a11y-panel .a11y-item').forEach(function(b){ b.setAttribute('aria-pressed', st.feats[b.dataset.f]?'true':'false'); });
   }
-  window.a11yToggle=function(force){ var p=document.getElementById('a11y-panel'); p.classList.toggle('open', force===undefined?!p.classList.contains('open'):!!force); };
+  window.a11yToggle=function(force){ var p=document.getElementById('a11y-panel'); p.classList.toggle('open', force===undefined?!p.classList.contains('open'):!!force);
+    var b=document.getElementById('a11y-tb-btn'); if(b) b.setAttribute('aria-expanded', p.classList.contains('open')?'true':'false'); };
+  // Esc fecha o painel
+  document.addEventListener('keydown',function(ev){ if(ev.key==='Escape'){ var p=document.getElementById('a11y-panel'); if(p&&p.classList.contains('open')){ a11yToggle(false); var b=document.getElementById('a11y-tb-btn'); if(b) b.focus(); } } });
   window.a11yFeat=function(f){ st.feats[f]=!st.feats[f]; salvar(); aplicar(); };
   window.a11yZoom=function(d){ var i=st.zoom+d; if(i<0)i=0; if(i>ZOOMS.length-1)i=ZOOMS.length-1; st.zoom=i; salvar(); zoom(); };
   window.a11yReset=function(){ st={zoom:1,feats:{}}; salvar(); aplicar(); };
