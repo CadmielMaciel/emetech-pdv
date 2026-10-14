@@ -1043,7 +1043,14 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
     </div>
     <div id="l-err" class="l-err"></div>
     <button class="btn motion-fade-up" id="l-btn" onclick="doLogin()" style="margin-top:18px;animation-delay:.17s"><i class="ti ti-lock"></i>Entrar</button>
-    <a href="/documentos.html" target="_blank" rel="noopener" style="display:block;text-align:center;margin-top:16px;font-size:12.5px;color:var(--txt2);text-decoration:underline">Termos e políticas</a><!-- Fatia 66 -->
+    <button type="button" id="l-esqueci" onclick="abrirEsqueciSenhaMob()" aria-expanded="false" aria-controls="l-rec" style="display:block;margin:14px auto 0;background:none;border:none;font-family:inherit;font-size:13px;font-weight:700;color:var(--pri-txt);text-decoration:underline;cursor:pointer">Esqueci minha senha</button><!-- Fatia 68 -->
+    <div id="l-rec" class="hidden" style="margin-top:12px;border:1.5px dashed var(--border2);border-radius:14px;padding:12px">
+      <div style="font-size:12.5px;color:var(--txt2);margin-bottom:8px;line-height:1.45">Enviamos um link para o seu e-mail. Abra o link no celular ou no computador e crie a senha nova.</div>
+      <input class="inp" type="email" id="l-rec-email" placeholder="seu@email.com" autocomplete="email" aria-label="E-mail para recuperar a senha">
+      <button class="btn btn-out" id="l-rec-btn" type="button" style="margin-top:8px" onclick="enviarEsqueciSenhaMob()"><i class="ti ti-mail"></i>Enviar link</button>
+      <div id="l-rec-msg" role="status" style="font-size:12.5px;margin-top:8px;line-height:1.45;color:var(--txt2)"></div>
+    </div>
+    <a href="/documentos.html" target="_blank" rel="noopener" style="display:block;text-align:center;margin-top:12px;font-size:12.5px;color:var(--txt2);text-decoration:underline">Termos e políticas</a><!-- Fatia 66 -->
   </div>
 </div>
 
@@ -2524,6 +2531,26 @@ async function salvarMeuPin(){
   }catch(e){ $('meupin-erro').textContent=msgAmigavel(e,'Não foi possível salvar o PIN.'); }
 }
 
+/* ── Fatia 68: esqueci minha senha (mesmo fluxo do computador; o link abre nova-senha.html) ── */
+function abrirEsqueciSenhaMob(){
+  const box=$('l-rec'), aberto=box.classList.toggle('hidden')===false;
+  $('l-esqueci').setAttribute('aria-expanded',aberto?'true':'false');
+  if(aberto){ $('l-rec-email').value=($('l-email')?.value||'').trim(); $('l-rec-msg').textContent=''; setTimeout(()=>$('l-rec-email').focus(),50); }
+}
+async function enviarEsqueciSenhaMob(){
+  const em=($('l-rec-email').value||'').trim(), m=$('l-rec-msg'), b=$('l-rec-btn');
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){ m.style.color='var(--danger-txt)'; m.textContent='Digite um e-mail válido.'; return; }
+  b.disabled=true;
+  try{
+    const {error}=await db.auth.resetPasswordForEmail(em,{redirectTo:location.origin+'/nova-senha.html'});
+    if(error) throw error;
+    m.style.color='var(--ok-txt)'; m.textContent='Se este e-mail estiver cadastrado, enviamos o link. Confira a caixa de entrada e o spam.';
+  }catch(e){
+    const t=String(e&&e.message||''), s=t.match(/after (\d+) seconds?/i);
+    m.style.color='var(--danger-txt)';
+    m.textContent=s?('Por segurança, aguarde '+s[1]+' segundos para pedir outro link.'):(/rate limit/i.test(t)?'Muitos pedidos seguidos. Aguarde alguns minutos.':'Não foi possível enviar agora. Tente de novo.');
+  }finally{ b.disabled=false; }
+}
 async function doLogin(){
   const em=$('l-email').value.trim(), pw=$('l-pass').value, err=$('l-err'), btn=$('l-btn');
   err.style.display='none';
@@ -2548,7 +2575,17 @@ async function doLogin(){
 
 async function carregarEmpresa(user){
   // Fatia 33: traz a empresa inteira (plano, teste grátis, mensalidade) — antes só id/nome/status
-  const {data:emp}=await comTimeout(db.from('empresas').select('*').eq('auth_user_id',user.id).maybeSingle(),'empresa');
+  let {data:emp}=await comTimeout(db.from('empresas').select('*').eq('auth_user_id',user.id).maybeSingle(),'empresa');
+  // Fatia 69: contas antigas (login ligado à loja pelo cadastro de usuários,
+  // não pela própria empresa) — mesma regra do computador (loadProfile → modelo antigo)
+  if(!emp && user.email){
+    try{
+      const {data:us}=await comTimeout(db.from('usuarios').select('empresa_id,ativo').eq('email',user.email).limit(5),'usuário');
+      const u=(us||[]).find(x=>x.ativo!==false && x.empresa_id);
+      if(us && us.length && !u) throw new Error('Este acesso está desativado. Fale com o responsável da loja.');
+      if(u){ const r=await comTimeout(db.from('empresas').select('*').eq('id',u.empresa_id).maybeSingle(),'empresa'); emp=r.data||null; }
+    }catch(e){ if(/desativado/.test(e?.message||'')) throw e; }
+  }
   if(!emp) throw new Error('Esta conta não é de uma empresa. Use o login da loja.');
   if(emp.status==='bloqueada') throw new Error(emp.motivo_bloqueio?('Acesso suspenso: '+emp.motivo_bloqueio):'Empresa bloqueada. Fale com o suporte.');
   G.empresa=emp; G.empresaId=emp.id; G.userEmail=user.email||'';
