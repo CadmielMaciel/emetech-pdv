@@ -505,6 +505,8 @@ button,.btn,.card,.tag,input,select,textarea{transition:var(--trans)}
 .l-input-eye:hover{background:var(--pri-light)}
 .l-inp{width:100%;padding:12px 14px;border:1.5px solid #E4DEFF;border-radius:11px;font-size:14px;font-family:'DM Sans',sans-serif;color:#1A0F3C;outline:none;margin-bottom:14px;transition:border-color .2s,box-shadow .2s}
 .lb .l-inp.l-inp-icon{padding-left:40px}
+/* Logo MISU com cantos arredondados, igual ao painel e ao app (~27% do lado) */
+.logo-arred{border-radius:27%}
 /* Fatia 71: cadeado "Pro" nos recursos de IA quando o plano da loja não tem IA */
 .ia-pro-badge{display:none;align-items:center;gap:3px;margin-left:6px;padding:1px 7px;border-radius:999px;font-size:10.5px;font-weight:700;vertical-align:middle;background:var(--pri-light);color:var(--pri-txt);border:1px solid var(--border2)}
 .ia-pro-badge.on-btn{background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.45)}
@@ -2400,7 +2402,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
   <div class="l-blob b3" aria-hidden="true"></div>
   <div class="lb">
     <div class="l-icon" style="background:none;box-shadow:none;width:130px;height:130px;border-radius:0">
-      <img src="/icon-512.png" style="width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 6px 24px rgba(30,94,255,.45))" alt="MISU SYS">
+      <img src="/icon-512.png" class="logo-arred" style="width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 6px 24px rgba(30,94,255,.45))" alt="MISU SYS">
     </div>
     <div class="l-title" style="letter-spacing:2px">MISU <span style="background:linear-gradient(135deg,#1E5EFF,#3D8BFF);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">SYS</span></div>
     <div class="l-sub">Sistema oficial da Misu Tech — ERP & PDV</div>
@@ -2556,7 +2558,7 @@ tr[onclick]:hover { background: var(--surface2,rgba(0,0,0,.025)) !important; cur
   <aside class="sidebar">
     <div class="logo-area">
       <div class="logo-badge" style="background:none;box-shadow:none;padding:0;gap:12px">
-        <div class="logo-icon" id="sb-logo-icon" style="background:none;box-shadow:none"><img src="/icon-192.png" style="width:100%;height:100%;object-fit:contain" alt="MISU SYS"></div>
+        <div class="logo-icon" id="sb-logo-icon" style="background:none;box-shadow:none"><img src="/icon-192.png" class="logo-arred" style="width:100%;height:100%;object-fit:contain" alt="MISU SYS"></div>
         <div class="logo-texts">
           <div class="logo-text" style="line-height:1.15;letter-spacing:1.5px">MISU <span style="color:#3D8BFF">SYS</span></div>
           <div class="logo-sub">Sistema oficial Misu Tech</div>
