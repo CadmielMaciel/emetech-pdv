@@ -893,6 +893,8 @@ select option { background: var(--bg2); }
 .tcm-clausula-row-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
 .tcm-clausula-num{font-size:11px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px}
 .tcm-clausula-remove{background:none;border:none;color:var(--danger-txt);cursor:pointer;font-size:13px;padding:2px 6px}
+/* Sem itálico em nenhum texto do sistema (pedido do usuário) */
+em,cite,address,var,dfn,i:not([class*="ti"]){font-style:normal}
 </style>
 </head>
 <body>
@@ -5677,7 +5679,7 @@ async function detTab(tab, btn) {
       ${bloqueada ? `
         <div style="margin-top:16px;padding:14px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:10px">
           <div style="font-size:12px;font-weight:700;color:var(--danger-txt);margin-bottom:8px">Tela exibida para a empresa:</div>
-          <div style="font-size:13px;color:var(--txt2);font-style:italic">
+          <div style="font-size:13px;color:var(--txt2)">
             "⊘ Acesso suspenso<br>${esc(e.motivoBloqueio || 'Regularize sua situação para continuar usando o sistema.')}<br>Entre em contato: [seu contato]"
           </div>
         </div>
@@ -7806,7 +7808,7 @@ function saasCard(l){
       ${l.valor_mensal?`<span style="font-size:11px;font-weight:700;color:var(--pri-txt)">${fmt(l.valor_mensal)}/mês</span>`:'<span></span>'}
       ${l.plano_interesse?`<span style="font-size:9.5px;color:var(--txt3)">${esc(l.plano_interesse)}</span>`:''}
     </div>
-    ${l.etapa==='perdido'&&l.motivo_perda?`<div style="font-size:10px;color:var(--danger-txt);margin-top:4px;font-style:italic">${esc(l.motivo_perda.slice(0,38))}</div>`:''}
+    ${l.etapa==='perdido'&&l.motivo_perda?`<div style="font-size:10px;color:var(--danger-txt);margin-top:4px">${esc(l.motivo_perda.slice(0,38))}</div>`:''}
     ${l.empresa_id_conv?`<div style="font-size:10px;color:var(--success-txt);margin-top:4px;font-weight:600"><i class="ti ti-circle-check"></i> Empresa criada</div>`:''}
   </div>`;
 }
