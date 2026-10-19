@@ -8992,7 +8992,7 @@ function _tourEnsureInviteDomAdmin(){
     <div class="tour-invite-text">Em menos de 1 minuto você conhece as áreas principais do painel master.</div>
     <div class="tour-invite-actions">
       <button class="tour-btn tour-btn-pri tour-invite-btn-ok">Começar tour</button>
-      <button class="tour-btn tour-btn-out" onclick="_tourHideInviteAdmin()">Agora não</button>
+      <button class="tour-btn tour-btn-out" onclick="_tourAdiarConvite('admin');_tourHideInviteAdmin()">Agora não</button>
     </div>
     <button class="tour-popover-skip" onclick="_tourNaoMostrarConviteAdminNovamente()">Não mostrar novamente</button>
   `;
@@ -9000,12 +9000,36 @@ function _tourEnsureInviteDomAdmin(){
   return el;
 }
 function _tourHideInviteAdmin(){ const el=document.getElementById('tour-invite'); if(el) el.classList.remove('tour-on'); }
+
+/* Convite do tour: "Não mostrar novamente" vale para o sistema todo (computador,
+   celular e painel usam a mesma chave) e "Agora não" adia 7 dias — antes o
+   "Agora não" voltava a cada entrada e o "não mostrar" só valia para uma tela. */
+const _TOUR_OFF_KEY='misu_tour_convites_off';
+function _tourConviteBloqueado(nome){
+  try{
+    if(localStorage.getItem(_TOUR_OFF_KEY)==='1') return true;
+    if(['misu_tour_convite_oculto','misu_tour_mobile_convite_oculto','misu_tour_admin_convite_oculto'].some(k=>localStorage.getItem(k)==='1')) return true; // quem já clicou antes
+    if(document.cookie.split('; ').some(c=>c==='misu_tour_off=1')) return true;
+    const ate=parseInt(localStorage.getItem('misu_tour_'+nome+'_adiado_ate')||'0',10);
+    if(ate && Date.now()<ate) return true;
+    if(sessionStorage.getItem('misu_tour_'+nome+'_visto')==='1') return true; // no máximo 1x por sessão
+  }catch(e){}
+  return false;
+}
+function _tourDesligarConvites(){
+  try{ localStorage.setItem(_TOUR_OFF_KEY,'1'); }catch(e){}
+  try{ document.cookie='misu_tour_off=1; max-age=31536000; path=/; SameSite=Lax'; }catch(e){}
+}
+function _tourAdiarConvite(nome){
+  try{ localStorage.setItem('misu_tour_'+nome+'_adiado_ate', String(Date.now()+7*24*3600*1000)); }catch(e){}
+}
 function _tourNaoMostrarConviteAdminNovamente(){
-  try{ localStorage.setItem('misu_tour_admin_convite_oculto','1'); }catch(e){}
+  _tourDesligarConvites();
   _tourHideInviteAdmin();
 }
 function verificarConviteTourAdmin(){
   try{
+    if(_tourConviteBloqueado('admin')) return;
     const saved = loadTourProgress('admin');
     if(saved.status==='completed' || saved.status==='skipped') return;
     try{ if(localStorage.getItem('misu_tour_admin_convite_oculto')==='1') return; }catch(e){}
@@ -9020,6 +9044,7 @@ function verificarConviteTourAdmin(){
       const btnOk = el.querySelector('.tour-invite-btn-ok');
       btnOk.textContent = retomar ? 'Continuar tour' : 'Começar tour';
       btnOk.onclick = () => { _tourHideInviteAdmin(); startTour('admin', { resume:retomar }); };
+      try{ sessionStorage.setItem('misu_tour_admin_visto','1'); }catch(e){}
       requestAnimationFrame(() => el.classList.add('tour-on'));
     }, 1400);
   }catch(e){ console.warn('[tour] convite inicial (admin) falhou (não bloqueia o sistema):', e); }
