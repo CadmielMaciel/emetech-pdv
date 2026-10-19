@@ -857,6 +857,13 @@ textarea.inp{min-height:auto;line-height:1.45;resize:vertical}
 .pl-uso-bar{height:6px;background:var(--bg2);border-radius:99px;overflow:hidden;margin-top:5px}
 .pl-uso-bar>div{height:100%;border-radius:99px}
 .pl-ciclo{display:flex;background:var(--bg2);border-radius:99px;padding:4px;margin-bottom:12px}
+/* Fatia 76: forma de pagamento da mensalidade */
+.pl-metodos{display:flex;flex-direction:column;gap:7px;margin-bottom:10px}
+.pl-metodo{display:flex;align-items:center;gap:11px;border:1.5px solid var(--border);border-radius:13px;padding:11px 13px;background:var(--card);color:var(--txt);font-family:inherit;text-align:left;cursor:pointer;min-height:48px}
+.pl-metodo i{font-size:21px;color:var(--pri-txt)}
+.pl-metodo b{display:block;font-size:13.5px}
+.pl-metodo small{display:block;font-size:11.5px;color:var(--txt3)}
+.pl-metodo[aria-pressed="true"]{border-color:var(--pri);box-shadow:0 0 0 3px color-mix(in oklab,var(--pri) 18%,transparent)}
 .pl-ciclo button{flex:1;border:none;background:none;border-radius:99px;padding:10px;font-weight:700;font-size:13px;color:var(--txt2);cursor:pointer;font-family:inherit}
 .pl-ciclo button.on{background:var(--card);color:var(--pri-txt);box-shadow:var(--shadow-card,0 1px 4px rgba(0,0,0,.08))}
 .pl-ciclo button span{font-size:10.5px;color:var(--ok-txt);font-weight:800}
@@ -2313,7 +2320,7 @@ try{
 // usuário. O erro completo continua indo pro console para investigação.
 function msgAmigavel(e,fallback){
   const m=String(e?.message||'');
-  const conhecidas=[/^Conecte sua conta InfinitePay/,/^Não foi possível gerar a cobrança\.?$/,/^Informe /,/^Esta conta não é de uma empresa/,/^Empresa bloqueada/,/^Acesso suspenso/,/^E-mail ou senha incorretos/,/^Já existe um produto/];
+  const conhecidas=[/^Conecte sua conta InfinitePay/,/^Não foi possível gerar a cobrança\.?$/,/^Informe /,/^Esta conta não é de uma empresa/,/^Empresa bloqueada/,/^Acesso suspenso/,/^E-mail ou senha incorretos/,/^Já existe um produto/,/^Para gerar a cobrança/,/^Asaas \(/,/^A cobrança da mensalidade/,/^Falta rodar o SQL/,/^Sua sessão expirou/,/^Não encontramos a sua loja/,/^Este plano está sem preço/]; // Fatia 76: mensagens da cobrança
   if(conhecidas.some(rx=>rx.test(m))) return m;
   if(e) console.error('[MISU MOBILE]', e);
   return fallback||'Não foi possível concluir esta ação. Tente novamente.';
@@ -3787,6 +3794,7 @@ async function salvarDevolucaoMob(){
    por enquanto só Orçamentos ('store.orcamentos') e Devoluções
    ('store.devolucoes') respeitam o plano no celular. */
 async function _carregarEntitlementsMob(){
+  sincronizarPrecosPlanosMob(); // Fatia 76
   try{
     const {data,error}=await db.rpc('meus_entitlements');
     G._entMob=(error||!data||typeof data!=='object')?null:data;
@@ -5460,12 +5468,28 @@ const PLANO_COR_MOB={basico:'16,185,129',pro:'30,94,255',enterprise:'245,158,11'
 const PLANO_TXT_MOB={basico:['#047857','#34D399'],pro:['#1D4ED8','#8FB0FF'],enterprise:['#92400E','#FBBF24']};
 function _plStyle(id){ const t=PLANO_TXT_MOB[id]||PLANO_TXT_MOB.pro; return `--plc:${PLANO_COR_MOB[id]||'30,94,255'};--plt-l:${t[0]};--plt-d:${t[1]}`; }
 const DESCONTO_ANUAL_MOB=0.17;
+let _metodoPlanoMob='CREDIT_CARD'; // Fatia 76: CREDIT_CARD | PIX | BOLETO
+/* Fatia 76: nome e preço dos planos vêm do Painel Master (tabela planos) */
+async function sincronizarPrecosPlanosMob(){
+  try{
+    const {data,error}=await db.from('planos').select('id,nome,preco,preco_anual,desconto_anual_pct').in('id',['basic','basico','pro','enterprise']);
+    if(error||!data) return;
+    data.forEach(r=>{
+      const k=(r.id==='basic'||r.id==='basico')?'basico':r.id, p=PLANOS_MOB[k]; if(!p) return;
+      const m=Number(r.preco)||0; if(m<=0) return;
+      p.preco=m; if(r.nome) p.nome=r.nome;
+      const d=(r.desconto_anual_pct!=null?Number(r.desconto_anual_pct):17)/100;
+      p.preco_anual=Number(r.preco_anual)>0?Number(r.preco_anual):+(m*12*(1-d)).toFixed(2);
+    });
+  }catch(e){ console.warn('[planos] preços do banco:',e); }
+}
 const TOLERANCIA_DIAS_PLANO=3;
 let _cicloPlanoMob='mensal';
 
 function _planoAtualMob(){ const id=G.empresa?.plano; return (id&&PLANOS_MOB[id])?PLANOS_MOB[id]:PLANOS_MOB.pro; }
 function _podeAssinarPlano(){ return !G.operador || ['admin','admin_master','gerente'].includes(G.operador.role); }
-function _valorCobrancaPlano(p,ciclo){ const m=parseFloat(p.preco)||0; return ciclo==='anual'?+(m*(1-DESCONTO_ANUAL_MOB)*12).toFixed(2):m; }
+function _descontoAnualMob(p){ p=p||PLANOS_MOB.pro; const m=parseFloat(p&&p.preco)||0, a=parseFloat(p&&p.preco_anual)||0; return (m>0&&a>0)?Math.round((1-a/(m*12))*100):Math.round(DESCONTO_ANUAL_MOB*100); } // Fatia 76
+function _valorCobrancaPlano(p,ciclo){ const m=parseFloat(p.preco)||0; return ciclo==='anual'?+((parseFloat(p.preco_anual)||m*(1-DESCONTO_ANUAL_MOB)*12)).toFixed(2):m; } // Fatia 76: anual do Painel
 function _dataBR(d){ try{ return new Date(d).toLocaleDateString('pt-BR'); }catch(_){ return ''; } }
 
 // Bloqueio por plano (mesmas regras do desktop). null = liberado.
@@ -5632,12 +5656,12 @@ function renderPlanoMob(){
   // Planos (escondidos no bloqueio por mensalidade — ali o que resolve é pagar)
   if(!(bloq&&bloq.tipo==='atraso')){
     h+=`<div class="home-secao-t" style="margin-top:6px">Planos</div>
-      <div class="pl-ciclo"><button class="${_cicloPlanoMob==='mensal'?'on':''}" onclick="setCicloPlanoMob('mensal')">Mensal</button><button class="${_cicloPlanoMob==='anual'?'on':''}" onclick="setCicloPlanoMob('anual')">Anual <span>-17%</span></button></div>`;
+      <div class="pl-ciclo"><button class="${_cicloPlanoMob==='mensal'?'on':''}" onclick="setCicloPlanoMob('mensal')">Mensal</button><button class="${_cicloPlanoMob==='anual'?'on':''}" onclick="setCicloPlanoMob('anual')">Anual <span>-${_descontoAnualMob()}%</span></button></div>`;
     h+=Object.values(PLANOS_MOB).map(p=>{
       const ehAtual=p.id===atual.id && !(bloq&&bloq.tipo==='trial');
       const mensal=parseFloat(p.preco)||0;
       const anual=_cicloPlanoMob==='anual';
-      const precoMes=anual?mensal*(1-DESCONTO_ANUAL_MOB):mensal;
+      const precoMes=anual?((parseFloat(p.preco_anual)||mensal*12*(1-DESCONTO_ANUAL_MOB))/12):mensal; // Fatia 76
       const recursos=_recursosDoPlanoMob(p.id);
       return `<div class="card pl-card${ehAtual?' atual':''}" style="${_plStyle(p.id)}">
         <div class="pl-card-top"><div class="pl-card-nome">${esc(p.nome)}</div>${ehAtual?'<span class="pl-badge">Seu plano</span>':''}</div>
@@ -5666,8 +5690,10 @@ function escolherPlanoMob(pid){
   abrirModalOSAcao(`<i class="ti ti-rocket"></i> ${((parseFloat(novo.preco)||0)>=(parseFloat(atual.preco)||0))?'Upgrade':'Mudança'} de plano`,
     'Confira antes de continuar',
     `<div class="pl-flow"><div class="pl-flow-p"><span>Atual</span><b>${esc(atual.nome)}</b><small>R$ ${atual.preco}/mês</small></div><i class="ti ti-arrow-right"></i><div class="pl-flow-p novo" style="${_plStyle(pid)}"><span>Novo</span><b>${esc(novo.nome)}</b><small>R$ ${novo.preco}/mês</small></div></div>
-     <div class="pl-ciclo" style="margin:12px 0"><button class="${!anual?'on':''}" onclick="_cicloPlanoMob='mensal';escolherPlanoMob('${pid}')">Mensal</button><button class="${anual?'on':''}" onclick="_cicloPlanoMob='anual';escolherPlanoMob('${pid}')">Anual <span>-17%</span></button></div>
+     <div class="pl-ciclo" style="margin:12px 0"><button class="${!anual?'on':''}" onclick="_cicloPlanoMob='mensal';escolherPlanoMob('${pid}')">Mensal</button><button class="${anual?'on':''}" onclick="_cicloPlanoMob='anual';escolherPlanoMob('${pid}')">Anual <span>-${_descontoAnualMob(novo)}%</span></button></div>
      <div class="osa-saldo"><div class="l">Cobrança agora</div><div class="v">R$ ${valor.toFixed(2).replace('.',',')}<small style="font-size:13px;color:var(--txt3);font-family:'DM Sans',sans-serif"> ${anual?'por ano':'por mês'}</small></div>${eco>0?`<div class="d">economize R$ ${eco.toFixed(2).replace('.',',')}/ano</div>`:''}</div>
+     <div style="font-size:12.5px;font-weight:700;color:var(--txt2);margin:12px 0 7px">Como você quer pagar?</div>
+     <div class="pl-metodos" role="group" aria-label="Forma de pagamento">${[['CREDIT_CARD','ti-credit-card','Cartão','cobra sozinho todo mês'],['PIX','ti-qrcode','Pix','fatura todo mês'],['BOLETO','ti-barcode','Boleto','fatura todo mês']].map(([m,ic,nm,ds])=>`<button type="button" class="pl-metodo" aria-pressed="${_metodoPlanoMob===m}" onclick="_metodoPlanoMob='${m}';document.querySelectorAll('.pl-metodo').forEach(b=>b.setAttribute('aria-pressed',b===this?'true':'false'))"><i class="ti ${ic}"></i><span><b>${nm}</b><small>${ds}</small></span></button>`).join('')}</div>
      <div class="osa-info"><i class="ti ti-shield-check"></i> Ativado <b>depois que o pagamento for confirmado</b>. Até lá você continua no ${esc(atual.nome)}.</div>`,
     `<button class="btn" id="osa-ok" onclick="processarMudancaPlanoMob('${pid}','${_cicloPlanoMob}')">Continuar <i class="ti ti-arrow-right"></i></button><button class="btn btn-ghost" style="margin-top:6px" onclick="fecharModalOSAcao()">Cancelar</button>`);
 }
@@ -5675,7 +5701,7 @@ function escolherPlanoMob(pid){
 // Passo 2 — gera a cobrança e o pedido de troca (processarMudancaPlano)
 async function processarMudancaPlanoMob(pid,ciclo,jaConfirmouSubstituir){
   const p=PLANOS_MOB[pid]; if(!p) return;
-  const valor=_valorCobrancaPlano(p,ciclo), cicloTxt=ciclo==='anual'?'anual':'mensal';
+  let valor=_valorCobrancaPlano(p,ciclo); const cicloTxt=ciclo==='anual'?'anual':'mensal';
   _osaBusy('osa-ok',true,'Gerando cobrança...');
   try{
     if(!jaConfirmouSubstituir){
@@ -5691,13 +5717,18 @@ async function processarMudancaPlanoMob(pid,ciclo,jaConfirmouSubstituir){
         }
       }catch(_){ /* tabela pode não existir ainda: segue */ }
     }
-    let cobranca=null;
-    try{
-      const emp=G.empresa||{};
-      const {data,error}=await comTimeout(db.functions.invoke('gerar-cobranca',{body:{plataforma:true,cliente:{nome:emp.nome||'Loja',cpfCnpj:emp.doc||emp.cnpj||'',telefone:emp.telefone||''},valor,descricao:`Plano ${p.nome} (${cicloTxt}) — MISU SYS`,tipo:'UNDEFINED'}}),'cobrança',20000);
-      if(!error && data && !data.error && data.configured!==false) cobranca=data;
-    }catch(_){}
-    const vence=new Date(); vence.setDate(vence.getDate()+7);
+    // Fatia 76: mensalidade recorrente no Asaas (preço oficial vem do banco)
+    let cobranca=null, assin=null;
+    {
+      const r=await comTimeout(db.functions.invoke('criar-assinatura-plano',{body:{plano:pid==='basico'?'basic':pid,ciclo:cicloTxt,metodo:_metodoPlanoMob}}),'gerar cobrança',30000);
+      if(r.error) throw r.error;
+      assin=r.data;
+      if(!assin||!assin.success) throw new Error(assin?.error||'Não foi possível gerar a cobrança agora.');
+      cobranca={id:assin.payment_id||null,invoiceUrl:assin.link_pagamento||null,pixCopiaECola:assin.pix_copia_cola||null};
+      if(G.empresa) Object.assign(G.empresa,{asaas_subscription_id:assin.subscription_id,pagamento_metodo:assin.metodo,pagamento_ciclo:assin.ciclo,pagamento_vence_em:assin.next_due});
+    }
+    if(typeof assin.valor==='number') valor=assin.valor;
+    const vence=assin.next_due?new Date(assin.next_due+'T12:00:00'):(()=>{const d=new Date(); d.setDate(d.getDate()+7); return d;})();
     const req={empresa_id:G.empresaId,plano_atual:G.empresa?.plano||null,plano_novo:pid,ciclo_atual:G.empresa?.pagamento_ciclo||null,ciclo_novo:cicloTxt,valor,gateway:'asaas',
       cobranca_id:cobranca?.id||cobranca?.asaasId||null,cobranca_url:cobranca?.invoiceUrl||null,cobranca_pix:cobranca?.pixCopiaECola||null,cobranca_status:'pendente',status:'pending_payment',vence_em:vence.toISOString(),
       solicitado_por:G.userEmail||G.operador?.nome||null};
@@ -5709,7 +5740,7 @@ async function processarMudancaPlanoMob(pid,ciclo,jaConfirmouSubstituir){
     }catch(_){}
     G.trocaPendente={...req,id:trocaId};
     fecharModalOSAcao();
-    if(cobranca && (cobranca.invoiceUrl||cobranca.pixCopiaECola)) mostrarCobrancaPlanoMob(p,cobranca,vence,valor,cicloTxt);
+    if(cobranca && (cobranca.invoiceUrl||cobranca.pixCopiaECola)) mostrarCobrancaPlanoMob(p,cobranca,vence,valor,cicloTxt,assin?.teste_ate);
     else notify(`Pedido de troca para ${p.nome} registrado. O plano será ativado assim que o pagamento for confirmado.`,'info');
     if(!$('scr-plano').classList.contains('hidden')) renderPlanoMob();
     if(!G.bloqueio) verificarSituacaoPlanoMob();
@@ -5718,10 +5749,11 @@ async function processarMudancaPlanoMob(pid,ciclo,jaConfirmouSubstituir){
 }
 
 // Passo 3 — pagamento (mostrarCobrancaPlano)
-function mostrarCobrancaPlanoMob(plano,cobranca,vence,valor,cicloTxt){
+function mostrarCobrancaPlanoMob(plano,cobranca,vence,valor,cicloTxt,testeAte){
   const v=valor!=null?Number(valor):(parseFloat(plano.preco)||0);
-  abrirModalOSAcao(`<i class="ti ti-receipt-2"></i> Pague para ativar o ${esc(plano.nome)}`,
-    `R$ ${v.toFixed(2).replace('.',',')}${cicloTxt==='anual'?'/ano':'/mês'} · vence em ${_dataBR(vence)}`,
+  const emTeste=testeAte&&new Date(testeAte)>new Date(); // Fatia 76: em teste, 1ª cobrança no fim do teste
+  abrirModalOSAcao(emTeste?`<i class="ti ti-calendar-check"></i> Plano ${esc(plano.nome)} reservado`:`<i class="ti ti-receipt-2"></i> Pague para ativar o ${esc(plano.nome)}`,
+    emTeste?`Seu teste grátis continua. 1ª cobrança de R$ ${v.toFixed(2).replace('.',',')} em ${_dataBR(vence)}.`:`R$ ${v.toFixed(2).replace('.',',')}${cicloTxt==='anual'?'/ano':'/mês'} · vence em ${_dataBR(vence)}`,
     `${cobranca.pixCopiaECola?`<div class="pl-pix"><div id="qr-plano-mob" class="pl-qr"></div><div class="osa-info" style="text-align:center">Escaneie o QR ou copie o código PIX</div>
        <input class="inp" readonly id="pix-plano-mob" value="${esc(cobranca.pixCopiaECola)}" onclick="this.select()" style="font-family:monospace;font-size:12px">
        <button class="btn" style="margin-top:8px" onclick="copiarPixPlanoMob()"><i class="ti ti-copy"></i>Copiar código PIX</button></div>`:''}
