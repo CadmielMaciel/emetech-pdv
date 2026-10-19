@@ -2966,12 +2966,33 @@ async function saveEmpresa(empresa) {
     return id;
   }
 }
+// Fatia 77: exclui DE VERDADE no servidor (dados de todas as tabelas, empresa
+// e os logins da loja). Tudo ou nada. Sem o SQL da F77, cai no modo antigo.
+const _ERRO_EXCLUSAO = {
+  sem_permissao: 'Só um Administrador Master ativo pode excluir.',
+  nao_encontrada: 'Empresa não encontrada (talvez já tenha sido excluída).',
+  nao_encontrado: 'Funcionário não encontrado (talvez já tenha sido excluído).',
+  empresa_do_sistema: 'Esta é a empresa do sistema (Painel Master) e não pode ser excluída.',
+  usuario_master: 'Não é possível excluir um Administrador Master por aqui.',
+};
+function _semFuncaoNoBanco(error) { return error && /function|does not exist|schema cache/i.test(error.message || ''); }
 async function excluirEmpresaDb(id) {
+  const { data: r, error: rErr } = await db.rpc('admin_excluir_empresa', { p_empresa_id: id });
+  if (!rErr) {
+    if (!r || !r.ok) {
+      if (r && r.erro === 'bloqueada') throw new Error('Nada foi apagado: uma tabela ligada impediu a exclusão. Mande este detalhe para o suporte: ' + (r.detalhe || ''));
+      throw new Error(_ERRO_EXCLUSAO[r && r.erro] || ('Não foi possível excluir: ' + ((r && (r.detalhe || r.erro)) || 'erro desconhecido')));
+    }
+    return r;
+  }
+  if (!_semFuncaoNoBanco(rErr)) throw rErr;
+  // Modo antigo (sem o SQL da Fatia 77): apaga só a linha da empresa — o login fica sobrando
   const { data, error } = await db.from('empresas').delete().eq('id', id).select('id');
   if (error) throw error;
   if (!data || data.length === 0) {
     throw new Error('Nenhuma linha excluída. Verifique permissões (RLS) ou se a empresa ainda existe.');
   }
+  return { ok: true, modo_antigo: true };
 }
 
 // Cria o usuário de login da empresa (Supabase Auth + public.usuarios) via
@@ -5034,7 +5055,7 @@ async function excluirEmpresa(id) {
   if (!e) { notify('Empresa não encontrada.', 'error'); return; }
   _delEmpresaId = id;
   document.getElementById('del-empresa-msg').innerHTML =
-    `Excluir <b>"${esc(e.nome)}"</b> permanentemente?<br><br>Isso vai apagar TODOS os dados dessa empresa (produtos, clientes, vendas, OS, financeiro, usuários...).<br><br><b style="color:var(--danger-txt)">Esta ação NÃO PODE ser desfeita.</b>`;
+    `Excluir <b>"${esc(e.nome)}"</b> permanentemente?<br><br>Isso vai apagar TODOS os dados dessa empresa (produtos, clientes, vendas, OS, financeiro, usuários...) <b>e o login dela</b> — o e-mail fica livre para um novo cadastro.<br><br><b style="color:var(--danger-txt)">Esta ação NÃO PODE ser desfeita.</b>`;
   document.getElementById('del-empresa-overlay').classList.add('show');
 }
 
@@ -5051,9 +5072,11 @@ async function confirmarExcluirEmpresa() {
 
   setLoad(true);
   try {
-    await excluirEmpresaDb(id);
-    addLog('excluida', `Empresa "${e.nome}" excluída`, e.nome);
-    notify(`Empresa "${e.nome}" excluída.`, 'info');
+    const r = await excluirEmpresaDb(id);
+    addLog('excluida', `Empresa "${e.nome}" excluída` + (r && !r.modo_antigo ? ` (${r.linhas_apagadas || 0} registros, ${r.logins_apagados || 0} login(s))` : ''), e.nome);
+    notify(r && r.modo_antigo
+      ? `Empresa "${e.nome}" excluída. O login dela continua no Supabase — rode o SQL da Fatia 77 para excluir tudo.`
+      : `Empresa "${e.nome}" excluída por completo: ${r.linhas_apagadas || 0} registro(s) e ${r.logins_apagados || 0} login(s).`, r && r.modo_antigo ? 'warn' : 'success', 8000);
     await refreshDados();
     renderEmpresas();
     await renderDashboard();
@@ -6238,9 +6261,17 @@ async function excluirUsuarioEmpresa(id, nome) {
 
   setLoad(true);
   try {
-    const { error } = await db.from('usuarios').delete().eq('id', id);
-    if (error) throw error;
-    notify(`Funcionário "${nome || ''}" excluído.`, 'info');
+    // Fatia 77: apaga o funcionário e, se tinha login próprio, o login também
+    const { data: r, error: rErr } = await db.rpc('admin_excluir_usuario', { p_usuario_id: String(id) });
+    if (!rErr) {
+      if (!r || !r.ok) throw new Error(_ERRO_EXCLUSAO[r && r.erro] || ('Não foi possível excluir: ' + ((r && (r.detalhe || r.erro)) || 'erro desconhecido')));
+      notify(`Funcionário "${nome || ''}" excluído${r.login_apagado ? ' (e o login dele também)' : ''}.`, 'info');
+    } else {
+      if (!_semFuncaoNoBanco(rErr)) throw rErr;
+      const { error } = await db.from('usuarios').delete().eq('id', id);
+      if (error) throw error;
+      notify(`Funcionário "${nome || ''}" excluído.`, 'info');
+    }
     closeModal('modal-usuario-empresa');
     if (empresaId) renderUsuariosEmpresa(empresaId);
   } catch (e) {
