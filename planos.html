@@ -3,8 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MISU SYS — Planos e teste grátis de 7 dias</title>
-<meta name="description" content="PDV, OS, estoque, financeiro e entregas para lojas de celular e assistência técnica. Teste grátis por 7 dias, sem cartão.">
+<title>Sistema para assistência técnica e loja de celular | MISU SYS</title>
+<meta name="description" content="PDV, ordem de serviço com acompanhamento pelo cliente, estoque, caixa e entregas. No computador e no celular. Teste grátis 7 dias, sem cartão.">
+<link rel="canonical" href="https://misu-sys.vercel.app/planos.html">
+<link rel="icon" type="image/png" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:site_name" content="MISU SYS">
+<meta property="og:title" content="MISU SYS — sistema para assistência técnica e loja de celular">
+<meta property="og:description" content="Vendas, ordens de serviço, estoque, caixa e entregas. Teste grátis 7 dias, sem cartão.">
+<meta property="og:url" content="https://misu-sys.vercel.app/planos.html">
+<meta property="og:image" content="https://misu-sys.vercel.app/og-misu.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <!-- Fatia 57: tema claro/escuro igual ao sistema. Usa a escolha salva no
      MISU SYS (se for o mesmo aparelho) ou o tema do aparelho do cliente, e
      declara isso pro navegador não escurecer a página por conta própria. -->
@@ -39,23 +52,12 @@ function corTxt(cor){
   return '#'+t.map(function(v){return Math.round(v).toString(16).padStart(2,'0');}).join('');
 }
 </script>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<!--
-  Fatia 22 — página pública de planos/cadastro self-service.
 
-  PREMISSA QUE PRECISO DEIXAR EXPLÍCITA: não encontrei, no repositório
-  Git deste projeto, nenhuma landing page pública (index.html abre direto
-  na tela de login — confirmei lendo o <body>). Se você já tem uma landing
-  em outro lugar (outro projeto/host), o botão "Ver planos" dela deve
-  simplesmente LINKAR pra esta página (ex.: <a href="/planos.html">Ver
-  planos</a>) em vez de rolar a própria página — ajuste lá. Se a landing
-  também vive neste mesmo repositório só que eu não achei o arquivo, me
-  diga o nome do arquivo que eu conecto direto. Enquanto isso não estiver
-  resolvido, este arquivo funciona como página completa e autônoma (hero +
-  planos + trial + cadastro), publicável já em /planos.html.
--->
 <style>
 :root{
   color-scheme:only light;
@@ -149,84 +151,443 @@ footer a{color:var(--pri-txt);text-decoration:none}
 /* Spinner */
 .spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
+/* ═══ Landing nova (2026-10) — seções, ilustração, acessibilidade ═══ */
+:root{--card2:#EFE9DF;--pri-soft:rgba(30,94,255,.10);--ok-bg:#E7F6EC;--and:#B45309;--and-bg:#FEF3C7}
+[data-theme="dark"]{--card2:#13204A;--pri-soft:rgba(30,94,255,.20);--ok-bg:rgba(74,222,128,.14);--and:#FBBF24;--and-bg:rgba(251,191,36,.14)}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
+body{font-size:16px}
+.hidden{display:none!important}
+.pular{position:absolute;left:-9999px;top:8px;background:var(--pri);color:#fff;padding:10px 14px;border-radius:10px;z-index:200;font-weight:700}
+.pular:focus{left:12px}
+a:focus-visible,button:focus-visible,summary:focus-visible,input:focus-visible{outline:3px solid var(--pri);outline-offset:2px}
+.fg input:focus,.fg select:focus{outline:2px solid var(--pri);outline-offset:1px;border-color:var(--pri)}
+.btn-sm{padding:10px 16px;font-size:13.5px}
+.btn-lg{padding:15px 26px;font-size:15.5px}
+.btn-branco{background:#fff;color:#0A2FA8}
+.btn-vidro{background:rgba(255,255,255,.14);color:#fff;border:1.5px solid rgba(255,255,255,.55)}
+/* Cabeçalho */
+.hdr{display:flex;align-items:center;gap:18px}
+.logo{display:inline-flex;align-items:center;gap:9px;text-decoration:none;color:var(--txt)}
+.logo img{border-radius:27%}
+.logo em{font-style:normal;color:var(--pri-txt)}
+.hdr-links{display:flex;gap:4px;margin-left:12px}
+.hdr-links a{text-decoration:none;color:var(--txt2);font-weight:600;font-size:14px;padding:8px 10px;border-radius:9px}
+.hdr-links a:hover{background:var(--pri-soft);color:var(--txt)}
+.hdr-acoes{display:flex;gap:8px;align-items:center;margin-left:auto}
+@media(max-width:900px){.hdr-links{display:none}}
+@media(max-width:520px){.hdr{gap:8px}.logo span{font-size:16px}.hdr-acoes{gap:4px}.hdr-acoes .btn-ghost{padding:10px 8px}}
+@media(max-width:360px){.logo span{display:none}}
+/* Hero */
+.hero{padding:56px 0 46px;text-align:left}
+.hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:44px;align-items:center}
+.kicker{display:inline-flex;align-items:center;gap:7px;background:var(--pri-soft);color:var(--pri-txt);font-weight:700;font-size:13.5px;padding:7px 13px;border-radius:99px;margin:0 0 16px}
+.hero h1{font-size:clamp(30px,4.6vw,50px);line-height:1.1;max-width:none;margin:0 0 16px}
+.hero .hero-sub{font-size:17.5px;color:var(--txt2);max-width:560px;margin:0 0 26px}
+.hero-ctas{justify-content:flex-start}
+.hero-badges{list-style:none;padding:0;margin:22px 0 0;justify-content:flex-start;font-size:14px;color:var(--txt2)}
+.hero-badges li{display:flex;align-items:center;gap:6px}
+.hero-badges i{color:var(--ok-txt)}
+@media(max-width:900px){.hero-grid{grid-template-columns:1fr}.hero{text-align:center}.hero .hero-sub{margin-left:auto;margin-right:auto}.hero-ctas,.hero-badges{justify-content:center}}
+/* Ilustração */
+.hero-vis{position:relative;margin-bottom:34px;text-align:left}
+.mock{background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow)}
+.mock-pc{position:relative;width:92%;overflow:hidden}
+.mock-bar{display:flex;align-items:center;gap:6px;padding:10px 12px;border-bottom:1px solid var(--border);background:var(--card2)}
+.mock-bar span{width:9px;height:9px;border-radius:50%;background:var(--border)}
+.mock-bar b{font-size:12px;color:var(--txt2);margin-left:8px}
+.mock-body{padding:14px 14px 150px}
+.mk-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.mk-kpis div{background:var(--pri-soft);border-radius:11px;padding:10px}
+.mk-kpis small{display:block;font-size:11.5px;color:var(--txt2)}
+.mk-kpis b{font-size:17px;color:var(--txt)}
+.mk-lista div{display:flex;align-items:center;gap:8px;padding:9px 4px;border-top:1px solid var(--border);font-size:13px;color:var(--txt)}
+.mk-lista i{color:var(--pri-txt)}
+.mk-lista span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mk-lista em{font-style:normal;font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:99px;white-space:nowrap}
+.mk-lista em.ok{background:var(--ok-bg);color:var(--ok-txt)}
+.mk-lista em.and{background:var(--and-bg);color:var(--and)}
+.mock-cel{position:absolute;right:0;bottom:-26px;width:46%;max-width:220px;padding:14px;border-radius:22px;border-width:2px}
+.mk-cel-top{font-size:12px;font-weight:700;color:var(--pri-txt);margin-bottom:8px}
+.mk-cel-os b{display:block;font-size:15px}
+.mk-cel-os span{font-size:12px;color:var(--txt2)}
+.mk-passos{list-style:none;padding:0;margin:12px 0 0;display:flex;flex-direction:column;gap:8px}
+.mk-passos li{position:relative;padding-left:20px;font-size:12.5px;color:var(--txt2)}
+.mk-passos li::before{content:"";position:absolute;left:0;top:3px;width:11px;height:11px;border-radius:50%;background:var(--ok-txt)}
+.mk-passos li.at{color:var(--txt);font-weight:700}
+.mock-legenda{position:absolute;left:18px;bottom:16px;font-size:12.5px;color:var(--txt3);margin:0}
+@media(max-width:900px){.hero-vis{max-width:520px;margin:10px auto 26px;width:100%}}
+@media(max-width:480px){.mock-pc{width:100%}.mock-cel{width:62%;right:-2px}.mk-kpis b{font-size:14px}}
+/* Faixa de provas */
+.faixa{border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--card)}
+.faixa-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:20px}
+.faixa-grid div{display:grid;grid-template-columns:auto 1fr;column-gap:10px;align-items:center}
+.faixa-grid i{grid-row:span 2;font-size:24px;color:var(--pri-txt);background:var(--pri-soft);width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center}
+.faixa-grid b{font-size:14.5px}
+.faixa-grid span{font-size:13px;color:var(--txt2)}
+@media(max-width:860px){.faixa-grid{grid-template-columns:1fr 1fr;gap:16px}}
+@media(max-width:420px){.faixa-grid{grid-template-columns:1fr}}
+/* Seções */
+.sec{padding:64px 0}
+.sec-alt{background:var(--card2)}
+[data-theme="dark"] .sec-alt{background:#0A1229}
+.sec-tit{text-align:center;max-width:680px;margin:0 auto 34px}
+.sec-tit h2,.quem h2,.final h2{font-size:clamp(24px,3.4vw,34px);line-height:1.2}
+.sec-tit p{color:var(--txt2);margin:10px 0 0;font-size:16px}
+.probs{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.prob{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px}
+.prob .dor{margin:0 0 10px;color:var(--txt2);font-size:15px}
+.prob .sol{margin:0;font-weight:700;font-size:15px;display:flex;gap:6px}
+.prob .sol i{color:var(--pri-txt);margin-top:3px}
+.grupos{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.grupo{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:22px}
+.grupo h3{font-size:19px;display:flex;align-items:center;gap:9px;margin-bottom:12px}
+.grupo h3 i{color:var(--pri-txt);background:var(--pri-soft);width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:21px}
+.grupo ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:9px}
+.grupo li{font-size:15px;color:var(--txt2)}
+.grupo li b{color:var(--txt)}
+.selo-breve{display:inline-block;font-size:11.5px;font-weight:700;color:var(--and);background:var(--and-bg);padding:2px 8px;border-radius:99px;vertical-align:1px}
+@media(max-width:760px){.grupos{grid-template-columns:1fr}}
+.difs{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.dif{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px}
+.dif-ic{width:50px;height:50px;border-radius:14px;background:linear-gradient(135deg,var(--pri),var(--pri-btn2));color:#fff;display:flex;align-items:center;justify-content:center;font-size:25px;margin-bottom:14px}
+.dif h3{font-size:18.5px;margin-bottom:8px}
+.dif p{margin:0;color:var(--txt2);font-size:15px}
+@media(max-width:860px){.difs{grid-template-columns:1fr}}
+.passos{list-style:none;padding:0;margin:0 0 28px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;counter-reset:p}
+.passos li{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:22px}
+.passos .num{display:inline-flex;width:36px;height:36px;border-radius:50%;background:var(--pri);color:#fff;font-weight:800;align-items:center;justify-content:center;margin-bottom:10px}
+.passos h3{font-size:18px;margin-bottom:6px}
+.passos p{margin:0;color:var(--txt2);font-size:15px}
+@media(max-width:760px){.passos{grid-template-columns:1fr}}
+.centro{text-align:center}
+.quem{text-align:center;max-width:720px}
+.quem p{color:var(--txt2);font-size:16.5px;margin:12px 0 0}
+/* Planos (ajustes) */
+#planos{padding:64px 0 70px}
+.planos-title p{font-size:16px}
+.plano-desc{font-size:14px}
+.plano-lista li{font-size:14.5px}
+.plano-limites{font-size:13px}
+.planos-nota{text-align:center;color:var(--txt2);font-size:14px;margin:26px 0 0}
+@media(max-width:860px){.plano-card.destaque{order:-1;transform:none}}
+/* FAQ */
+.faq{max-width:780px}
+.faq details{background:var(--card);border:1px solid var(--border);border-radius:14px;margin-bottom:10px}
+.faq summary{cursor:pointer;list-style:none;padding:16px 46px 16px 18px;font-weight:700;font-size:16px;position:relative}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";position:absolute;right:18px;top:50%;transform:translateY(-50%);font-size:22px;color:var(--pri-txt);font-weight:400}
+.faq details[open] summary::after{content:"–"}
+.faq details p{margin:0;padding:0 18px 16px;color:var(--txt2);font-size:15px}
+.faq details a{color:var(--pri-txt)}
+/* Chamada final */
+.final{background:linear-gradient(135deg,#1E5EFF,#0A2FA8);color:#fff;text-align:center;padding:60px 0}
+.final p{color:rgba(255,255,255,.92);font-size:17px;margin:10px 0 24px}
+.final .hero-ctas{justify-content:center}
+/* Rodapé */
+footer{text-align:left;padding:36px 0 22px;font-size:14px}
+.rodape{display:flex;justify-content:space-between;gap:30px;flex-wrap:wrap}
+.rod-marca p{margin:8px 0 0;color:var(--txt2)}
+.contatos{display:flex;gap:16px;flex-wrap:wrap}
+.contatos a{display:inline-flex;align-items:center;gap:6px}
+.rod-links{display:flex;flex-direction:column;gap:8px}
+.rod-copy{text-align:center;color:var(--txt3);margin:24px 0 0;font-size:13px}
+/* Barra fixa no celular */
+.barra-cel{position:fixed;left:0;right:0;bottom:0;padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:var(--header);backdrop-filter:blur(10px);border-top:1px solid var(--border);z-index:80;transform:translateY(110%);transition:transform .2s}
+.barra-cel.on{transform:none}
+@media(min-width:761px){.barra-cel{display:none}}
+@media(max-width:760px){body.com-barra{padding-bottom:76px}body.com-barra #cookie-banner{bottom:84px}}
+/* Modais: textos maiores e foco */
+.modal p.sub{font-size:14.5px}
+.fg label{font-size:13.5px}
+.fg input{font-size:16px}
+.chk-row{font-size:13.5px}
+.modal-close{width:40px;height:40px;border-radius:10px;top:10px;right:10px;display:flex;align-items:center;justify-content:center}
+.modal-close:hover{background:var(--pri-soft)}
+.form-erro{font-size:14px}
+.senha-wrap{position:relative}
+.senha-wrap input{padding-right:46px}
+.senha-olho{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:38px;height:38px;border:none;background:none;color:var(--txt3);border-radius:9px;cursor:pointer;font-size:18px}
+#cookie-banner{font-size:14px}
 </style>
 <script src="/tema-botao.js" defer></script><!-- botão claro/escuro no canto -->
 </head>
 <body>
 
+<a class="pular" href="#conteudo">Pular para o conteúdo</a>
 <header>
-  <div class="wrap">
-    <div class="logo">MISU SYS</div>
-    <nav style="display:flex;gap:10px;align-items:center">
-      <a href="/index.html" class="btn btn-ghost" style="font-size:13px">Já sou cliente</a>
-      <button class="btn btn-pri" onclick="scrollParaPlanos()"><i class="ti ti-arrow-down"></i> Ver planos</button>
-      <span data-tema-slot style="display:inline-flex"></span>
+  <div class="wrap hdr">
+    <a class="logo" href="#topo" aria-label="MISU SYS — voltar ao topo"><img src="/icon-192.png" alt="" width="34" height="34"><span>MISU <em>SYS</em></span></a>
+    <nav class="hdr-links" aria-label="Seções da página">
+      <a href="#funcoes">Funções</a>
+      <a href="#como-funciona">Como funciona</a>
+      <a href="#planos">Planos</a>
+      <a href="#duvidas">Dúvidas</a>
     </nav>
+    <div class="hdr-acoes">
+      <a href="/index.html" class="btn btn-ghost btn-sm">Entrar</a>
+      <button type="button" class="btn btn-pri btn-sm" onclick="abrirCadastro('trial')">Testar grátis</button>
+      <span data-tema-slot style="display:inline-flex"></span>
+    </div>
   </div>
 </header>
 
-<section class="hero">
-  <div class="wrap">
-    <h1>PDV, OS e estoque numa loja de celular, sem complicação.</h1>
-    <p>Venda, conserte, controle estoque e entregue — tudo em um só sistema. Teste grátis por 7 dias, sem cartão de crédito.</p>
-    <div class="hero-ctas">
-      <button class="btn btn-pri" onclick="abrirCadastro('trial')"><i class="ti ti-rocket"></i> Começar teste grátis</button>
-      <button class="btn btn-out" onclick="scrollParaPlanos()">Ver planos</button>
+<main id="conteudo">
+<!-- 1. HERO -->
+<section class="hero" id="topo">
+  <div class="wrap hero-grid">
+    <div class="hero-txt">
+      <p class="kicker"><i class="ti ti-device-mobile-cog" aria-hidden="true"></i> Sistema para loja de celular e assistência técnica</p>
+      <h1>Venda, conserte e controle sua loja no mesmo sistema.</h1>
+      <p class="hero-sub">Vendas, ordens de serviço, estoque, caixa e financeiro — no computador e no celular. E o seu cliente acompanha o conserto por um link, sem precisar ligar.</p>
+      <div class="hero-ctas">
+        <button type="button" class="btn btn-pri btn-lg" onclick="abrirCadastro('trial')"><i class="ti ti-rocket" aria-hidden="true"></i> Começar teste grátis</button>
+        <a class="btn btn-out btn-lg" href="#funcoes">Ver como funciona</a>
+      </div>
+      <ul class="hero-badges">
+        <li><i class="ti ti-calendar-check" aria-hidden="true"></i> 7 dias grátis</li>
+        <li><i class="ti ti-credit-card-off" aria-hidden="true"></i> Sem cartão de crédito</li>
+        <li><i class="ti ti-circle-check" aria-hidden="true"></i> Nada é cobrado no fim do teste</li>
+      </ul>
     </div>
-    <div class="hero-badges">
-      <span><i class="ti ti-clock"></i> 7 dias grátis</span>
-      <span><i class="ti ti-credit-card-off"></i> Sem cartão pra testar</span>
-      <span><i class="ti ti-shield-check"></i> Dados isolados por loja</span>
+    <!-- Ilustração (não é tela real com dados de cliente) -->
+    <div class="hero-vis" aria-hidden="true">
+      <div class="mock mock-pc">
+        <div class="mock-bar"><span></span><span></span><span></span><b>MISU SYS · Painel</b></div>
+        <div class="mock-body">
+          <div class="mk-kpis">
+            <div><small>Vendas hoje</small><b>R$ 1.240</b></div>
+            <div><small>OS abertas</small><b>8</b></div>
+            <div><small>A receber</small><b>R$ 860</b></div>
+          </div>
+          <div class="mk-lista">
+            <div><i class="ti ti-tool"></i><span>OS #1043 · iPhone 13 · Troca de tela</span><em class="ok">Pronto</em></div>
+            <div><i class="ti ti-tool"></i><span>OS #1044 · Moto G52 · Conector</span><em class="and">Em conserto</em></div>
+            <div><i class="ti ti-shopping-cart"></i><span>Venda · Película + capinha</span><em class="ok">Pago no Pix</em></div>
+          </div>
+        </div>
+      </div>
+      <div class="mock mock-cel">
+        <div class="mk-cel-top">Acompanhe seu conserto</div>
+        <div class="mk-cel-os"><b>OS #1043</b><span>iPhone 13 · Troca de tela</span></div>
+        <ol class="mk-passos"><li class="f">Recebido</li><li class="f">Em conserto</li><li class="f at">Pronto para retirar</li></ol>
+      </div>
+      <p class="mock-legenda">Ilustração do sistema</p>
     </div>
   </div>
 </section>
 
-<section id="planos">
+<!-- 2. PROVAS HONESTAS -->
+<section class="faixa" aria-label="Por que confiar">
+  <div class="wrap faixa-grid">
+    <div><i class="ti ti-gift" aria-hidden="true"></i><b>7 dias grátis</b><span>sem cartão de crédito</span></div>
+    <div><i class="ti ti-lock" aria-hidden="true"></i><b>Dados separados</b><span>cada loja só vê os seus</span></div>
+    <div><i class="ti ti-key" aria-hidden="true"></i><b>PIN por funcionário</b><span>cada um entra com o seu</span></div>
+    <div><i class="ti ti-receipt-2" aria-hidden="true"></i><b>Pix, boleto ou cartão</b><span>para pagar a mensalidade</span></div>
+  </div>
+</section>
+
+<!-- 3. PROBLEMAS -->
+<section class="sec" aria-labelledby="t-problemas">
+  <div class="wrap">
+    <div class="sec-tit">
+      <h2 id="t-problemas">Se isso acontece na sua loja, o MISU SYS resolve</h2>
+    </div>
+    <div class="probs">
+      <div class="prob"><p class="dor">“Cliente ligando toda hora pra saber se o celular ficou pronto.”</p><p class="sol"><i class="ti ti-arrow-right" aria-hidden="true"></i> Mande o link da OS e ele acompanha sozinho.</p></div>
+      <div class="prob"><p class="dor">“Peça acabou e ninguém percebeu.”</p><p class="sol"><i class="ti ti-arrow-right" aria-hidden="true"></i> O estoque baixa a cada venda e você vê o que está acabando.</p></div>
+      <div class="prob"><p class="dor">“O caixa não fecha no fim do dia.”</p><p class="sol"><i class="ti ti-arrow-right" aria-hidden="true"></i> Abertura e fechamento de caixa com tudo registrado.</p></div>
+      <div class="prob"><p class="dor">“Fiado anotado no caderno.”</p><p class="sol"><i class="ti ti-arrow-right" aria-hidden="true"></i> Crediário e contas a receber com data de vencimento.</p></div>
+      <div class="prob"><p class="dor">“Todo mundo usa a senha do dono.”</p><p class="sol"><i class="ti ti-arrow-right" aria-hidden="true"></i> Cada funcionário entra com o próprio PIN de 6 dígitos.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. FUNÇÕES -->
+<section class="sec sec-alt" id="funcoes" aria-labelledby="t-funcoes">
+  <div class="wrap">
+    <div class="sec-tit">
+      <h2 id="t-funcoes">Tudo o que sua loja precisa, num lugar só</h2>
+      <p>Comece pelo que precisa hoje. O resto já está lá quando a loja crescer.</p>
+    </div>
+    <div class="grupos">
+      <div class="grupo">
+        <h3><i class="ti ti-shopping-cart" aria-hidden="true"></i> Vender</h3>
+        <ul>
+          <li><b>PDV rápido</b> — venda no balcão com Pix, dinheiro ou maquininha.</li>
+          <li><b>Orçamentos</b> — monte, envie e acompanhe a resposta do cliente.</li>
+          <li><b>Catálogo online</b> — uma vitrine da sua loja para mandar aos clientes.</li>
+          <li><b>Clientes</b> — histórico de compras e consertos de cada um.</li>
+        </ul>
+      </div>
+      <div class="grupo">
+        <h3><i class="ti ti-tool" aria-hidden="true"></i> Consertar</h3>
+        <ul>
+          <li><b>Ordem de serviço</b> — entrada do aparelho, defeito, prazo e status.</li>
+          <li><b>Acompanhamento por link</b> — o cliente vê o andamento sem ligar.</li>
+          <li><b>Garantias</b> — saiba o que está na garantia e até quando.</li>
+        </ul>
+      </div>
+      <div class="grupo">
+        <h3><i class="ti ti-cash" aria-hidden="true"></i> Controlar o dinheiro</h3>
+        <ul>
+          <li><b>Caixa</b> — abertura, sangria e fechamento.</li>
+          <li><b>Contas a pagar e a receber</b> — nada de conta esquecida.</li>
+          <li><b>Crediário</b> — venda a prazo com controle das parcelas.</li>
+          <li><b>Relatórios</b> — quanto vendeu, quanto entrou e o que mais sai.</li>
+        </ul>
+      </div>
+      <div class="grupo">
+        <h3><i class="ti ti-truck-delivery" aria-hidden="true"></i> Entregar e atender</h3>
+        <ul>
+          <li><b>Entregas</b> — com app do entregador, rastreio e localização.</li>
+          <li><b>WhatsApp</b> — avisos e conversa com o cliente.</li>
+          <li><b>Nota fiscal</b> <span class="selo-breve">Em breve</span> — NFC-e, NF-e e NFS-e em integração.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 5. DIFERENCIAIS -->
+<section class="sec" aria-labelledby="t-dif">
+  <div class="wrap">
+    <div class="sec-tit"><h2 id="t-dif">O que faz diferença no dia a dia</h2></div>
+    <div class="difs">
+      <div class="dif">
+        <div class="dif-ic" aria-hidden="true"><i class="ti ti-link"></i></div>
+        <h3>“Ficou pronto?” — o cliente vê sozinho</h3>
+        <p>Cada OS tem um link de acompanhamento. Você manda pelo WhatsApp e o cliente acompanha o status do conserto pelo celular dele.</p>
+      </div>
+      <div class="dif">
+        <div class="dif-ic" aria-hidden="true"><i class="ti ti-device-mobile"></i></div>
+        <h3>Sua loja no bolso</h3>
+        <p>Venda, consulte o estoque e acompanhe o caixa pelo celular. No computador é o mesmo sistema, com os mesmos dados.</p>
+      </div>
+      <div class="dif">
+        <div class="dif-ic" aria-hidden="true"><i class="ti ti-map-pin"></i></div>
+        <h3>Entregas sem bagunça</h3>
+        <p>O entregador tem acesso próprio, só às entregas dele, e você vê onde cada entrega está.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 6. COMO FUNCIONA -->
+<section class="sec sec-alt" id="como-funciona" aria-labelledby="t-como">
+  <div class="wrap">
+    <div class="sec-tit"><h2 id="t-como">Comece hoje, sem instalar nada</h2></div>
+    <ol class="passos">
+      <li><span class="num">1</span><h3>Crie sua conta</h3><p>Nome da loja, e-mail e CPF ou CNPJ. Leva menos de 2 minutos.</p></li>
+      <li><span class="num">2</span><h3>Confirme o e-mail</h3><p>Toque no link que enviamos e sua loja é criada na hora.</p></li>
+      <li><span class="num">3</span><h3>Comece a vender</h3><p>Cadastre seus produtos e use por 7 dias. Gostou? Escolha um plano. Não gostou? Não paga nada.</p></li>
+    </ol>
+    <div class="centro"><button type="button" class="btn btn-pri btn-lg" onclick="abrirCadastro('trial')"><i class="ti ti-rocket" aria-hidden="true"></i> Começar teste grátis</button></div>
+  </div>
+</section>
+
+<!-- 7. PARA QUEM É -->
+<section class="sec" aria-labelledby="t-quem">
+  <div class="wrap quem">
+    <h2 id="t-quem">Feito para assistência técnica e loja de celular</h2>
+    <p>Também atende lojas de acessórios, informática, eletrônicos e outros pequenos comércios que vendem produtos e fazem serviços.</p>
+  </div>
+</section>
+
+<!-- 8. PLANOS -->
+<section id="planos" class="sec-alt" aria-labelledby="t-planos">
   <div class="wrap">
     <div class="planos-title">
-      <h2>Planos para cada tamanho de loja</h2>
-      <p>Comece grátis, mude de plano quando quiser — sem perder dados.</p>
+      <h2 id="t-planos">Escolha o plano da sua loja</h2>
+      <p>Todos começam com 7 dias grátis. Mude de plano quando quiser, sem perder dados.</p>
     </div>
 
     <div class="trial-banner">
       <div>
-        <h3>🎁 Teste grátis por 7 dias no plano <span id="trial-plano-nome">Enterprise</span></h3>
-        <p>Use os recursos mais completos do MISU SYS por uma semana, com limite de IA reduzido pra proteger a plataforma. Sem cobrança automática — só assina se quiser continuar.</p>
+        <h3>Teste tudo por 7 dias com o plano <span id="trial-plano-nome">Enterprise</span> liberado</h3>
+        <p>Sem cartão. No fim do teste nada é cobrado — você escolhe se quer continuar.</p>
       </div>
-      <button class="btn btn-pri" onclick="abrirCadastro('trial')"><i class="ti ti-rocket"></i> Começar teste grátis</button>
+      <button type="button" class="btn btn-pri" onclick="abrirCadastro('trial')"><i class="ti ti-rocket" aria-hidden="true"></i> Começar teste grátis</button>
     </div>
 
     <div class="planos-grid" id="planos-grid"><!-- preenchido por renderPlanos() --></div>
+    <p class="planos-nota">Valores mensais por loja. Mensalidade pelo Asaas: cartão (cobrança automática), Pix ou boleto.</p>
   </div>
 </section>
 
-<footer>
-  <div class="wrap">
-    MISU SYS PDV — © <span id="ano-atual"></span>. ·
-    <a href="/documentos.html?doc=termos_uso" target="_blank">Termos de Uso</a> ·
-    <a href="/documentos.html?doc=politica_privacidade" target="_blank">Política de Privacidade</a> ·
-    <a href="/documentos.html?doc=politica_cookies" target="_blank">Política de Cookies</a> ·
-    <a href="/documentos.html" target="_blank">Todos os termos e políticas</a>
+<!-- 9. DÚVIDAS -->
+<section class="sec" id="duvidas" aria-labelledby="t-duvidas">
+  <div class="wrap faq">
+    <div class="sec-tit"><h2 id="t-duvidas">Dúvidas frequentes</h2></div>
+    <details><summary>Preciso de cartão para testar?</summary><p>Não. Você só escolhe uma forma de pagamento se decidir assinar.</p></details>
+    <details><summary>O que acontece no fim dos 7 dias?</summary><p>Nada é cobrado. Para continuar usando, é só escolher um plano. Seus dados não são apagados quando o teste acaba.</p></details>
+    <details><summary>Por que vocês pedem CPF ou CNPJ?</summary><p>Para garantir um teste grátis por loja e para a cobrança, se você assinar.</p></details>
+    <details><summary>Funciona no celular?</summary><p>Sim. Funciona no computador e no celular, direto no navegador, sem instalar nada. No celular dá para adicionar à tela inicial como um app.</p></details>
+    <details><summary>Emite nota fiscal?</summary><p>A emissão de NFC-e, NF-e e NFS-e está em integração e será liberada em breve.</p></details>
+    <details><summary>Meus dados ficam seguros?</summary><p>Cada loja tem seus dados separados das outras e cada funcionário entra com o próprio PIN. Você controla quem pode ver o quê.</p></details>
+    <details><summary>Posso trocar de plano ou cancelar?</summary><p>Sim. Você troca de plano quando quiser, sem perder dados. As regras de cancelamento estão no <a href="/documentos.html?doc=contrato_saas" target="_blank" rel="noopener">Contrato de Prestação de Serviço</a>.</p></details>
+    <details><summary>Como eu pago a mensalidade?</summary><p>Pelo Asaas: cartão de crédito (cobra sozinho todo mês), Pix ou boleto.</p></details>
+    <details><summary>O teste grátis tem a inteligência artificial?</summary><p>Sim, com um número menor de consultas por dia durante o teste. A IA ajuda no diagnóstico de aparelhos e na busca de peças compatíveis.</p></details>
   </div>
+</section>
+
+<!-- 10. CHAMADA FINAL -->
+<section class="final" aria-labelledby="t-final">
+  <div class="wrap">
+    <h2 id="t-final">Teste o MISU SYS na sua loja por 7 dias</h2>
+    <p>Sem cartão e sem cobrança automática. Se não servir, você não paga nada.</p>
+    <div class="hero-ctas">
+      <button type="button" class="btn btn-branco btn-lg" onclick="abrirCadastro('trial')"><i class="ti ti-rocket" aria-hidden="true"></i> Começar teste grátis</button>
+      <a class="btn btn-vidro btn-lg contato-zap hidden" href="#" target="_blank" rel="noopener"><i class="ti ti-brand-whatsapp" aria-hidden="true"></i> Tirar dúvidas no WhatsApp</a>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap rodape">
+    <div class="rod-marca"><a class="logo" href="#topo"><img src="/icon-192.png" alt="" width="30" height="30"><span>MISU <em>SYS</em></span></a>
+      <p>Sistema de vendas e assistência técnica.</p>
+      <p class="contatos">
+        <a class="contato-zap hidden" href="#" target="_blank" rel="noopener"><i class="ti ti-brand-whatsapp" aria-hidden="true"></i> <span class="zap-txt">WhatsApp</span></a>
+        <a class="contato-email hidden" href="#"><i class="ti ti-mail" aria-hidden="true"></i> <span class="email-txt">E-mail</span></a>
+      </p>
+    </div>
+    <nav class="rod-links" aria-label="Links do rodapé">
+      <a href="/index.html">Entrar no sistema</a>
+      <a href="/documentos.html?doc=termos_uso" target="_blank">Termos de Uso</a>
+      <a href="/documentos.html?doc=politica_privacidade" target="_blank">Política de Privacidade</a>
+      <a href="/documentos.html?doc=politica_cookies" target="_blank">Política de Cookies</a>
+      <a href="/documentos.html" target="_blank">Todos os termos e políticas</a>
+    </nav>
+  </div>
+  <p class="rod-copy">MISU SYS — © <span id="ano-atual"></span></p>
 </footer>
+
+<!-- Barra fixa no celular -->
+<div class="barra-cel" id="barra-cel" aria-hidden="true">
+  <button type="button" class="btn btn-pri btn-block" onclick="abrirCadastro('trial')" tabindex="-1"><i class="ti ti-rocket" aria-hidden="true"></i> Testar grátis por 7 dias</button>
+</div>
+
 
 <!-- ═══ MODAL DE CADASTRO (trial ou assinar) ═══ -->
 <div class="modal-overlay" id="modal-cadastro-overlay">
-  <div class="modal" style="position:relative">
-    <button class="modal-close" onclick="fecharCadastro()"><i class="ti ti-x"></i></button>
+  <div class="modal" style="position:relative" role="dialog" aria-modal="true" aria-labelledby="cad-titulo">
+    <button type="button" class="modal-close" onclick="fecharCadastro()" aria-label="Fechar"><i class="ti ti-x" aria-hidden="true"></i></button>
     <h3 id="cad-titulo">Comece seu teste grátis</h3>
-    <p class="sub" id="cad-sub">7 dias, plano Enterprise, sem cartão de crédito.</p>
+    <p class="sub" id="cad-sub">7 dias com tudo liberado. Sem cartão.</p>
 
     <div id="cad-form">
     <div class="fg"><label for="cad-empresa">Nome da loja</label><input id="cad-empresa" placeholder="Ex.: TechCell Assistência" autocomplete="organization"></div>
     <div class="fg"><label for="cad-nome">Seu nome</label><input id="cad-nome" placeholder="Seu nome completo" autocomplete="name"></div>
     <div class="fg"><label for="cad-email">E-mail</label><input id="cad-email" type="email" placeholder="voce@suaempresa.com" autocomplete="email">
-      <p style="font-size:11px;color:var(--txt3);margin-top:5px">É o seu login. Vamos mandar um link para confirmar.</p></div>
+      <p style="font-size:13px;color:var(--txt3);margin-top:5px">É o seu login. Vamos mandar um link para confirmar.</p></div>
     <div class="fg"><label for="cad-doc">CPF ou CNPJ</label>
-      <input id="cad-doc" placeholder="000.000.000-00 ou 00.000.000/0000-00" inputmode="numeric" oninput="_maskCpfCnpj(this)"></div>
+      <input id="cad-doc" placeholder="000.000.000-00 ou 00.000.000/0000-00" inputmode="numeric" oninput="_maskCpfCnpj(this)" aria-describedby="cad-doc-dica">
+      <p id="cad-doc-dica" style="font-size:13px;color:var(--txt3);margin-top:5px">Usamos para garantir um teste grátis por loja.</p></div>
     <div class="fg"><label for="cad-telefone">WhatsApp</label>
       <input id="cad-telefone" placeholder="(00) 00000-0000" inputmode="numeric" autocomplete="tel" oninput="_maskTelefone(this)"></div>
-    <div class="fg"><label for="cad-senha">Senha</label><input id="cad-senha" type="password" placeholder="Mínimo 8 caracteres, com letras e números" autocomplete="new-password"></div>
+    <div class="fg"><label for="cad-senha">Senha</label><div class="senha-wrap"><input id="cad-senha" type="password" placeholder="Mínimo 8 caracteres, com letras e números" autocomplete="new-password"><button type="button" class="senha-olho" id="cad-senha-olho" aria-label="Mostrar senha" aria-pressed="false" onclick="alternarSenha()"><i class="ti ti-eye" aria-hidden="true"></i></button></div></div>
     <div class="chk-row">
       <input type="checkbox" id="cad-chk-termos">
       <label for="cad-chk-termos">Li e aceito os <a href="/documentos.html?doc=termos_uso" target="_blank">Termos de Uso</a> e a <a href="/documentos.html?doc=politica_privacidade" target="_blank">Política de Privacidade</a>.</label>
@@ -237,10 +598,10 @@ footer a{color:var(--pri-txt);text-decoration:none}
     </div>
 
     <button class="btn btn-pri btn-block" id="cad-btn-enviar" onclick="enviarCadastro()" style="margin-top:6px">
-      <span id="cad-btn-texto"><i class="ti ti-rocket"></i> Criar minha conta</span>
+      <span id="cad-btn-texto"><i class="ti ti-rocket"></i> Criar minha conta grátis</span>
     </button>
     <div class="form-erro" id="cad-erro" role="alert"></div>
-    <p style="font-size:11.5px;color:var(--txt3);text-align:center;margin-top:14px">Já tem conta? <a href="/index.html" style="color:var(--pri-txt)">Fazer login</a></p>
+    <p style="font-size:13.5px;color:var(--txt3);text-align:center;margin-top:14px">Já tem conta? <a href="/index.html" style="color:var(--pri-txt)">Fazer login</a></p>
     </div>
     <!-- Fatia 75: depois de criar o login, a pessoa confirma pelo e-mail -->
     <div id="cad-confirme" style="display:none;text-align:center;padding:6px 2px 4px" aria-live="polite">
@@ -256,11 +617,11 @@ footer a{color:var(--pri-txt);text-decoration:none}
 
 <!-- ═══ MODAL DE EXIT-INTENT (oferta de trial ao tentar sair) ═══ -->
 <div class="modal-overlay" id="modal-exit-overlay">
-  <div class="modal" style="text-align:center;position:relative">
-    <button class="modal-close" onclick="fecharExitIntent(false)"><i class="ti ti-x"></i></button>
-    <div style="font-size:38px;margin-bottom:6px">🎁</div>
-    <h3>Teste grátis o MISU SYS por 7 dias</h3>
-    <p class="sub">Use o plano mais completo por 7 dias, com limite de IA e recursos premium para testar sem compromisso.</p>
+  <div class="modal" style="text-align:center;position:relative" role="dialog" aria-modal="true" aria-labelledby="exit-titulo">
+    <button type="button" class="modal-close" onclick="fecharExitIntent(false)" aria-label="Fechar"><i class="ti ti-x" aria-hidden="true"></i></button>
+    <div style="font-size:38px;margin-bottom:6px" aria-hidden="true">🎁</div>
+    <h3 id="exit-titulo">Antes de sair: teste 7 dias sem cartão</h3>
+    <p class="sub">Use o MISU SYS na sua loja com tudo liberado. Se não servir, você não paga nada.</p>
     <div style="display:flex;flex-direction:column;gap:9px;margin-top:16px">
       <button class="btn btn-pri btn-block" onclick="fecharExitIntent(true);abrirCadastro('trial')"><i class="ti ti-rocket"></i> Começar teste grátis</button>
       <button class="btn btn-out btn-block" onclick="fecharExitIntent(true);scrollParaPlanos()">Ver planos</button>
@@ -269,23 +630,8 @@ footer a{color:var(--pri-txt);text-decoration:none}
   </div>
 </div>
 
-<!-- ═══ MODAL DE TRIAL JÁ UTILIZADO (bloqueio anti-abuso, oferta sem trial) ═══ -->
-<div class="modal-overlay" id="modal-trialbloq-overlay">
-  <div class="modal" style="text-align:center;position:relative">
-    <button class="modal-close" onclick="document.getElementById('modal-trialbloq-overlay').classList.remove('show')"><i class="ti ti-x"></i></button>
-    <div style="font-size:38px;margin-bottom:6px">🙌</div>
-    <h3>Esse período gratuito já foi usado</h3>
-    <p class="sub">Identificamos que este período gratuito já foi utilizado. Mas boa notícia: você pode assinar agora com <b>20% de desconto no primeiro mês</b>, sem trial, direto no plano.</p>
-    <div style="display:flex;flex-direction:column;gap:9px;margin-top:16px">
-      <button class="btn btn-pri btn-block" onclick="document.getElementById('modal-trialbloq-overlay').classList.remove('show');abrirCadastro('assinar', _planoEscolhido||'pro')"><i class="ti ti-discount-2"></i> Assinar com desconto</button>
-      <a class="btn btn-out btn-block" href="https://wa.me/5575999999999" target="_blank" style="text-decoration:none">Falar com suporte</a>
-      <a class="btn btn-ghost btn-block" href="/index.html" style="text-decoration:none">Entrar em uma conta existente</a>
-    </div>
-  </div>
-</div>
-
 <!-- ═══ Cookie banner (sem checkbox pré-marcado — aceitar/recusar explícito) ═══ -->
-<div id="cookie-banner">
+<div id="cookie-banner" role="region" aria-label="Aviso de cookies">
   Usamos cookies essenciais para o funcionamento do site. Cookies de análise/marketing só são ativados com o seu consentimento.
   <div class="row">
     <button class="btn btn-pri" onclick="consentirCookies(true)">Aceitar todos</button>
@@ -325,31 +671,6 @@ function _maskTelefone(input){
 }
 function _soDigitos(v){ return (v||'').replace(/\D/g,''); }
 
-/* Fingerprint leve: combina sinais já disponíveis no navegador (idioma,
-   fuso, resolução, plataforma, núcleos de CPU) + um hash de canvas — não
-   identifica a pessoa sozinho, é só mais um sinal pro score. Se o
-   navegador bloquear algo (ex.: canvas em modo privado), seguimos sem
-   travar o cadastro — dispositivo nunca bloqueia sozinho mesmo. */
-function _coletarFingerprint(){
-  try{
-    let canvasSig = '';
-    try{
-      const c = document.createElement('canvas'); c.width=200; c.height=40;
-      const ctx = c.getContext('2d');
-      ctx.textBaseline='top'; ctx.font='14px Arial'; ctx.fillText('misu-fp-22::' + navigator.userAgent, 2, 2);
-      canvasSig = c.toDataURL();
-    }catch(_){}
-    const partes = [
-      navigator.userAgent || '', navigator.language || '',
-      (Intl.DateTimeFormat().resolvedOptions().timeZone) || '',
-      `${screen.width}x${screen.height}x${screen.colorDepth}`,
-      navigator.platform || '', navigator.hardwareConcurrency || '',
-      canvasSig,
-    ].join('|');
-    return partes;
-  }catch(_){ return null; }
-}
-
 /* Fatia 75: CPF (11) ou CNPJ (14) no mesmo campo */
 function _maskCpfCnpj(input){
   let v = input.value.replace(/\D/g,'').slice(0,14);
@@ -380,20 +701,20 @@ const VERSOES_DOC = { termos: '1.0', privacidade: '1.0', cookies: '1.0', contrat
 const PLANOS_VITRINE = [
   {
     id: 'basico', nome: 'Básico', preco: 99,
-    desc: 'Para lojas que querem organizar vendas, produtos e estoque.',
-    itens: ['PDV completo','Produtos e estoque básico','Clientes','Caixa e vendas','Relatórios básicos','Catálogo simples','Suporte padrão'],
-    limites: 'Até 2 usuários · 1 loja · sem IA', // Fatia 71: Básico sem IA
+    desc: 'Para começar a organizar vendas, estoque e consertos.',
+    itens: ['PDV (vendas no balcão)','Produtos e estoque','Clientes','Caixa','Ordens de serviço (simples)','Relatórios básicos','Catálogo simples'],
+    limites: 'Até 2 usuários · 1 loja · sem IA',
   },
   {
     id: 'pro', nome: 'Pro', preco: 197, destaque: true,
-    desc: 'Para lojas que vendem, fazem assistência e querem controle completo.',
-    itens: ['Tudo do {anterior}','OS completa e garantias','Financeiro e crediário','Catálogo online completo','App mobile','Permissões avançadas','Entregas simples','Integrações principais'],
+    desc: 'Para assistências que querem controle completo.',
+    itens: ['Tudo do {anterior}','OS completa, orçamentos e garantias','Financeiro e crediário','Catálogo online completo','Controle de entregas','Permissões por função','IA para diagnóstico e peças compatíveis'],
     limites: 'Até 5 usuários · 1 loja · 30 consultas de IA/dia',
   },
   {
     id: 'enterprise', nome: 'Enterprise', preco: 399,
-    desc: 'Gestão avançada, automações, IA, entregas e suporte prioritário.',
-    itens: ['Tudo do {anterior}','Logística com entregador','Assinatura digital de entrega','Automações','IA avançada','Relatórios executivos','Logs avançados','Suporte prioritário'],
+    desc: 'Para lojas com equipe maior e entregas próprias.',
+    itens: ['Tudo do {anterior}','App do entregador com rastreio e localização','Assinatura do cliente na entrega','Mais consultas de IA','Suporte prioritário'],
     limites: 'Até 10 usuários · 100 consultas de IA/dia',
   },
 ];
@@ -425,13 +746,13 @@ function renderPlanos(){
     <div class="plano-card ${p.destaque?'destaque':''}">
       ${p.destaque?'<div class="plano-selo">Mais escolhido</div>':''}
       <div class="plano-nome">${_escPl(p.nome)}</div>
-      <div class="plano-desc">${p.desc}</div>
+      <div class="plano-desc">${_escPl(p.desc)}</div>
       <div class="plano-preco"><b>R$ ${_precoPl(p.preco)}</b><span>/mês</span></div>
       <ul class="plano-lista">${p.itens.map(it=>`<li><i class="ti ti-check"></i>${_escPl(it.replace('{anterior}', i ? PLANOS_VITRINE[i-1].nome : ''))}</li>`).join('')}</ul>
       <div class="plano-limites">${p.limites}</div>
       <div class="plano-ctas">
-        <button class="btn btn-out btn-block" onclick="abrirCadastro('trial')">Começar teste grátis</button>
-        <button class="btn btn-pri btn-block" onclick="abrirCadastro('assinar','${p.id}')">Assinar agora</button>
+        <button type="button" class="btn btn-pri btn-block" onclick="abrirCadastro('trial')"><i class="ti ti-rocket" aria-hidden="true"></i> Testar grátis 7 dias</button>
+        <button type="button" class="btn btn-out btn-block" onclick="abrirCadastro('assinar','${p.id}')">Assinar o ${_escPl(p.nome)} agora</button>
       </div>
     </div>
   `).join('');
@@ -440,7 +761,8 @@ renderPlanos();
 sincronizarPlanosPainel();
 
 function scrollParaPlanos(){
-  document.getElementById('planos').scrollIntoView({ behavior:'smooth', block:'start' });
+  const reduz = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  document.getElementById('planos').scrollIntoView({ behavior: reduz ? 'auto' : 'smooth', block:'start' });
 }
 
 /* ── Cadastro (trial ou assinar) ─────────────────────────────────────── */
@@ -456,9 +778,44 @@ function abrirCadastro(modo, planoId){
     : `R$ ${p?_precoPl(p.preco):''}/mês. Você paga só depois de confirmar os dados.`;
   document.getElementById('cad-erro').style.display='none';
   document.getElementById('cad-form').style.display=''; document.getElementById('cad-confirme').style.display='none'; // Fatia 75
-  document.getElementById('modal-cadastro-overlay').classList.add('show');
+  _abrirModal('modal-cadastro-overlay', 'cad-empresa');
 }
-function fecharCadastro(){ document.getElementById('modal-cadastro-overlay').classList.remove('show'); }
+function fecharCadastro(){ _fecharModal('modal-cadastro-overlay'); }
+/* Modais acessíveis: foco vai para o modal, Tab fica dentro dele, Esc fecha
+   e o foco volta para o botão que abriu. */
+let _focoAntes = null;
+function _abrirModal(id, focoId){
+  const ov = document.getElementById(id); if(!ov) return;
+  _focoAntes = document.activeElement;
+  ov.classList.add('show'); document.body.style.overflow = 'hidden';
+  setTimeout(() => { const alvo = (focoId && document.getElementById(focoId)) || ov.querySelector('button,input,a'); try{ alvo && alvo.focus(); }catch(_){} }, 30);
+}
+function _fecharModal(id){
+  const ov = document.getElementById(id); if(!ov || !ov.classList.contains('show')) return;
+  ov.classList.remove('show'); document.body.style.overflow = '';
+  try{ _focoAntes && _focoAntes.focus && _focoAntes.focus(); }catch(_){}
+}
+document.addEventListener('keydown', (e) => {
+  const ov = document.querySelector('.modal-overlay.show'); if(!ov) return;
+  if(e.key === 'Escape'){ e.preventDefault(); if(ov.id === 'modal-exit-overlay') fecharExitIntent(false); else _fecharModal(ov.id); return; }
+  if(e.key === 'Tab'){
+    const f = [...ov.querySelectorAll('button,input,a[href],select,textarea')].filter(el => !el.disabled && el.offsetParent !== null);
+    if(!f.length) return;
+    const pri = f[0], ult = f[f.length-1];
+    if(e.shiftKey && document.activeElement === pri){ e.preventDefault(); ult.focus(); }
+    else if(!e.shiftKey && document.activeElement === ult){ e.preventDefault(); pri.focus(); }
+  }
+});
+document.querySelectorAll('.modal-overlay').forEach(ov => ov.addEventListener('click', (e) => {
+  if(e.target !== ov) return;
+  if(ov.id === 'modal-exit-overlay') fecharExitIntent(false); else _fecharModal(ov.id);
+}));
+function alternarSenha(){
+  const i = document.getElementById('cad-senha'), b = document.getElementById('cad-senha-olho');
+  const mostrar = i.type === 'password'; i.type = mostrar ? 'text' : 'password';
+  b.setAttribute('aria-pressed', mostrar ? 'true' : 'false'); b.setAttribute('aria-label', mostrar ? 'Esconder senha' : 'Mostrar senha');
+  b.innerHTML = `<i class="ti ${mostrar ? 'ti-eye-off' : 'ti-eye'}" aria-hidden="true"></i>`;
+}
 
 function emailValido(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
 
@@ -529,7 +886,7 @@ async function enviarCadastro(){
     erroBox.textContent = _msgErroCadastro(e);
     erroBox.style.display='block';
   }finally{
-    btn.disabled = false; txt.innerHTML = '<i class="ti ti-rocket"></i> Criar minha conta';
+    btn.disabled = false; txt.innerHTML = '<i class="ti ti-rocket"></i> Criar minha conta grátis';
   }
 }
 function _msgErroCadastro(e){
@@ -575,22 +932,49 @@ function abrirExitIntent(){
   if(_exitModalMostrado || !_exitIntentPodeMostrar()) return;
   _exitModalMostrado = true;
   window._veioDeExitIntentAtual = true;
-  document.getElementById('modal-exit-overlay').classList.add('show');
+  _abrirModal('modal-exit-overlay');
 }
 function fecharExitIntent(convertendo){
-  document.getElementById('modal-exit-overlay').classList.remove('show');
+  _fecharModal('modal-exit-overlay');
   try{ localStorage.setItem(EXIT_INTENT_CHAVE, String(Date.now() + 7*24*3600*1000)); }catch(_){}
   if(!convertendo) window._veioDeExitIntentAtual = false;
 }
 
-// Desktop: mouse saindo por CIMA da janela = provável intenção de fechar aba/voltar.
+// Só no computador: mouse saindo por CIMA da janela (intenção de fechar/voltar).
+// Sem temporizador e nada no celular — não interrompe quem está lendo.
 document.addEventListener('mouseout', (e) => {
-  if(!e.relatedTarget && e.clientY <= 0) abrirExitIntent();
+  if(!e.relatedTarget && e.clientY <= 0 && !document.querySelector('.modal-overlay.show') && matchMedia('(pointer:fine)').matches) abrirExitIntent();
 });
-// Mobile/tablet não tem "mouseout pra cima" — usa voltar do navegador como proxy.
-window.addEventListener('popstate', () => abrirExitIntent());
-// Fallback adicional pra mobile: 45s parado na página sem interagir com o cadastro.
-setTimeout(() => { if(!document.getElementById('modal-cadastro-overlay').classList.contains('show')) abrirExitIntent(); }, 45000);
+
+/* ── Contato da página: preencha aqui (deixe vazio para não aparecer) ── */
+const CONTATO = {
+  whatsapp: '',   // só números com DDI e DDD, ex.: '5575999990000'
+  email: '',      // ex.: 'suporte@seudominio.com.br'
+};
+(function aplicarContato(){
+  const zap = String(CONTATO.whatsapp||'').replace(/\D/g,'');
+  if(zap.length >= 12){
+    const url = 'https://wa.me/' + zap + '?text=' + encodeURIComponent('Olá! Quero saber mais sobre o MISU SYS.');
+    const fmt = zap.replace(/^55(\d{2})(\d{4,5})(\d{4})$/, '($1) $2-$3');
+    document.querySelectorAll('.contato-zap').forEach(a => { a.href = url; a.classList.remove('hidden'); const t = a.querySelector('.zap-txt'); if(t) t.textContent = fmt; });
+  }
+  const em = String(CONTATO.email||'').trim();
+  if(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){
+    document.querySelectorAll('.contato-email').forEach(a => { a.href = 'mailto:' + em; a.classList.remove('hidden'); const t = a.querySelector('.email-txt'); if(t) t.textContent = em; });
+  }
+})();
+
+/* ── Barra "Testar grátis" fixa no celular depois do topo da página ── */
+(function barraCelular(){
+  const barra = document.getElementById('barra-cel'), hero = document.querySelector('.hero');
+  if(!barra || !hero || !('IntersectionObserver' in window)) return;
+  new IntersectionObserver(([en]) => {
+    const on = !en.isIntersecting;
+    barra.classList.toggle('on', on); document.body.classList.toggle('com-barra', on);
+    barra.setAttribute('aria-hidden', on ? 'false' : 'true');
+    const b = barra.querySelector('button'); if(b) b.tabIndex = on ? 0 : -1;
+  }, { threshold: 0 }).observe(hero);
+})();
 
 /* ── Cookie banner — nada de analytics/marketing carrega até decisão
    explícita. Sem checkbox pré-marcado (o pedido do usuário é claro nisso).
