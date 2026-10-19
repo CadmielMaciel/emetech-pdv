@@ -2586,6 +2586,13 @@ async function doLogin(){
 async function carregarEmpresa(user){
   // Fatia 33: traz a empresa inteira (plano, teste grátis, mensalidade) — antes só id/nome/status
   let {data:emp}=await comTimeout(db.from('empresas').select('*').eq('auth_user_id',user.id).maybeSingle(),'empresa');
+  // Fatia 75: cadastro feito pelo site com e-mail confirmado, loja ainda não criada — termina aqui
+  if(!emp && user?.user_metadata?.cadastro_misu){
+    try{
+      const {data:r}=await db.rpc('finalizar_cadastro_misu');
+      if(r && r.ok){ const r2=await db.from('empresas').select('*').eq('auth_user_id',user.id).maybeSingle(); emp=r2.data||null; }
+    }catch(e){ console.warn('[cadastro pelo site]',e); }
+  }
   // Fatia 69: contas antigas (login ligado à loja pelo cadastro de usuários,
   // não pela própria empresa) — mesma regra do computador (loadProfile → modelo antigo)
   if(!emp && user.email){
