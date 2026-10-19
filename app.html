@@ -2556,7 +2556,9 @@ async function enviarEsqueciSenhaMob(){
   }catch(e){
     const t=String(e&&e.message||''), s=t.match(/after (\d+) seconds?/i);
     m.style.color='var(--danger-txt)';
-    m.textContent=s?('Por segurança, aguarde '+s[1]+' segundos para pedir outro link.'):(/rate limit/i.test(t)?'Muitos pedidos seguidos. Aguarde alguns minutos.':'Não foi possível enviar agora. Tente de novo.');
+    console.error('[recuperar senha]', e);
+    m.textContent=s?('Por segurança, aguarde '+s[1]+' segundos para pedir outro link.'):(/rate limit/i.test(t)?'Muitos pedidos seguidos. Aguarde alguns minutos.'
+      :(/sending|smtp|mail|535|550|554|unexpected_failure|500/i.test(t)?'O servidor de e-mail recusou o envio (configuração SMTP no Supabase/Brevo). Detalhe: '+t:'Não foi possível enviar agora. Detalhe: '+(t||'sem resposta do servidor'))); // Fatia 74
   }finally{ b.disabled=false; }
 }
 async function doLogin(){
@@ -9439,7 +9441,7 @@ function _tourEnsureInviteDomMobile(){
     <div class="tour-invite-text">Em menos de 1 minuto você conhece as áreas principais.</div>
     <div class="tour-invite-actions">
       <button class="tour-btn tour-btn-pri tour-invite-btn-ok">Começar tour</button>
-      <button class="tour-btn tour-btn-out" onclick="_tourHideInviteMobile()">Agora não</button>
+      <button class="tour-btn tour-btn-out" onclick="_tourAdiarConvite('mobile');_tourHideInviteMobile()">Agora não</button>
     </div>
     <button class="tour-popover-skip" onclick="_tourNaoMostrarConviteMobileNovamente()">Não mostrar novamente</button>
   `;
@@ -9447,12 +9449,55 @@ function _tourEnsureInviteDomMobile(){
   return el;
 }
 function _tourHideInviteMobile(){ const el=document.getElementById('tour-invite'); if(el) el.classList.remove('tour-on'); }
+
+/* Convite do tour: "Não mostrar novamente" vale para o sistema todo (computador,
+   celular e painel usam a mesma chave) e "Agora não" adia 7 dias — antes o
+   "Agora não" voltava a cada entrada e o "não mostrar" só valia para uma tela. */
+const _TOUR_OFF_KEY='misu_tour_convites_off';
+function _tourConviteBloqueado(nome){
+  try{
+    if(localStorage.getItem(_TOUR_OFF_KEY)==='1') return true;
+    if(['misu_tour_convite_oculto','misu_tour_mobile_convite_oculto','misu_tour_admin_convite_oculto'].some(k=>localStorage.getItem(k)==='1')) return true; // quem já clicou antes
+    if(document.cookie.split('; ').some(c=>c==='misu_tour_off=1')) return true;
+    const ate=parseInt(localStorage.getItem('misu_tour_'+nome+'_adiado_ate')||'0',10);
+    if(ate && Date.now()<ate) return true;
+    if(sessionStorage.getItem('misu_tour_'+nome+'_visto')==='1') return true; // no máximo 1x por sessão
+  }catch(e){}
+  return false;
+}
+function _tourDesligarConvites(){
+  try{ localStorage.setItem(_TOUR_OFF_KEY,'1'); }catch(e){}
+  try{ document.cookie='misu_tour_off=1; max-age=31536000; path=/; SameSite=Lax'; }catch(e){}
+}
+function _tourAdiarConvite(nome){
+  try{ localStorage.setItem('misu_tour_'+nome+'_adiado_ate', String(Date.now()+7*24*3600*1000)); }catch(e){}
+}
+
+// Melhor esforço no servidor (tabela tours_status): vale em qualquer aparelho da loja.
+function _tourDesligarNoServidor(eid){
+  try{
+    if(typeof db==='undefined' || !db || !eid) return;
+    db.from('tours_status').upsert({ empresa_id: eid, user_id: null, tour_slug: 'convites', status: 'skipped',
+      current_step: 0, updated_at: new Date().toISOString() }, { onConflict: 'empresa_id,user_id,tour_slug' }).then(()=>{}).catch(()=>{});
+  }catch(e){}
+}
+async function _tourDesligadoNoServidor(eid){
+  try{
+    if(typeof db==='undefined' || !db || !eid) return false;
+    const { data, error } = await db.from('tours_status').select('status').eq('empresa_id', eid).eq('tour_slug','convites').eq('status','skipped').limit(1);
+    if(!error && data && data.length){ _tourDesligarConvites(); return true; }
+  }catch(e){}
+  return false;
+}
 function _tourNaoMostrarConviteMobileNovamente(){
-  try{ localStorage.setItem('misu_tour_mobile_convite_oculto','1'); }catch(e){}
+  _tourDesligarConvites();
+  _tourDesligarNoServidor(G.empresaId);
   _tourHideInviteMobile();
 }
-function verificarConviteTourMobile(){
+async function verificarConviteTourMobile(){
   try{
+    if(_tourConviteBloqueado('mobile')) return;
+    if(await _tourDesligadoNoServidor(G.empresaId)) return;
     const saved = loadTourProgress('mobile');
     if(saved.status==='completed' || saved.status==='skipped') return;
     try{ if(localStorage.getItem('misu_tour_mobile_convite_oculto')==='1') return; }catch(e){}
@@ -9467,6 +9512,7 @@ function verificarConviteTourMobile(){
       const btnOk = el.querySelector('.tour-invite-btn-ok');
       btnOk.textContent = retomar ? 'Continuar tour' : 'Começar tour';
       btnOk.onclick = () => { _tourHideInviteMobile(); startTour('mobile', { resume:retomar }); };
+      try{ sessionStorage.setItem('misu_tour_mobile_visto','1'); }catch(e){}
       requestAnimationFrame(() => el.classList.add('tour-on'));
     }, 1400);
   }catch(e){ console.warn('[tour] convite inicial (mobile) falhou (não bloqueia o sistema):', e); }
