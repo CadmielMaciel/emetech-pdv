@@ -105,6 +105,7 @@ function traduz(e){
   let m;
   if((m=t.match(/after (\d+) seconds?/i))) return `Por segurança, aguarde ${m[1]} segundos para pedir de novo.`;
   if(/rate limit/i.test(t)) return 'Muitos pedidos seguidos. Aguarde alguns minutos e tente de novo.';
+  if(/sending|smtp|535|550|554|unexpected_failure/i.test(t)) return 'O servidor de e-mail recusou o envio (configuração SMTP no Supabase/Brevo). Detalhe: '+t; // Fatia 74
   if(/should be different/i.test(t)) return 'A senha nova precisa ser diferente da anterior.';
   if(/at least|too short|weak|characters/i.test(t)) return 'Senha fraca: use pelo menos 8 caracteres, misturando letras e números.';
   if(/expired|invalid/i.test(t)) return 'O link venceu. Peça um novo abaixo.';
