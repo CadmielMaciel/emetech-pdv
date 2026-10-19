@@ -8289,6 +8289,17 @@ async function loadProfile(user){
     const { data: emp } = await comTimeout(db.from('empresas').select('*').eq('auth_user_id', user.id).maybeSingle(), 'empresa');
     empresa = emp || null;
   } catch(e) { console.error('Erro ao resolver empresa por auth_user_id:', e); }
+  // Fatia 75: cadastro feito pelo site e e-mail já confirmado, mas a loja ainda
+  // não foi criada (fechou a página bem-vindo antes) — termina aqui.
+  if (!empresa && user?.user_metadata?.cadastro_misu) {
+    try {
+      const { data: r } = await db.rpc('finalizar_cadastro_misu');
+      if (r && r.ok) {
+        const { data: emp2 } = await db.from('empresas').select('*').eq('auth_user_id', user.id).maybeSingle();
+        empresa = emp2 || null;
+      }
+    } catch(e) { console.warn('[cadastro pelo site]', e); }
+  }
 
   if (empresa) {
     G.empresa = empresa;
